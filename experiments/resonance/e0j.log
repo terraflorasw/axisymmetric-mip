@@ -1,0 +1,66 @@
+E0j — the cost/accuracy frontier. What is the CHEAPEST setting that is good enough?
+
+Three timeouts in a row (e0h, e0i, and e0g's order 3) say the question was posed
+backwards. I kept asking "how accurate can this be" and paying 3007 s per solve.
+The engineering question is the other one:
+
+    WHAT IS THE CHEAPEST CONFIGURATION THAT CLEARS A STATED ACCURACY TARGET?
+
+🔑 AND THE TARGET COMES FROM THE PHYSICS, NOT FROM AMBITION. The quantities this
+instrument must resolve:
+
+    cold linewidth            2.34 MHz
+    tuner settable range     23    MHz
+    TM020 clearance         195    MHz
+
+**1 MHz on TE011 is ample.** E0g reached 0.361 MHz and cost 50 minutes — three
+times better than needed, at 34x the price of order 1.
+
+🔑 THE LEVER IS THAT ORDER 2 TOLERATES A MUCH COARSER MESH. A shift-invert
+eigensolve factorises (A - sigma*B) whatever N you ask for, so reducing the mode
+count from 22 to 6 saved almost nothing (e0i still timed out). Element COUNT is
+the cost, and a richer field basis needs fewer elements for the same accuracy.
+E0g's 83,322 elements at order 2 were 3x more accurate than required.
+
+    size factor   0.96   83,322 el   3007 s   0.361 MHz   (E0g, the reference)
+    this run       2.0 / 2.5 / 3.0, coarse, order 2
+
+PREDICTION, DECLARED BEFORE THE RUN: order 2 on a ~10-15k element mesh clears
+1 MHz in under two minutes — cheaper AND more accurate than order 1 on 83k
+elements, which took 89 s to be 12 MHz wrong.
+
+🔴 FALSIFIER: if accuracy degrades faster than ~h^2 as the mesh coarsens, the
+order-2 advantage does not transfer to coarse meshes and the frontier is flat —
+meaning there is no cheap accurate setting and every future run costs 50 minutes.
+
+VERIFICATION   physics.spectrum(), exact.
+FALSIFICATION  the exactly-degenerate splitting, true value 0, at each size.
+
+==============================================================================
+  sf 3.0: 5,199 elements
+    solved in 648s
+      648s   TE011  +0.264 MHz   max|Δ| 10.593   splitting  5.423
+  sf 2.5: 7,739 elements
+    solved in 588s
+      588s   TE011  -0.252 MHz   max|Δ|  1.751   splitting  0.490
+  sf 2.0: 13,013 elements
+    solved in 943s
+      943s   TE011  +0.128 MHz   max|Δ|  1.709   splitting  0.870
+  sf 1.5: 25,982 elements
+    solved in 1879s
+     1879s   TE011  +0.197 MHz   max|Δ|  1.957   splitting  0.014
+
+    sf  elements  seconds  TE011 MHz   max|Δ|  splitting     verdict
+   3.0     5,199      648      0.264   10.593      5.423✅ clears 1 MHz
+   2.5     7,739      588     -0.252    1.751      0.490✅ clears 1 MHz
+   2.0    13,013      943      0.128    1.709      0.870✅ clears 1 MHz
+   1.5    25,982     1879      0.197    1.957      0.014✅ clears 1 MHz
+
+  reference — E0g: sf 0.96, 83,322 el, 3007 s, TE011 +0.058, max 0.361, splitting 0.014
+  reference — order 1: sf 0.96, 83,322 el, 89 s, TE011 -11.998, max 16.625, splitting 1.199
+
+  🔑 CHEAPEST SETTING CLEARING 1.0 MHz: sf 2.5, 7,739 elements, 588 s
+     that is 5x cheaper than E0g and 48x more accurate than order 1
+
+  wrote e0j.result.json — NO VERDICT HERE
+EXIT=0

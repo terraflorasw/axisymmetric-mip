@@ -1,0 +1,73 @@
+E0g — it was never the geometry. Raise the SOLVER order.
+
+E0f swept the GEOMETRIC order at fixed everything else and the falsifier fired:
+
+    mode     ord 1     ord 2     ord 3
+    TE011  -10.292   -11.998   -11.986      <- order 2 -> 3 moves it 0.012 MHz
+    TM020  -11.074   -14.423   -14.452
+    TM210  -13.457   -16.625   -16.648
+    splitting 1.221     1.199     1.200
+
+🔴 GEOMETRIC ORDER 2 IS ALREADY CONVERGED. Cubic elements change nothing —
+0.01-0.03 MHz. So the residual is NOT the mesh failing to follow the cylinder,
+and the racing-sim analogy, though exactly right about the mechanism it names,
+DOES NOT GOVERN HERE. My prediction that order 3 would collapse the error was
+wrong, and E0f's declared falsifier says what that means: the error is in the
+FIELD BASIS, not the geometry.
+
+⚠️ Also wrong: I argued an inscribed polygon reads small so frequencies come out
+HIGH. At geometric order 1 the signs are MIXED (TM011 +0.380, TE211 +0.627,
+TM211 +1.372, but TE011 -10.292). A straight-sided tetrahedral tiling is not a
+simple inscribed polygon and that intuition does not survive contact.
+
+🔑 AND THE OLD PROGRAMME HAD THE RIGHT KNOB ALL ALONG. Its `offset.te011 =
++24.54 MHz` was measured as SOLVER order 1 -> 2 on one mesh. It was treated as a
+fudge constant to be added; E0f says it is the dominant physical error term.
+
+PREDICTION, DECLARED BEFORE THE RUN:
+
+    TE011 sits -11.99 MHz low at solver order 1. If the field basis is the whole
+    residual, SOLVER ORDER 2 SHOULD LAND IT NEAR ZERO -- moving it UP by ~12 MHz.
+
+🔴 FALSIFIER: if order 2 overshoots, or leaves a residual larger than the ~1.2 MHz
+mesh-realisation floor, then something ELSE is contributing and neither
+discretisation explains it. And if the DEGENERACY SPLITTING does not shrink, the
+splitting is not a discretisation artifact at all — it would then be a property of
+the tetrahedral tiling's inability to represent the cavity's continuous azimuthal
+symmetry, which no order of anything can fix.
+
+VERIFICATION   physics.spectrum(), exact.
+FALSIFICATION  splitting of the exactly-degenerate pair, true value 0.
+
+==============================================================================
+  e0g: sf 0.96, 83,322 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 f17f69f5d0e0
+  🔑 ONE MESH for all three — solver order is a config setting, so this is a
+     SAME-MESH comparison and mesh-realisation error cancels exactly.
+
+  solver order 1
+    solved in 89s
+  solver order 2
+    solved in 3007s
+  solver order 3
+Traceback (most recent call last):
+  File "/home/tanderson/project/github.com/terraflorasw/regenerative-soil-testing/amip/experiments/resonance/e0g_solverorder.py", line 73, in <module>
+    run(tag, cfg)
+  File "/home/tanderson/project/github.com/terraflorasw/regenerative-soil-testing/amip/experiments/resonance/e0_solver_vs_math.py", line 120, in run
+    rc = subprocess.run([PALACE, "-np", "4", f"{tag}.json"], env=solver.ENV,
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tanderson/.local/share/mamba/envs/emsim/lib/python3.12/subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tanderson/.local/share/mamba/envs/emsim/lib/python3.12/subprocess.py", line 1209, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tanderson/.local/share/mamba/envs/emsim/lib/python3.12/subprocess.py", line 2141, in _communicate
+    self.wait(timeout=self._remaining_time(endtime))
+  File "/home/tanderson/.local/share/mamba/envs/emsim/lib/python3.12/subprocess.py", line 1264, in wait
+    return self._wait(timeout=timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tanderson/.local/share/mamba/envs/emsim/lib/python3.12/subprocess.py", line 2045, in _wait
+    raise TimeoutExpired(self.args, timeout)
+subprocess.TimeoutExpired: Command '['/home/tanderson/.local/opt/palace/bin/palace', '-np', '4', 'e0g_s3.json']' timed out after 3599.9999873049965 seconds
+EXIT=1

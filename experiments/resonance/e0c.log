@@ -1,0 +1,89 @@
+E0c — the full rigid-motion factorial. Translation x rotation, 2 x 3.
+
+Both operations are EXACT symmetries of Maxwell, so every frequency must be
+identical across all six cases. Every difference is instrument, with no
+modelling judgement involved anywhere.
+
+    translation   0  and  +256 mm on each of x, y, z
+    rotation      0, 120, 180 deg about the cavity axis
+
+🔑 ROTATION IS THE PURER PROBE. The cavity is axisymmetric and empty, so a
+rotation about z changes neither the physics NOR the OCC solid — not even the
+bounding box. Only the parametric seam moves, and gmsh then lays out a different
+mesh. Translation at least moves coordinates; rotation moves nothing a formula
+could see.
+
+🔑 AND THE FACTORIAL ASKS WHETHER THEY INTERACT. E0b found the two effects have
+opposite characters: TE011's error was translation-STABLE (0.148 MHz) while the
+exact degeneracy split 6x WORSE off-origin (1.199 -> 7.052 MHz). If rotation at
+the origin also preserves the degeneracy, the origin's virtue is that it lets the
+discretisation inherit the cavity's azimuthal symmetry — and 120 vs 180 deg
+distinguishes a 3-fold from a 2-fold artifact.
+
+VERIFICATION   physics.spectrum() — the same exact reference for all six.
+FALSIFICATION  the TE011/TM111 splitting, true value EXACTLY zero, measured in
+               every cell. Its VARIATION across the factorial is the artifact.
+GATE           all six meshes must be pairwise distinct, asserted before solving.
+
+==============================================================================
+  e0c_at0_0: sf 0.96, 83,322 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 f17f69f5d0e0
+  e0c_at0_120: sf 0.96, 83,579 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 62a95faa94b2
+  e0c_at0_180: sf 0.96, 83,537 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 3c726c4736d4
+  e0c_off_0: sf 0.96, 83,809 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 d8a7f702306f
+  e0c_off_120: sf 0.96, 83,798 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 2ae4103f6c47
+  e0c_off_180: sf 0.96, 83,563 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 579f9e8c1e6d
+  ✅ all 6 meshes pairwise distinct
+
+    solved in 121s
+    solved in 102s
+    solved in 103s
+    solved in 127s
+    solved in 92s
+    solved in 96s
+
+Δ from EXACT, MHz — every cell should read 0.000
+
+   mode      exact       at0_0     at0_120     at0_180       off_0     off_120     off_180
+  TM010    1.10649      -3.714      -3.877      -3.766      -4.019      -3.600      -4.031
+  TM110    1.76301      -4.583      -4.857      -4.953      -5.259      -4.385      -5.378
+  TE111    1.89327      -2.941      -2.705      -3.365      -3.326      -3.142      -3.991
+  TM011    2.02265      -0.424      -0.594      -0.463      -0.675       0.189      -0.406
+  TE211    2.20037      -0.455      -0.047      -1.201      -0.827      -0.428      -2.165
+  TM210    2.36295     -16.625     -17.562     -17.223     -18.478     -15.114     -17.870
+  TE011    2.44438     -11.998     -11.884     -11.460     -12.146     -10.417     -11.318
+  TM111    2.44438     -11.998     -11.884     -11.460     -12.146     -10.417     -11.318
+  TM020    2.53985     -14.423     -14.849     -14.721     -18.496     -14.324     -17.312
+  TM211    2.90695      -2.463      -5.538      -5.591      -5.482      -1.890      -5.638
+  TE121    2.98065     -27.564     -10.594     -13.230     -13.037     -25.453     -27.023
+
+                        83,322      83,579      83,537      83,809      83,798      83,563   tets
+
+  SPREAD across six rigid motions (pure instrument):
+      TE121   16.970 MHz
+      TM020    4.172 MHz
+      TM211    3.748 MHz
+      TM210    3.364 MHz
+      TE211    2.118 MHz
+      TE011    1.730 MHz
+      TM111    1.730 MHz
+      TE111    1.286 MHz
+      TM110    0.993 MHz
+      TM011    0.864 MHz
+      TM010    0.431 MHz
+
+  🔑 FALSIFIER — TE011/TM111 splitting, true value EXACTLY 0:
+         at0_0    1.199 MHz
+       at0_120    1.268 MHz
+       at0_180    1.254 MHz
+         off_0    7.052 MHz
+       off_120    2.776 MHz
+       off_180    2.588 MHz
+
+  wrote e0c.result.json — NO VERDICT HERE
+EXIT=0

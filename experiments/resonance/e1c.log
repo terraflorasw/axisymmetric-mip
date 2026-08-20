@@ -1,0 +1,39 @@
+E1c — is COARSE AIR + FINE WALLS worth it? Measured against exact truth.
+
+E1b died: at size factor 2.5 the loaded geometry self-intersects, because a
+single global factor couples two scales that have nothing to do with each other:
+
+    the AIR        ~15 mm elements, carries ~99% of the field, SMOOTH
+    the TUBE WALLS  1.0-1.5 mm, carries ~0.06% of TE011's energy, SETS THE FLOOR
+
+🔑 THE TEST BED IS THE TRICK HERE. Build the FULL loaded geometry — all three
+tubes, the mode filter — but set every dielectric to eps = 1.0. Vacuum tubes are
+electromagnetically INVISIBLE, so THE EXACT CLOSED FORM STILL APPLIES, while the
+mesh still has to negotiate every thin wall. That gives a known-truth reference
+for a meshing strategy on the real geometry, which no loaded solve can offer.
+
+    air_coarsen  1.0   baseline: air sized from the wavelength
+                 2.0   air elements twice as large, walls unchanged
+                 3.0
+                 4.0
+
+PREDICTION, DECLARED BEFORE THE RUN: the air carries almost all the field, so
+coarsening it should HURT — but at solver order 2 the basis is rich enough that
+moderate coarsening may cost little. Worthwhile if k = 2-3 holds max|Δ| under
+~2 MHz while cutting elements and time by >2x.
+
+🔴 FALSIFIER: if accuracy degrades roughly in proportion to the element saving,
+grading buys nothing — it is just a coarser mesh with extra steps, and the
+loaded cavity is simply expensive. That is a real possible outcome and it would
+close the question rather than leave it open.
+
+VERIFICATION   physics.spectrum(), exact — valid because every dielectric is
+               vacuum, so the geometry is EM-transparent.
+FALSIFICATION  the exactly-degenerate TE011/TM111 splitting, true value 0.
+
+==============================================================================
+  k=1.0: 92,596 elements
+    🔴 Command '['/home/tanderson/.local/opt/palace/bin/palace', '-np', '4', 'e1c_k1p0.
+  k=2.0: 75,526 elements
+    🔴 Command '['/home/tanderson/.local/opt/palace/bin/palace', '-np', '4', 'e1c_k2p0.
+  k=3.0: 72,215 elements

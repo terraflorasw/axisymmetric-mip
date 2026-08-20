@@ -1,0 +1,62 @@
+E0i — do the rigid-motion violations survive at solver order 2?
+
+E0g changed what is worth measuring. At solver order 2 the instrument reproduces
+the exact spectrum to 0.361 MHz and holds an exact degeneracy to 0.014 MHz. So
+the 8-member ensemble drafted for a 12 MHz error is no longer worth 7 hours of
+machine time — 0.36 MHz is already far below the 2.34 MHz cold linewidth and the
+23 MHz tuning range. ⚠️ SCOPE DELIBERATELY REDUCED, and recorded as such rather
+than quietly dropped.
+
+WHAT STILL MATTERS is closing the thread the user opened: rigid motions moved
+frequencies by ~4 MHz and split an exact degeneracy 6x. All of that was measured
+at SOLVER ORDER 1. If it collapses at order 2, the tooling was never suspect —
+it was being under-resolved, and the correct reading of E0b/E0c is "order 1 is
+inadequate", not "gmsh is unreliable".
+
+    at0     reference
+    off     +256 mm on x, y, z   — exact symmetry, E0b measured 4.074 MHz here
+    rot120  120 deg about the cavity axis — solid literally unchanged
+
+PREDICTION, DECLARED BEFORE THE RUN: every shift below 0.1 MHz, and the
+degenerate splitting below 0.05 MHz in all three.
+
+🔴 FALSIFIER: if the shifts stay near 4 MHz while the absolute accuracy is
+0.36 MHz, then realisation error is NOT discretisation error — it would be a
+separate, order-independent defect, and the ensemble becomes mandatory after all.
+
+⚠️ FOCUSED EIGENSOLVE. Target 2.40 GHz with N=6 instead of 1.05 with N=22: the
+falsifier only needs the degenerate pair and its neighbours, and 22 modes is what
+made order 2 cost 3007 s. This changes the eigensolver's work, so these absolute
+values are NOT directly comparable with E0g's — the SHIFTS between the three
+cases are, because all three use identical settings.
+
+==============================================================================
+  e0i_at0: sf 0.96, 83,322 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 f17f69f5d0e0  83,322 tets
+  e0i_off: sf 0.96, 83,809 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 d8a7f702306f  83,809 tets
+  e0i_rot120: sf 0.96, 83,579 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 62a95faa94b2  83,579 tets
+  ✅ three distinct realisations of one physical problem
+
+Traceback (most recent call last):
+  File "/home/tanderson/project/github.com/terraflorasw/regenerative-soil-testing/amip/experiments/resonance/e0i_rigid_at_order2.py", line 66, in <module>
+    run(tag, cfg)
+  File "/home/tanderson/project/github.com/terraflorasw/regenerative-soil-testing/amip/experiments/resonance/e0_solver_vs_math.py", line 120, in run
+    rc = subprocess.run([PALACE, "-np", "4", f"{tag}.json"], env=solver.ENV,
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tanderson/.local/share/mamba/envs/emsim/lib/python3.12/subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tanderson/.local/share/mamba/envs/emsim/lib/python3.12/subprocess.py", line 1209, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tanderson/.local/share/mamba/envs/emsim/lib/python3.12/subprocess.py", line 2141, in _communicate
+    self.wait(timeout=self._remaining_time(endtime))
+  File "/home/tanderson/.local/share/mamba/envs/emsim/lib/python3.12/subprocess.py", line 1264, in wait
+    return self._wait(timeout=timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tanderson/.local/share/mamba/envs/emsim/lib/python3.12/subprocess.py", line 2045, in _wait
+    raise TimeoutExpired(self.args, timeout)
+subprocess.TimeoutExpired: Command '['/home/tanderson/.local/opt/palace/bin/palace', '-np', '4', 'e0i_at0.json']' timed out after 3599.9999859480013 seconds
+EXIT=1

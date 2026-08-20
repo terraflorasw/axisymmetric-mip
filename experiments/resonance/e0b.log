@@ -1,0 +1,59 @@
+E0b — is the 27.6 MHz disagreement tied to the ORIGIN?
+
+E0 found the solver low by up to 27.6 MHz against the exact spectrum, mode-
+dependent, all negative. This asks whether any of that is a coordinate artifact.
+
+🔑 A RIGID TRANSLATION IS AN EXACT SYMMETRY OF THE PHYSICS. Move the whole cavity
++256 mm in x, y and z and every frequency must be IDENTICAL — not approximately,
+identically. So the difference between the two runs is pure instrument.
+
+AND THE ORIGIN IS A SPECIAL POINT, but NOT for the reason first supposed. Double
+spacing at 0.356 m is 5.6e-17 m, still nine orders below OCC's ~1e-7 m geometric
+tolerance; precision only binds near 2^31. What is special is EXACT COINCIDENCE:
+at x = y = 0 the cavity axis lies exactly on the coordinate axis, and z = 0 is
+exactly the mid-plane, so geometric predicates evaluate to exact zeros — which is
+where degenerate tie-breaking lives in CAD and meshing algorithms. Offsetting
+breaks every one of those coincidences at no precision cost.
+
+VERIFICATION   physics.spectrum(), same reference as E0. Both runs are compared
+               to it, and the two disagreement VECTORS are compared to each other.
+FALSIFICATION  the exact TE011/TM111 degeneracy again — but now the question is
+               whether its 1.199 MHz splitting MOVES. A splitting that changes
+               under a symmetry of the physics is numerical; one that does not
+               may be structural to the discretisation.
+
+🔴 AND THE ASSERTION E0 WAS MISSING. E0's two meshes came out byte-identical and
+its convergence arm was void, because I gated apertures, dielectric and material
+completeness but never asserted THE CASES DIFFER. That assertion is here, and it
+runs before any solve.
+
+==============================================================================
+  e0b_at0: sf 0.96, 83,322 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 f17f69f5d0e0
+  e0b_off: sf 0.96, 83,809 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 d8a7f702306f
+  ✅ the two meshes differ — the offset changed the discretisation
+
+    solved in 126s
+    solved in 142s
+
+   mode       exact        at 0      +256mm    Δ0 MHz  Δoff MHz    shift
+  TM010    1.106485    1.102772    1.102466    -3.714    -4.019   -0.306
+  TM110    1.763008    1.758425    1.757748    -4.583    -5.259   -0.677
+  TE111    1.893272    1.890331    1.889946    -2.941    -3.326   -0.385
+  TM011    2.022654    2.022231    2.021979    -0.424    -0.675   -0.251
+  TE211    2.200375    2.199920    2.199548    -0.455    -0.827   -0.372
+  TM210    2.362953    2.346328    2.344475   -16.625   -18.478   -1.853
+  TE011    2.444385    2.432387    2.432238   -11.998   -12.146   -0.148
+  TM111    2.444385    2.432387    2.432238   -11.998   -12.146   -0.148
+  TM020    2.539846    2.525423    2.521349   -14.423   -18.496   -4.074
+  TM211    2.906952    2.904488    2.901470    -2.463    -5.482   -3.019
+  TE121    2.980652    2.953088    2.967615   -27.564   -13.037   14.527
+
+  shift under an EXACT SYMMETRY: mean +0.299 MHz, max |14.527| MHz
+  🔑 every one of these is pure instrument — the physics did not move.
+  degeneracy splitting, e0b_at0: 1.199 MHz (true value 0)
+  degeneracy splitting, e0b_off: 7.052 MHz (true value 0)
+
+  wrote e0b.result.json — NO VERDICT HERE
+EXIT=0

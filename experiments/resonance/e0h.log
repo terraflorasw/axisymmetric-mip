@@ -1,0 +1,77 @@
+E0h — separate BIAS from SCATTER. An ensemble over mesh realisations.
+
+E0e established that mesh-realisation error is irreducible by care: the solver is
+exact, gmsh is not translation-equivariant, and a single mesh is one draw from a
+distribution nobody has sampled. It said the fix is refinement or ensembles.
+This is the ensemble.
+
+🔑 ROTATION ABOUT THE CAVITY AXIS IS THE PERFECT REALISATION GENERATOR. The
+cavity is axisymmetric and empty, so a z-rotation leaves the OCC solid LITERALLY
+UNCHANGED — same volume, same surface, same bounding box — while gmsh lays out a
+completely different mesh. Every member of the ensemble is the SAME PHYSICAL
+PROBLEM. No jitter, no approximation, no "small enough to ignore" argument.
+
+THE QUESTION THIS ANSWERS, which no run so far has: how much of the ~12 MHz
+disagreement is BIAS and how much is SCATTER?
+
+    if the ENSEMBLE MEAN converges on the exact value   -> pure scatter, and
+                                                           averaging fixes it
+    if the ENSEMBLE MEAN stays low by ~12 MHz           -> SYSTEMATIC BIAS, and
+                                                           ensembling removes
+                                                           only the error bar,
+                                                           never the offset
+
+🔴 That distinction decides how this instrument may be used at all. A bias can be
+corrected once and applied; scatter cannot be corrected, only averaged down. The
+old programme's `offset.te011` assumed pure bias and never tested it.
+
+VERIFICATION   physics.spectrum(). Compared against the ensemble MEAN, not
+               against any single member.
+FALSIFICATION  the exactly-degenerate splitting, true value 0, as a DISTRIBUTION.
+               🔴 If its mean is far from zero it is a bias, not noise, and no
+               ensemble will remove it — that would make it a hard resolution
+               limit of tetrahedral meshing on an axisymmetric cavity.
+GATE           all members pairwise distinct meshes, asserted before solving.
+
+==============================================================================
+  ensemble of 8 rotations, SOLVER ORDER 2
+
+  e0h_r0: sf 0.96, 83,322 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 f17f69f5d0e0  83,322 tets
+  e0h_r15: sf 0.96, 83,266 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 3aedb0c9c80b  83,266 tets
+  e0h_r30: sf 0.96, 83,413 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 b4688cd930a8  83,413 tets
+  e0h_r45: sf 0.96, 83,476 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 a676706866bf  83,476 tets
+  e0h_r60: sf 0.96, 83,509 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 64f8f0e8c1cd  83,509 tets
+  e0h_r75: sf 0.96, 83,433 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 097b433f2fa9  83,433 tets
+  e0h_r90: sf 0.96, 83,437 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 755a1c9fbc62  83,437 tets
+  e0h_r105: sf 0.96, 83,653 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 e11efc27f033  83,653 tets
+  ✅ 8 distinct realisations of an IDENTICAL solid
+
+Traceback (most recent call last):
+  File "/home/tanderson/project/github.com/terraflorasw/regenerative-soil-testing/amip/experiments/resonance/e0h_ensemble.py", line 77, in <module>
+    run(tag, cfg)
+  File "/home/tanderson/project/github.com/terraflorasw/regenerative-soil-testing/amip/experiments/resonance/e0_solver_vs_math.py", line 120, in run
+    rc = subprocess.run([PALACE, "-np", "4", f"{tag}.json"], env=solver.ENV,
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tanderson/.local/share/mamba/envs/emsim/lib/python3.12/subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tanderson/.local/share/mamba/envs/emsim/lib/python3.12/subprocess.py", line 1209, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tanderson/.local/share/mamba/envs/emsim/lib/python3.12/subprocess.py", line 2141, in _communicate
+    self.wait(timeout=self._remaining_time(endtime))
+  File "/home/tanderson/.local/share/mamba/envs/emsim/lib/python3.12/subprocess.py", line 1264, in wait
+    return self._wait(timeout=timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tanderson/.local/share/mamba/envs/emsim/lib/python3.12/subprocess.py", line 2045, in _wait
+    raise TimeoutExpired(self.args, timeout)
+subprocess.TimeoutExpired: Command '['/home/tanderson/.local/opt/palace/bin/palace', '-np', '4', 'e0h_r0.json']' timed out after 3599.9999872449844 seconds
+EXIT=1
