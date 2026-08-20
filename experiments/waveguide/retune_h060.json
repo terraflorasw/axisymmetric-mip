@@ -1,0 +1,129 @@
+{
+  "Problem": {
+    "Type": "Eigenmode",
+    "Verbose": 2,
+    "Output": "postpro/retune_h060"
+  },
+  "Model": {
+    "Mesh": "retune_h060.msh",
+    "L0": 1.0,
+    "Refinement": {
+      "UniformLevels": 0
+    }
+  },
+  "Domains": {
+    "Materials": [
+      {
+        "Attributes": [
+          1
+        ],
+        "Permittivity": 1.0,
+        "Permeability": 1.0
+      },
+      {
+        "Attributes": [
+          2
+        ],
+        "Permittivity": 3.78,
+        "Permeability": 1.0,
+        "LossTan": 0.0001
+      },
+      {
+        "Attributes": [
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "Permittivity": 1.0,
+        "Permeability": 1.0
+      },
+      {
+        "Attributes": [
+          8
+        ],
+        "Permittivity": 3.78,
+        "Permeability": 1.0,
+        "LossTan": 0.0001
+      },
+      {
+        "Attributes": [
+          11
+        ],
+        "Permittivity": 1.0,
+        "Permeability": 1.0
+      }
+    ],
+    "Postprocessing": {
+      "Energy": [
+        {
+          "Index": 1,
+          "Attributes": [
+            1
+          ]
+        },
+        {
+          "Index": 2,
+          "Attributes": [
+            2
+          ]
+        },
+        {
+          "Index": 3,
+          "Attributes": [
+            3
+          ]
+        },
+        {
+          "Index": 4,
+          "Attributes": [
+            4
+          ]
+        },
+        {
+          "Index": 5,
+          "Attributes": [
+            5
+          ]
+        },
+        {
+          "Index": 6,
+          "Attributes": [
+            6
+          ]
+        },
+        {
+          "Index": 7,
+          "Attributes": [
+            7
+          ]
+        }
+      ]
+    }
+  },
+  "Boundaries": {
+    "PEC": {
+      "Attributes": [
+        90
+      ]
+    }
+  },
+  "Solver": {
+    "Order": 1,
+    "Device": "CPU",
+    "Eigenmode": {
+      "Target": 2.0,
+      "N": 14,
+      "Tol": 1e-08,
+      "MaxIts": 200,
+      "Save": 0
+    },
+    "Linear": {
+      "Type": "Default",
+      "KSPType": "GMRES",
+      "Tol": 1e-08,
+      "MaxIts": 500
+    }
+  }
+}

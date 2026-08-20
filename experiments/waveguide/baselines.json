@@ -1,0 +1,893 @@
+{
+ "_meta": {
+  "description": "Machine-readable extract of the AMIP design point, harness conventions, and measured baselines. FINDINGS.md remains the narrative source of truth and the evidence trail; this file exists so scripts can consume values directly instead of hardcoding them as arguments, and so a future harness refactor has something to regress against.",
+  "schema": "every entry is {value, unit, error, description, provenance} plus an OPTIONAL 'frame' on any entry whose unit is GHz or MHz. value is a NUMBER wherever it is one. error is the uncertainty on value in the same unit, or null where none has been measured — null means unmeasured, never zero. provenance says how value and error were obtained, precisely enough to reproduce them.",
+  "rules": [
+   "Update an entry in place when a better measurement supersedes it, and rewrite its provenance. This file is NOT append-only; FINDINGS.md is.",
+   "Never copy a number in here without a provenance that could regenerate it.",
+   "A frequency baseline is only meaningful against a PINNED MESH, not against geometry arguments -- see reproducibility.mesh_to_mesh_scatter.",
+   "FRAME is MANDATORY on every GHz/MHz entry. 'raw-order1' = order-1 driven, offset NOT applied; 'converged' = offset applied or order-2 verified; 'delta' = a difference, which is order-independent and needs no offset; 'offset' = the extrapolation constant itself. ⚠️ THE OFFSETS ARE MODE-DEPENDENT (+24.54 MHz TE011 = 1.00% of f0, +20.06 TM020) and geometry-dependent (R38). Mixing a raw frequency into a band-placement claim is an error worth a quarter of the 2.400-2.500 band, and the file carried that ambiguity unmarked until 2026-08-19.",
+   "LENGTHS ARE STORED IN MILLIMETRES because geometry.py consumes them, but the design is DIMENSIONLESS (FINDINGS entry 127). Use dimensionless.py to derive the lambda view; never store a second copy of it here."
+  ],
+  "updated": "2026-08-19"
+ },
+ "cav.radius": {
+  "value": 103.7,
+  "unit": "mm",
+  "error": 0.2,
+  "description": "Cavity bore radius. R99: NO LONGER THE BINDING MACHINING DIMENSION FOR TM020. The +/-0.2 mm callout was justified by TM020 headroom (dTM020/da = -22 MHz/mm); at the sapphire point TM020 needs an 8.88 mm radius error to reach 2.400 GHz, 44x the callout. DO NOT RELAX THE CALLOUT YET -- the next binding constraint is unidentified (R102). 'No longer bound by X' is not 'unbound'.",
+  "provenance": "R44 design point refined by the driven sensitivity matrix (FINDINGS entry 74). Error is the drawing tolerance, set by dTM020/da = -22 MHz/mm against TM020's headroom below the 2.400 band floor, then reduced from 0.45 to 0.40 by the chimney (entry 78); 0.2 is the callout actually specified. UPDATED 2026-08-16 (R49): the tolerance BUDGET is now +/-0.27 mm, not +/-0.40, because the feed aperture spends 2.70 MHz of TM020 headroom. The 0.2 mm callout still passes."
+ },
+ "cav.length_torch_sapphire_outer": {
+  "value": 88.12,
+  "unit": "mm",
+  "error": null,
+  "description": "[R111 renamed from `cav.length_sapphire` — the old name did not say WHICH parts were sapphire, and that ambiguity cost a correction mid-session.] Cavity length for a build with a SAPPHIRE OUTER TUBE and quartz inner two. R98: this is NOT the all-sapphire length -- see cav.length_all_sapphire. The name predates the all-sapphire decision and the distinction is 0.15 mm.",
+  "provenance": "R44/R46 (entries 73-75). Error not separately measured; the two independent L_target extractions in R46 agreed to 0.07 mm."
+ },
+ "cav.length_torch_all_quartz": {
+  "value": 88.53,
+  "unit": "mm",
+  "error": 0.07,
+  "description": "[R111 renamed from `cav.length_quartz` — the old name did not say WHICH parts were sapphire, and that ambiguity cost a correction mid-session.] Cavity length for the quartz development build. All 2026-08-16 runs use this.",
+  "provenance": "R46 (entry 75): three lengths at a=103.70, common size-factor 0.96, dTE011/dL = -13.06 MHz/mm, three independent L_target values 88.50/88.57/88.50."
+ },
+ "cav.shim_quartz_to_sapphire_outer": {
+  "value": 0.41,
+  "unit": "mm",
+  "error": null,
+  "description": "[R111 renamed from `cav.shim` — the old name did not say WHICH parts were sapphire, and that ambiguity cost a correction mid-session.] SUPERSEDED 2026-08-19 (R99): DELETED AS A PART. The torch is a permanent all-sapphire feature, not a swappable consumable, so there is no second material to convert to. Machine the cavity to cav.length_all_sapphire 87.97 directly. Kept for provenance only. A shim is also a cap/barrel seam: invisible to TE011 (J'0 = 0, no current crosses the corner) but a current path and arc site for TM020/TM111 -- deleting it removes a rival-mode loss path at zero cost to the operating mode. Previously: Spacer converting the sapphire-OUTER-tube cavity body to the quartz development length. R98: NOT sufficient for the all-sapphire build -- that swing is 0.56 mm. See cav.shim_all_sapphire.",
+  "provenance": "Difference of cav.length_quartz and cav.length_sapphire, R46."
+ },
+ "cav.roundness": {
+  "value": 0.5,
+  "unit": "mm",
+  "error": null,
+  "description": "Bore roundness callout, peak radial deviation. NON-BINDING.",
+  "provenance": "R36 (entry 76). Ovality is second order: measured delta^2 law gives TM020 0.09 MHz at +/-0.20 mm, ~50x weaker than the same error in mean radius. 0.5 mm is 4x inside where any effect begins."
+ },
+ "brake.thickness": {
+  "value": 3.0,
+  "unit": "mm",
+  "error": null,
+  "description": "Fused quartz annulus per end cap. REQUIRED at 3 mm, not stock convenience.",
+  "provenance": "R39 (entry 77). At 1.5 mm TM020 lands at 2.4299, in band and 8.2 MHz from TE011; at 0 mm it reaches 2.4634. Costs 5.6% of Q, buys 53 MHz of separation."
+ },
+ "chimney.diameter": {
+  "value": 21.0,
+  "unit": "mm",
+  "error": null,
+  "description": "Axial exhaust chimney bore on the +z end cap, below cutoff (TE11 at 8.37 GHz).",
+  "provenance": "Entry 53 sizing, confirmed free for TE011 by R29 (entry 78)."
+ },
+ "chimney.length": {
+  "value": 41.0,
+  "unit": "mm",
+  "error": null,
+  "description": "Chimney length, sized for 60 dB of below-cutoff isolation.",
+  "provenance": "Entry 53: 1.46 dB/mm at 21 mm bore. Reproduced analytically as alpha = (2*pi/c)*sqrt(fc^2-f^2) with fc = 1.8412c/(pi*d) -> 1.457 dB/mm. R48 open: the 60 dB target is sized for a mode that barely couples in."
+ },
+ "torch.od": {
+  "value": 20.0,
+  "unit": "mm",
+  "error": null,
+  "description": "Standard Fassel outer tube OD; wall 1.5 mm, bore 17 mm.",
+  "provenance": "Catalogue part, geometry.py defaults."
+ },
+ "wall.conductivity": {
+  "value": 35000000.0,
+  "unit": "S/m",
+  "error": null,
+  "description": "✅ R58 CLOSED 2026-08-19: BARE ELECTROPOLISHED ALUMINIUM, not silver. Chosen on OPTICAL grounds — the far wall is in the optical path, silver collapses below its 320 nm plasmon where P 213.6 / Zn 213.9 / B 249.7 / Mn 257.6 / Cu 324.8 sit, and Ag2S growth drifts the background over months. RF cost: Q falls 25% (Q ~ sqrt(sigma)), which is 0.17 points of delivered power at sigma=30 and 0.82 at worst. 🔑 It IMPROVES cold coupling 11.1% -> 14.6% (beta 34 -> 25.3) because the cavity is overcoupled unlit, so lowering Q0 moves beta toward critical — a gain exactly where power is short. ⚠️ Do NOT anodise: 5-25 um of lossy oxide against a 1.28 um skin depth.",
+  "provenance": "FINDINGS entry 135 (R58), closing entry 93's analysis. Supersedes the silver value 6.3e7 chosen for Q before R58 showed Q is 0.7% of lit dissipation."
+ },
+ "wall.q_derate_roughness": {
+  "value": 0.82,
+  "unit": "ratio",
+  "error": null,
+  "description": "Multiplier from smooth-wall simulated Q to realistic Q for an electropolished silver surface. The solver cannot produce this itself.",
+  "provenance": "FINDINGS ~line 366-441 (Hammerstad roughness model, Ra table) gives assembled ~37,600 against the smooth-wall driven Q of ~45,800."
+ },
+ "mesh.size_factor": {
+  "value": 0.96,
+  "unit": "dimensionless",
+  "error": null,
+  "description": "Common gmsh MeshSizeFactor for the design point. Every comparison set must share one.",
+  "provenance": "meshsweep.sweep() picks the coarsest candidate that builds ALL cases; 0.96 is what the design-point geometry lands on (R27)."
+ },
+ "mesh.order": {
+  "value": 2,
+  "unit": "dimensionless",
+  "error": null,
+  "description": "Geometric mesh order (curved elements). Distinct from solver order.",
+  "provenance": "geometry.py --order default; mesh is sized 8 elements/wavelength FOR order 2."
+ },
+ "offset.te011": {
+  "value": 24.54,
+  "unit": "MHz",
+  "error": 0.02,
+  "description": "Order-1 to converged correction for TE011. ADD to a raw order-1 driven frequency. Supersedes the +31.6 used project-wide before 2026-08-16.",
+  "provenance": "R38 (entry 79): order 1 vs order 2 driven on the SAME mesh (choff.msh, size-factor 0.96), 2.41692 -> 2.44146. Error is the order-2 drift between mesh densities 0.96 and 0.90 (R38b), i.e. order 2 is converged. GEOMETRY-DEPENDENT: re-measure whenever the geometry moves materially.",
+  "frame": "offset"
+ },
+ "offset.tm020": {
+  "value": 20.06,
+  "unit": "MHz",
+  "error": 0.0,
+  "description": "Order-1 to converged correction for TM020. Mode-specific -- do not apply offset.te011 to both, it corrupts the separation.",
+  "provenance": "R38 (entry 79): 2.37546 -> 2.39552 on the same mesh. Error is the 0.00 MHz order-2 drift across mesh densities 0.96 and 0.90.",
+  "frame": "offset"
+ },
+ "te011.f_raw_order1": {
+  "value": 2.41692,
+  "unit": "GHz",
+  "error": 0.0015,
+  "description": "TE011 cold, raw order-1 driven, at the quartz design point. Add offset.te011 for the physical value. [frame: ORDER-1 RAW — Add offset.te011 (+24.54 MHz) for TE011 or offset.tm020 (+20.06) for TM020 before any band-placement claim.]",
+  "provenance": "choff.msh, r38o1/r29 (identical result). Error is mesh-to-mesh scatter, not solver precision -- see reproducibility.mesh_to_mesh_scatter.",
+  "frame": "raw-order1"
+ },
+ "te011.f_converged": {
+  "value": 2.44146,
+  "unit": "GHz",
+  "error": 0.0001,
+  "description": "TE011 cold at the quartz design point, order-2 converged. This is the physical number. [frame: CONVERGED — offset already applied; do not add it again.]",
+  "provenance": "R38 order-2 driven on choff.msh; confirmed 2.44144 on a 0.90 mesh (R38b).",
+  "frame": "converged"
+ },
+ "te011.q0": {
+  "value": 45728,
+  "unit": "dimensionless",
+  "error": 900,
+  "description": "TE011 unloaded Q at the design point, smooth-wall. Multiply by wall.q_derate_roughness for a realistic figure.",
+  "provenance": "choff.msh order-1 driven. Order 2 gives 45,835 (+0.23%), so Q is order-independent. Error is the ~2% spread seen across independently built meshes of the same geometry."
+ },
+ "tm020.f_raw_order1": {
+  "value": 2.37546,
+  "unit": "GHz",
+  "error": 0.003,
+  "description": "TM020 (ignition mode) cold, raw order-1 driven, quartz design point. [frame: ORDER-1 RAW — Add offset.te011 (+24.54 MHz) for TE011 or offset.tm020 (+20.06) for TM020 before any band-placement claim.]",
+  "provenance": "choff.msh. Error from the 3.04 MHz spread between choff and w885, two nominally identical geometries at the same size-factor.",
+  "frame": "raw-order1"
+ },
+ "tm020.f_converged": {
+  "value": 2.39552,
+  "unit": "GHz",
+  "error": 0.0001,
+  "description": "TM020 converged. Must stay BELOW the 2.400 GHz band floor -- this is a binding design constraint. [frame: CONVERGED — offset already applied; do not add it again.]",
+  "provenance": "R38 order-2 driven on choff.msh; identical to 5 decimals on a 0.90 mesh.",
+  "frame": "converged"
+ },
+ "tm020.q0": {
+  "value": 23443,
+  "unit": "dimensionless",
+  "error": 500,
+  "description": "TM020 unloaded Q at the design point, smooth-wall.",
+  "provenance": "choff.msh order-1 driven."
+ },
+ "sens.dte011_da": {
+  "value": -12.86,
+  "unit": "MHz/mm",
+  "error": null,
+  "description": "TE011 frequency sensitivity to cavity radius.",
+  "provenance": "Driven sensitivity matrix, FINDINGS entry 74. Determinant of the 2x2 matrix is -257, so radius and length give independent control."
+ },
+ "sens.dtm020_da": {
+  "value": -21.99,
+  "unit": "MHz/mm",
+  "error": null,
+  "description": "TM020 sensitivity to cavity radius. Sets the bore tolerance.",
+  "provenance": "Driven, entry 74. The analytic value (-25.60) is 14% off because the closed form assumes an empty cavity; brake and torch load TM020 by 154 MHz. USE THE DRIVEN VALUE."
+ },
+ "sens.dte011_dl": {
+  "value": -11.66,
+  "unit": "MHz/mm",
+  "error": null,
+  "description": "TE011 sensitivity to cavity length.",
+  "provenance": "Driven, entry 74. Agrees with the analytic -11.70 to 0.3%."
+ },
+ "sens.dtm020_dl": {
+  "value": 0.05,
+  "unit": "MHz/mm",
+  "error": null,
+  "description": "TM020 sensitivity to cavity length -- zero, because TM020 has p=0 and no z dependence.",
+  "provenance": "Driven, entry 74; analytic value is exactly 0. Confirmed again in R46 over a 1 mm span."
+ },
+ "effect.chimney_tm020": {
+  "value": 1.26,
+  "unit": "MHz",
+  "error": null,
+  "description": "Upward shift of TM020 caused by the 21 mm chimney. Spends band-floor headroom.",
+  "provenance": "R29 (entry 78), 21x41 mm against no chimney, common size-factor. A 25 mm aperture gives +2.56 MHz, very nearly linear in area.",
+  "frame": "delta"
+ },
+ "effect.chimney_te011": {
+  "value": -0.06,
+  "unit": "MHz",
+  "error": 0.2,
+  "description": "TE011 shift from the chimney -- indistinguishable from zero.",
+  "provenance": "R29. Error is the spread across the 21 and 25 mm cases, which showed no consistent sign. TM020 moved 13x more in the SAME meshes, which is what makes this a physical null rather than an unresolved measurement.",
+  "frame": "delta"
+ },
+ "plasma.sigma": {
+  "value": 30.0,
+  "unit": "S/m",
+  "error": null,
+  "description": "ASSUMED plasma conductivity, NOT measured or cited: r12.py:26 is a bare literal SIGMA = 30.0. Corresponds to n_e ~ 1e14-1e15 cm^-3, i.e. the ICP end of the plausible range for a 2.45 GHz atmospheric plasma (MP-AES class is 1e13-1e14). RF skin depth 1.86 mm. 🔽 R74 LIFTS THE R67 SUSPENSION ON THE POWER CLAIM: eta was swept over 0.3-300 S/m and never fell below 60.5%, so no plausible sigma produces a coupling crisis and the design's go/no-go does not depend on this number. 🔼 IT REMAINS BINDING ON ANY QUOTED VALUE — delivered power spans 60-100% over that range, and the resonance moves 16.4 MHz — so quote power.eta_floor_over_sigma, not a point value, until sigma is pinned (AUDIT.md A5). error stays null: this is still unmeasured.",
+  "provenance": "r12.py SIGMA. RF skin depth delta = sqrt(2/(omega*mu*sigma)) = 1.86 mm, which is the length a loaded-Q mesh must resolve. | re-scoped by FINDINGS entry 113 (R67) | R67 suspension lifted for the power claim by FINDINGS entry 121 (R74); sigma itself remains unmeasured"
+ },
+ "plasma.region": {
+  "value": [
+   4.5,
+   8.5,
+   -20.0,
+   10.0
+  ],
+  "unit": "mm [ri, ro, zlo, zhi]",
+  "error": null,
+  "description": "R12 realistic toroidal plasma sub-region: hollow centre for the sample channel, axially concentrated.",
+  "provenance": "r12.py CASES 'toroid'."
+ },
+ "plasma.q_loaded": {
+  "value": 320,
+  "unit": "dimensionless",
+  "error": 10,
+  "description": "Unloaded-equivalent Q0 of the plasma-loaded resonance AT THE ASSUMED plasma.sigma. The +/-10 error is MESH convergence only and does NOT include the sigma uncertainty, which dominates: Q_lit ~ 1/sigma spans 320 to ~32,000 over a plausible sigma range. R67: not usable as a design target until the self-consistent (sigma, Q, P_abs) fixed point is solved.",
+  "provenance": "R15 (FINDINGS entry 82): plasma-region mesh 1.2/0.8/0.6 mm at common size-factor 0.93, giving 15,544/49,231/115,605 tets in the region and Q = 311/319/320. Converged to 0.3% across the finest two, over a 7.4x refinement. Error is that 3% spread. SIGMA-SPECIFIC: delta scales as 1/sqrt(sigma), so a denser plasma needs a finer mesh than 0.6 mm. | re-scoped by FINDINGS entry 113 (R67)"
+ },
+ "reproducibility.same_mesh": {
+  "value": 0.02,
+  "unit": "MHz",
+  "error": null,
+  "description": "Frequency agreement for the same mesh across a solver change. The tightest tolerance a regression test can demand.",
+  "provenance": "R38b: order-2 driven on mesh densities 0.96 and 0.90 agreed to 0.02 MHz (TE011) and 0.00 (TM020).",
+  "frame": "delta"
+ },
+ "reproducibility.mesh_to_mesh_scatter": {
+  "value": 1.5,
+  "unit": "MHz",
+  "error": 1.5,
+  "description": "Systematic frequency scatter between SEPARATELY BUILT meshes of the same geometry at the same size-factor. Not random: meshing is deterministic, so repeats cannot average it away.",
+  "provenance": "R36: TE011 spanned 1.9 MHz across delta = 0.01-0.40 mm with no monotone trend; choff vs w885 differed by 3.04 MHz on TM020. CONSEQUENCE FOR TESTING: a regression test keyed on geometry ARGUMENTS needs a ~3 MHz tolerance and will catch almost nothing. Pin or checksum the .msh instead.",
+  "frame": "delta"
+ },
+ "reproducibility.representation_offset": {
+  "value": 2.0,
+  "unit": "MHz",
+  "error": null,
+  "description": "Constant TE011 offset between an analytic OCC cylinder and any anisotropically dilated (BSpline) one, independent of the amount of dilation.",
+  "provenance": "R36 (entry 76). Why a round cavity is the wrong control for an ovality study and a sham oval at delta = 0.01 mm is the right one.",
+  "frame": "delta"
+ },
+ "plasma.f_loaded": {
+  "value": null,
+  "unit": "GHz",
+  "error": 5.0,
+  "description": "Loaded resonant frequency. NOT converged across meshes -- error is the observed spread, given here because the spread is the usable result.",
+  "provenance": "R15: three converged-Q meshes gave 2.43115 / 2.42735 / 2.43240, a 5 MHz spread on a resonance whose linewidth is 7.6 MHz. This is peak-location noise on a broad flat maximum; Q survives it because Q comes from an energy integral, the peak position does not. R10's +21.11 vs +21.10 MHz shift agreement was across solver orders on ONE mesh, which cancels this term.",
+  "frame": "converged"
+ },
+ "reproducibility.underresolved_q_swing": {
+  "value": 40,
+  "unit": "percent",
+  "error": null,
+  "description": "Q swing between two meshes of effectively identical density when the skin depth is under-resolved. The noise floor any loaded-Q claim must clear.",
+  "provenance": "R15 first run: two meshes both clamped to 1.2 mm by Mesh.MeshSizeMin, differing by 0.8% in element count (14,703 vs 14,586), returned Q = 149 and 208. Once delta is resolved at ~2 elements, three meshes spanning 7.4x in density agree to 0.3% -- instability is the signature of the under-resolved regime."
+ },
+ "feed.diameter": {
+  "value": 21.0,
+  "unit": "mm",
+  "error": null,
+  "description": "Gas-feed feedthrough bore on the -z end cap. Dielectric-loaded: the torch passes through it.",
+  "provenance": "R49 (FINDINGS entry 83). Modelled with geometry.py --feed 21,LEN --torch-ext LEN."
+ },
+ "feed.length": {
+  "value": 41.0,
+  "unit": "mm",
+  "error": null,
+  "description": "Feed tube length. 41 mm is ample; 20 mm would do.",
+  "provenance": "R49: beyond 10 mm no detectable length dependence (20 -> 41 mm moves TM020 by -0.12 MHz against a +2.70 MHz aperture effect, <5%). Decay length estimated 3-4 mm but NOT measured -- the 10 mm positive control failed to move, so this bounds isolation rather than measuring it. R51 open."
+ },
+ "effect.feed_tm020": {
+  "value": 2.7,
+  "unit": "MHz",
+  "error": 0.2,
+  "description": "Upward shift of TM020 from the feed aperture. Roughly additive with effect.chimney_tm020.",
+  "provenance": "R49, no-feed reference vs 21x10/20/41 mm, common size-factor. Error is the ~0.2 MHz resolution within this mesh family (these four meshes differ only by the feed geometry -- do NOT use 0.2 MHz across sweeps, see reproducibility.mesh_to_mesh_scatter).",
+  "frame": "delta"
+ },
+ "effect.feed_te011_q": {
+  "value": -1.18,
+  "unit": "percent",
+  "error": null,
+  "description": "TE011 Q cost of the 41 mm feedthrough. Quartz tan-delta plus added wall area, not leakage.",
+  "provenance": "R49: Q falls monotonically -0.79/-1.10/-1.18% at 10/20/41 mm. Contrast the chimney's +0.19%, which is empty air."
+ },
+ "tm020.headroom": {
+  "value": 6.0,
+  "unit": "MHz",
+  "error": null,
+  "description": "TM020 margin below the 2.400 GHz band floor WITH both cap apertures. Binding constraint: TM020 must stay below the floor to remain unreachable by the amplifier. [frame: CONVERGED — offset already applied; do not add it again.]",
+  "provenance": "10.0 MHz at the bare design point, minus chimney 1.26 (R29) and feed 2.70 (R49), treated as additive since both are near-axis cap apertures and TM020 has p=0. Sets the bore tolerance at +/-0.27 mm via sens.dtm020_da; the drawing callout of +/-0.2 mm still passes, with the cushion down from 2.25x to 1.35x.",
+  "frame": "converged"
+ },
+ "tm111.f_filtered": {
+  "value": 2.35094,
+  "unit": "GHz",
+  "error": null,
+  "description": "TM111 with the 3 mm mode filter in place, raw order-1 driven. First positive identification of this mode in the project. [frame: ORDER-1 RAW — ⚠️ offset to converged is NOT MEASURED for this mode, so no band-placement claim can be made from it.]",
+  "provenance": "R47 (FINDINGS entry 89): --sectors 5 --loop-phi 36, m from a DFT of the five sector energies; bin 2 at 57.7x the TE011 floor => m=1. Offset to converged NOT measured for this mode.",
+  "frame": "raw-order1"
+ },
+ "tm111.f_unfiltered": {
+  "value": 2.40022,
+  "unit": "GHz",
+  "error": null,
+  "description": "TM111 with the mode filter removed. 19.5 MHz below TE011 instead of 64.3. [frame: ORDER-1 RAW — ⚠️ offset to converged is NOT MEASURED for this mode, so no band-placement claim can be made from it.]",
+  "provenance": "R47, same sweep, --brake 0. bin 2 at 63.6x the floor.",
+  "frame": "raw-order1"
+ },
+ "effect.filter_te011_tm111_separation": {
+  "value": 45.0,
+  "unit": "MHz",
+  "error": null,
+  "description": "Separation the mode filter buys between TE011 and TM111 -- the degeneracy it exists to break, measured on the correct mode at last.",
+  "provenance": "R47: 64.3 MHz separation with the 3 mm filter (2.41524 vs 2.35094) against 19.5 MHz without (2.41974 vs 2.40022). Supersedes inference from TM020, which was all that existed before.",
+  "frame": "delta"
+ },
+ "te011.azimuthal_floor": {
+  "value": 0.0046,
+  "unit": "DFT amplitude / mean",
+  "error": null,
+  "description": "Harness floor for azimuthal asymmetry: what a KNOWN m=0 mode shows, set by the coupling loop's own symmetry breaking. Only excess over this counts as a signal.",
+  "provenance": "R47: TE011 at the design point, bin1 0.0046 / bin2 0.0035 over five sectors. Unfiltered TE011 shows bin1 0.1062 = 23x this floor, i.e. real m=2 contamination -- which CORRECTS entry 77's 'TE011 does not hybridise', a claim --sectors 1 could not support."
+ },
+ "groove.mechanism": {
+  "value": "detuning",
+  "unit": "categorical",
+  "error": null,
+  "description": "How the corner groove separates TM111 from TE011. Settled before any geometry was optimised, because a damping filter and a detuning filter are scored on different axes.",
+  "provenance": "R54/R54b (FINDINGS entry 94). A 2.10-2.60 GHz re-sweep found the modes alive and displaced -100 MHz (15 mm groove) and +136 MHz (lambda/4), not absent. Some damping accompanies it: TM020's Q roughly halves."
+ },
+ "groove.te011_immunity": {
+  "value": 0.15,
+  "unit": "percent",
+  "error": null,
+  "description": "TE011 Q spread across groove depths from zero to lambda/4 -- the groove does not touch the operating mode at any depth.",
+  "provenance": "R54b at --sectors 1: Q = 48,556 / 48,509 / 48,581 for no groove / 15 mm / lambda/4, frequency spread 2.6 MHz. Confirms the H_phi argument: the slot mode is driven by azimuthal H, which TM modes have and TE0np modes do not."
+ },
+ "groove.q_gain_vs_quartz": {
+  "value": 6.0,
+  "unit": "percent",
+  "error": null,
+  "description": "TE011 Q recovered by replacing the quartz annulus with a groove -- the dielectric loss the annulus was costing.",
+  "provenance": "R54 at --sectors 5: 48,656 (groove 15 mm) vs 45,913 (quartz 3 mm). Matches R39's independently measured 5.6% cost of the quartz filter."
+ },
+ "groove.pole_depth": {
+  "value": null,
+  "unit": "mm",
+  "error": null,
+  "description": "Geometric depth at which the groove's stub reactance passes through its pole. UNMEASURED -- estimated 20-23 mm from a sign flip, not observed directly. lambda/4 = 30.6 mm is NOT it, and is a hypersensitive production dimension.",
+  "provenance": "R54b: TM modes move DOWN at 15 mm and UP at lambda/4, so the pole lies between. Implies ~8 mm of fringing extension at the slot mouth. R59 will locate it with depths 7/17/23 mm."
+ },
+ "reproducibility.q_across_sector_counts": {
+  "value": 6.9,
+  "unit": "percent",
+  "error": null,
+  "description": "TE011 Q difference between --sectors 1 and --sectors 5 meshes of the SAME geometry. Never compare Q across sector counts.",
+  "provenance": "R54b bare case 48,556 (sectors 1) vs R54 bare 45,421 (sectors 5). Larger than the ~2% mesh-to-mesh scatter recorded elsewhere."
+ },
+ "loop.tilt_operational": {
+  "value": 0.0,
+  "unit": "degrees",
+  "error": null,
+  "description": "The INSTRUMENT's loop tilt. 45 degrees is a diagnostic setting used in nearly every run in this project, not the operating configuration.",
+  "provenance": "geometry.py loop_tilt: 0 links H_z (TE011 only), 90 links H_phi (TM020 only), 45 couples to both at -3 dB so one sweep yields both resonances."
+ },
+ "effect.tm020_tilt_suppression": {
+  "value": 18.3,
+  "unit": "dB",
+  "error": null,
+  "description": "How much less the operational (0 deg) coupler excites TM020 than the 45 deg diagnostic one. Substantial but NOT absent -- the 2.400 band floor remains a needed second layer.",
+  "provenance": "R60 (FINDINGS entry 95): TM020 stored energy 52.70% of TE011's at 45 deg, 0.77% at 0 deg, same mesh recipe, common size-factor."
+ },
+ "effect.tm111_tilt_anomaly": {
+  "value": null,
+  "unit": "ratio",
+  "error": null,
+  "description": "How the operational (0 deg) tilt changes TM111's excitation vs the 45 deg diagnostic. NO SINGLE VALUE: it goes in OPPOSITE directions depending on whether the mode filter is present. Unexplained.",
+  "provenance": "R61 (FINDINGS entry 96), matched sector counts, TM111 picked by max bin2: filtered 0.1039 -> 0.2723 (2.6x ENHANCED), unfiltered 0.3392 -> 0.0634 (5.4x SUPPRESSED). Falsifies the azimuthal-electric-dipole explanation, which predicts enhancement in both. Supersedes the single 3.0x figure from R60, which was measured at --sectors 1 in the filtered case only. PRACTICAL READ: in the hazard (unfiltered) case the 45 deg runs were CONSERVATIVE, so R60's warning that 45 deg understates the hazard is withdrawn."
+ },
+ "tm111.identification": {
+  "value": 1,
+  "unit": "azimuthal index m",
+  "error": null,
+  "description": "TM111 is m=1, confirmed at BOTH loop tilts. This is what the mode filter's justification rests on.",
+  "provenance": "R47 at 45 deg and R61 at 0 deg: sector-energy DFT bin2 = 0.2034 vs 0.2034 (filtered) and 0.2244 vs 0.2253 (unfiltered), i.e. 57x and 39x the TE011 floor. A mode's azimuthal structure is independent of how it is excited, as expected. DFT verified against synthetic patterns: uniform -> (0,0), cos^2(phi) -> bin2 0.5, cos^2(2phi) -> bin1 0.5."
+ },
+ "te011.m2_contamination_unfiltered": {
+  "value": 8.5,
+  "unit": "x floor",
+  "error": null,
+  "description": "TE011's m=2 content with NO mode filter, at the operational 0 deg tilt. Real, but less severe than the 45 deg diagnostic suggested.",
+  "provenance": "R61: bin1 0.0347 at 0 deg against a floor of ~0.0041, vs R47's 0.1061 (23x) at 45 deg. Supersedes the 23x figure for design purposes."
+ },
+ "match.absorbed_best": {
+  "value": 30.5,
+  "unit": "percent",
+  "error": null,
+  "description": "SUPERSEDED AS A DESIGN FIGURE. Best fraction of forward power absorbed by the lit cavity in R56's sigma sweep, with R56's WEAK coupler at the operational 0 deg tilt; 5-6% at sigma = 3-30. The measurement stands for that coupler. It is no longer the design's absorbed fraction: with the sc06 loop R73 measured 79.3% at sigma = 30 and R74 a floor of 60.5% across 1000x in sigma. Use power.eta_plasma_barrel and power.eta_floor_over_sigma.",
+  "provenance": "R56 (FINDINGS entry 99): |Gamma|^2 read directly from S11 at resonance, five sigma points each meshed at >=3 elements per skin depth. Measured and beta-derived |Gamma|^2 agree within 1.5 points, validating the beta model. | superseded as a design figure by FINDINGS entries 120 (R73) and 121 (R74)"
+ },
+ "match.coupling_deficit": {
+  "value": 3.4,
+  "unit": "ratio",
+  "error": null,
+  "description": "Ratio Q_ext/Q_lit using the BEST measured Q_ext (1,084, R70) against the sigma-dependent lit target ~320. Was 98 when 31,304 was believed to be the floor. 🔽 DEMOTED TWICE OVER and should not drive work: (a) R73 showed eta = 4b/(1+b)^2 is flat near b=1, so this 3.4x is worth 21 percentage points of delivered power, not a catastrophe (see match.deficit_in_watts); (b) R74 measured beta directly at 0.38 for sigma = 30 — a 2.7x deficit in beta, undercoupled — and showed the whole quantity is a linear readout of the unmeasured plasma.sigma, since it ranges 1.1x to 4.3x over the swept sigma. Prefer the branch-resolved beta in match.coupling_branch.",
+  "provenance": "FINDINGS entry 110, superseding the 52x of entry 99 which used the biased Q_ext = 16,568. Required Q_ext is 320 for beta=1, or 55-1,880 for >=50% absorbed, against a measured minimum of 31,304. Independently corroborated: this route predicts 4.0% absorbed, R56 measured 5-6% directly. | re-scoped by FINDINGS entry 113 (R67) | demoted by FINDINGS entries 120 (R73) and 121 (R74)"
+ },
+ "te011.q_ext": {
+  "value": 31304,
+  "unit": "dimensionless",
+  "error": null,
+  "description": "External Q of the coupling loop at R = 50 ohm, from a NARROW-band linewidth. Supersedes 16,568 (from the recorded beta = 2.76), which was wrong.",
+  "provenance": "FINDINGS entry 110. Wide-band sweeps step 20 kHz on a ~130 kHz linewidth, and taking the first sample below half-maximum overshoots, systematically lowering Q_L: the same mesh and port give 9,785-16,568 wide-band and 31,304 at 2 kHz step. Cross-checked against |S11|: beta = Q0/Q_ext = 1.46 predicts -14.6 dB, measured -14.81. beta = 2.76 would predict -6.6 dB. MINIMUM over a port-impedance sweep spanning 5-8000 ohm is also 31,304, at R ~ 50."
+ },
+ "loop.beta_unlit": {
+  "value": 1.46,
+  "unit": "dimensionless",
+  "error": null,
+  "description": "Coupling coefficient of the loop to the unlit cavity at R = 50 ohm. Supersedes the recorded 2.76.",
+  "provenance": "FINDINGS entry 110: Q0 45,782 / Q_ext 31,304, narrow band. Independently confirmed by |S11| = -14.81 dB at resonance."
+ },
+ "reproducibility.linewidth_step_bias": {
+  "value": 2.0,
+  "unit": "ratio",
+  "error": null,
+  "description": "How far a linewidth-derived Q is depressed when the frequency step is coarse relative to the linewidth. One-directional and silent.",
+  "provenance": "FINDINGS entry 110: 20 kHz step on a 130 kHz linewidth gives Q_ext 9,785-16,568; 2 kHz step gives 31,304. RULE: read Q_ext (and any width) only from a band whose step is <= linewidth/20. f and Q0 are NOT affected -- they reproduce to 10 kHz and 0.3% across a 350x band change."
+ },
+ "loop.perimeter_smallest_tested": {
+  "value": 0.47,
+  "unit": "lambda",
+  "error": null,
+  "description": "Electrical perimeter of the SMALLEST coupling loop ever simulated (12x17 mm, perimeter 58 mm at lambda=122.4 mm). Every loop in FINDINGS §12, R62 and scatter.py is electrically LARGE; scatter.py spans 0.29-1.14 lambda. The small-loop formula that set the Q_ext=165 target assumes uniform loop current and is invalid above ~0.1 lambda.",
+  "provenance": "FINDINGS entry 111 (R65), derived from geometry.py --loop d,w parametrisation"
+ },
+ "loop.electrically_small_threshold": {
+  "value": 0.1,
+  "unit": "lambda",
+  "error": null,
+  "description": "Perimeter below which a loop may be treated as a lumped inductor, so that the small-loop coupling formula and series-capacitor cancellation apply. ~12 mm perimeter = ~3x3 mm loop = ~9 mm^2, i.e. 23x smaller in area than any loop yet simulated. UNTESTED regime.",
+  "provenance": "FINDINGS entry 111 (R65), standard electrically-small criterion"
+ },
+ "match.q_ext_target": {
+  "value": 165.0,
+  "unit": "1",
+  "error": null,
+  "description": "Original analytic Q_ext target from the small-loop formula 2*Z0*U/(omega*mu0^2*H^2*A^2). NEVER REPRODUCED BY SIMULATION at any loop size or port impedance. R65 shows it was derived under a uniform-current assumption violated by every geometry tested. Treat as an unvalidated target, not a baseline.",
+  "provenance": "FINDINGS line 1060; invalidated in scope by entry 111 (R65)"
+ },
+ "te011.h_null_radius": {
+  "value": 65.08,
+  "unit": "mm",
+  "error": null,
+  "description": "Radius of the TE011 magnetic-torus core (O-point) at the mid-plane, where H_z changes sign: r = j01/kc = 0.6276*a. Net flux linked by a coaxial mid-plane loop, proportional to R*J1(kc*R), is MAXIMISED here and is identically zero at the barrel wall. ANALYTIC, not yet confirmed by a field dump (R69).",
+  "provenance": "FINDINGS entry 115 (R69), a = 103.70 mm, chi'_01 = 3.8317, j_01 = 2.4048"
+ },
+ "te011.e_max_radius": {
+  "value": 49.83,
+  "unit": "mm",
+  "error": null,
+  "description": "Radius of the TE011 E_phi maximum ring — the plasma current ring — at r = 1.8412/kc = 0.4805*a. Also where H_r peaks on the end caps. ANALYTIC, not yet confirmed by a field dump (R69).",
+  "provenance": "FINDINGS entry 115 (R69)"
+ },
+ "te011.wall_h_fraction": {
+  "value": 0.4028,
+  "unit": "1",
+  "error": null,
+  "description": "|H_z| at the barrel wall as a fraction of its on-axis peak, = |J0(chi'_01)|. Every coupling loop simulated in this project sat at the wall in r > 65.08 mm, the reversed-sign outer region, at 0.2-0.40 of the axial peak. Moving to an end cap at r = 49.83 mm gains 1.39x in H and 1.93x in coupled power -- NOT enough alone to close the 98x deficit.",
+  "provenance": "FINDINGS entry 115 (R69)"
+ },
+ "loop.q_ext_min_measured": {
+  "value": 1084.0,
+  "unit": "1",
+  "error": null,
+  "description": "Lowest Q_ext measured on any coupling loop: 1001 mm^2 (d=25.8, 2w=38.8, rw=1.50 mm), barrel-mounted, mode-filter 3. Cross-validated against |Gamma| (predicted 0.941, measured 0.941). Supersedes the believed floor of 31,304 by 29x and cuts the lit-state deficit from 98x to 3.4x. COST: Q0 falls 21% to 35,773 and the resonance moves 17.2 MHz, and beta = 33 unlit (badly overcoupled). CONFLICT: FINDINGS section 12 reports 12,840 at 28x40 mm (1120 mm^2), 12x higher and 19.5 MHz away -- unresolved, see entry 116.",
+  "provenance": "FINDINGS entry 116 (R70), scatter.py seed 20260818, case sc06"
+ },
+ "loop.q_ext_unpredictable": {
+  "value": 0.17,
+  "unit": "r2",
+  "error": null,
+  "description": "Best r^2 of any single loop geometry parameter regressed against log Q_ext over 12 random points spanning 140x in Q_ext (depth d, r^2=0.162; area 0.043; perimeter 0.018; half-width 0.001). Best two-variable fit r^2=0.376 with exponents -11.9/+21.8, i.e. fitting noise. THE LOOP RESPONSE IS NOT A SMOOTH FUNCTION OF LOOP GEOMETRY -- it cannot be designed or optimised by point-sampling.",
+  "provenance": "FINDINGS entry 116 (R70)"
+ },
+ "coupling.flux_ceiling_fraction_sc06": {
+  "value": 5.93,
+  "unit": "percent",
+  "error": null,
+  "description": "FALSIFIED by R73 (entry 120): the flux map omits the SHORTING term and the measured result is the opposite in sign. Retained for the record only. Fraction of the total single-turn linkable poloidal flux captured by sc06, the best coupler measured in this project (1001 mm^2 barrel loop, Q_ext = 1084). The ceiling is the flux through a mid-plane disc out to the H-null at 65.08 mm; past it H_z reverses and cancels. 285x remains in Q_ext, whose single-turn floor is ~4 -- the residual 3.4x deficit is nowhere near a physical limit.",
+  "provenance": "FINDINGS entry 118 (R72), analytic TE011 field map"
+ },
+ "coupling.cap_gain_vs_barrel": {
+  "value": 1.64,
+  "unit": "x flux",
+  "error": null,
+  "description": "FALSIFIED by R73 (entry 120): the flux map omits the SHORTING term and the measured result is the opposite in sign. Retained for the record only. Linked-flux gain from moving a coupler of IDENTICAL footprint from the barrel wall at mid-plane to the end cap at r = 50 mm (9.74% of ceiling vs 5.93%). Q_ext scales as 1/flux^2, so this is 2.70x in Q_ext: 1084 -> ~400 against a target of ~320. WEAK-COUPLING estimate with no back-reaction; a 1001 mm^2 coupler violates the admissibility rule (pull 17.2 MHz vs 6.4 allowed).",
+  "provenance": "FINDINGS entry 118 (R72)"
+ },
+ "coupling.admissible_pull": {
+  "value": 6.4,
+  "unit": "MHz",
+  "error": null,
+  "description": "Maximum coupler frequency pull for a coupling measurement to reflect the cavity rather than the coupler's own back-reaction: ~1/10 of the TE011-TM111 separation, which is 64.3 MHz with the 3 mm mode filter. Any measurement above this is inside the degenerate-perturbation regime where the response is not a smooth function of coupler geometry (R71). sc06 pulled 17.2 MHz and is 2.7x outside.",
+  "provenance": "FINDINGS entries 117 (R71), 118 (R72)",
+  "frame": "delta"
+ },
+ "power.eta_plasma_barrel": {
+  "value": 78.8,
+  "unit": "percent",
+  "error": null,
+  "description": "Fraction of INCIDENT power absorbed by the plasma, measured directly as 1-|Gamma|^2 minus wall surface flux, with the sc06 loop (1001 mm^2) barrel-mounted and the plasma at sigma=30 S/m. NO Q, no resonance, no linewidth, no mode identification, no 2x convention in it. Cap-mounted alternatives are worse: 68.6% at r=70, 41.1% at r=50, 13.6% at r=30. Scales with plasma.sigma (R67), so RATIOS between cases are safe and this absolute number is not.",
+  "provenance": "FINDINGS entry 120 (R73), rig_power.py, size-factor 1.06, order 1"
+ },
+ "power.eta_wall_fraction": {
+  "value": 0.8,
+  "unit": "percent of absorbed",
+  "error": 0.2,
+  "description": "Share of ABSORBED power dissipated in the silver walls rather than the plasma, across four coupler positions (0.6-1.0%). The cavity is efficient: essentially everything absorbed reaches the plasma.",
+  "provenance": "FINDINGS entry 120 (R73)"
+ },
+ "match.deficit_in_watts": {
+  "value": 21.0,
+  "unit": "percentage points",
+  "error": null,
+  "description": "What the '3.4x coupling deficit' is actually worth in delivered power: eta = 4*beta/(1+beta)^2 is FLAT near beta=1, so beta=0.295 delivers 70% and critical coupling delivers 100%. Q_ext is a reciprocal-difference quantity and amplifies exactly the region where the physics is least sensitive. Supersedes the framing in which a 98x Q_ext ratio read as a design-breaking failure; in watts that was 4.0% vs 100%.",
+  "provenance": "FINDINGS entry 120 (R73)"
+ },
+ "te011.cap_mount_penalty": {
+  "value": 0.17,
+  "unit": "x vs barrel",
+  "error": null,
+  "description": "Worst measured cap-mounted coupler performance (r=30 mm) relative to barrel-mounted, in delivered power. FALSIFIES the R72 field map, which predicted the cap would WIN by 1.64x. Mechanism: a cap loop's crossbar is an arc of conductor at CONSTANT RADIUS, i.e. a partial shorted turn to E_phi, subtending +/-40 deg at r=30 vs ~0 deg at the barrel. The barrel loop's legs are radial (crossing E_phi) and its crossbar sits at the wall where E_phi = 0.",
+  "provenance": "FINDINGS entry 120 (R73)"
+ },
+ "power.eta_floor_over_sigma": {
+  "value": 60.5,
+  "unit": "percent",
+  "error": null,
+  "description": "🔑 THE DESIGN'S WORST CASE. Minimum fraction of input power delivered to the plasma across a 1000x range in the unmeasured plasma.sigma (0.3-300 S/m), with the sc06 loop on the barrel. eta(sigma) is U-SHAPED: 99.5% at sigma=0.3, a minimum of 60.5% at sigma=3-10, and 99.9% at sigma=300. QUOTE THIS, NOT THE 78.8% POINT VALUE, until sigma is pinned. The worst case sits in the MIDDLE of the plausible range, not at an unphysical extreme, so it cannot be dismissed.",
+  "provenance": "FINDINGS entry 121 (R74): eta = 1 - |S11|^2 maximised over 2.38-2.48 GHz at 0.2 MHz step, order 1, on ONE hash-pinned mesh (wbarrel.msh, md5 ca8ca503, 126,012 tets, size-factor 1.06) with only the plasma material conductivity varied over sigma = 0.3/1/3/10/30/100/300 S/m. sigma = 30 reproduced R73's 79.3% at 2.4102 GHz as a known-answer case inside the sweep. Decomposition closes within 0.8 points, with eta_plasma computed independently as (sigma/eps0)*E_elec[90]/P_inc rather than by subtraction. Reproduce with `python3 rig_sigma.py` (or --replay to re-analyse)."
+ },
+ "power.eta_sigma_curve": {
+  "value": [
+   99.5,
+   85.3,
+   60.5,
+   61.2,
+   79.3,
+   93.8,
+   99.9
+  ],
+  "unit": "percent at sigma = [0.3, 1, 3, 10, 30, 100, 300] S/m",
+  "error": null,
+  "description": "eta_total vs plasma conductivity, one frozen mesh. U-shaped. A unimodal plateau-detector misread this as a flank with a peak at 300 — the curve is matched at BOTH ends and worst in the middle.",
+  "provenance": "FINDINGS entry 121 (R74): eta = 1 - |S11|^2 maximised over 2.38-2.48 GHz at 0.2 MHz step, order 1, on ONE hash-pinned mesh (wbarrel.msh, md5 ca8ca503, 126,012 tets, size-factor 1.06) with only the plasma material conductivity varied over sigma = 0.3/1/3/10/30/100/300 S/m. sigma = 30 reproduced R73's 79.3% at 2.4102 GHz as a known-answer case inside the sweep. Decomposition closes within 0.8 points, with eta_plasma computed independently as (sigma/eps0)*E_elec[90]/P_inc rather than by subtraction. Reproduce with `python3 rig_sigma.py` (or --replay to re-analyse)."
+ },
+ "power.plasma_share_of_absorbed": {
+  "value": 96.8,
+  "unit": "percent",
+  "error": null,
+  "description": "🔑 MINIMUM of eta_plasma/eta_total over the whole sigma sweep (range 96.8-99.3%); wall loss never exceeds 2.4% of input. WHATEVER ENTERS THE CAVITY REACHES THE PLASMA, at every sigma. Consequence: eta is not measuring absorption at all, it is measuring the MATCH. The cavity is never the loss.",
+  "provenance": "FINDINGS entry 121 (R74): eta = 1 - |S11|^2 maximised over 2.38-2.48 GHz at 0.2 MHz step, order 1, on ONE hash-pinned mesh (wbarrel.msh, md5 ca8ca503, 126,012 tets, size-factor 1.06) with only the plasma material conductivity varied over sigma = 0.3/1/3/10/30/100/300 S/m. sigma = 30 reproduced R73's 79.3% at 2.4102 GHz as a known-answer case inside the sweep. Decomposition closes within 0.8 points, with eta_plasma computed independently as (sigma/eps0)*E_elec[90]/P_inc rather than by subtraction. Reproduce with `python3 rig_sigma.py` (or --replay to re-analyse)."
+ },
+ "match.coupling_branch": {
+  "value": "undercoupled",
+  "unit": "categorical",
+  "error": null,
+  "description": "🔑 beta < 1 at EVERY plausible sigma: beta = 0.87 / 0.45 / 0.23 / 0.23 / 0.38 / 0.60 / 0.93 at sigma = 0.3-300, i.e. WORST MATCHED EXACTLY WHERE THE PLASMA ABSORBS BEST. eta = 4b/(1+b)^2 is symmetric in b <-> 1/b so eta alone cannot pick a branch; Q_ext = Q0/beta can, because Q_ext must be a property of the COUPLER and not of the load. On the beta<1 branch Q_ext is 787-1318 (1.7x spread over 1000x in sigma); on beta>1 it is 45-993 (22x), which is not a coupler property.",
+  "provenance": "FINDINGS entry 121 (R74): eta = 1 - |S11|^2 maximised over 2.38-2.48 GHz at 0.2 MHz step, order 1, on ONE hash-pinned mesh (wbarrel.msh, md5 ca8ca503, 126,012 tets, size-factor 1.06) with only the plasma material conductivity varied over sigma = 0.3/1/3/10/30/100/300 S/m. sigma = 30 reproduced R73's 79.3% at 2.4102 GHz as a known-answer case inside the sweep. Decomposition closes within 0.8 points, with eta_plasma computed independently as (sigma/eps0)*E_elec[90]/P_inc rather than by subtraction. Reproduce with `python3 rig_sigma.py` (or --replay to re-analyse). Corroborated independently: the beta<1 branch gives Q_ext ~ 850, against R70's directly measured Q_ext = 1,084 for this same sc06 loop (see loop.q_ext_min_measured)."
+ },
+ "plasma.q0_min_over_sigma": {
+  "value": 193,
+  "unit": "dimensionless",
+  "error": null,
+  "description": "Minimum of the directly-measured unloaded Q0 = omega*U/P_abs over the sigma sweep, occurring at sigma = 10 S/m. Q0 = 1144 / 426 / 203 / 193 / 300 / 473 / 839 at sigma = 0.3-300, i.e. internal loss PEAKS at sigma = 3-10, exactly where eta is worst. Q0 needs no reciprocal difference and no resonance model, unlike Q_ext, so it is usable in the lit state where Q_ext is not.",
+  "provenance": "FINDINGS entry 121 (R74): eta = 1 - |S11|^2 maximised over 2.38-2.48 GHz at 0.2 MHz step, order 1, on ONE hash-pinned mesh (wbarrel.msh, md5 ca8ca503, 126,012 tets, size-factor 1.06) with only the plasma material conductivity varied over sigma = 0.3/1/3/10/30/100/300 S/m. sigma = 30 reproduced R73's 79.3% at 2.4102 GHz as a known-answer case inside the sweep. Decomposition closes within 0.8 points, with eta_plasma computed independently as (sigma/eps0)*E_elec[90]/P_inc rather than by subtraction. Reproduce with `python3 rig_sigma.py` (or --replay to re-analyse)."
+ },
+ "plasma.f_drift_over_sigma": {
+  "value": 16.4,
+  "unit": "MHz",
+  "error": null,
+  "description": "Monotonic rise of the max-eta frequency from 2.3972 GHz at sigma = 0.3 to 2.4136 GHz at sigma = 300, while the bore magnetic fraction falls 2.7x (0.01003 -> 0.00369). MECHANISM: with Permittivity = 1.0 the plasma adds loss and no reactance, so at low sigma it barely moves the frequency; as sigma rises the skin depth collapses and field is excluded from the plasma volume, which is electrically like removing dielectric. Two observables, one story. ⚠️ This is a tuning range the design must cover if sigma is not pinned.",
+  "provenance": "FINDINGS entry 121 (R74): eta = 1 - |S11|^2 maximised over 2.38-2.48 GHz at 0.2 MHz step, order 1, on ONE hash-pinned mesh (wbarrel.msh, md5 ca8ca503, 126,012 tets, size-factor 1.06) with only the plasma material conductivity varied over sigma = 0.3/1/3/10/30/100/300 S/m. sigma = 30 reproduced R73's 79.3% at 2.4102 GHz as a known-answer case inside the sweep. Decomposition closes within 0.8 points, with eta_plasma computed independently as (sigma/eps0)*E_elec[90]/P_inc rather than by subtraction. Reproduce with `python3 rig_sigma.py` (or --replay to re-analyse).",
+  "frame": "delta"
+ },
+ "tune.settable_range": {
+  "value": 23.0,
+  "unit": "MHz",
+  "error": null,
+  "description": "🔑 THE TUNING SPEC. Frequency range the source must be SETTABLE over: 16.4 MHz of lit drift across a 1000x sigma bracket + 5.1 MHz of machining tolerance (cav.radius +/-0.2 mm x -12.86 MHz/mm) + 1.5 MHz of model scatter. This is a COMMISSIONING range, not a dynamic one — peak-find once per instrument and lock. Fits inside ISM 2.400-2.500 with 22 MHz below and 62 MHz above, i.e. 6x more band than needed. ✅ The 'no tuner, no moving parts' constraint survives: a frequency-agile solid-state source covers this and a mechanical tuner was never the thing at issue.",
+  "provenance": "FINDINGS entry 122 (R75): minimax over the seven eta(f) curves left by R74 (rig_sigma.py, one hash-pinned mesh, 501 points over 2.38-2.48 GHz). No new solve. Reproduce with `python3 tuner.py`.",
+  "frame": "delta"
+ },
+ "tune.cost_of_no_tuner": {
+  "value": [
+   52.0,
+   40.9,
+   28.6,
+   5.4,
+   0.2
+  ],
+  "unit": "percentage points of delivered power, at admitted sigma windows [1000x, 100x, 30x, 10x, 3x]",
+  "error": null,
+  "description": "🔑 What a FIXED-frequency source loses in worst-case delivered power, as a function of how much sigma uncertainty is admitted. Minimax: the single frequency maximising the worst-case eta over the window, against perfect per-sigma tracking. THE COST FALLS 52 -> 0.2 POINTS AS SIGMA IS PINNED FROM 1000x TO 3x — the tuner question is the sigma question again (AUDIT.md A5). Best fixed frequencies (order-1 raw): 2.4040 / 2.4046 / 2.4068 / 2.4092 / 2.4072 GHz.",
+  "provenance": "FINDINGS entry 122 (R75): minimax over the seven eta(f) curves left by R74 (rig_sigma.py, one hash-pinned mesh, 501 points over 2.38-2.48 GHz). No new solve. Reproduce with `python3 tuner.py`."
+ },
+ "tune.dynamic_range": {
+  "value": 5.4,
+  "unit": "percentage points",
+  "error": null,
+  "description": "Cost of NOT tracking sigma during operation, at a 10x runtime swing (0.2 points at 3x). Runtime variation — sample aspiration loading the plasma — is the only contributor that needs a real tuner; build-time uncertainty is a calibration step. ⚠️ The actual runtime sigma swing is UNMEASURED; these are the costs at assumed swings, not a measured requirement.",
+  "provenance": "FINDINGS entry 122 (R75): minimax over the seven eta(f) curves left by R74 (rig_sigma.py, one hash-pinned mesh, 501 points over 2.38-2.48 GHz). No new solve. Reproduce with `python3 tuner.py`."
+ },
+ "plasma.linewidth_lit": {
+  "value": 11.0,
+  "unit": "MHz",
+  "error": null,
+  "description": "Loaded linewidth f/Q_L at the assumed sigma = 30 (Q_L = Q0/(1+beta) = 300/1.375 = 219). Ranges 3.9-15.4 MHz over sigma = 0.3-300, narrowest at the low-sigma end where the cavity is least lossy. 🔑 THIS IS THE UNIT DRIFT MUST BE QUOTED IN: 16.4 MHz of sigma drift is ~1 lit linewidth and ~120 UNLIT linewidths (unlit Q_L ~ 18,000, linewidth ~0.13 MHz), an 85x broadening across ignition. ⚠️ CORRECTED by R76: the 0.13 MHz UNLIT figure quoted here is the DESIGN coupler's. The geometry actually simulated (sc06, beta = 34) has a 2.34 MHz cold linewidth — see te011.cold_linewidth_sc06. The 85x broadening claim applies to the design coupler, not to wbarrel.msh, where it is 4.7x.",
+  "provenance": "FINDINGS entry 122 (R75): minimax over the seven eta(f) curves left by R74 (rig_sigma.py, one hash-pinned mesh, 501 points over 2.38-2.48 GHz). No new solve. Reproduce with `python3 tuner.py`. Unlit figure derived from te011.q0 = 45,728 and loop.beta_unlit = 1.46, NOT measured on this geometry.",
+  "frame": "delta"
+ },
+ "te011.f_cold_sc06": {
+  "value": 2.39745,
+  "unit": "GHz",
+  "error": null,
+  "description": "🔑 COLD (unlit) TE011 resonance of the R73/R74 geometry — sc06 loop, mode filter 3 mm, length 88.53. ORDER-1 RAW: add offset.te011 (+24.54 MHz) for band placement, giving 2.42199 GHz, which is 22.0 MHz above the 2.400 LDMOS/ISM floor. This is the FLOOR of the operating excursion: lighting the plasma moves TE011 UP (+12.8 MHz at sigma=30, +16.2 MHz at sigma=300), monotonically. ⚠️ Specific to sc06 on this mesh, NOT the design coupler. [frame: ORDER-1 RAW — Add offset.te011 (+24.54 MHz) for TE011 or offset.tm020 (+20.06) for TM020 before any band-placement claim.]",
+  "provenance": "FINDINGS entry 123 (R76): rig_cold.py, coarse 2.36-2.46 GHz at 50 kHz (2001 pts) then fine +/-3 linewidths at 93.6 kHz, on the hash-pinned wbarrel.msh (md5 ca8ca503) used by R73/R74, with the lit material's Conductivity removed and its absence asserted at config-write time. Mode selected by BORE-H fraction, not by argmax(stored energy). Coarse and fine agree: Q_L 1,025 vs 1,024, Q0 identical to 5 figures, no step bias.",
+  "frame": "raw-order1"
+ },
+ "te011.cold_linewidth_sc06": {
+  "value": 2.341,
+  "unit": "MHz",
+  "error": null,
+  "description": "🔑 COLD loaded linewidth (FWHM of stored energy) with sc06. Q_L = 1,024, Q0 = 35,961, beta = 34.11 — badly OVERCOUPLED unlit, which is what broadens it. ⚠️ SUPERSEDES the 0.13 MHz quoted in R75, which was computed from the DESIGN coupler (te011.q0 45,728 with loop.beta_unlit 1.46) and does not apply to this geometry. The acquisition problem is 18x easier than R75 implied FOR THIS COUPLER, at the price of cold power transfer: see te011.eta_cold_sc06.",
+  "provenance": "FINDINGS entry 123 (R76): rig_cold.py, coarse 2.36-2.46 GHz at 50 kHz (2001 pts) then fine +/-3 linewidths at 93.6 kHz, on the hash-pinned wbarrel.msh (md5 ca8ca503) used by R73/R74, with the lit material's Conductivity removed and its absence asserted at config-write time. Mode selected by BORE-H fraction, not by argmax(stored energy). Coarse and fine agree: Q_L 1,025 vs 1,024, Q0 identical to 5 figures, no step bias.",
+  "frame": "delta"
+ },
+ "te011.eta_cold_sc06": {
+  "value": 11.1,
+  "unit": "percent",
+  "error": null,
+  "description": "Fraction of input power entering the COLD cavity on TE011 with sc06 (beta = 34.11, eta = 4b/(1+b)^2). 🔑 THE IGNITION TRADE, stated: overcoupling buys ACQUISITION (a 2.34 MHz target instead of 0.13 MHz) at the price of ignition POWER (11.1% instead of ~98% for the design coupler's beta = 1.46). Whether 11% of the amplifier suffices to light is an ignition-study question, not an EM one.",
+  "provenance": "FINDINGS entry 123 (R76): rig_cold.py, coarse 2.36-2.46 GHz at 50 kHz (2001 pts) then fine +/-3 linewidths at 93.6 kHz, on the hash-pinned wbarrel.msh (md5 ca8ca503) used by R73/R74, with the lit material's Conductivity removed and its absence asserted at config-write time. Mode selected by BORE-H fraction, not by argmax(stored energy). Coarse and fine agree: Q_L 1,025 vs 1,024, Q0 identical to 5 figures, no step bias."
+ },
+ "te011.q_ext_cold_sc06": {
+  "value": 1054.0,
+  "unit": "dimensionless",
+  "error": null,
+  "description": "External Q of sc06 from the COLD measurement: Q_ext = Q0/beta = 35,961/34.11. ✅ Independently corroborates loop.q_ext_min_measured = 1,084 (R70) to 2.8%, by an unrelated route — R70 used a lit/driven linewidth, this uses an unlit energy ratio divided by a branch-resolved beta. Also settles the branch: sc06 is OVERCOUPLED unlit and UNDERCOUPLED lit (match.coupling_branch).",
+  "provenance": "FINDINGS entry 123 (R76): rig_cold.py, coarse 2.36-2.46 GHz at 50 kHz (2001 pts) then fine +/-3 linewidths at 93.6 kHz, on the hash-pinned wbarrel.msh (md5 ca8ca503) used by R73/R74, with the lit material's Conductivity removed and its absence asserted at config-write time. Mode selected by BORE-H fraction, not by argmax(stored energy). Coarse and fine agree: Q_L 1,025 vs 1,024, Q0 identical to 5 figures, no step bias."
+ },
+ "cavity.interloper_mode": {
+  "value": 2.4304,
+  "unit": "GHz",
+  "error": null,
+  "description": "🔴 IGNITION HAZARD. An UNIDENTIFIED resonance 33 MHz above cold TE011, order-1 raw. Not TM111 (tm111.f_filtered = 2.35094) and not TM020 (2.3695 here, bore-E dominant). Neither bore-E nor bore-H dominant: bore-H 0.00395, bore-E 0.00158, Q0 17,097. 🔑 COLD IT TAKES 46.5% OF INPUT POWER AGAINST TE011's 11.1% — a 4.2x advantage in exactly the ignition state, so an amplifier that cold-starts by peak-finding on reflected power LOCKS ONTO THE WRONG MODE. Command the ignition frequency; do not search for it. ⚠️ It also has 4.7x more bore-E than TE011, so it may be an ignition OPPORTUNITY rather than purely a hazard — unresolved. Collapses to 16.3% when lit at sigma=30 while TE011 rises to 79.3%. [frame: ORDER-1 RAW — ⚠️ offset to converged is NOT MEASURED for this mode, so no band-placement claim can be made from it.]",
+  "provenance": "FINDINGS entry 123 (R76): rig_cold.py, coarse 2.36-2.46 GHz at 50 kHz (2001 pts) then fine +/-3 linewidths at 93.6 kHz, on the hash-pinned wbarrel.msh (md5 ca8ca503) used by R73/R74, with the lit material's Conductivity removed and its absence asserted at config-write time. Mode selected by BORE-H fraction, not by argmax(stored energy). Coarse and fine agree: Q_L 1,025 vs 1,024, Q0 identical to 5 figures, no step bias.",
+  "frame": "raw-order1"
+ },
+ "te011.cold_to_lit_excursion": {
+  "value": 12.8,
+  "unit": "MHz",
+  "error": null,
+  "description": "TE011 shift from cold to lit at the assumed sigma = 30, on one frozen mesh: 2.39745 -> 2.41020 GHz. Upward and monotonic in sigma (+16.2 MHz at sigma = 300). In the units a control loop sees: 5.4 COLD linewidths (2.34 MHz) but only 1.2 LIT linewidths (11 MHz), because the resonance broadens as it moves. SUPERSEDES R10's +16-24 MHz for THIS geometry; R10 measured a different one.",
+  "provenance": "FINDINGS entry 123 (R76): rig_cold.py, coarse 2.36-2.46 GHz at 50 kHz (2001 pts) then fine +/-3 linewidths at 93.6 kHz, on the hash-pinned wbarrel.msh (md5 ca8ca503) used by R73/R74, with the lit material's Conductivity removed and its absence asserted at config-write time. Mode selected by BORE-H fraction, not by argmax(stored energy). Coarse and fine agree: Q_L 1,025 vs 1,024, Q0 identical to 5 figures, no step bias.",
+  "frame": "delta"
+ },
+ "groove.slot_modes_identified": {
+  "value": true,
+  "unit": "boolean",
+  "error": null,
+  "description": "🔑 The low-Q family the groove introduces are modes OF THE SLOT, established by measuring energy inside a separately-tagged groove volume rather than by inference. They carry 17-52% of their total energy in the slot; TE011 carries 0.6%. Supersedes two failed inferences: R77's TM111 identification (retracted) and R78's dielectric-resonance hypothesis (killed by its own control — the mode survives quartz removal).",
+  "provenance": "FINDINGS entry 126 (R81): rig_r81.py, groove given its own mesh attribute (geometry.py --tag-groove, TAG 13) and Palace Energy index 80, so groove_frac = p_elec[80]+p_mag[80] (scale 0-2; halve for share of total energy). Cold, order 1, sectors 5, sc06 loop, 3 mm width, depths 15/21/26 in one meshsweep at size-factor 1.0. Reproduce: python3 rig_r81.py"
+ },
+ "groove.te011_energy_in_slot": {
+  "value": 0.6,
+  "unit": "percent",
+  "error": null,
+  "description": "Share of TE011's total energy inside the groove at 15 and 21 mm depth, 3 mm width. TE011 is a CAVITY mode the groove perturbs from outside. 🔑 Consistent with the closed-form result that TE modes are BLIND at the cap/barrel corner: J'_m(chi'_mn) = 0 at the wall kills H_r and E_phi, and H_z = 0 at the cap. Not fitted — definitional.",
+  "provenance": "FINDINGS entry 126 (R81): rig_r81.py, groove given its own mesh attribute (geometry.py --tag-groove, TAG 13) and Palace Energy index 80, so groove_frac = p_elec[80]+p_mag[80] (scale 0-2; halve for share of total energy). Cold, order 1, sectors 5, sc06 loop, 3 mm width, depths 15/21/26 in one meshsweep at size-factor 1.0. Reproduce: python3 rig_r81.py"
+ },
+ "groove.hybridisation_depth": {
+  "value": 26.0,
+  "unit": "mm",
+  "error": null,
+  "description": "🔴 Depth at which TE011 HYBRIDISES with a slot mode at 3 mm width: TE011's in-slot energy rises to 15.7% (26x its 21 mm value) while keeping pm/pe 50.2, and Q0 collapses 32,662 -> 7,572. This distinguishes hybridisation (TE011 moving INTO the slot) from a slot mode merely swamping it — they were the two candidate failures and they have different fixes. AVOID this depth.",
+  "provenance": "FINDINGS entry 126 (R81): rig_r81.py, groove given its own mesh attribute (geometry.py --tag-groove, TAG 13) and Palace Energy index 80, so groove_frac = p_elec[80]+p_mag[80] (scale 0-2; halve for share of total energy). Cold, order 1, sectors 5, sc06 loop, 3 mm width, depths 15/21/26 in one meshsweep at size-factor 1.0. Reproduce: python3 rig_r81.py"
+ },
+ "reproducibility.degeneracy_sensitivity": {
+  "value": 178.0,
+  "unit": "percent",
+  "error": null,
+  "description": "🔑 THE TEST FOR AN UNMEASURABLE POINT. A 0.16% mesh change (143,395 -> 143,623 tets, from tagging the groove — bookkeeping only, same geometry and same materials) swings TE011's pm/pe by 178% and Q0 by 73% at a 15 mm groove, against 3% and 2% at 21 mm. Near a degeneracy the quantity is a property of the DISCRETISATION, not of the design. 🔴 R59's report of 15 mm as a catastrophe (Q0 18,027) is WITHDRAWN: 15 mm is a point where nothing is measurable, which is a different claim. **Before quoting a value near a mode crossing, perturb the mesh and check it survives.**",
+  "provenance": "FINDINGS entry 126 (R81): rig_r81.py, groove given its own mesh attribute (geometry.py --tag-groove, TAG 13) and Palace Energy index 80, so groove_frac = p_elec[80]+p_mag[80] (scale 0-2; halve for share of total energy). Cold, order 1, sectors 5, sc06 loop, 3 mm width, depths 15/21/26 in one meshsweep at size-factor 1.0. Reproduce: python3 rig_r81.py | withdraws the 15 mm row of FINDINGS entry 125 (R59)"
+ },
+ "match.c1_category_error": {
+  "value": "withdrawn",
+  "unit": "categorical",
+  "error": null,
+  "description": "🔴 C1 ('TE011 azimuthal purity <= quartz') rejected ten filter geometries across depth and width and is WITHDRAWN as mis-assigned. Azimuthal purity is a property of the DRIVE, not the resonator: a filter changes which modes exist and where they sit, not what the source excites. The floor is the coupler's — 0.0046 with the design loop vs 0.0263 with sc06 on the same nominal cavity (5.7x), and no groove reached below 0.0372 — so the criterion was unachievable by construction. ⚠️ Three further mis-categorisations: cold measurement for a lit consequence (the plasma takes >=96.8% of absorbed power); whole-cavity air bins for a plasma-torus question; stored energy where the physics is the integral of sigma|E|^2 over phi. **The (w,d) verdicts of R59/R80 do not survive this.** ⚠️ NARROWED by R83 (entry 130): the filter DOES have leverage — 2.1-4.4x on lit deposition uniformity — so C1 was not wholly mis-assigned. See match.filter_vs_coupler_split.",
+  "provenance": "FINDINGS entry 126 (R81)"
+ },
+ "match.c1_prime_deposition_nonuniformity": {
+  "value": 0.46,
+  "unit": "dimensionless, (P_max-P_min)/P_mean",
+  "error": null,
+  "description": "🔑 THE REPLACEMENT FOR C1. Azimuthal non-uniformity of DEPOSITED POWER in the plasma torus, lit — an outcome, in the right region, in the right state, as a within-configuration RATIO. Value quoted is the quartz 3 mm filter; bare is 0.98 (opaque) to 2.06 (transparent). ✅ A 9.3x reduction in cold azimuthal bin1 buys 4.4x better deposition uniformity transparent and 2.1x opaque, so C1's referent is REAL. ✅ Regime-independent for a good design: quartz gives 0.468 vs 0.459 across a 10x range in delta/t. ⚠️ Even quartz is 46% non-uniform; whether that is acceptable is an analytical-chemistry spec, not an EM one, and is UNANSWERED. ⚠️ Measured at 5 sectors, so an m=5 deposition pattern would read as uniform (R82).",
+  "provenance": "FINDINGS entry 130 (R83): rig_r83.py — plasma toroid split into 5 azimuthal sectors (geometry.py --plasma-sectors, attributes 20-24, one Energy index each), lit, deposited power per sector = (sigma/eps0)*E_elec. Two configurations x two regimes, one meshsweep at size-factor 1.0."
+ },
+ "match.filter_vs_coupler_split": {
+  "value": "filter controls degeneracy, coupler sets the floor",
+  "unit": "categorical",
+  "error": null,
+  "description": "🔑 NARROWS the category-error claim of FINDINGS entry 126, which said azimuthal purity is a property of the DRIVE and not the resonator. R83 shows the filter has real leverage (2.1-4.4x on deposition uniformity), because 'bare' is not a filter variant but the cavity with the chi'01 = chi11 degeneracy unbroken. Correct split: THE FILTER REMOVES DEGENERATE-MODE CONTAMINATION; THE COUPLER SETS THE RESIDUAL FLOOR. C1 conflated the two and set its threshold below the un-assignable part, which is why ten geometries failed it by construction.",
+  "provenance": "FINDINGS entry 130 (R83), narrowing entry 126"
+ },
+ "optics.light_trap": {
+  "value": 0.06,
+  "unit": "percent of Q",
+  "error": null,
+  "description": "✅ R57 CLOSED. Q cost of the light-trap aperture at 10 mm, diametrically opposite the viewport, with an EXTERNAL absorber. Analytic from d^3 on the viewport's measured 0.9% at 25 mm. 🔑 NOT measurable here — 42x below R89's 2.5% mesh Q0 noise floor. Below cutoff by 7.2x (TE11 at 17.6 GHz), ~108 dB over 20 mm. 🔑 THE TRAP MUST MATCH THE VIEWPORT — it absorbs exactly the cone the viewport sees; the diameter follows from the spectrometer f-number (optics.aperture_rule), the MATCHING does not.",
+  "provenance": "FINDINGS entry 135 (R57); geometry verified to build at 159,677 tets with loop 36 / viewport 108 / trap 288 deg, all sector centres at N=5."
+ },
+ "optics.azimuthal_allocation": {
+  "value": [
+   36.0,
+   108.0,
+   288.0
+  ],
+  "unit": "degrees [loop, viewport, trap]",
+  "error": null,
+  "description": "Azimuthal placement at N=5 sectors. All three are sector CENTRES, so none straddles a sector plane (R32's tag collision), and viewport/trap are exactly opposed as the optics require. ⚠️ Buildable only since the fuse_radial fix of entry 135 — before it, a radial stub was fused into every wedge and classification failed at ns > 1.",
+  "provenance": "FINDINGS entry 135 (R57), adopting entry 93's proposal."
+ },
+ "optics.aperture_rule": {
+  "value": 10.0,
+  "unit": "mm [viewport = trap diameter]",
+  "error": null,
+  "description": "🔑 Both apertures are set by SPECTROMETER ETENDUE, not by Q. d = 2*L*tan(atan(1/2F)) + source, with L = 103.7 mm plasma-to-wall and ~3 mm of imaged analytical zone: f/15 -> 10 mm, f/12 -> 12, f/10 -> 13, f/8 -> 16, f/6 -> 20. Value quoted is f/15, an Echelle — the usual ICP-OES choice because one exposure covers the whole panel. 🔴 SUPERSEDES the 25 mm viewport, which entry 14b introduced as a Q TEST SIZE and which became a spec by repetition with no optical justification. ⚠️ The f-number is an instrument spec nobody has stated (R92) and it is the only thing that sets these.",
+  "provenance": "FINDINGS entry 136. Q cost is negligible at every value in the table (0.06% at 10 mm to 0.46% at 20 mm), so Q does not constrain the choice."
+ },
+ "match.rival_separation_criterion": {
+  "value": 11.0,
+  "unit": "half-linewidths of the RIVAL",
+  "error": null,
+  "description": "🔑 REPLACES 'keep TM020 out of band' (R39) and the invented C5 (>=23.4 MHz). What matters is not band membership but distance from the DRIVE FREQUENCY in units of the rival's OWN linewidth: a rival contributes its Lorentzian tail there, not its peak. ~11 half-linewidths keeps a rival below 1% of TE011's power — about 17 MHz for a 3 MHz-wide mode. Measured worst case with every rival given the overcoupled branch of eta=4b/(1+b)^2 to maximise its width: total rival power at the drive frequency is 0.085-0.438% across three meshes, against TE011's 10-15%. ✅ Satisfies the entry-133 LOD gate: path is power diverted from TE011 -> temperature -> excitation -> sensitivity, and the threshold is DERIVED. ⚠️ Assumes isolated modes — fails near degeneracy (the 15 mm groove). ⚠️ Says nothing about ACQUISITION: a sweeping amplifier passes through every rival.",
+  "provenance": "FINDINGS entry 137 (R90), from the R89 sweep's separations and Q0 values — the quantities R89 showed stable (1.55 MHz, 2.5%), not eta."
+ },
+ "tune.control_loop_bandwidth": {
+  "value": 1000.0,
+  "unit": "Hz",
+  "error": null,
+  "description": "🔑 First derivation of the spec README open risk 5 says does not exist. The cold->lit transient moves TE011 +12.8 MHz over the recorded bootstrap time (20 ms at 20 slm, 82 ms at 5 slm), i.e. 156-640 MHz/s. The resonance traverses one COLD linewidth (2.34 MHz) in 3.7-15 ms, so the loop must respond in ~1-4 ms: 67-274 Hz, call it 1 kHz with margin. ✅ The requirement RELAXES through the transient because the line broadens 2.34 -> 11 MHz; the tightest instant is the first. Slewing is trivial for a DDS/PLL — the constraint is how fast reflected power can be measured and acted on.",
+  "provenance": "FINDINGS entry 138 (R93), from te011.cold_to_lit_excursion, te011.cold_linewidth_sc06 and the bootstrap times at FINDINGS ~3234."
+ },
+ "tune.hot_start_offset": {
+  "value": -57.2,
+  "unit": "kHz/K",
+  "error": null,
+  "description": "🔴 THE STATE R75'S BUDGET MISSED. A warm cavity's cold resonance sits below the room-temperature one by 57.2 kHz per K — 0.6 cold linewidths at +25 K, 1.2 at +50 K, 2.4 at +100 K. **A single commanded cold-start frequency MISSES above ~50 K**, so the command must be temperature-compensated or re-acquired per start. Also governs re-ignition after an extinction, where f has already dropped 12.8 MHz (5.5 cold linewidths) and the cavity is hot. ⚠️ The actual temperature rise is UNMEASURED (R94) and is the only thing that sets the magnitude.",
+  "provenance": "FINDINGS entry 138 (R93). Rate from CTE 23.6e-6/K on 6061, cross-checked against sens.dte011_da and sens.dte011_dl (-2.79 vs -2.86 MHz at 50 K, 2% agreement)."
+ },
+ "torch.material_plan": {
+  "value": "all sapphire, EFG, PERMANENT (not a swappable consumable); raw as-grown inner two, outer diamond-lapped in+out over the viewing zone only",
+  "unit": "categorical",
+  "error": null,
+  "description": "R98 FINAL. Quartz was eliminated 2026-08-15 on FLUORIDE, not devitrification: Mehlich-3 carries 0.015 M NH4F -> HF in situ; SiF4 boils at -86 C so quartz volatilises, while AlF3 is solid to 1276 C so sapphire passivates self-limitingly at 3-5 nm and SMOOTHS (RMS 2.6 -> <1.0 nm, 213.8 nm scatter 0.011%). EFG is FORCED regardless -- sapphire cannot be flame-worked. Only the outer tube is in the optical path (R96), and fluoride smooths rather than roughens, so as-grown is the right finish for the inner two, not a compromise. Both outer surfaces (ID 8.5, OD 10) are in the path and both need lapping. RF share: outer 73.2%, intermediate 26.3%, injector 0.5%. All-sapphire is CTE-MATCHED. NO LONGER CONTINGENT ON R18 -- R18 is withdrawn as moot.",
+  "provenance": "Entries 66/68/69/72 (2026-08-15, fluoride + R43 passivation), R96 (RF share, optical path), R98 (the correction and the lap zone). OPEN: the LAP-ZONE AXIAL LENGTH is the collection field of view = R92, so the spectrometer f-number sets viewport aperture, trap aperture AND the extent of the most expensive surface finish in the build."
+ },
+ "cav.length_torch_all_sapphire": {
+  "value": 87.97,
+  "unit": "mm",
+  "error": null,
+  "description": "[R111 renamed from `cav.length_all_sapphire` — the old name did not say WHICH parts were sapphire, and that ambiguity cost a correction mid-session.] Cavity length for the PRODUCTION all-sapphire torch (outer, intermediate and injector). This is the build now chosen (R98).",
+  "provenance": "R98 = cav.length_sapphire 88.12 minus the 0.15 mm the inner two tubes add when converted from quartz (R96 field-weighted, 1.8 MHz at dTE011/dL = -13.06 MHz/mm). Not yet solved directly -- R96's split is an estimate, so treat 87.97 as +/-0.05 pending a direct all-sapphire solve."
+ },
+ "cav.shim_quartz_to_all_sapphire": {
+  "value": 0.56,
+  "unit": "mm",
+  "error": null,
+  "description": "[R111 renamed from `cav.shim_all_sapphire` — the old name did not say WHICH parts were sapphire, and that ambiguity cost a correction mid-session.] SUPERSEDED 2026-08-19 (R99): DELETED AS A PART. The torch is a permanent all-sapphire feature, not a swappable consumable, so there is no second material to convert to. Machine the cavity to cav.length_all_sapphire 87.97 directly. Kept for provenance only. A shim is also a cap/barrel seam: invisible to TE011 (J'0 = 0, no current crosses the corner) but a current path and arc site for TM020/TM111 -- deleting it removes a rival-mode loss path at zero cost to the operating mode. Previously: Spacer converting the all-sapphire cavity body to the quartz development length. The commissioning path (build in quartz, fit sapphire when proven) needs THIS value, not 0.41.",
+  "provenance": "R98: cav.length_quartz 88.53 - cav.length_all_sapphire 87.97. Entry 139 said 0.56 mm was 'absorbed by the 0.41 mm shim'; 0.56 > 0.41 and it is not. Stock-thickness change, no redesign."
+ },
+ "torch.eps_sapphire": {
+  "value": 11.6,
+  "unit": "dimensionless",
+  "error": null,
+  "description": "Sapphire relative permittivity AS THE TE011 FIELD SEES IT. Sapphire is uniaxial: 11.6 perpendicular to c, 9.4 parallel. E_phi is perpendicular to c when the c-axis is longitudinal, so 11.6 is the design value. 9.4 is 23% low and would mis-size the cavity by several mm.",
+  "provenance": "R32 measured c-longitudinal reproducing isotropic 11.6 exactly (f 2.4053, CV 0.0053, boreH 3.085 identical). R98 corrected geometry.py's --torch-material help, which hinted 9.4. c-axis orientation is PREFERRED, NOT MANDATORY: R32 measured transverse at +1.1 MHz and 0.11% of a full m=2."
+ },
+ "torch.separability": {
+  "value": "tube materials separable; plasma geometry not",
+  "unit": "categorical",
+  "error": null,
+  "description": "R98 architectural rule. The torch TUBES enter the cavity through exactly two scalars: eps -> resonant length (0.56 mm on 88.53 = 0.63%, absorbed by cav.shim_all_sapphire) and tand -> Q (-0.8% of total loss, and it IMPROVES). Separation holds BECAUSE the perturbation is sub-1% -- a small parameter, not an assumption; re-earn it if a future tube exceeds a few percent. LIMIT: the PLASMA is NOT separable. The torch sets where the plasma sits (r 4.5-8.5, z -20..10) and the plasma IS the load, so sigma, position and volume determine eta. In the harness the line falls between --torch-tube/--intermediate/--injector/--torch-material (separable) and --plasma (not).",
+  "provenance": "R98. Magnitudes from R96 field-weighted shares and R46's dTE011/dL. Same principle as R32 and the brake result: a large dielectric effect where the field is weak is still a small effect."
+ },
+ "geometry.torch_default": {
+  "value": [
+   11.6,
+   3.5e-05
+  ],
+  "unit": "[eps_r, tand]",
+  "error": null,
+  "description": "geometry.py P['torch_eps'] / P['torch_tand'] default, FLIPPED from quartz [3.78, 1.0e-4] to sapphire on 2026-08-19 (R99) because the build is permanent sapphire and defaulting to quartz models a cavity we are not building. MESH BOUNDARY: every mesh before this is quartz, every mesh after is sapphire -- DO NOT DIFFERENCE ACROSS IT. Mesh time now prints the material by name; the sidecar records geometry_mm.torch_material either way.",
+  "provenance": "R99. Quartz remains reachable as --torch-material 3.78,1e-4."
+ },
+ "tm020.f_sapphire": {
+  "value": 2.20462,
+  "unit": "GHz",
+  "error": null,
+  "frame": "converged",
+  "description": "TM020 at the all-sapphire torch point (eps 11.6). MEASURED 2026-08-19 (R99b), converted from raw-order1 2.18240 by the differential against tm020.f_converged -- never by comparing raw to an absolute.",
+  "provenance": "R99/R99b, six driven solves on three meshes. Quartz TM020 2.37330 raw -> sapphire 2.18240 raw = -190.9 MHz, applied to tm020.f_converged 2.39552. Identity by bore-E signature (2.36% quartz, 2.27% sapphire). Null control: L=88.53 vs 87.97 agree to 0.40 MHz (dTM020/dL = 0) while TE011 moves 5.85 MHz for the same dL."
+ },
+ "tm020.floor_clearance_sapphire": {
+  "value": 195.4,
+  "unit": "MHz",
+  "error": null,
+  "description": "TM020's margin below the 2.400 GHz band floor with a sapphire torch, against a declared threshold of 4.4 MHz (= |dTM020/da| 22 MHz/mm x the +/-0.2 mm radius callout). PASSES BY 44x. Was 5.7-6.0 MHz in the quartz build -- the single tightest margin in the design, now the loosest.",
+  "provenance": "R99b via evaluate.r99(); see r99.criteria.json.",
+  "frame": "delta"
+ },
+ "te011.dfdL": {
+  "value": -11.89,
+  "unit": "MHz/mm",
+  "error": 1.21,
+  "frame": "delta",
+  "description": "dTE011/dL, 5-length least-squares fit over a 2 mm span in the product family (sapphire, viewport+trap ON). CONSISTENT WITH R46's -13.06 at 0.97 sigma -- the '20% discrepancy' R99 reported was a 2-point slope with no error bar (-10.4 +/- 4.9). Viewport+trap change nothing: ladder B without them gives -12.19 +/- 2.16, a 0.12 sigma difference. error is sigma_slope, NOT a tolerance. ⚠️ R105: per-mesh scatter is 1.3-3.3 MHz, so the +/-1.21 sigma_slope here is dominated by meshing, not by physics.",
+  "provenance": "R103, 8 driven solves. Per-point mesh scatter sigma = 1.92 MHz over Sxx = 2.53 mm^2. See r103.criteria.json and evaluate.r103()."
+ },
+ "mesh.frequency_scatter": {
+  "value": 1.33,
+  "unit": "MHz",
+  "error": 1.96,
+  "frame": "delta",
+  "description": "🔑 PER-MESH REALISATION SCATTER (1 sigma) on a solved frequency, order-1 driven, sf 0.96, ~165k tets, well-separated mode. THE FLOOR ON ANY FREQUENCY DIFFERENCE THIS HARNESS REPORTS. value = ladder N (5 pts, 4 dof, clean); error carries the gap to ladder C's 3.29 MHz, which is an UPPER BOUND (4 pts, 2 dof, contaminated by the assumed h^2 law). ⚠️ THE DECLARED 2x CROSS-CHECK FAILED at 2.48x, so sigma is BOUNDED 1.3-3.3, not measured -- quote differences against 3.3 when being careful. ✅ The SOLVER contributes ZERO: a duplicated mesh gave +0.0000 MHz. All scatter is mesh GENERATION. 🔴 NOT valid near a degeneracy -- the record has a 0.16% mesh change swinging pm/pe 178% there.",
+  "provenance": "R105, 9 driven solves. Ladder N: L +/-7.5 um at fixed sf, true change 0.18 MHz, observed peak-to-peak 3.40 MHz (19x). Ladder C: sf 1.20/1.06/0.96/0.90 at fixed geometry, monotonic. sf 1.00 and 0.85 FAILED to mesh. See r105.criteria.json and evaluate.r105()."
+ },
+ "mesh.constructibility": {
+  "value": [
+   1.2,
+   1.06,
+   0.96,
+   0.9
+  ],
+  "unit": "size factors that meshed",
+  "error": null,
+  "description": "Size factors that produced a VALID order-2 curved mesh for the design geometry. 1.00 and 0.85 FAILED ('Failed to reach critical value in pass 1 for measure(s): ScaledJac') -- 2 of 6 candidates. This is why meshsweep.FACTORS is a candidate LIST tried in order, and why a sweep that sets the size factor itself must tolerate failures rather than abort.",
+  "provenance": "R105 ladder C, 2026-08-19."
+ },
+ "filter.material_decision": {
+  "value": "fused quartz",
+  "unit": "categorical",
+  "error": null,
+  "description": "R107, SAME-MESH: a sapphire filter gives TE011 Q0 31,500 vs quartz's 34,682 -- 9.2% WORSE. eps 11.6 pulls more field into the annulus than 3x lower tand recovers. The extra separation is worthless (TM111 already 66.7 MHz away; R90 rivals <0.5% at drive). 🔑 THE FILTER IS THE ONE PART THAT SHOULD NOT FOLLOW THE TORCH TO SAPPHIRE.",
+  "provenance": "R107 on s99sa.msh attribute 8; one mesh, so no meshing noise."
+ },
+ "filter.mechanism": {
+  "value": "prevents hybridisation",
+  "unit": "categorical",
+  "error": null,
+  "description": "🔑 R107 SUPERSEDES the framing that the filter buys frequency separation at a Q cost. WITHOUT the filter there is NO TE011: it and TM111 hybridise into two mixed modes whose bore-E (0.103%, 0.179%) averages to 0.141% -- EXACTLY the mean of the pure modes (0.034%, 0.247%) -- the signature of a two-mode avoided crossing. Q averages the same way. Removing the filter costs 21% of TE011's Q and NONE of it is dielectric loss; the mode simply becomes half TM111 (Q 19,692).",
+  "provenance": "R107, same-mesh, three filter materials on s99sa.msh."
+ },
+ "filter.q_cost_vs_bare": {
+  "value": null,
+  "unit": "percent",
+  "error": null,
+  "description": "[R111 renamed from `filter.q_cost_r39_superseded` — the old name did not say WHICH parts were sapphire, and that ambiguity cost a correction mid-session.] 🔴 R39's 'quartz filter costs 5.6% of Q' is NOT REPRODUCED. R107 same-mesh gives -21% (the filter RAISES Q). R39 most likely compared against the groove rather than against bare. ⚠️ Both 5.6% and the groove's 6.0% gain sit UNDER the 6.9% cross-mesh Q reproducibility floor, so neither was ever a supported number. Value set to null = UNMEASURED, per the error/null convention.",
+  "provenance": "R107 supersedes R39/R54 on this quantity."
+ }
+}

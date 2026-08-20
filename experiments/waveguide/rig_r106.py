@@ -1,0 +1,116 @@
+"""R106 — re-measure the order-1 -> order-2 offset IN THE FAMILY WE NOW BUILD.
+
+R105 extrapolated ladder C to h -> 0 and got +42.5 MHz above the sf=0.96 solve,
+against a recorded offset.te011 of +24.54, and I opened R106 on the gap.
+
+🔴 THAT COMPARISON WAS BETWEEN TWO DIFFERENT LIMITS. Reading the provenance:
+
+    offset.te011 = 24.54   "order 1 vs order 2 driven on the SAME mesh
+                            (choff.msh, size-factor 0.96), 2.41692 -> 2.44146"
+
+It is a SOLVER-ORDER correction at fixed h. My ladder was a MESH-REFINEMENT limit
+at fixed order 1. Both should approach the same truth, but they are not the same
+quantity, and a 4-point extrapolation on an assumed h^2 law with 2 dof is much the
+weaker of the two — R38b confirmed order 2 drifts only 0.02 MHz between densities
+0.96 and 0.90, which is a far stronger convergence check than anything R105 did.
+
+✅ SO R106'S PREMISE IS LARGELY WITHDRAWN. But one real question survives, and the
+baseline itself states it:
+
+    "GEOMETRY-DEPENDENT: re-measure whenever the geometry moves materially."
+
+🔑 THE GEOMETRY HAS MOVED MATERIALLY. The offset was measured on a QUARTZ torch
+with NO viewport and NO light trap. We now build SAPPHIRE (eps 3.78 -> 11.6, which
+R99 measured moving TM020 by 190.9 MHz) with a 10 mm viewport and a 10 mm trap.
+The offset has never been re-measured there, and EVERY converged frequency in the
+record passes through it.
+
+WHAT THIS RUN IS: two order-2 driven solves on meshes that ALREADY EXIST. No
+meshing, no new geometry. The order-1 answers are already in hand:
+
+    s99sa      sf 0.96   164,700 tets   order-1 f = 2.39365
+    r105c1p06  sf 1.06   126,712 tets   order-1 f = 2.39125
+
+════════════════════════════════════════════════════════════════════════════════
+CRITERIA, DECLARED BEFORE THE RUN
+════════════════════════════════════════════════════════════════════════════════
+
+1. PRIMARY — offset_new = f(order 2) - f(order 1) on the SAME MESH, sf 0.96.
+   This is exactly the quantity offset.te011 holds, measured the same way, in the
+   current family. Compare against +24.54.
+
+2. CONVERGENCE — |f(order 2, sf 0.96) - f(order 2, sf 1.06)| must be small for
+   the order-2 result to be called converged. R38b's standard was 0.02 MHz
+   between 0.96 and 0.90; 1.06 is COARSER than 0.90, so this is a more demanding
+   pair and a drift up to a few tenths of a MHz is still acceptable.
+   🔴 If order 2 drifts by more than the R105 mesh floor (1.33 MHz), then order 2
+   is NOT converged in this family and the offset cannot be quoted at all.
+
+3. 🔑 THE SAME-MESH REQUIREMENT IS THE WHOLE POINT. The offset is a difference of
+   two solves on ONE mesh, so per-mesh realisation scatter (R105: 1.3-3.3 MHz)
+   CANCELS EXACTLY — R105 proved the solver is deterministic, giving +0.0000 MHz
+   on a duplicated mesh. This is the one measurement in the record that is immune
+   to the noise floor, and it is immune only because nothing about the mesh
+   changes between the two numbers.
+
+4. IDENTITY — TE011 by lowest bore-E among high bore-H, at both orders. An
+   order-2 solve resolves modes the order-1 band may have merged, so the mode
+   list may be LONGER; that is expected and is not a failure.
+
+⚠️ Order 2 has ~3.3x the DOFs per element (20 vs 6 on a tet), so memory is the
+   risk here, not time. sf 1.06 is solved FIRST as the cheaper case: if it blows
+   up, sf 0.96 will too, and finding that out costs 126k tets instead of 165k.
+"""
+import json
+import pathlib
+import subprocess
+import sys
+import time
+
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+import results
+import solveconf
+import solver
+
+CASES = [("r106o2c", "r105c1p06.msh", 1.06),   # coarser first — cheap failure
+         ("r106o2f", "s99sa.msh", 0.96)]
+BAND, STEP = (2.39, 2.47), 5e-5
+PALACE = str(pathlib.Path.home() / ".local/opt/palace/bin/palace")
+
+
+def run(tag, mesh):
+    m = solveconf.load_meta(mesh)
+    pl = m["attributes"].get("plasma")
+    c, m, _ = solveconf.driven(mesh, tag, BAND, step=STEP, order=2,
+                               materials={pl: {"Permittivity": 1.0,
+                                               "Permeability": 1.0}})
+    assert c["Solver"]["Order"] == 2, "this run is meaningless at order 1"
+    pathlib.Path(f"{tag}.json").write_text(json.dumps(c, indent=2))
+    print(f"  {tag}: {mesh} {m['tets']:,} tets, SOLVER ORDER 2", flush=True)
+    t0 = time.time()
+    rc = subprocess.run([PALACE, "-np", "4", f"{tag}.json"], env=solver.ENV,
+                        stdout=open(f"{tag}_p.log", "w"),
+                        stderr=subprocess.STDOUT,
+                        timeout=solver.DEFAULT_TIMEOUT_S).returncode
+    dt = time.time() - t0
+    if rc or dt < solver.MIN_SECONDS:
+        tail = pathlib.Path(f"{tag}_p.log").read_text().strip().splitlines()
+        raise RuntimeError(f"{tag}: rc={rc} in {dt:.0f}s — "
+                           f"{tail[-1] if tail else '(empty log)'}")
+    print(f"    solved in {dt:.0f}s", flush=True)
+
+
+print(__doc__)
+print("=" * 78, flush=True)
+for tag, mesh, _sf in CASES:
+    run(tag, mesh)
+results.sweep([t for t, _m, _s in CASES], "r106",
+              extra=dict(question="is offset.te011 = +24.54 still right for the "
+                                  "sapphire + viewport + trap family?",
+                         recorded_offset_mhz=24.54,
+                         order1_same_mesh={"r106o2f": 2.39365,
+                                           "r106o2c": 2.39125},
+                         convergence_gate_mhz=1.33,
+                         note="offset is a SAME-MESH difference, so R105's "
+                              "mesh scatter cancels exactly"))
+print("\n  ⚠️ NO VERDICT HERE — run evaluate.py r106", flush=True)

@@ -1,0 +1,68 @@
+{
+  "Problem": {
+    "Type": "Driven",
+    "Verbose": 2,
+    "Output": "postpro/wg"
+  },
+  "Model": {
+    "Mesh": "wg340.msh",
+    "L0": 1.0
+  },
+  "Domains": {
+    "Materials": [
+      {
+        "Attributes": [
+          1
+        ],
+        "Permittivity": 1.0,
+        "Permeability": 1.0
+      }
+    ]
+  },
+  "Boundaries": {
+    "PEC": {
+      "Attributes": [
+        12
+      ]
+    },
+    "WavePort": [
+      {
+        "Index": 1,
+        "Attributes": [
+          10
+        ],
+        "Mode": 1,
+        "Offset": 0.0,
+        "Excitation": true
+      },
+      {
+        "Index": 2,
+        "Attributes": [
+          11
+        ],
+        "Mode": 1,
+        "Offset": 0.0
+      }
+    ]
+  },
+  "Solver": {
+    "Order": 2,
+    "Device": "CPU",
+    "Driven": {
+      "Samples": [
+        {
+          "Type": "Linear",
+          "MinFreq": 2.2,
+          "MaxFreq": 2.7,
+          "FreqStep": 0.25
+        }
+      ],
+      "SaveStep": 0
+    },
+    "Linear": {
+      "Type": "Default",
+      "Tol": 1e-08,
+      "MaxIts": 500
+    }
+  }
+}
