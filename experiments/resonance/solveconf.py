@@ -81,9 +81,22 @@ def driven(mesh, tag, band, step=2e-5, order=1, materials=None,
         _b = json.loads(pathlib.Path(__file__).with_name("baselines.json")
                         .read_text())
         _sig = _b["wall.conductivity"]["value"]
-    except Exception as e:                       # never fail a solve over this
-        print(f"    ⚠️ wall conductivity from TEMPLATE — baselines unreadable "
-              f"({e})", flush=True)
+    except Exception as e:
+        # 🔴 WAS "never fail a solve over this", and printed a warning while
+        # substituting the TEMPLATE — which is SILVER, 6.3e7. This programme's
+        # baselines.json starts EMPTY by design, so the lookup failed on every
+        # single solve and the whole resonance record ran silver walls: every
+        # absolute Q ~34% high (sqrt(6.3/3.5)). R110 fixed exactly this bug in
+        # the old programme and the "start empty" policy silently undid it.
+        #
+        # A warning that does not stop anything is a warning nobody acts on. An
+        # undeclared wall metal now REFUSES to solve.
+        raise RuntimeError(
+            f"wall conductivity not declared in baselines.json ({e}). "
+            f"Refusing to fall back to the template's {c['Boundaries']['Conductivity'][0]['Conductivity']:.3g} S/m "
+            f"— that is silver, and substituting it silently is how every Q in "
+            f"this record became ~34% high. Declare wall.conductivity "
+            f"(kind=input, with source) in baselines.json.")
     else:
         _was = c["Boundaries"]["Conductivity"][0]["Conductivity"]
         c["Boundaries"]["Conductivity"][0]["Conductivity"] = _sig

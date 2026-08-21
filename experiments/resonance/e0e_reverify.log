@@ -1,0 +1,79 @@
+E0e — is it the MESHER or the SOLVER? A decisive separation.
+
+E0b/E0c found frequencies moving by up to 4 MHz, and an exactly-degenerate pair
+splitting 6x further apart, under a RIGID TRANSLATION — which is an exact
+symmetry of Maxwell. The correct answer is ZERO. Calling that "about one noise
+floor" is normalising a failed exact test, which is what I did and should not
+have.
+
+🔑 THE TWO CANDIDATES CAN BE SEPARATED EXACTLY.
+
+  MESHER   gmsh is not translation-equivariant: re-meshing a moved solid gives a
+           DIFFERENT discretisation (83,322 vs 83,809 tets). Different mesh,
+           different error. Expected in kind; the question is magnitude.
+
+  SOLVER   if Palace/MFEM's answer depends on absolute coordinates at all, that
+           is a genuine defect: the discrete problem should be identical.
+
+TO SEPARATE THEM, TRANSLATE THE MESH ITSELF, NOT THE GEOMETRY. Take the exact
+mesh already solved at the origin and add 256 mm to every node coordinate.
+Identical topology, identical connectivity, identical element shapes, identical
+quality — ONLY the absolute coordinates differ.
+
+    result == origin result   ->  the solver is exactly translation-invariant,
+                                  and 100% of E0b's shift is gmsh re-meshing
+    result != origin result   ->  the SOLVER is coordinate-dependent. That is a
+                                  bug, and every number this project has ever
+                                  produced is downstream of it
+
+VERIFICATION   physics.spectrum(), unchanged.
+FALSIFICATION  the degenerate pair's splitting, true value exactly 0, compared
+               against the 1.199 MHz measured on this very mesh at the origin.
+GATE           the shifted mesh must have the SAME element count and the same
+               node count as its parent. If it does not, the transform did more
+               than translate and the test is void.
+
+==============================================================================
+  nodes 113,647 -> 113,647   order-2 tets 83,322 -> 83,322
+  first three node deltas: [np.float64(0.256), np.float64(0.256), np.float64(0.256), np.float64(0.256), np.float64(0.256), np.float64(0.256), np.float64(0.256), np.float64(0.256), np.float64(0.256)]
+  ✅ IDENTICAL DISCRETISATION, coordinates shifted by exactly 0.256 m
+
+    e0e_shift: solver order 2
+    solved in 226s
+
+  e0b_at0: 27 modes    e0e_shift: 27 modes
+
+  i       origin   nodes+256mm       Δ MHz
+  0    1.1064899     1.1064899    0.000000
+  1    1.7630299     1.7630299    0.000000
+  2    1.7630329     1.7630329    0.000000
+  3    1.8933371     1.8933371   -0.000000
+  4    1.8933378     1.8933378    0.000000
+  5    2.0227270     2.0227270   -0.000000
+  6    2.2005092     2.2005092    0.000000
+  7    2.2005105     2.2005105    0.000000
+  8    2.3630482     2.3630482    0.000000
+  9    2.3630611     2.3630611    0.000000
+ 10    2.4444433     2.4444433    0.000000
+ 11    2.4444578     2.4444578   -0.000000
+ 12    2.4445202     2.4445202    0.000000
+ 13    2.5400687     2.5400687   -0.000000
+ 14    2.5699446     2.5699446   -0.000000
+ 15    2.5699646     2.5699646    0.000000
+ 16    2.9070952     2.9070952   -0.000000
+ 17    2.9071216     2.9071216    0.000000
+ 18    2.9357907     2.9357907   -0.000000
+ 19    2.9358847     2.9358847   -0.000000
+ 20    2.9758396     2.9758396    0.000000
+ 21    2.9758622     2.9758622    0.000000
+ 22    2.9810128     2.9810128   -0.000000
+ 23    2.9811022     2.9811022    0.000000
+ 24    3.0527586     3.0527586    0.000000
+ 25    3.2286134     3.2286134    0.000000
+ 26    3.2286692     3.2286692   -0.000000
+
+  max |Δ| = 0.000000 MHz
+  degeneracy splitting, e0b_at0: 0.014490 MHz
+  degeneracy splitting, e0e_shift: 0.014490 MHz
+
+  wrote e0e.result.json — NO VERDICT HERE

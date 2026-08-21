@@ -32,6 +32,7 @@ maintained by hand is the same failure as a name maintained by hand.
 import json
 import math
 import os
+import signal
 import pathlib
 import subprocess
 import sys
@@ -88,7 +89,7 @@ def build(tag, extra=()):
     return m, fac
 
 
-def eigen_cfg(tag, meta, mesh=None, sigma=None, n=22, target=1.05):
+def eigen_cfg(tag, meta, mesh=None, sigma=None, n=22, target=1.05, order=2):
     """PEC by default — the closed form assumes it. sigma= switches to metal.
 
     GATE 3: every volume attribute gets vacuum, and we ASSERT none was missed.
@@ -119,7 +120,15 @@ def eigen_cfg(tag, meta, mesh=None, sigma=None, n=22, target=1.05):
                          + [{"Index": 10 + i, "Attributes": [v]}
                             for i, v in enumerate(sorted(vols))]}},
          "Boundaries": {},
-         "Solver": {"Order": 1, "Device": "CPU",
+         # 🔴 THE DEFAULT WAS 1, AND THAT IS WHERE THE DAMAGE CAME FROM.
+         # E0g measured order-1 error at 12-17 MHz, mode-dependent by 40x.
+         # Every rig that did not explicitly override this inherited a
+         # discretisation already known to be wrong — including E0f, whose
+         # conclusion "geometry is converged at geometric order 2" was reached
+         # with the SOLVER at order 1, where the error exceeds the geometric
+         # differences it was resolving. A known-bad value must not be the
+         # default; rigs that WANT order 1 (E0g's sweep, E0k's bridge) say so.
+         "Solver": {"Order": order, "Device": "CPU",
                     "Eigenmode": {"Target": target, "N": n, "Tol": 1e-08,
                                   "MaxIts": 200, "Save": 0},
                     "Linear": {"Type": "Default", "KSPType": "GMRES",
@@ -130,6 +139,10 @@ def eigen_cfg(tag, meta, mesh=None, sigma=None, n=22, target=1.05):
         c["Boundaries"]["Conductivity"] = [
             {"Attributes": [a["wall"]], "Conductivity": sigma,
              "Permeability": 1.0}]
+    # 🔑 SAY IT. The solver order was a hardcoded 1 that six rigs inherited
+    # silently, and every result from them had to be invalidated. An
+    # inherited discretisation must at least be a VISIBLE one.
+    print(f"    {tag}: solver order {c['Solver']['Order']}", flush=True)
     return c
 
 
@@ -141,22 +154,54 @@ def run(tag, cfg):
     # half the machine from every job that followed — and every earlier timeout
     # in this session (e0h, e0i, e0g order 3) did the same unnoticed. Popen +
     # kill() is the only form that actually stops the work.
+    # 🔴 AND proc.kill() IS NOT ENOUGH EITHER. It kills only the `palace` bash
+    # wrapper; the real tree is palace -> prterun -> palace-x86_64.bin xN, so
+    # the RANKS survive, reparent to PPID 1, and keep burning the machine —
+    # four of them for 20 minutes, and reap.py could not see them because ranks
+    # are never direct children of init. Kill the PROCESS GROUP.
+    # e0l_scaling.py was fixed this way; this is the last caller that was not.
     proc = subprocess.Popen([PALACE, "-np", RANKS, f"{tag}.json"], env=solver.ENV,
                             stdout=open(f"{tag}_p.log", "w"),
-                            stderr=subprocess.STDOUT)
+                            stderr=subprocess.STDOUT,
+                            start_new_session=True)
     try:
         rc = proc.wait(timeout=solver.DEFAULT_TIMEOUT_S)
     except subprocess.TimeoutExpired:
-        proc.kill()
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except (ProcessLookupError, PermissionError) as e:
+            print(f"    ⚠️ {tag}: could not kill process group ({e}) — "
+                  f"CHECK FOR ORPHANED RANKS with ops/go ops/status.sh",
+                  flush=True)
         proc.wait()
         raise RuntimeError(f"{tag}: TIMED OUT after "
-                           f"{solver.DEFAULT_TIMEOUT_S:.0f}s — ranks killed")
+                           f"{solver.DEFAULT_TIMEOUT_S:.0f}s — rank TREE killed")
     dt = time.time() - t0
-    if rc or dt < solver.MIN_SECONDS:
+    # 🔴 "TOO FAST" IS NOT EVIDENCE OF FAILURE. This was `rc or dt <
+    # MIN_SECONDS`, and MIN_SECONDS=30 was calibrated on 4 ranks at order 2 on
+    # 35-45k elements. On the 32-rank instance a legitimate order-1 solve of a
+    # 27.5k mesh finishes in 5s: E0k's first solve produced a complete eig.csv
+    # with backward errors of 8e-12 and was thrown away as a failure.
+    #
+    # Ask the direct question instead: DID IT PRODUCE OUTPUT? Elapsed time is a
+    # proxy for that, and a proxy calibrated on hardware we no longer use. (The
+    # same substitution made ops/wait.sh call a healthy run dead and ops/go
+    # think a meshing rig was idle.)
+    pp = pathlib.Path("postpro") / tag
+    produced = sorted(f.name for f in pp.glob("*.csv")
+                      if f.stat().st_size > 0) if pp.is_dir() else []
+    if rc or not produced:
         tail = pathlib.Path(f"{tag}_p.log").read_text().strip().splitlines()
-        raise RuntimeError(f"{tag}: rc={rc} in {dt:.0f}s — "
+        why = "did not solve" if rc else "produced NO non-empty csv in postpro/"
+        raise RuntimeError(f"{tag}: rc={rc} in {dt:.0f}s — {why} — "
                            f"{tail[-1] if tail else '(empty log)'}")
-    print(f"    solved in {dt:.0f}s", flush=True)
+    if dt < solver.MIN_SECONDS:
+        # reported, not fatal: fast AND complete is the expected result of
+        # more ranks, and staying silent about it would hide a real speedup
+        print(f"    solved in {dt:.0f}s — under MIN_SECONDS={solver.MIN_SECONDS}"
+              f" but produced {', '.join(produced)}", flush=True)
+    else:
+        print(f"    solved in {dt:.0f}s", flush=True)
     # 🔑 journalled HERE, in the shared helper, not in each rig — the same
     # reason preflight and reap exist: a step every caller must remember is a
     # step that will be forgotten. RUN is the environment variable a rig sets
@@ -189,7 +234,29 @@ def main():
 
     print("MESHING", flush=True)
     mF, facF = build("e0fine")
-    mC, facC = build("e0coarse", ["--n-wl", "8"])
+    # 🔴 WAS ["--n-wl", "8"], AND 8.0 IS THE DEFAULT (geometry.py elems_per_wl).
+    # The flag was a no-op: "coarse" and "fine" came out with identical sizing
+    # (air 15.2955 mm), identical tet counts (83,322) and identical file sizes.
+    # E0 was comparing a mesh to an independently built copy of the SAME SPEC,
+    # which E0kp later showed differ by ~66 Hz — so the coarse/fine agreement
+    # was guaranteed by construction and never tested mesh resolution at all.
+    # That means E0's conclusion "the solver-vs-mathematics gap is not a mesh
+    # artifact" was never actually checked.
+    mC, facC = build("e0coarse", ["--n-wl", "5"])
+
+    # GUARD: a resolution comparison whose two meshes are the same mesh is not a
+    # comparison. Assert they DIFFER, rather than trusting a flag to have worked.
+    hF = mF.get("sizing_mm", {}).get("air")
+    hC = mC.get("sizing_mm", {}).get("air")
+    if mF["tets"] == mC["tets"] or (hF and hC and abs(hF - hC) < 1e-9):
+        raise RuntimeError(
+            f"e0: coarse and fine are the SAME mesh — tets {mF['tets']} vs "
+            f"{mC['tets']}, h_air {hF} vs {hC}. A no-op flag silently did this "
+            f"once already; refusing to report a resolution comparison that is "
+            f"not one.")
+    print(f"  ✅ meshes genuinely differ: fine {mF['tets']:,} tets "
+          f"(h_air {hF:.2f} mm) vs coarse {mC['tets']:,} tets "
+          f"(h_air {hC:.2f} mm)", flush=True)
 
     print("\nEIGENMODE, PEC — the case the closed form describes", flush=True)
     run("e0fine", eigen_cfg("e0fine", mF))

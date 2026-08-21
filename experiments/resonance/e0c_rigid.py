@@ -32,6 +32,7 @@ import pathlib
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
+import eigmodes
 import physics as ph
 from e0_solver_vs_math import A_MM, L_MM, build, eigen_cfg, run, eig
 
@@ -40,54 +41,63 @@ ROTS = [0, 120, 180]
 CASES = [(f"e0c_{o}_{r}", ex + (["--rotate", str(r)] if r else []))
          for (o, ex), r in itertools.product(OFFS, ROTS)]
 
-print(__doc__)
-print("=" * 78, flush=True)
-EX = ph.spectrum(A_MM, L_MM)
+def main():
+    print(__doc__)
+    print("=" * 78, flush=True)
+    EX = ph.spectrum(A_MM, L_MM)
 
-info = {}
-for tag, extra in CASES:
-    m, fac = build(tag, extra)
-    h = hashlib.md5(pathlib.Path(f"{tag}.msh").read_bytes()).hexdigest()[:12]
-    info[tag] = (m, h)
-    print(f"    md5 {h}", flush=True)
+    info = {}
+    for tag, extra in CASES:
+        m, fac = build(tag, extra)
+        h = hashlib.md5(pathlib.Path(f"{tag}.msh").read_bytes()).hexdigest()[:12]
+        info[tag] = (m, h)
+        print(f"    md5 {h}", flush=True)
 
-hs = {t: h for t, (_m, h) in info.items()}
-dup = [(a, b) for a, b in itertools.combinations(hs, 2) if hs[a] == hs[b]]
-if dup:
-    sys.exit(f"🔴 IDENTICAL MESHES {dup} — those cells measure nothing. "
-             "NOT solving.")
-print(f"  ✅ all {len(CASES)} meshes pairwise distinct\n", flush=True)
+    hs = {t: h for t, (_m, h) in info.items()}
+    dup = [(a, b) for a, b in itertools.combinations(hs, 2) if hs[a] == hs[b]]
+    if dup:
+        sys.exit(f"🔴 IDENTICAL MESHES {dup} — those cells measure nothing. "
+                 "NOT solving.")
+    print(f"  ✅ all {len(CASES)} meshes pairwise distinct\n", flush=True)
 
-for tag, _e in CASES:
-    run(tag, eigen_cfg(tag, info[tag][0]))
-res = {t: eig(t) for t, _e in CASES}
-
-
-def near(tag, f):
-    return min(res[tag], key=lambda x: abs(x - f))
+    for tag, _e in CASES:
+        run(tag, eigen_cfg(tag, info[tag][0]))
+    res = {t: eig(t) for t, _e in CASES}
 
 
-print(f"\nΔ from EXACT, MHz — every cell should read 0.000\n")
-hdr = "".join(f"{t.replace('e0c_',''):>12}" for t, _e in CASES)
-print(f"{'mode':>7}{'exact':>11}{hdr}")
-spread = {}
-for k, fx in sorted(EX.items(), key=lambda kv: kv[1]):
-    ds = [1e3 * (near(t, fx) - fx) for t, _e in CASES]
-    spread[k] = max(ds) - min(ds)
-    print(f"{k:>7}{fx:>11.5f}" + "".join(f"{d:>12.3f}" for d in ds))
-print(f"\n{'':>18}" + "".join(f"{info[t][0]['tets']:>12,}" for t, _e in CASES)
-      + "   tets")
+    def near(tag, f):
+        return min(res[tag], key=lambda x: abs(x - f))
 
-print(f"\n  SPREAD across six rigid motions (pure instrument):")
-for k, s in sorted(spread.items(), key=lambda kv: -kv[1]):
-    print(f"    {k:>7}  {s:7.3f} MHz")
 
-print(f"\n  🔑 FALSIFIER — TE011/TM111 splitting, true value EXACTLY 0:")
-for t, _e in CASES:
-    n = sorted(res[t], key=lambda x: abs(x - EX["TE011"]))[:2]
-    print(f"    {t.replace('e0c_',''):>10}  {1e3*abs(n[1]-n[0]):7.3f} MHz")
+    print(f"\nΔ from EXACT, MHz — every cell should read 0.000\n")
+    hdr = "".join(f"{t.replace('e0c_',''):>12}" for t, _e in CASES)
+    print(f"{'mode':>7}{'exact':>11}{hdr}")
+    spread = {}
+    for k, fx in sorted(EX.items(), key=lambda kv: kv[1]):
+        ds = [1e3 * (near(t, fx) - fx) for t, _e in CASES]
+        spread[k] = max(ds) - min(ds)
+        print(f"{k:>7}{fx:>11.5f}" + "".join(f"{d:>12.3f}" for d in ds))
+    print(f"\n{'':>18}" + "".join(f"{info[t][0]['tets']:>12,}" for t, _e in CASES)
+          + "   tets")
 
-json.dump({"exact": EX, **res, "md5": hs,
-           "tets": {t: info[t][0]["tets"] for t, _e in CASES}},
-          open("e0c.result.json", "w"), indent=1)
-print("\n  wrote e0c.result.json — NO VERDICT HERE", flush=True)
+    print(f"\n  SPREAD across six rigid motions (pure instrument):")
+    for k, s in sorted(spread.items(), key=lambda kv: -kv[1]):
+        print(f"    {k:>7}  {s:7.3f} MHz")
+
+    print(f"\n  🔑 FALSIFIER — TE011/TM111 splitting, true value EXACTLY 0:")
+    for t, _e in CASES:
+        # 🔴 was sorted(...)[:2] — the two NEAREST, which are BOTH TM111
+        # polarisations (m=1 is doubly degenerate). That reported TM111's
+        # internal splitting, not TE011<->TM111. See eigmodes.te011_tm111.
+        _d = eigmodes.te011_tm111(res[t], EX["TE011"])
+        n = [_d['tm111'], _d['te011']] if _d else sorted(res[t], key=lambda x: abs(x - EX["TE011"]))[:2]
+        print(f"    {t.replace('e0c_',''):>10}  {1e3*abs(n[1]-n[0]):7.3f} MHz")
+
+    json.dump({"exact": EX, **res, "md5": hs,
+               "tets": {t: info[t][0]["tets"] for t, _e in CASES}},
+              open("e0c.result.json", "w"), indent=1)
+    print("\n  wrote e0c.result.json — NO VERDICT HERE", flush=True)
+
+
+if __name__ == "__main__":
+    main()

@@ -40,61 +40,71 @@ import sys
 import gmsh
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
+import eigmodes
 import physics as ph
 import solveconf
 from e0_solver_vs_math import A_MM, L_MM, eigen_cfg, run, eig
 
 SRC, DST, D = "e0b_at0", "e0e_shift", 0.256
 
-print(__doc__)
-print("=" * 78, flush=True)
+def main():
+    print(__doc__)
+    print("=" * 78, flush=True)
 
-gmsh.initialize()
-gmsh.option.setNumber("General.Terminal", 0)
-# 🔴 geometry.py writes MSH 2.2; gmsh.write defaults to 4.1 and
-# MFEM then aborts with "vertex index doesn't exist". Match the
-# parent exactly — the whole point is that ONLY coordinates differ.
-gmsh.option.setNumber("Mesh.MshFileVersion", 2.2)
-gmsh.merge(f"{SRC}.msh")
-tags0, coords0, _ = gmsh.model.mesh.getNodes()
-n_el0 = sum(len(t) for _d, ts in [(3, gmsh.model.mesh.getElementsByType(11))]
-            for t in [ts[0]])
-gmsh.model.mesh.affineTransform([1, 0, 0, D,
-                                 0, 1, 0, D,
-                                 0, 0, 1, D])
-tags1, coords1, _ = gmsh.model.mesh.getNodes()
-n_el1 = len(gmsh.model.mesh.getElementsByType(11)[0])
-gmsh.write(f"{DST}.msh")
-gmsh.finalize()
+    gmsh.initialize()
+    gmsh.option.setNumber("General.Terminal", 0)
+    # 🔴 geometry.py writes MSH 2.2; gmsh.write defaults to 4.1 and
+    # MFEM then aborts with "vertex index doesn't exist". Match the
+    # parent exactly — the whole point is that ONLY coordinates differ.
+    gmsh.option.setNumber("Mesh.MshFileVersion", 2.2)
+    gmsh.merge(f"{SRC}.msh")
+    tags0, coords0, _ = gmsh.model.mesh.getNodes()
+    n_el0 = sum(len(t) for _d, ts in [(3, gmsh.model.mesh.getElementsByType(11))]
+                for t in [ts[0]])
+    gmsh.model.mesh.affineTransform([1, 0, 0, D,
+                                     0, 1, 0, D,
+                                     0, 0, 1, D])
+    tags1, coords1, _ = gmsh.model.mesh.getNodes()
+    n_el1 = len(gmsh.model.mesh.getElementsByType(11)[0])
+    gmsh.write(f"{DST}.msh")
+    gmsh.finalize()
 
-print(f"  nodes {len(tags0):,} -> {len(tags1):,}   order-2 tets "
-      f"{n_el0:,} -> {n_el1:,}")
-moved = [coords1[i] - coords0[i] for i in range(0, 9, 1)]
-print(f"  first three node deltas: {[round(m, 6) for m in moved[:9]]}")
-if len(tags0) != len(tags1) or n_el0 != n_el1:
-    sys.exit("🔴 the transform changed the mesh — test void")
-if any(abs(m - D) > 1e-9 for m in moved):
-    sys.exit(f"🔴 nodes did not move by exactly {D} m — test void")
-print(f"  ✅ IDENTICAL DISCRETISATION, coordinates shifted by exactly {D} m\n",
-      flush=True)
+    print(f"  nodes {len(tags0):,} -> {len(tags1):,}   order-2 tets "
+          f"{n_el0:,} -> {n_el1:,}")
+    moved = [coords1[i] - coords0[i] for i in range(0, 9, 1)]
+    print(f"  first three node deltas: {[round(m, 6) for m in moved[:9]]}")
+    if len(tags0) != len(tags1) or n_el0 != n_el1:
+        sys.exit("🔴 the transform changed the mesh — test void")
+    if any(abs(m - D) > 1e-9 for m in moved):
+        sys.exit(f"🔴 nodes did not move by exactly {D} m — test void")
+    print(f"  ✅ IDENTICAL DISCRETISATION, coordinates shifted by exactly {D} m\n",
+          flush=True)
 
-# reuse the parent's sidecar: same topology, same attributes
-meta = solveconf.load_meta(f"{SRC}.msh")
-cfg = eigen_cfg(DST, meta, mesh=f"{DST}.msh")
-run(DST, cfg)
+    # reuse the parent's sidecar: same topology, same attributes
+    meta = solveconf.load_meta(f"{SRC}.msh")
+    cfg = eigen_cfg(DST, meta, mesh=f"{DST}.msh")
+    run(DST, cfg)
 
-EX = ph.spectrum(A_MM, L_MM)
-a, b = eig(SRC), eig(DST)
-print(f"\n  {SRC}: {len(a)} modes    {DST}: {len(b)} modes")
-print(f"\n{'i':>3}{'origin':>13}{'nodes+256mm':>14}{'Δ MHz':>12}")
-ds = []
-for i, (x, y) in enumerate(zip(a, b)):
-    ds.append(1e3 * (y - x))
-    print(f"{i:>3}{x:>13.7f}{y:>14.7f}{1e3*(y-x):>12.6f}")
-print(f"\n  max |Δ| = {max(abs(v) for v in ds):.6f} MHz")
-for tag, v in ((SRC, a), (DST, b)):
-    n = sorted(v, key=lambda x: abs(x - EX["TE011"]))[:2]
-    print(f"  degeneracy splitting, {tag}: {1e3*abs(n[1]-n[0]):.6f} MHz")
-json.dump({"origin": a, "shifted": b, "delta_mhz": ds},
-          open("e0e.result.json", "w"), indent=1)
-print("\n  wrote e0e.result.json — NO VERDICT HERE", flush=True)
+    EX = ph.spectrum(A_MM, L_MM)
+    a, b = eig(SRC), eig(DST)
+    print(f"\n  {SRC}: {len(a)} modes    {DST}: {len(b)} modes")
+    print(f"\n{'i':>3}{'origin':>13}{'nodes+256mm':>14}{'Δ MHz':>12}")
+    ds = []
+    for i, (x, y) in enumerate(zip(a, b)):
+        ds.append(1e3 * (y - x))
+        print(f"{i:>3}{x:>13.7f}{y:>14.7f}{1e3*(y-x):>12.6f}")
+    print(f"\n  max |Δ| = {max(abs(v) for v in ds):.6f} MHz")
+    for tag, v in ((SRC, a), (DST, b)):
+        # 🔴 was sorted(...)[:2] — the two NEAREST, which are BOTH TM111
+        # polarisations (m=1 is doubly degenerate). That reported TM111's
+        # internal splitting, not TE011<->TM111. See eigmodes.te011_tm111.
+        _d = eigmodes.te011_tm111(v, EX["TE011"])
+        n = [_d['tm111'], _d['te011']] if _d else sorted(v, key=lambda x: abs(x - EX["TE011"]))[:2]
+        print(f"  degeneracy splitting, {tag}: {1e3*abs(n[1]-n[0]):.6f} MHz")
+    json.dump({"origin": a, "shifted": b, "delta_mhz": ds},
+              open("e0e.result.json", "w"), indent=1)
+    print("\n  wrote e0e.result.json — NO VERDICT HERE", flush=True)
+
+
+if __name__ == "__main__":
+    main()

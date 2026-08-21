@@ -252,6 +252,68 @@ def match_exact(exact, solved, degenerate=()):
     return pairs, refused
 
 
+def facet_radius_ratio(n_facets):
+    """a_eff / a for a circle replaced by an INSCRIBED regular N-gon.
+
+    Equal-AREA equivalent radius, exact: the polygon area is
+    (N/2) a^2 sin(2pi/N), so a_eff/a = sqrt((N/2pi) sin(2pi/N)).
+
+    Small-angle expansion (for intuition only, not used):  1 - pi^2/(3 N^2).
+    """
+    from math import pi, sin, sqrt
+    if n_facets < 3:
+        raise ValueError("a polygon needs at least 3 sides")
+    return sqrt(n_facets * sin(2 * pi / n_facets) / (2 * pi))
+
+
+def radial_share(kind, m, n, p, a_mm, L_mm):
+    """Fraction of f^2 carried by the RADIAL term.
+
+    f^2 = (c/2pi)^2 [ (chi/a)^2 + (p pi / L)^2 ]. Only the first term knows
+    about the radius, so a radius error moves f by that share:
+
+        df/f = -radial_share * da/a
+
+    For TM_mn0 (p=0) the share is 1 and df/f = -da/a exactly.
+    """
+    from math import pi
+    chi = (CHIP if kind.upper().startswith("TE") else CHI)[m][n - 1]
+    kr2 = (chi / (a_mm * 1e-3)) ** 2
+    kz2 = (p * pi / (L_mm * 1e-3)) ** 2
+    return kr2 / (kr2 + kz2)
+
+
+def faceting_shift_mhz(kind, m, n, p, a_mm, L_mm, h_mm):
+    """Predicted frequency ERROR of a GEOMETRIC-ORDER-1 (faceted) mesh, in MHz.
+
+    🔑 NO SIMULATION. A straight-sided mesh replaces the circular wall with an
+    inscribed polygon whose vertices lie on the true surface and whose facets
+    chord across it. The cavity is therefore SMALLER than the real one, so the
+    frequency reads HIGH -- and by a computable amount, which makes geometric
+    order 1 a case where the mesher can be checked against known physics rather
+    than against another mesh.
+
+        N ~ 2 pi a / h        facets around the circumference
+        a_eff/a               equal-area radius of that polygon
+        df/f = -radial_share * (a_eff - a)/a          (positive: reads high)
+
+    ⚠️ This is the SYSTEMATIC part only. A real surface triangulation is not a
+    regular polygon: facet sizes vary, so an actual order-1 mesh scatters about
+    this value. The prediction is the centre of that scatter, not a bound.
+
+    ⚠️ It also assumes the wall is the only curved surface that matters. With a
+    coupling loop or tubes present, each curved boundary contributes its own
+    faceting and this covers none of them.
+    """
+    from math import pi
+    n_facets = 2 * pi * a_mm / h_mm
+    ratio = facet_radius_ratio(max(3.0, n_facets))
+    share = radial_share(kind, m, n, p, a_mm, L_mm)
+    f0 = f_mnp(kind, m, n, p, a_mm, L_mm)
+    # a_eff < a  =>  da/a < 0  =>  df/f > 0
+    return -share * (ratio - 1.0) * f0 * 1e3
+
+
 def lod(sigma_background, sensitivity, k=3.0):
     """LOD = k * sigma_background / sensitivity. The terminal objective."""
     return k * sigma_background / sensitivity
@@ -293,4 +355,19 @@ if __name__ == "__main__":
     chk("TE11 cutoff, 10 mm bore (GHz)", cutoff_ghz(10.0), 17.5698466, 1e-6)
     chk("trap dia at f/15, L=103.7 (mm)", trap_diameter_mm(15, 103.7),
         9.909, 0.01)
+    # --- geometric order 1: the faceting error is ANALYTIC -------------------
+    # square: inscribed in a circle, area 2a^2 vs pi a^2 -> ratio sqrt(2/pi)
+    chk("facet ratio, N=4 (square)", facet_radius_ratio(4),
+        (2.0 / math.pi) ** 0.5, 1e-12)
+    chk("facet ratio, N=1000 -> 1", facet_radius_ratio(1000), 1.0, 1e-5)
+    # small-angle check: 1 - pi^2/(3N^2) at N=60
+    chk("facet ratio, N=60 vs expansion", facet_radius_ratio(60),
+        1 - math.pi ** 2 / (3 * 60 ** 2), 2e-7)
+    # TM010 has p=0, so the radial share is exactly 1
+    chk("radial share TM010 (p=0)", radial_share("TM", 0, 1, 0, 103.7, 88.53),
+        1.0, 1e-12)
+    _rs = radial_share("TE", 0, 1, 1, 103.7, 88.53)
+    print(f"  🔑 TE011 radial share = {_rs:.4f} — a radius error moves TE011 "
+          f"only {_rs:.0%} as hard as it moves TM010\n")
+
     print(f"\n  {'✅ ALL PASS' if ok else '🔴 FAILURES ABOVE'}")

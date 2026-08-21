@@ -149,7 +149,11 @@ maintained-by-hand failure as a stale name or a hand-written whitelist.
 and needs no rsync at all (⚠️ rsync is absent from some minimal images):
 
 ```bash
-H=ubuntu@ec2-3-20-237-43.us-east-2.compute.amazonaws.com
+# 🔴 NEVER a literal address here. Spot instances are reclaimed — twice on
+# 2026-08-21 alone — and this line was still naming a host two reclamations
+# dead. ops/env.sh is the ONE place the address lives.
+. experiments/resonance/ops/env.sh    # exports AMIP_HOST
+H="$AMIP_HOST"
 
 # UP — exactly what git tracks, nothing else. One source of truth.
 git archive HEAD | ssh -i ./aws.pem $H \

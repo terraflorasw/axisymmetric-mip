@@ -81,12 +81,25 @@ def main():
         v = eig(t)
         pick = min(v, key=lambda x: abs(x - EX["TE011"]))
         res[f"eig{order}"] = pick
-        journal.log(TAG, event="pick", kind="eigenmode", order=order,
-                    f_ghz=pick, **diag[f"eig{order}"])
+        # 🔴 diag[...] was READ on the journal line and ASSIGNED on the next one:
+        # KeyError on the first iteration, after the solve had already been paid
+        # for. Build the record, then log it.
         diag[f"eig{order}"] = {"n_modes": len(v),
+                               # 🔑 EVERY mode, not just the pick. TE011 and
+                               # TM111 are EXACTLY degenerate (chi'01 = chi11)
+                               # and the loop splits them by ~1.2 MHz, against
+                               # an order-1 error of 12-17 MHz that is
+                               # mode-dependent by 40x. A nearest-frequency pick
+                               # can therefore take TM111 at one order and TE011
+                               # at the other and corrupt the offset silently.
+                               # Keeping the full list means that can be
+                               # diagnosed and re-picked WITHOUT re-solving.
+                               "all_modes": [round(x, 6) for x in sorted(v)],
                                "nearest3": [round(x, 5) for x in
                                             sorted(v, key=lambda x:
                                                    abs(x - EX["TE011"]))[:3]]}
+        journal.log(TAG, event="pick", kind="eigenmode", order=order,
+                    f_ghz=pick, **diag[f"eig{order}"])
         print(f"    picked {pick:.5f} from {len(v)} modes; nearest-3 "
               f"{diag[f'eig{order}']['nearest3']}", flush=True)
 
@@ -111,6 +124,13 @@ def main():
         # the reader judges the mode pick, not the script: show the top three
         top = sorted(recs, key=lambda x: -(x.get("pe", 0) + x.get("pm", 0)))[:3]
         diag[f"drv{order}"] = {"n_samples": len(recs),
+                               # the whole sampled response, so the peak can be
+                               # re-picked (or fitted) without re-solving
+                               "response": [[round(x["f"], 6),
+                                             round(x.get("pe", 0)
+                                                   + x.get("pm", 0), 9)]
+                                            for x in sorted(recs,
+                                                            key=lambda y: y["f"])],
                                "top3_by_energy": [round(x["f"], 5) for x in top]}
         print(f"    picked {best['f']:.5f} from {len(recs)} samples; "
               f"top-3 by stored energy {[round(x['f'],5) for x in top]}",

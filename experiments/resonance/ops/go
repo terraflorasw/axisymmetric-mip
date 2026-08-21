@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# ops/go — lint a script, then run it. The ONLY way operations should happen.
+#
+# 🔑 WHY. Three times in one session `pkill -f` killed the calling shell —
+# twice locally, once over ssh taking the remote shell with it. Every instance
+# was a command typed INLINE, so the linter built specifically to catch it never
+# saw them. A checker that only inspects committed files cannot help with
+# commands that never become files.
+#
+# The fix is not more care. It is that operations become files, so they pass
+# through the gate on the way to being run.
+#
+#   ops/go ops/status.sh
+#   ops/go ops/remote.sh e1b_loaded.py
+# instance address: ops/env.sh, overridable with $AMIP_HOST
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/env.sh"
+H="$AMIP_HOST"
+set -euo pipefail
+[ $# -ge 1 ] || { echo "usage: ops/go <script> [args...]"; exit 2; }
+S="$1"; shift
+D0="$(cd "$(dirname "$0")/../../../.." && pwd)"   # repo parent, holds rsync.sh
+
+# Sync before running, so the instance never executes stale code. Automatic
+# because "remember to sync" is the same class of instruction as "remember not
+# to pkill -f" — and that one failed three times in a day.
+#
+# 🔴 ONE GUARD: never overwrite files a remote solve is reading. "Never edit a
+# file a running job shells out to" cost 6 of 16 grid points once already.
+if [ "${NOSYNC:-0}" = "1" ]; then
+  echo "  sync: skipped (NOSYNC=1)"
+elif [ ! -f "$D0/rsync.sh" ]; then
+  # 🔴 SAY SO. The first version guarded this with a bare `[ -f ]` that was
+  # false because D0 was one directory short — so the sync silently never ran
+  # and everything still looked fine. A skipped safety step must announce
+  # itself or it is indistinguishable from a working one.
+  echo "  🔴 sync: rsync.sh NOT FOUND at $D0 — running against possibly stale remote"
+else
+  # 🔴 BUSY MEANS "A RIG IS RUNNING", NOT "PALACE IS RUNNING". The first
+  # version counted only palace ranks, and a rig spends a LARGE fraction of its
+  # life meshing with zero ranks alive — 5.2 min of E1b case A, 9+ min of case
+  # B. During that window this guard read 0 and would have cheerfully synced a
+  # modified geometry.py into a running experiment, changing the code between
+  # its two cases. Count the rig processes too. (Same error as ops/wait.sh:
+  # inferring liveness from a downstream symptom instead of asking directly.)
+  BUSY=$(timeout 20 ssh -i "$D0/aws.pem" -o ConnectTimeout=8 \
+    $H \
+    'r=$(ps -C python3 -o args= 2>/dev/null | grep -c "^python3 -u e[0-9]")
+     g=$(ps -C python3 -o args= 2>/dev/null | grep -c "geometry\.py")
+     n=$(ps -o stat= -C palace-x86_64.bin 2>/dev/null | grep -v Z | wc -l)
+     echo $(( ${r:-0} + ${g:-0} + ${n:-0} ))' 2>/dev/null || echo unreachable)
+  case "$BUSY" in
+    0) ( cd "$D0" && bash rsync.sh ) | tail -1 | sed 's/^/  sync: /' ;;
+    unreachable) echo "  sync: skipped (instance unreachable)" ;;
+    *) echo "  🔴 sync SKIPPED: $BUSY rig/mesh/rank process(es) running remotely."
+       echo "     Overwriting files a running solve reads corrupts it."
+       echo "     Wait, or re-run with NOSYNC=1 if you know it is safe." ;;
+  esac
+fi
+[ -f "$S" ] || { echo "🔴 no such script: $S"; exit 2; }
+D="$(cd "$(dirname "$0")/.." && pwd)"
+python3 "$D/preflight.py" "$S" || { echo "🔴 refused: fix the findings first"; exit 1; }
+case "$S" in
+  *.py) exec python3 "$S" "$@" ;;
+  *)    exec bash "$S" "$@" ;;
+esac

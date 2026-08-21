@@ -179,4 +179,9 @@ def main():
     for l in tail:
         print(f"     {l[:110]}")
 
-main()
+def main():
+    main()
+
+
+if __name__ == "__main__":
+    main()

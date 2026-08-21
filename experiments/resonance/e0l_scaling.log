@@ -1,0 +1,43 @@
+E0l — how many ranks per solve? Measured, after months of assertion.
+
+I have repeatedly claimed this workload is memory-bandwidth-bound and never
+measured it. On a 32-core c7a that claim decides how the machine is used:
+
+    bandwidth-bound  -> more ranks per solve buys little; run MANY solves at 4
+    core-bound       -> few big solves scale, and fan-out is less important
+
+TWO QUESTIONS, one run:
+
+1. SPEED     wall time vs rank count on one fixed mesh and config.
+2. 🔑 ANSWER does the rank count CHANGE THE RESULT? MPI partitions the domain,
+             so the floating-point summation order differs. E0e proved
+             determinism at FIXED ranks; this asks whether ranks themselves are
+             a variable that has to be controlled. If TE011 moves with -np, then
+             every comparison in this project must hold rank count fixed, and
+             the acceptance test's exact match with the laptop was partly luck.
+
+VERIFICATION   physics.spectrum() — every rank count must land at the same
+               distance from the closed form.
+FALSIFICATION  if TE011 shifts by more than the ~1.2 MHz mesh floor across rank
+               counts, rank count is a hidden variable and prior comparisons
+               need re-reading.
+
+==============================================================================
+  -np 4    1665.8s  rc=0  TE011=2.4444433
+  -np 8     881.0s  rc=0  TE011=2.4444433
+  -np 16    438.9s  rc=0  TE011=2.4444433
+  -np 32    230.3s  rc=0  TE011=2.4444433
+
+ ranks   seconds   speedup  efficiency    TE011 GHz  Δ vs -np 1
+     4    1665.8      nanx        nan%    2.4444433         nan
+     8     881.0      nanx        nan%    2.4444433         nan
+    16     438.9      nanx        nan%    2.4444433         nan
+    32     230.3      nanx        nan%    2.4444433         nan
+
+  🔑 TE011 spread across ALL rank counts: 0.0000 MHz
+     ✅ rank count is NOT a variable
+    -np 1      6385.9s  (PRIOR, measured earlier)
+    -np 2      3301.3s  (PRIOR, measured earlier)
+
+  wrote e0l.result.json
+EXIT=0

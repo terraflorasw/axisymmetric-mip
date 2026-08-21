@@ -1,0 +1,79 @@
+E0d — rotate about a TRANSVERSE axis. The strongest rigid-motion probe.
+
+The user's point: the cavity axis is z, so E0c's z-rotations leave the
+axisymmetric solid literally unchanged — only the mesh moves. Rotating about x
+or y TILTS the cavity axis away from the coordinate axis entirely, which is a
+much stronger disruption, and E0b says exactly why it should matter.
+
+🔑 A LADDER OF SYMMETRY DISRUPTION, weakest to strongest:
+
+  1. rotate about z      solid invariant; cavity axis still ON the coordinate
+                         z axis. Only the mesh changes.                  (E0c)
+  2. translate           axis stays PARALLEL to z but leaves it.         (E0b)
+  3. rotate 90 about x   cavity axis maps z -> y: still on A coordinate axis,
+                         just a different one. 🔑 THIS SEPARATES "aligned with
+                         z specifically" from "aligned with any axis".
+  4. rotate 37 about x   axis points nowhere special. Full disruption.
+
+PREDICTION, DECLARED BEFORE THE RUN — the degeneracy splitting should order
+
+        (1) <= (3) < (2) < (4)
+
+if what the mesh needs is ALIGNMENT WITH SOME COORDINATE AXIS. If instead it
+orders (1) < (3) ~ (4), then only the ORIGINAL z alignment matters and 90 deg
+buys nothing. 🔴 If (4) is no worse than (2), the whole "mesh inherits the
+cavity's symmetry" reading from E0b is wrong and should be withdrawn.
+
+VERIFICATION   physics.spectrum() — invariant under every rigid motion.
+FALSIFICATION  TE011/TM111 splitting, true value EXACTLY zero, in every cell.
+GATE           all meshes pairwise distinct, asserted before solving.
+
+==============================================================================
+  e0d_base: sf 0.96, 83,322 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 f17f69f5d0e0  rot 0 deg about [0.0, 0.0, 1.0]
+  e0d_x90: sf 0.96, 83,333 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 823bdcf6d9cd  rot 90 deg about [1.0, 0.0, 0.0]
+  e0d_y90: sf 0.96, 83,461 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 1ad68391efe6  rot 90 deg about [0.0, 1.0, 0.0]
+  e0d_x37: sf 0.96, 80,996 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 3aac0fca891c  rot 37 deg about [1.0, 0.0, 0.0]
+  e0d_y37: sf 0.96, 81,238 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    md5 b5f69c10cb6f  rot 37 deg about [0.0, 1.0, 0.0]
+  ✅ all 5 meshes pairwise distinct
+
+    e0d_base: solver order 2
+    solved in 227s
+    e0d_x90: solver order 2
+    solved in 223s
+    e0d_y90: solver order 2
+    solved in 221s
+    e0d_x37: solver order 2
+    solved in 220s
+    e0d_y37: solver order 2
+    solved in 211s
+
+Δ from EXACT, MHz — every cell should read 0.000
+
+   mode      exact      base       x90       y90       x37       y37
+  TM010    1.10649     0.005     0.005     0.005     0.005     0.005
+  TM110    1.76301     0.022     0.023     0.021     0.023     0.020
+  TE111    1.89327     0.065     0.066     0.063     0.063     0.061
+  TM011    2.02265     0.073     0.079     0.077     0.078     0.073
+  TE211    2.20037     0.134     0.135     0.131     0.132     0.127
+  TM210    2.36295     0.095     0.094     0.095     0.101     0.084
+  TE011    2.44438     0.058     0.064     0.058     0.076     0.068
+  TM111    2.44438     0.058     0.064     0.058     0.076     0.068
+  TM020    2.53985     0.223     0.223     0.221     0.232     0.204
+  TM211    2.90695     0.143     0.147     0.127     0.146     0.123
+  TE121    2.98065     0.361     0.406     0.418     0.367     0.393
+
+  🔑 FALSIFIER — TE011/TM111 splitting, true value EXACTLY 0:
+        base    0.014 MHz   (83,322 tets)
+         x90    0.009 MHz   (83,333 tets)
+         y90    0.021 MHz   (83,461 tets)
+         x37    0.006 MHz   (80,996 tets)
+         y37    0.003 MHz   (81,238 tets)
+
+  for reference: E0b measured 1.199 MHz on-axis and 7.052 MHz translated +256 mm
+
+  wrote e0d.result.json — NO VERDICT HERE

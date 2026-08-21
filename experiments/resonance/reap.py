@@ -23,22 +23,59 @@ import subprocess
 import sys
 
 EXE = "palace-x86_64.bin"
+# 🔴 RANKS ARE NEVER DIRECT CHILDREN, AND THIS FILE ASSUMED THEY WERE. The real
+# launch tree has two layers between the rig and the ranks:
+#
+#     palace   (a bash WRAPPER script)   <- this is what gets orphaned
+#       └── prterun
+#             └── palace-x86_64.bin xN
+#
+# So "palace-x86_64.bin with PPID 1" matched nothing while four ranks ground
+# away for 20 minutes after E0v killed e0l_scaling.py — this file printed "no
+# orphaned palace ranks" the whole time. An orphan detector that reports clean
+# during a live leak is worse than none, because it is believed.
+#
+# Correct test: walk UP from each rank. If any ancestor has PPID 1, the whole
+# tree is orphaned. That is independent of how many layers the launcher uses.
+ROOTS = ("palace", "prterun")               # wrapper and MPI launcher
+
+
+def _table():
+    out = subprocess.run(["ps", "-eo", "pid=,ppid=,stat=,etime=,comm="],
+                         capture_output=True, text=True).stdout
+    procs = {}
+    for line in out.splitlines():
+        f = line.split(None, 4)
+        if len(f) < 5:
+            continue
+        procs[int(f[0])] = {"ppid": int(f[1]), "stat": f[2], "etime": f[3],
+                            "comm": f[4].strip()}
+    return procs
 
 
 def orphans():
-    out = subprocess.run(["ps", "-o", "pid=,ppid=,stat=,etime=,comm="],
-                         capture_output=True, text=True).stdout
+    """[(pid, etime)] — ranks whose ANCESTRY reaches init, at any depth."""
+    procs = _table()
     found = []
-    for line in out.splitlines():
-        f = line.split(None, 4)
-        if len(f) < 5 or f[4].strip() != EXE[:15]:
+    for pid, p in procs.items():
+        if p["comm"] != EXE[:15] or "Z" in p["stat"]:
             continue
-        pid, ppid, stat = int(f[0]), int(f[1]), f[2]
-        if "Z" in stat:                      # container PID 1 does not reap
-            continue
-        if ppid == 1:                        # parent gone -> orphan
-            found.append((pid, f[3]))
-    return found
+        cur, seen = pid, set()
+        while cur in procs and cur not in seen:
+            seen.add(cur)
+            nxt = procs[cur]["ppid"]
+            if nxt == 1:
+                found.append((pid, p["etime"]))
+                break
+            cur = nxt
+    return sorted(found)
+
+
+def orphan_roots():
+    """The launcher processes to kill — killing ranks alone leaves these."""
+    procs = _table()
+    return sorted(pid for pid, p in procs.items()
+                  if p["ppid"] == 1 and p["comm"] in ROOTS)
 
 
 if __name__ == "__main__":
@@ -49,11 +86,22 @@ if __name__ == "__main__":
     print(f"{len(o)} orphaned rank(s):")
     for pid, et in o:
         print(f"  pid {pid}  running {et}")
+    roots = orphan_roots()
+    if roots:
+        print(f"orphaned launcher(s): {roots}  — killing ranks alone leaves "
+              f"these, and they are what the rig actually spawned")
     if "--kill" in sys.argv:
+        # ranks first, then the launchers above them
         for pid, _et in o:
             try:
                 os.kill(pid, 15)
-                print(f"  killed {pid}")
+                print(f"  killed rank {pid}")
+            except OSError as e:
+                print(f"  {pid}: {e}")
+        for pid in roots:
+            try:
+                os.kill(pid, 15)
+                print(f"  killed launcher {pid}")
             except OSError as e:
                 print(f"  {pid}: {e}")
     else:

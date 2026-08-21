@@ -60,47 +60,52 @@ from e0_solver_vs_math import A_MM, L_MM, GEO, build, eigen_cfg, run, eig
 ORDERS = [1, 2, 3]
 CASES = [(f"e0f_o{o}", ["--order", str(o)]) for o in ORDERS]
 
-print(__doc__)
-print("=" * 78, flush=True)
-EX = ph.spectrum(A_MM, L_MM)
-DEG = [("TE011", "TM111")]
+def main():
+    print(__doc__)
+    print("=" * 78, flush=True)
+    EX = ph.spectrum(A_MM, L_MM)
+    DEG = [("TE011", "TM111")]
 
-info = {}
-for tag, extra in CASES:
-    # build() passes GEO which already contains --order 2; the LAST occurrence
-    # wins in argparse, so the per-case override is appended after it.
-    m, fac = build(tag, extra)
-    h = hashlib.md5(pathlib.Path(f"{tag}.msh").read_bytes()).hexdigest()[:12]
-    info[tag] = (m, h)
-    print(f"    md5 {h}  mesh_order {m.get('mesh_order')}", flush=True)
+    info = {}
+    for tag, extra in CASES:
+        # build() passes GEO which already contains --order 2; the LAST occurrence
+        # wins in argparse, so the per-case override is appended after it.
+        m, fac = build(tag, extra)
+        h = hashlib.md5(pathlib.Path(f"{tag}.msh").read_bytes()).hexdigest()[:12]
+        info[tag] = (m, h)
+        print(f"    md5 {h}  mesh_order {m.get('mesh_order')}", flush=True)
 
-hs = {t: h for t, (_m, h) in info.items()}
-if len(set(hs.values())) != len(CASES):
-    sys.exit("🔴 identical meshes across geometric orders — NOT solving.")
-print(f"  ✅ {len(CASES)} distinct meshes\n", flush=True)
+    hs = {t: h for t, (_m, h) in info.items()}
+    if len(set(hs.values())) != len(CASES):
+        sys.exit("🔴 identical meshes across geometric orders — NOT solving.")
+    print(f"  ✅ {len(CASES)} distinct meshes\n", flush=True)
 
-for tag, _e in CASES:
-    run(tag, eigen_cfg(tag, info[tag][0]))
-res = {t: eig(t) for t, _e in CASES}
+    for tag, _e in CASES:
+        run(tag, eigen_cfg(tag, info[tag][0]))
+    res = {t: eig(t) for t, _e in CASES}
 
-print(f"\nΔ from EXACT, MHz — solver order held at 1, size factor held fixed\n")
-print(f"{'mode':>7}{'exact':>11}" + "".join(f"{'ord ' + str(o):>11}"
-                                            for o in ORDERS))
-for k, fx in sorted(EX.items(), key=lambda kv: kv[1]):
-    row = []
+    print(f"\nΔ from EXACT, MHz — solver order held at 1, size factor held fixed\n")
+    print(f"{'mode':>7}{'exact':>11}" + "".join(f"{'ord ' + str(o):>11}"
+                                                for o in ORDERS))
+    for k, fx in sorted(EX.items(), key=lambda kv: kv[1]):
+        row = []
+        for t, _e in CASES:
+            p, r = ph.match_exact(EX, res[t], DEG)
+            row.append(f"{1e3*(p[k]-fx):>11.3f}" if k in p else f"{'—':>11}")
+        print(f"{k:>7}{fx:>11.5f}" + "".join(row))
+
+    print(f"\n{'':>18}" + "".join(f"{info[t][0]['tets']:>11,}" for t, _e in CASES)
+          + "   elements")
+    print(f"\n  🔑 FALSIFIER — TE011/TM111 splitting, true value EXACTLY 0:")
     for t, _e in CASES:
-        p, r = ph.match_exact(EX, res[t], DEG)
-        row.append(f"{1e3*(p[k]-fx):>11.3f}" if k in p else f"{'—':>11}")
-    print(f"{k:>7}{fx:>11.5f}" + "".join(row))
+        n = sorted(res[t], key=lambda x: abs(x - EX["TE011"]))[:2]
+        print(f"    geometric order {t[-1]}:  {1e3*abs(n[1]-n[0]):8.3f} MHz")
 
-print(f"\n{'':>18}" + "".join(f"{info[t][0]['tets']:>11,}" for t, _e in CASES)
-      + "   elements")
-print(f"\n  🔑 FALSIFIER — TE011/TM111 splitting, true value EXACTLY 0:")
-for t, _e in CASES:
-    n = sorted(res[t], key=lambda x: abs(x - EX["TE011"]))[:2]
-    print(f"    geometric order {t[-1]}:  {1e3*abs(n[1]-n[0]):8.3f} MHz")
+    json.dump({"exact": EX, **res, "md5": hs, "orders": ORDERS,
+               "tets": {t: info[t][0]["tets"] for t, _e in CASES}},
+              open("e0f.result.json", "w"), indent=1)
+    print("\n  wrote e0f.result.json — NO VERDICT HERE", flush=True)
 
-json.dump({"exact": EX, **res, "md5": hs, "orders": ORDERS,
-           "tets": {t: info[t][0]["tets"] for t, _e in CASES}},
-          open("e0f.result.json", "w"), indent=1)
-print("\n  wrote e0f.result.json — NO VERDICT HERE", flush=True)
+
+if __name__ == "__main__":
+    main()

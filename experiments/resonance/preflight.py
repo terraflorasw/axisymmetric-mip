@@ -16,10 +16,38 @@ Each rule is checked against a KNOWN-BAD sample it must catch and a KNOWN-GOOD
 sample it must not.
 """
 import ast
+import io
 import re
 import sys
+import tokenize
 
 ERROR, WARN = "ERROR", "warn"
+
+
+def code_only(src):
+    """`src` with COMMENT and STRING contents blanked, line numbers preserved.
+
+    🔴 WITHOUT THIS THE LINTER FLAGS ITS OWN DOCUMENTATION. Every rule below
+    quotes the pattern it forbids, so preflight.py reported 7 errors against
+    itself and reap.py 1 — all of them prose explaining why not to do the thing.
+    A checker that cannot tell code from commentary trains you to ignore it,
+    which is worse than not having it.
+    """
+    out = src.splitlines(keepends=True)
+    try:
+        toks = list(tokenize.generate_tokens(io.StringIO(src).readline))
+    except (tokenize.TokenError, IndentationError):
+        return src
+    for t in toks:
+        if t.type not in (tokenize.COMMENT, tokenize.STRING):
+            continue
+        (r1, c1), (r2, c2) = t.start, t.end
+        for r in range(r1, r2 + 1):
+            line = out[r - 1]
+            a = c1 if r == r1 else 0
+            b = c2 if r == r2 else len(line.rstrip("\n"))
+            out[r - 1] = line[:a] + " " * (b - a) + line[b:]
+    return "".join(out)
 
 
 def r_timeout(src, tree):
@@ -51,8 +79,13 @@ def r_main_guard(src, tree):
     launched by an import, twice, once leaving an untracked foreground job."""
     if "__main__" in src:
         return []
+    def is_setup(n):
+        f = n.value.func
+        return (isinstance(f, ast.Attribute) and f.attr == "insert"
+                and isinstance(f.value, ast.Attribute) and f.value.attr == "path")
     bad = [n for n in tree.body
-           if isinstance(n, ast.Expr) and isinstance(n.value, ast.Call)]
+           if isinstance(n, ast.Expr) and isinstance(n.value, ast.Call)
+           and not is_setup(n)]
     if bad:
         return [(ERROR, bad[0].lineno,
                  "top-level calls with no `if __name__ == \"__main__\"` guard — "
@@ -60,21 +93,45 @@ def r_main_guard(src, tree):
     return []
 
 
+def _fixture_lines(tree):
+    """Lines belonging to the BAD/GOOD test fixtures.
+
+    They deliberately CONTAIN the forbidden patterns — that is their whole
+    purpose — so a rule needing raw string contents must not report them.
+    A test fixture is not code under test.
+    """
+    out = set()
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Assign) and any(
+                isinstance(t, ast.Name) and t.id in ("BAD", "GOOD")
+                for t in n.targets):
+            out |= set(range(n.lineno, (n.end_lineno or n.lineno) + 1))
+    return out
+
+
 def r_help_percent(src, tree):
+    """RAW: this rule must see string contents."""
+    skip = _fixture_lines(tree)
     """argparse expands help with `% params`. A bare % crashes --help. '23% low'
     parses as %o; '9.2% WORSE' as %W. Made twice in one session."""
     out = []
     for m in re.finditer(r'help\s*=\s*(("(?:[^"\\]|\\.)*"\s*)+)', src, re.S):
         txt = m.group(1)
-        for pm in re.finditer(r"%(?!%)", txt):
-            out.append((ERROR, src[:m.start()].count("\n") + 1,
-                        "unescaped %% in an argparse help string — crashes "
-                        "--help. Double it."))
+        # 🔴 `%(?!%)` was WRONG: in a correctly-escaped "%%" the SECOND % is
+        # followed by a space, so it matched and reported a false positive —
+        # and my "fix" for it then turned %% into %%%. Count RUNS instead: an
+        # odd-length run contains an unescaped %, an even one does not.
+        for pm in (m for m in re.finditer(r"%+", txt) if len(m.group()) % 2):
+            ln = src[:m.start()].count("\n") + 1
+            if ln not in skip:
+                out.append((ERROR, ln,
+                            "unescaped %% in an argparse help string — crashes "
+                            "--help. Double it."))
             break
     return out
 
 
-def r_ps_e_with_C(src, tree):
+def r_ps_e_with_C(src, tree=None):
     """`ps -eo … -C name`: -e selects EVERY process and silently overrides -C,
     so a finished job looks alive."""
     return [(ERROR, i + 1, "ps -e overrides -C silently; drop -e.")
@@ -111,13 +168,68 @@ def r_bare_background(src, tree):
 def r_nearest_match(src, tree):
     """min(..., key=abs(x - target)) with no ceiling check fabricated a -27.6
     MHz error for a mode that was never in the solved set."""
+    inside = {ln for f in ast.walk(tree)
+              if isinstance(f, ast.FunctionDef) and f.name == "match_exact"
+              for ln in range(f.lineno, (f.end_lineno or f.lineno) + 1)}
     return [(WARN, i + 1, "nearest-value matching — check the target is below "
              "the solved ceiling and the pick is not already claimed "
              "(physics.match_exact).")
             for i, l in enumerate(src.splitlines())
-            if re.search(r"min\(.*key=lambda.*abs\(", l)]
+            if re.search(r"min\(.*key=lambda.*abs\(", l) and i + 1 not in inside]
 
 
+# rules needing the raw source (they inspect string CONTENTS); all others are
+# run against code_only() so prose about a pattern is not mistaken for it
+RAW = {"r_help_percent"}
+
+
+# ---------------------------------------------------------------- shell rules
+# .sh files get their own set: no AST, and the hazards are different. Added
+# after `pkill -f` killed a shell for the THIRD time in one session — twice
+# locally (exit 144) and once over ssh, taking the remote shell with it.
+
+def sh_pkill(src, _t=None):
+    return [(ERROR, i + 1, "pkill -f matches the CALLING shell's own argv "
+             "(and over ssh, the remote shell). Use `ps -o pid=,args= -C name` "
+             "then kill by PID, or reap.py.")
+            for i, l in enumerate(src.splitlines())
+            if re.search(r"\bpkill\b.*-f|\bpkill\s+-\w*f", l)
+            and not l.strip().startswith("#")]
+
+
+def sh_unguarded_mkfs(src, _t=None):
+    """mkfs with no blkid/-n guard destroys a volume on the SECOND run."""
+    out = []
+    lines = src.splitlines()
+    for i, l in enumerate(lines):
+        if l.strip().startswith("#") or "mkfs" not in l:
+            continue
+        ctx = " ".join(lines[max(0, i - 2):i + 1])
+        if "blkid" not in ctx and "-n" not in l:
+            out.append((ERROR, i + 1, "mkfs with no guard — on a re-run this "
+                        "destroys the volume. Prefix with `blkid DEV || `."))
+    return out
+
+
+def sh_rm_rf_var(src, _t=None):
+    """`rm -rf $X/` deletes / when X is empty or unset."""
+    return [(ERROR, i + 1, "rm -rf on an unbraced variable — if it is empty "
+             "this targets /. Use \"${VAR:?}\".")
+            for i, l in enumerate(src.splitlines())
+            if re.search(r"rm\s+-[rf]{2}\s+\$[A-Za-z_]", l)
+            and not l.strip().startswith("#")]
+
+
+SHELL_RULES = [sh_pkill, sh_unguarded_mkfs, sh_rm_rf_var, r_ps_e_with_C]
+SH_BAD = {
+    "sh_pkill": "pkill -TERM -f myjob.py\n",
+    "sh_unguarded_mkfs": "sudo mkfs.ext4 /dev/nvme1n1\n",
+    "sh_rm_rf_var": 'rm -rf $PREFIX/build\n',
+    "r_ps_e_with_C": "ps -eo pid= -C palace\n",
+}
+SH_GOOD = ('sudo blkid "$DEV" || sudo mkfs.ext4 "$DEV"\n'
+           'ps -o pid=,args= -C palace | tail -n +1 | xargs -r kill\n'
+           'rm -rf "${PREFIX:?}/build"\n')
 RULES = [r_timeout, r_pkill, r_main_guard, r_help_percent, r_ps_e_with_C,
          r_falsy_numeric_flag, r_bare_background, r_nearest_match]
 
@@ -141,15 +253,28 @@ GOOD = ('import subprocess\n'
 
 def lint(path):
     src = open(path).read()
+    if path.endswith((".sh", ".bash")) or src.startswith("#!/usr/bin/env bash") \
+            or src.startswith("#!/bin/bash"):
+        return [f for rule in SHELL_RULES for f in rule(src)]
     try:
         tree = ast.parse(src)
     except SyntaxError as e:
         return [(ERROR, e.lineno or 0, f"SyntaxError: {e.msg}")]
-    return [f for rule in RULES for f in rule(src, tree)]
+    blanked = code_only(src)
+    return [f for rule in RULES
+            for f in rule(src if rule.__name__ in RAW else blanked, tree)]
 
 
 def self_test():
     ok = True
+    for rule in SHELL_RULES:
+        src = SH_BAD[rule.__name__]
+        hit, miss = rule(src), rule(SH_GOOD)
+        good = bool(hit) and not miss
+        ok &= good
+        print(f"  {'✅' if good else '🔴'} {rule.__name__:<22} "
+              f"fires on known-bad: {bool(hit)}   quiet on known-good: "
+              f"{not miss}")
     for rule in RULES:
         src = BAD[rule.__name__]
         hit = rule(src, ast.parse(src))

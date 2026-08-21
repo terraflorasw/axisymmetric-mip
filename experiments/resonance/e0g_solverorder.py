@@ -45,52 +45,62 @@ import pathlib
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
+import eigmodes
 import physics as ph
 from e0_solver_vs_math import A_MM, L_MM, build, eigen_cfg, run, eig
 
 SOLVER_ORDERS = [1, 2, 3]
 MESH = "e0g"
 
-print(__doc__)
-print("=" * 78, flush=True)
-EX = ph.spectrum(A_MM, L_MM)
-DEG = [("TE011", "TM111")]
+def main():
+    print(__doc__)
+    print("=" * 78, flush=True)
+    EX = ph.spectrum(A_MM, L_MM)
+    DEG = [("TE011", "TM111")]
 
-meta, fac = build(MESH)          # ONE mesh, geometric order 2 (converged)
-print(f"    md5 {hashlib.md5(pathlib.Path(f'{MESH}.msh').read_bytes()).hexdigest()[:12]}",
-      flush=True)
-print("  🔑 ONE MESH for all three — solver order is a config setting, so this "
-      "is a\n     SAME-MESH comparison and mesh-realisation error cancels "
-      "exactly.\n", flush=True)
+    meta, fac = build(MESH)          # ONE mesh, geometric order 2 (converged)
+    print(f"    md5 {hashlib.md5(pathlib.Path(f'{MESH}.msh').read_bytes()).hexdigest()[:12]}",
+          flush=True)
+    print("  🔑 ONE MESH for all three — solver order is a config setting, so this "
+          "is a\n     SAME-MESH comparison and mesh-realisation error cancels "
+          "exactly.\n", flush=True)
 
-res = {}
-for o in SOLVER_ORDERS:
-    tag = f"e0g_s{o}"
-    cfg = eigen_cfg(tag, meta, mesh=f"{MESH}.msh")
-    cfg["Solver"]["Order"] = o
-    assert cfg["Solver"]["Order"] == o
-    print(f"  solver order {o}", flush=True)
-    run(tag, cfg)
-    res[tag] = eig(tag)
-
-print(f"\nΔ from EXACT, MHz — one mesh, geometric order 2, solver order varied\n")
-print(f"{'mode':>7}{'exact':>11}" + "".join(f"{'solver ' + str(o):>12}"
-                                            for o in SOLVER_ORDERS))
-for k, fx in sorted(EX.items(), key=lambda kv: kv[1]):
-    row = []
+    res = {}
     for o in SOLVER_ORDERS:
-        p, _r = ph.match_exact(EX, res[f"e0g_s{o}"], DEG)
-        row.append(f"{1e3*(p[k]-fx):>12.3f}" if k in p else f"{'—':>12}")
-    print(f"{k:>7}{fx:>11.5f}" + "".join(row))
+        tag = f"e0g_s{o}"
+        cfg = eigen_cfg(tag, meta, mesh=f"{MESH}.msh")
+        cfg["Solver"]["Order"] = o
+        assert cfg["Solver"]["Order"] == o
+        print(f"  solver order {o}", flush=True)
+        run(tag, cfg)
+        res[tag] = eig(tag)
 
-print(f"\n  🔑 FALSIFIER — TE011/TM111 splitting, true value EXACTLY 0:")
-for o in SOLVER_ORDERS:
-    v = res[f"e0g_s{o}"]
-    n = sorted(v, key=lambda x: abs(x - EX["TE011"]))[:2]
-    print(f"    solver order {o}:  {1e3*abs(n[1]-n[0]):8.3f} MHz")
-print(f"\n  reference: mesh-realisation floor is ~1.2 MHz on this mesh "
-      f"(E0e), and 1.2-7.1 MHz across realisations (E0b).")
+    print(f"\nΔ from EXACT, MHz — one mesh, geometric order 2, solver order varied\n")
+    print(f"{'mode':>7}{'exact':>11}" + "".join(f"{'solver ' + str(o):>12}"
+                                                for o in SOLVER_ORDERS))
+    for k, fx in sorted(EX.items(), key=lambda kv: kv[1]):
+        row = []
+        for o in SOLVER_ORDERS:
+            p, _r = ph.match_exact(EX, res[f"e0g_s{o}"], DEG)
+            row.append(f"{1e3*(p[k]-fx):>12.3f}" if k in p else f"{'—':>12}")
+        print(f"{k:>7}{fx:>11.5f}" + "".join(row))
 
-json.dump({"exact": EX, **res, "mesh": MESH, "solver_orders": SOLVER_ORDERS,
-           "tets": meta["tets"]}, open("e0g.result.json", "w"), indent=1)
-print("\n  wrote e0g.result.json — NO VERDICT HERE", flush=True)
+    print(f"\n  🔑 FALSIFIER — TE011/TM111 splitting, true value EXACTLY 0:")
+    for o in SOLVER_ORDERS:
+        v = res[f"e0g_s{o}"]
+        # 🔴 was sorted(...)[:2] — the two NEAREST, which are BOTH TM111
+        # polarisations (m=1 is doubly degenerate). That reported TM111's
+        # internal splitting, not TE011<->TM111. See eigmodes.te011_tm111.
+        _d = eigmodes.te011_tm111(v, EX["TE011"])
+        n = [_d['tm111'], _d['te011']] if _d else sorted(v, key=lambda x: abs(x - EX["TE011"]))[:2]
+        print(f"    solver order {o}:  {1e3*abs(n[1]-n[0]):8.3f} MHz")
+    print(f"\n  reference: mesh-realisation floor is ~1.2 MHz on this mesh "
+          f"(E0e), and 1.2-7.1 MHz across realisations (E0b).")
+
+    json.dump({"exact": EX, **res, "mesh": MESH, "solver_orders": SOLVER_ORDERS,
+               "tets": meta["tets"]}, open("e0g.result.json", "w"), indent=1)
+    print("\n  wrote e0g.result.json — NO VERDICT HERE", flush=True)
+
+
+if __name__ == "__main__":
+    main()

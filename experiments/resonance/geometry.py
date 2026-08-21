@@ -30,9 +30,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import hashlib
 import math
+import os
 import pathlib
+import shutil
 import sys
+import time
 
 import gmsh
 
@@ -43,7 +47,7 @@ P = dict(
     cav_r=94.3e-3,          # cavity radius   -> TE011 at 2.4506 GHz with L=100
     cav_len=100.0e-3,       # cavity length
     # R99: torch tubes. The build is ALL SAPPHIRE and PERMANENT (not a
-    # swappable consumable), so sapphire is the DEFAULT — simulating torch_v by
+    # swappable consumable), so sapphire is the DEFAULT — simulating quartz by
     # default would model a cavity we are not building. Quartz stays reachable
     # as --torch-material 3.78,1e-4 for the development/commissioning build.
     torch_od=20.0e-3,       # standard Fassel outer tube
@@ -182,7 +186,7 @@ P = dict(
     bore_h=5.0e-3,          # bore mesh size — air, so wavelength-limited
     # R15: the R12 plasma sub-region got NO explicit size — it is carved out of
     # the bore before set_pts runs, so it inherited only the background field
-    # (1.5 mm near the torch_v, growing to 15 mm). The RF skin depth in a sigma =
+    # (1.5 mm near the quartz, growing to 15 mm). The RF skin depth in a sigma =
     # 30 S/m plasma at 2.45 GHz is 1.86 mm, so the loaded Q was being computed on
     # a mesh that barely resolves one skin depth. Zero follows bore_h.
     plasma_h=0.0,
@@ -235,6 +239,15 @@ def f_te011(a: float, L: float) -> float:
 
 def build(p: dict, out: str, msh_order: int) -> None:
     gmsh.initialize()
+    # Meshing threads. DEFAULT 1 — deliberately, so every mesh ever built by
+    # this file still reproduces byte for byte. gmsh here IS built with OpenMP
+    # (General.BuildOptions lists it), so this option is live, not inert. But
+    # Mesh.Algorithm3D is 1 (Delaunay), which is largely serial; the threaded
+    # win is in 1D/2D and in the order-2 HighOrderOptimize pass below. Raising
+    # it is only legitimate once ops/gmshcaps.sh has shown the output is still
+    # deterministic at that thread count — a non-reproducible mesh would break
+    # the same-mesh rule that the whole error budget rests on (METHODOLOGY 2b).
+    gmsh.option.setNumber("General.NumThreads", max(1, int(p.get("threads", 1))))
     gmsh.model.add("te011_cavity")
     occ = gmsh.model.occ
 
@@ -250,7 +263,7 @@ def build(p: dict, out: str, msh_order: int) -> None:
     # punched out before sectoring.
     #
     # Sectoring the full disc instead put all ns wedge planes through the axis,
-    # slicing the 1.5 mm torch_v shell and meeting in a line at r=0. That
+    # slicing the 1.5 mm quartz shell and meeting in a line at r=0. That
     # produced a sliver element at minSICN 1.5e-5: positive, so it passes an
     # "inverted?" test, but degenerate enough to wreck the conditioning of the
     # eigensolve. The sectors only ever needed to partition the AIR, so the
@@ -309,7 +322,7 @@ def build(p: dict, out: str, msh_order: int) -> None:
 
     # Optional annular STRIKER ridge on the -z end cap.
     #
-    # Metal cannot touch the bore gas: it is enclosed by the torch_v torch, and
+    # Metal cannot touch the bore gas: it is enclosed by the quartz torch, and
     # anything inside the torch is in the sample path, where erosion becomes
     # permanent spectral background. The ridge therefore lives OUTSIDE the
     # torch, exploiting the fact that TM020's E_z is TANGENTIAL to the torch
@@ -396,10 +409,10 @@ def build(p: dict, out: str, msh_order: int) -> None:
         # The filter is a full quartz annulus lying FLAT against each end cap,
         # r = t_ro..a, tb thick — so a loop rising from z0 to z0+ld passes
         # straight THROUGH it. Cutting the wire from the air wedges alone left
-        # wire and torch_v as overlapping solids, and gmsh ground for >10 min on
+        # wire and quartz as overlapping solids, and gmsh ground for >10 min on
         # a mesh that normally takes 40 s, with no error raised.
         #
-        # Physically this is a clearance hole through the torch_v for each leg,
+        # Physically this is a clearance hole through the quartz for each leg,
         # which is buildable but is a real design interaction: R69's cap route
         # REQUIRES modifying the mode filter, and R71 may call for a THICKER
         # filter, which makes the penetration deeper.
@@ -496,7 +509,7 @@ def build(p: dict, out: str, msh_order: int) -> None:
 
     # --- R21 capacitive electrode ------------------------------------------
     # Cut from the air like the loop, so the topological rule tags it WALL. Inner
-    # radius is the torch OD: the band sits against the torch_v, outside the gas.
+    # radius is the torch OD: the band sits against the quartz, outside the gas.
     if p["el_w"] > 0:
         ez, ew, et = p["el_zc"], p["el_w"], p["el_t"]
         ring_o = occ.addCylinder(0, 0, ez - ew / 2, 0, 0, ew, t_ro + et)
@@ -865,7 +878,7 @@ def build(p: dict, out: str, msh_order: int) -> None:
     # resolution. Meshing it at h_qtz cost 57k tets for no accuracy.
     h_bore = p["bore_h"]
 
-    print(f"  target h: air {h_air*1e3:.1f} mm | torch_v {h_qtz*1e3:.2f} mm "
+    print(f"  target h: air {h_air*1e3:.1f} mm | quartz {h_qtz*1e3:.2f} mm "
           f"| bore {h_bore*1e3:.1f} mm")
 
     # R15: MeshSizeMin is a HARD FLOOR — gmsh clamps every requested size to it,
@@ -990,7 +1003,13 @@ def build(p: dict, out: str, msh_order: int) -> None:
     # Perturbing the mesh size changes the element topology and almost always
     # dodges the pathological element.
     if msh_order > 1:
-        gmsh.option.setNumber("Mesh.HighOrderOptimize", 2)
+        # E0m: the HIGH-ORDER PASS is the non-deterministic stage. Geometric
+        # order 1 is bit-identical across repeats; order 2 never is, differing
+        # in ~2,540 node COORDINATES (~12 um) with identical topology. This
+        # iterative optimiser is where the jitter enters, so it is exposed as a
+        # flag rather than hardcoded — 2 keeps existing behaviour exactly.
+        gmsh.option.setNumber("Mesh.HighOrderOptimize",
+                              int(p.get("ho_optimize", 2)))
         gmsh.option.setNumber("Mesh.HighOrderPassMax", 25)
         gmsh.option.setNumber("Mesh.HighOrderIterMax", 200)
         gmsh.model.mesh.setOrder(msh_order)
@@ -1061,6 +1080,7 @@ def build(p: dict, out: str, msh_order: int) -> None:
     lt, lp = p["loop_tilt"], p["loop_phi"]
     meta = {
         "mesh": pathlib.Path(out).name,
+        "threads": max(1, int(p.get("threads", 1))),
         "port_direction": [-math.sin(lp) * math.cos(lt),
                            math.cos(lp) * math.cos(lt),
                            math.sin(lt)] if p["loop_d"] > 0 else None,
@@ -1136,6 +1156,120 @@ def build(p: dict, out: str, msh_order: int) -> None:
     gmsh.finalize()
 
 
+# ---------------------------------------------------------------------------
+# MESH CACHE
+#
+# Meshing is no longer the cheap step. At 32 ranks an E1b case solves in ~4.3
+# min and meshes in ~5.2 — the mesh is now the critical path, and we rebuild it
+# byte-for-byte identically on every re-run of the same experiment.
+#
+# 🔑 This is a REUSE cache, not an approximation. A hit returns the exact file a
+# rebuild would have produced, so it does not weaken METHODOLOGY 2b (same-mesh
+# differencing) — it enforces it harder than rebuilding does, because a rebuild
+# is only identical if nothing drifted, while a hit is identical by
+# construction and verified by hash.
+#
+# THE KEY is the fully-resolved parameter dict P, the geometric order, the gmsh
+# version, and the SHA-256 OF THIS FILE. Hashing P rather than argv means
+# `--sectors 1` and `--azimuthal-bins 1` share an entry and flag order does not
+# matter; hashing the source means any edit to the geometry code invalidates
+# every entry, which is the property that makes the cache safe to leave on.
+#
+# Deleting meshcache/ is always safe: the next run rebuilds.
+# ---------------------------------------------------------------------------
+CACHE_VERSION = 1
+
+
+def _cache_dir() -> pathlib.Path:
+    d = os.environ.get("AMIP_MESH_CACHE")
+    return (pathlib.Path(d) if d
+            else pathlib.Path(__file__).resolve().parent / "meshcache")
+
+
+def _sha_file(path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for blk in iter(lambda: f.read(1 << 20), b""):
+            h.update(blk)
+    return h.hexdigest()
+
+
+def cache_key(p: dict, order: int) -> tuple:
+    """(key, material). Everything that can change a mesh goes in the key."""
+    material = {
+        "cache_version": CACHE_VERSION,
+        # default=repr so an unexpected type cannot silently collide with
+        # another; it changes the key instead of raising or hashing as equal.
+        "params": json.dumps(p, sort_keys=True, default=repr),
+        "order": order,
+        "gmsh_api": str(getattr(gmsh, "GMSH_API_VERSION", "unknown")),
+        "geometry_py": _sha_file(pathlib.Path(__file__).resolve()),
+    }
+    blob = json.dumps(material, sort_keys=True).encode()
+    return hashlib.sha256(blob).hexdigest(), material
+
+
+def cache_lookup(key: str, out: str):
+    """Restore a hit to `out`. Returns True on hit, False on miss."""
+    ent = _cache_dir() / key[:16]
+    mesh, meta, rec = ent / "mesh.msh", ent / "meta.json", ent / "entry.json"
+    if not (mesh.exists() and meta.exists() and rec.exists()):
+        return False
+    try:
+        info = json.loads(rec.read_text())
+    except (json.JSONDecodeError, OSError) as e:
+        print(f"  cache: entry {key[:16]} unreadable ({e}) — rebuilding")
+        return False
+    # A cache that is trusted without checking is a way to make every future
+    # run wrong at once. Verify before use; a corrupt entry is a miss, loudly.
+    got = _sha_file(mesh)
+    if got != info.get("mesh_sha256"):
+        print(f"  🔴 cache: entry {key[:16]} CORRUPT (sha mismatch) — rebuilding")
+        return False
+    outp = pathlib.Path(out)
+    shutil.copyfile(mesh, outp)
+    m = json.loads(meta.read_text())
+    m["mesh"] = outp.name
+    m["from_cache"] = {"key": key[:16], "built": info.get("built"),
+                       "mesh_sha256": got}
+    outp.with_suffix(".meta.json").write_text(json.dumps(m, indent=2) + "\n")
+    print(f"  ✅ cache HIT {key[:16]}  ({m.get('tets', 0):,} tets, built "
+          f"{info.get('built', '?')}) — meshing skipped")
+    return True
+
+
+def cache_store(key: str, out: str, material: dict) -> None:
+    ent = _cache_dir() / key[:16]
+    outp = pathlib.Path(out)
+    meta = outp.with_suffix(".meta.json")
+    if not (outp.exists() and meta.exists()):
+        return
+    try:
+        ent.parent.mkdir(parents=True, exist_ok=True)
+        tmp = ent.with_name(ent.name + f".tmp{os.getpid()}")
+        if tmp.exists():
+            shutil.rmtree(tmp, ignore_errors=True)
+        tmp.mkdir(parents=True)
+        shutil.copyfile(outp, tmp / "mesh.msh")
+        shutil.copyfile(meta, tmp / "meta.json")
+        (tmp / "entry.json").write_text(json.dumps({
+            "key": key,
+            "mesh_sha256": _sha_file(tmp / "mesh.msh"),
+            "built": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "bytes": outp.stat().st_size,
+            "material": material,
+        }, indent=2) + "\n")
+        # atomic: a reader sees a complete entry or no entry, never a torn one
+        # (the same failure the journal was hardened against).
+        if ent.exists():
+            shutil.rmtree(ent, ignore_errors=True)
+        os.replace(tmp, ent)
+        print(f"  cache: stored {key[:16]} ({outp.stat().st_size/1e6:.1f} MB)")
+    except OSError as e:
+        # A cache is an optimisation. It must never be able to fail a run.
+        print(f"  cache: store failed ({e}) — continuing")
+
+
 def sanity_check(p: dict) -> None:
     """Analytic anchor. An FEM result far from this is a modelling error."""
     a, L = p["cav_r"], p["cav_len"]
@@ -1168,7 +1302,7 @@ if __name__ == "__main__":
     ap.add_argument("--sectors", dest="sectors", type=int, default=None,
                     help="azimuthal energy sectors (5 resolves m=1..4)")
     ap.add_argument("--no-torch", action="store_true",
-                    help="omit the torch_v tube (bore becomes plain air)")
+                    help="omit the quartz tube (bore becomes plain air)")
     ap.add_argument("--loop-tilt", type=float, default=None,
                     help="loop tilt in degrees: 0=TE011 only, 90=TM020 only, 45=both")
     ap.add_argument("--viewport", type=float, default=None,
@@ -1220,7 +1354,7 @@ if __name__ == "__main__":
                          "artifacts sitting ON the symmetry axis.")
     ap.add_argument("--torch-material", type=str, default=None,
                     help="R88: eps_r,tand — 11.6,3.5e-5 sapphire (DEFAULT, R99); "
-                         "3.78,1e-4 torch_v for the development build. R98: "
+                         "3.78,1e-4 quartz for the development build. R98: "
                          "11.6 is eps_PERP_c — what "
                          "E_phi sees with the c-axis longitudinal (R32 "
                          "measured it reproduces isotropic 11.6 exactly). "
@@ -1288,7 +1422,7 @@ if __name__ == "__main__":
                          "closed evidence-trail drivers still run.")
     ap.add_argument("--filter-eps", dest="filter_eps", type=float, default=None,
                     help="mode-filter relative permittivity (default fused "
-                         "torch_v 3.78; R107 measured sapphire as 9.2%% WORSE)")
+                         "quartz 3.78; R107 measured sapphire as 9.2%% WORSE)")
     ap.add_argument("--electrode", type=str, default=None,
                     help="R21: zc,w,t in mm — capacitive band at the torch OD")
     ap.add_argument("--plasma", type=str, default=None,
@@ -1303,6 +1437,22 @@ if __name__ == "__main__":
                          "from the SOLVER order. E0f: order 1 chords "
                          "the circle (reads too small, f high); order "
                          "2+ curves to it.")
+    ap.add_argument("--ho-optimize", dest="ho_optimize", type=int, default=2,
+                    choices=(0, 1, 2, 3, 4),
+                    help="Mesh.HighOrderOptimize. Default 2 (unchanged). E0m "
+                         "found this pass is why two identical commands produce "
+                         "different meshes; 0 disables it.")
+    ap.add_argument("--no-cache", dest="no_cache", action="store_true",
+                    help="rebuild the mesh even if an identical one is cached, "
+                         "and do not store the result. The cache is keyed on "
+                         "the resolved parameters AND the sha256 of this file, "
+                         "so a hit is the same mesh a rebuild would produce; "
+                         "use this only to test that claim.")
+    ap.add_argument("--threads", type=int, default=1,
+                    help="gmsh meshing threads (General.NumThreads). Default "
+                         "1 so meshes stay byte-reproducible; >1 is only safe "
+                         "once ops/gmshcaps.sh --determinism has confirmed it "
+                         "for this geometry.")
     a = ap.parse_args()
 
     # R50: name the old flags where they are used, without breaking them.
@@ -1313,6 +1463,8 @@ if __name__ == "__main__":
                            "--sectors": "--azimuthal-bins"}[f] for f in _old)
               + " (R50); both work")
 
+    P["threads"] = a.threads
+    P["ho_optimize"] = a.ho_optimize
     if a.radius is not None:
         P["cav_r"] = a.radius * 1e-3
     if a.length is not None:
@@ -1321,7 +1473,10 @@ if __name__ == "__main__":
         P["sectors"] = a.sectors
     if a.n_wl is not None:
         P["elems_per_wl"] = a.n_wl
-    if a.loop_tilt:
+    # 🔴 numeric flag: 0 is falsy. Harmless today because the default IS 0 —
+    # which is exactly the state --viewport was in before its default changed
+    # and the flag silently stopped working.
+    if a.loop_tilt is not None:
         P['loop_tilt'] = math.radians(a.loop_tilt)
     # 🔴 R113: `if a.viewport:` — 0.0 is FALSY, so `--viewport 0` was silently
     # ignored. Harmless while the default was 0; the moment R98 flipped the
@@ -1455,4 +1610,13 @@ if __name__ == "__main__":
           + (f"  filter {P['filter_t']*1e3:.1f} mm eps_r {P['filter_eps']}"
              if P['filter_t'] > 0 else "  no filter"))
     sanity_check(P)
-    build(P, a.out, a.order)
+
+    key, material = cache_key(P, a.order)
+    if a.no_cache:
+        print(f"  cache: bypassed (--no-cache), key would be {key[:16]}")
+        build(P, a.out, a.order)
+    elif not cache_lookup(key, a.out):
+        t0 = time.time()
+        build(P, a.out, a.order)
+        print(f"  meshed in {time.time() - t0:.1f}s")
+        cache_store(key, a.out, material)
