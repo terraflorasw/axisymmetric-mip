@@ -620,6 +620,40 @@ justifies the label.
 UNANSWERABLE.** Nothing was measured in between. Go and read what its criterion
 actually was.
 
+## 7k. Park surprises. The experiment list does not grow.
+
+**`PLAN.md` has said this since 2026-08-20 and I never opened the file.**
+
+> *"**It does not grow.** Five experiments, each with a verification and a
+> falsification declared here before any driver is written. Ordering is by LOD
+> dependency, not by curiosity."*
+>
+> *"**Parked — surprises, NOT register items.** These are recorded so they are
+> not lost. **They do not spawn runs.**"*
+
+🔴 On 2026-08-23 I spawned a run from nearly every surprise, invented a
+hypothesis (H6) that duplicated an existing regime, and minted revision numbers —
+reproducing precisely the register growth `README.md` blames for the previous
+programme's abandonment. The mechanism to prevent it already existed, one file
+away, with a section heading naming the exact failure.
+
+✅ **A surprise goes in PLAN's Parked list.** It is recorded so it is not lost.
+It does not become a run, a hypothesis, or a number.
+✅ **Before opening any new line of work, open `PLAN.md`** and find which of
+E0–E4 it belongs to. If it belongs to none, that is the signal to park it, not
+to extend the list.
+
+🔑 **And E3 already declared the falsifier for delivered power** —
+**η_total = η_plasma + η_wall + η_dielectric must close within a few percent, or
+only η_total may be quoted.** I reported "net into plasma" figures all session
+without ever running that decomposition. **The check you need has often already
+been written down by someone who thought about the question longer than you have
+been looking at it.**
+
+⚠️ Read the WHOLE document set before working (KNOWN.md indexes it). Three of ten
+documents here went unopened for a full session, and two of them — `PLAN.md` and
+`METHODOLOGY.md` — are the ones about not fooling yourself.
+
 ## 8. Land results in files, immediately
 
 A spot reclamation killed the instance mid-run. H1, H2 and H2b wrote their result

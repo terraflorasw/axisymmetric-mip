@@ -93,6 +93,25 @@ Letting such a case run longer will not finish it.
 
 ## A coupling loop changes WHICH MODE it reads
 
+🔴 **AND THE SPECIFIC MECHANISM IS AN ARTIFACT.** `e0k2_sizeq`, which produced
+the table below, imports bare `GEO` and never passes `--groove` — verified: all
+four of its meshes carry `groove = [0.0, 0.0]`. **In an ungrooved cavity TE011
+and TM111 are EXACTLY degenerate** (χ′₀₁ = χ₁₁, at every D/L), so the dip is two
+overlapping resonances and "which mode the loop reads" is a question about a
+degeneracy the design REMOVES. `e0k2_anchor` grooved for precisely this reason
+and says so: with the groove, TM111 is 64 MHz away — 200–300 linewidths — and
+there is nothing at 2.45 to confuse.
+**The ~176 mm² threshold is therefore not known to be a property of the loop.**
+⚠️ Two rigs in the same family disagreed on whether the groove was needed, and
+the one that skipped it produced the standing hazard.
+
+> 🔴 **MEASURED ON A GROOVE-FREE CAVITY (2026-08-23) — RE-CHECK BEFORE RELYING
+> ON IT.** Everything in this section comes from H3-era runs where `GEO` never
+> passed `--groove`, while the design is frozen at 5 × 10 mm. **The filter
+> changes which modes exist**, and these are statements about mode behaviour,
+> convergence and coupling — all downstream of that. Not necessarily wrong;
+> **not established for the cavity being built.**
+
 🔴 Measured, 2026-08-22. A cap loop at r = 0.4805a couples preferentially to a
 **TM111 polarisation** when small, and to **TE011** only above ~176 mm² of loop
 area. The driven |S11| dip is at essentially the same frequency either way — the
@@ -174,6 +193,13 @@ driven the efficient way to INTERROGATE.
 
 ### 🔑 DRIVEN COST SCALES WITH Q — so it is cheapest exactly where eigen fails
 
+> 🔴 **MEASURED ON A GROOVE-FREE CAVITY (2026-08-23) — RE-CHECK BEFORE RELYING
+> ON IT.** Everything in this section comes from H3-era runs where `GEO` never
+> passed `--groove`, while the design is frozen at 5 × 10 mm. **The filter
+> changes which modes exist**, and these are statements about mode behaviour,
+> convergence and coupling — all downstream of that. Not necessarily wrong;
+> **not established for the cavity being built.**
+
 Added 2026-08-23. The "driven is 2,500–2,900 s" figure in the record was measured
 on the **empty, high-Q** cavity and does not transfer. A driven sweep's cost is
 its sample count, the step must resolve the linewidth, and linewidth = f₀/Q, so
@@ -190,6 +216,13 @@ no NLEPS and no divergence-free projection and gets CHEAPER as Q falls.** The
 regimes where eigen fails are the regimes where driven is cheapest.
 
 ### 🔴 EIGEN'S CONVERGENCE ENVELOPE — two measured regimes where it stops
+
+> 🔴 **MEASURED ON A GROOVE-FREE CAVITY (2026-08-23) — RE-CHECK BEFORE RELYING
+> ON IT.** Everything in this section comes from H3-era runs where `GEO` never
+> passed `--groove`, while the design is frozen at 5 × 10 mm. **The filter
+> changes which modes exist**, and these are statements about mode behaviour,
+> convergence and coupling — all downstream of that. Not necessarily wrong;
+> **not established for the cavity being built.**
 
 1. **ε near ZERO.** At ne=1e19 (ε=−2.109) the divergence-free PCG stagnates: 92
    non-convergences, reduction factor 1.007. ne=1e20 (ε=−30.09) is healthy
@@ -209,6 +242,13 @@ cleanly, confirming INSTRUMENT's own long-standing claim that *"the geometries
 where the eigensolver diverges are exactly where driven should still work."*
 
 ### 🔴 A DRIVEN SWEEP RETURNS THE DEEPEST DIP, NOT YOUR MODE
+
+> 🔴 **MEASURED ON A GROOVE-FREE CAVITY (2026-08-23) — RE-CHECK BEFORE RELYING
+> ON IT.** Everything in this section comes from H3-era runs where `GEO` never
+> passed `--groove`, while the design is frozen at 5 × 10 mm. **The filter
+> changes which modes exist**, and these are statements about mode behaviour,
+> convergence and coupling — all downstream of that. Not necessarily wrong;
+> **not established for the cavity being built.**
 
 `analyse_driven` takes the **global** minimum of |S11|. In every loaded sweep on
 the r=2–8.5 mm annulus there is a mode at **2.6232 GHz, up to 19× deeper than
@@ -266,6 +306,13 @@ a "98x deficit". A driven confirmation at the chosen groove costs ~1 minute.
 
 ## 🔑 THE LOADED-CAVITY TOOLKIT (2026-08-23) — what to use, and what it cost to learn
 
+> 🔴 **MEASURED ON A GROOVE-FREE CAVITY (2026-08-23) — RE-CHECK BEFORE RELYING
+> ON IT.** Everything in this section comes from H3-era runs where `GEO` never
+> passed `--groove`, while the design is frozen at 5 × 10 mm. **The filter
+> changes which modes exist**, and these are statements about mode behaviour,
+> convergence and coupling — all downstream of that. Not necessarily wrong;
+> **not established for the cavity being built.**
+
 The groove omission invalidated the SCOPE of that day's design numbers. **It did not touch the
 instrument work, and that is the part worth keeping.** Measured across the
 session:
@@ -311,6 +358,32 @@ frequency put a competing feature 2.8 MHz away and the truth 32 MHz away.
 🔑 **A guard on the QUALITY of a fit cannot tell you the fit is of the WRONG
 THING.** Depth-threshold, band-edge and 3 dB-in-band guards all fired correctly
 on the wrong feature and none could catch it.
+
+### ✅ What survives the groove re-check, and why
+
+Not everything above is cavity-dependent. **These do not rest on which modes
+exist**, so they stand:
+
+| result | why it survives |
+|---|---|
+| **samples ∝ Q** for a driven sweep | arithmetic: the step must resolve f₀/Q. The SCALING holds; the specific sample counts quoted are groove-free |
+| **η is robust where Q₀ is not** | arithmetic: η = 1 − Q₀/Q_bare is insensitive when Q₀ ≪ Q_bare |
+| **\|S11\| cannot distinguish β from 1/β** | one-port circuit theory; resolve the branch from PHASE |
+| **band brackets the widest feature, step resolves the narrowest** | a sampling argument, not a cavity result |
+| **a guard on the QUALITY of a fit cannot tell you the fit is of the WRONG THING** | a statement about guards |
+| **continuation needs a seed MEASURED in the same regime** | a statement about the method |
+
+🔴 **These do NOT survive without re-checking**, because each is a claim about
+mode behaviour in a cavity whose modes the filter changes: the ~176 mm²
+mode-identity threshold; the ε-contrast convergence envelope (ε⁺ between 6 and
+8); the 2.6232 GHz "19× deeper" competitor; the 12→0 timeout comparison; every β,
+Q_ext and delivered-power figure; and the dielectric-shift numbers from
+`h4_field`.
+
+⚠️ **The distinction to hold onto: a method claim and a cavity claim can sit in
+the same sentence.** "Driven is cheapest where eigen fails" is two claims — the
+cost scaling (arithmetic, survives) and *where eigen fails* (measured
+groove-free, does not).
 
 ### Extracting numbers you can trust
 

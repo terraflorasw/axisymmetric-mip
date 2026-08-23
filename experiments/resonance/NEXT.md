@@ -1,6 +1,9 @@
 # Next
 
-Read **`KNOWN.md`** first — one page, everything established. Then
+Read **`KNOWN.md`** first — one page, everything established, and the index of
+every document. Then **`PLAN.md`** — the FIXED experiment list (E0–E4), which
+**does not grow**, and whose *Parked* section is where surprises go: they are
+recorded so they are not lost, and **they do not spawn runs**. Then
 `CONVENTIONS.md`, then `INSTRUMENT.md` / `HYPOTHESES.md` / `OPTIMIZER.md`.
 **This file is the queue only** — it holds no measurements.
 ⚠️ `FINDINGS.md` is the ARCHIVE. Do not read it to find out what is known.
@@ -45,6 +48,21 @@ find; it is a FLOW question. H3's last "open" item closed with arithmetic.
 groove.** There is no groove-free variant; everything measured that way on
 2026-08-23 is discarded, not pending.
 
+### State of the tree (2026-08-23 cleanup)
+
+- ✅ Design rigs now import **`GEO_DESIGN`** (groove 5×10): `h3_driven`,
+  `h3_superpose`, `h3_sapphire`, `h3_loopsize`, `h3_eigen`, `h3_annular`.
+  `h3_groove` deliberately keeps bare `GEO` — it toggles the groove itself.
+- ✅ Groove-free results moved to **`discarded-2026-08-23-no-groove/`** with a
+  README saying why. Nothing in there may be quoted.
+- ✅ `FINDINGS.md` removed to git; `KNOWN.md` is the authority and indexes all
+  ten documents. `METHODOLOGY.md`'s "FINDINGS wins" line updated to point at
+  KNOWN.
+- ✅ `CLAUDE.md` created at the REPO ROOT so a fresh session on any machine gets
+  the orientation.
+- ⚠️ **`loopbranch.py` is written and UNRUN** — resolves the coupling branch from
+  phase. Needed before any β is quoted (item 1b).
+
 0. ✅ **DONE — `h3_groove`.** The filter makes TE011 the mode the tuner locks to,
    at both loop sizes. Without it the tuner takes a TM-like mode at 2.44 GHz,
    which the groove moves −63.6 MHz (H2 cold: TM111 −64 MHz).
@@ -52,15 +70,28 @@ groove.** There is no groove-free variant; everything measured that way on
    the groove differs under load or that mode is misidentified. Settle it in 1.
 
 1. 🔴 **MEASUREMENT HYGIENE — before any loaded number is quoted again.**
-   a. **Re-derive the η reference on the GROOVED, LOOPED mesh.** Every loaded η
-      on 2026-08-23 used `Q_BARE = 44,384` — the no-loop, no-groove value —
-      while every driven mesh had a loop. CONVENTIONS §7c records this exact bug
-      (with-loop reference 29,854) and it was reproduced anyway.
+   a. **MEASURE the η reference on the GROOVED, LOOPED mesh — PER LOOP SIZE.**
+      Every loaded η on 2026-08-23 used `Q_BARE = 44,384`, the no-loop,
+      no-groove value, while every driven mesh had a loop.
+      🔴 **CORRECTION (caught by a fresh session, 2026-08-23): 29,854 is NOT the
+      substitute.** I wrote it as though §7c's with-loop figure were the answer.
+      It is itself **groove-free AND from a different loop geometry**, so it is
+      wrong on both axes. There is no number to look up — **Q_bare must be
+      SOLVED for each loop size on the grooved, looped mesh.**
+      ⚠️ That makes 1a a solve, not a re-score, and it is why nothing else can
+      be re-run first.
    b. **Resolve the coupling branch from PHASE** before reporting β.
       |S11| cannot tell β from 1/β: −11.46 dB is 0.578 OR 1.730.
       `loopbranch.py` is written and unrun.
    c. **Fix mode identification under the groove** — settle 0's −12.80 MHz.
-   d. Only then may delivered-power figures be quoted at all.
+   d. 🔑 **CLOSE THE ENERGY BALANCE — `PLAN.md` E3 declared this falsifier
+      before any of this was built and it was never run:**
+      **η_total = η_plasma + η_wall + η_dielectric.** If the split does not sum
+      to η_total within a few percent, **the decomposition is wrong and ONLY
+      η_total may be quoted.** Every "into the plasma" figure I produced was an
+      undecomposed η_total wearing a decomposition's name. PLAN notes this
+      already caught a factor-of-2 convention error once.
+   e. Only then may delivered-power figures be quoted at all.
 
 2. 🔑 **H3 COLD** — no discharge, gas fill. f₀, Q₀, and what a tuner sees before
    ignition. This is the acquisition point for the whole ignition sequence and

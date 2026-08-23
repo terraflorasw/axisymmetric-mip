@@ -237,10 +237,36 @@ def _report(out):
                                f"{d_on:.4f}, not TE011. The annular filter "
                                f"cannot protect the tuner from it; the fix is a "
                                f"different filter or coupling, not a bigger groove."))
-            print(f"    🔑 SYMMETRY READ-OUT: the 2.44 mode moved "
-                  f"{(min((r for r in on['modes'] if r['in_band'] and abs(r['f_ghz']-2.445)<0.02), key=lambda r: abs(r['f_ghz']-2.445), default={'f_ghz':float('nan')})['f_ghz'] - d_off)*1e3:+.1f} MHz — "
-                  f"a groove-BLIND mode has azimuthal cap current (TE-like, safe "
-                  f"from TDS); a groove-SENSITIVE one is TM-like.")
+            # 🔑 SYMMETRY READ-OUT. Find the competing in-band mode with the
+            # groove OFF, then ask where it went with the groove ON. A
+            # groove-BLIND mode has azimuthal cap current (TE-like, safe from a
+            # conductive sample); a groove-SENSITIVE one is TM-like.
+            # ⚠️ The first version inlined a min() with a default dict and
+            # printed "+nan" — it computed nothing. Written out so it either
+            # reports a number or says it could not find the mode.
+            comp = [r for r in off["modes"]
+                    if r["in_band"] and abs(r["f_ghz"] - t_off["f_ghz"]) > 2e-3]
+            if not comp:
+                print("    🔑 SYMMETRY: no competing in-band mode with the groove "
+                      "OFF — nothing for the filter to reject here.")
+            else:
+                c0 = min(comp, key=lambda r: r["s11_db"])
+                # ⚠️ Report whether anything is STILL THERE, not where it went.
+                # Saying "it moved to X" requires identifying X as the same mode,
+                # which needs continuation; the nearest dip is usually just
+                # TE011 and calling that "where it went" over-claims.
+                near = min(on["modes"], key=lambda r: abs(r["f_ghz"] - c0["f_ghz"]))
+                gap = abs(near["f_ghz"] - c0["f_ghz"]) * 1e3
+                print(f"    🔑 SYMMETRY: competing mode was {c0['f_ghz']:.4f} "
+                      f"@ {c0['s11_db']:.2f} dB; with the groove the nearest dip "
+                      f"is {gap:.1f} MHz away")
+                print("       " + ("⚠️ groove-BLIND — still there, so azimuthal "
+                                   "cap current (TE-like)"
+                                   if gap < 5.0 else
+                                   "✅ groove-SENSITIVE — GONE from that "
+                                   "frequency, so radial cap current (TM-like) "
+                                   "and the filter rejects it. Where it went is "
+                                   "NOT claimed here."))
     print(f"\n  wrote {TAG}.result.json")
 
 

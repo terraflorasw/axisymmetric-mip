@@ -1,8 +1,14 @@
 # METHODOLOGY — using gmsh and Palace without fooling yourself
 
 **Working artifact, rev 4 (2026-08-20). REGENERATED, not appended** — like
-`EXPERIMENTS.md` and `AUDIT.md`. `FINDINGS.md` remains the append-only evidence
-trail; where they disagree, FINDINGS wins.
+`EXPERIMENTS.md` and `AUDIT.md`.
+
+⚠️ **UPDATED 2026-08-23.** `FINDINGS.md` was removed from the working tree (it
+had grown to 5,300 lines across three invalidated eras). **`KNOWN.md` is now the
+authority on what is established**; where this file disagrees with KNOWN.md,
+KNOWN.md wins. FINDINGS is retrievable for citations:
+`git -C axisymmetric-mip show ba740d6:experiments/resonance/FINDINGS.md`
+⚠️ `EXPERIMENTS.md` and `AUDIT.md` are also absent from this directory.
 
 **What this is.** Tool-specific lessons, each paid for with at least one wrong
 answer. It is not a tutorial and not general epistemics — the reasoning hazards

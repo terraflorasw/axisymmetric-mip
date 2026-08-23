@@ -61,7 +61,12 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import physics as ph
 import solveconf
-from e0_solver_vs_math import GEO, run
+# 🔴 GEO_DESIGN, not GEO. GEO is the BARE cavity (groove 0,0) and exists
+# for instrument rigs comparing against closed form. This rig produces
+# DESIGN numbers, so it needs the cavity being built — groove 5x10 (H2).
+# Every result this rig produced before 2026-08-23 was groove-free and is
+# DISCARDED; see CONVENTIONS §7f.
+from e0_solver_vs_math import GEO_DESIGN as GEO, run
 from e0k2_anchor import design_point, LOOP_PHI, LOOP_RW, LOOP_GAP, CAP_R_FRAC
 from h3_loaded import drude, Z_FRAC, SECTORS, LOOP_LD, LOOP_LW
 from h3_driven import (local_minima, fit_dip, read_s11, sweep,

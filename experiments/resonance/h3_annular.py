@@ -71,7 +71,12 @@ import physics as ph
 import solveconf
 import eigmodes
 import azimuthal
-from e0_solver_vs_math import GEO, eigen_cfg, run
+# 🔴 GEO_DESIGN, not GEO. GEO is the BARE cavity (groove 0,0) and exists
+# for instrument rigs comparing against closed form. This rig produces
+# DESIGN numbers, so it needs the cavity being built — groove 5x10 (H2).
+# Every result this rig produced before 2026-08-23 was groove-free and is
+# DISCARDED; see CONVENTIONS §7f.
+from e0_solver_vs_math import GEO_DESIGN as GEO, eigen_cfg, run
 from e0k2_anchor import design_point, wall_sigma
 from e0k2_azim import sector_bins, read_sector_energy
 from h3_loaded import drude, Z_FRAC, EIGEN_TARGET, SECTORS

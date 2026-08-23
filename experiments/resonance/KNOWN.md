@@ -1,9 +1,33 @@
 # KNOWN — what this programme has actually established
 
-**One page. If it is not here, it is not established.** `FINDINGS.md` is the
-append-only archive and is 5,000 lines of which most is superseded; read it only
-to follow a citation. `HYPOTHESES.md` holds open questions. This file holds
-answers.
+**One page. If it is not here, it is not established.**
+
+### 📁 THE DOCUMENT SET — all of it, so none is missed again
+
+| file | what it is | status |
+|---|---|---|
+| **`KNOWN.md`** | this — what is established | **read first** |
+| **`PLAN.md`** | 🔑 **the FIXED experiment list, E0–E4. "It does not grow."** Each with V and F declared before any driver. Has a *Parked* section for surprises that **do not spawn runs** | **authority on what experiments EXIST**; some status lines stale (E1 was deleted 2026-08-21) |
+| `NEXT.md` | the queue only, no measurements | current |
+| `CONVENTIONS.md` | recurring errors + corrected approach | current |
+| `HYPOTHESES.md` | H0–H5, the working question set | current |
+| `INSTRUMENT.md` | what gmsh+Palace can and cannot tell us | current |
+| `OPTIMIZER.md` | priors for the eventual multi-variable optimisation | current |
+| `METHODOLOGY.md` | tool-specific lessons, each paid for with a wrong answer | rev 4, 2026-08-20 |
+| `DEPLOY.md` | running the programme on a rented machine | 2026-08-21 |
+| `README.md` | the rules, and why the previous programme was abandoned | 2026-08-20 |
+
+⚠️ **`FINDINGS.md` was REMOVED from the working tree 2026-08-23** so it stops
+confusing sessions. It is in git and retrievable:
+
+    git -C axisymmetric-mip show ba740d6:experiments/resonance/FINDINGS.md
+
+Retrieve it only to follow a citation. It is 5,300 lines, three invalidated
+eras, and it is not where you find out what is true.
+
+⚠️ **Two numbering systems.** `PLAN.md` uses **E0–E4** (experiments, fixed).
+`HYPOTHESES.md` uses **H0–H5** (questions, evolving). They are not the same
+axis and neither supersedes the other.
 
 Every entry names **what it is anchored to outside the programme.** A result
 supported only by another result of this programme is not listed — that is the
@@ -71,7 +95,26 @@ inward-facing loop that ended the previous programme (`README.md`).
 - **The 2.44 GHz TM-like mode.** Real in the ungrooved cavity and removed by the
   groove — but characterised only in the wrong cavity.
 
-## 🔑 KEPT FROM 2026-08-23 — instrument, not cavity
+## 🔑 KEPT FROM 2026-08-23 — and only the part that is not cavity-dependent
+
+⚠️ **Even the instrument gains need splitting.** A method claim and a cavity
+claim often sit in one sentence. INSTRUMENT now marks which is which; five of
+its sections carry a GROOVE-FREE re-check banner.
+
+**Survives** (arithmetic or circuit theory, independent of which modes exist):
+driven sweep cost ∝ Q; η robust where Q₀ is not; |S11| cannot distinguish β from
+1/β; band-vs-step sizing; continuation needs a seed measured in-regime; a guard
+on fit QUALITY cannot detect a fit of the WRONG THING.
+
+**Does NOT survive without re-checking** (claims about mode behaviour in a cavity
+whose modes the filter changes): the ~176 mm² mode-identity threshold — its
+source rig `e0k2_sizeq` was groove-free and TE011/TM111 are EXACTLY degenerate
+ungrooved, so it may be an artifact of a degeneracy the design removes; the
+ε-contrast convergence envelope; the 2.6232 GHz competitor; the 12→0 eigen/driven
+timeout comparison; every β, Q_ext and delivered-power figure; `h4_field`'s
+dielectric shifts.
+
+## 🔑 The old note, kept for the numbers
 
 Driven replaces eigen for loaded work: **12 eigen timeouts / 3 h wasted → 0
 across 17 driven cases.** Cost ∝ Q, so driven is cheapest exactly where eigen
