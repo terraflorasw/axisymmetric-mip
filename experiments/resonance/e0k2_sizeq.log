@@ -1,0 +1,72 @@
+E0k2-sizeQ — eigenmode Q for every loop size, with NO fitting anywhere.
+
+🔴 THE ANOMALY THIS EXISTS TO KILL. Driven fits across the loop-area sweep gave
+Q0 = 20,005 / 24,920 / 28,387 / 30,112 for areas 35 / 82 / 176 / 384 mm^2 —
+SMALLER loops apparently costing MORE Q, monotonically, against a bare-cavity
+Q0 of 44,384. That is backwards: a smaller obstacle should perturb less.
+
+🔑 THE SUSPICION, AND WHY IT IS ONLY A SUSPICION. Absorbed power is EXACTLY
+Lorentzian for a single resonance. Fitting one to these curves over +/-3
+linewidths gives rms/peak of 19.3% / 2.4% / 1.8% / 1.1% — the fit degrades
+monotonically as the loop shrinks, and at 35 mm^2 the 3 dB width and the
+Lorentzian fit disagree by 2x. So the trend may be an artifact of forcing a
+one-resonance model onto a two-resonance curve, with the contamination growing
+as the loop's splitting of the degenerate pair shrinks.
+
+⚠️ That is inference from fits, and this programme has twice adopted a
+plausible mechanism before measuring it. Eigenmode Q needs NO fit, NO coupling
+model, NO branch decision and NO probe: Palace returns the complex eigenvalue
+and Q is its imaginary part. If the eigen trend is flat or rises with area, the
+driven trend was the artifact. If eigen reproduces the backwards trend, it is
+real and something physical is going on.
+
+VERIFICATION
+  V1  every solve identifies TE011 by Q (frequencies are near-degenerate, so
+      frequency cannot), and TE011 must out-Q TM111 in each.
+  V2  Q must fall monotonically toward the bare-cavity 44,384 as loop area
+      falls — that is what "a smaller obstacle perturbs less" MEANS.
+
+FALSIFICATION
+  🔴 F1  if eigen Q rises with loop area, matching the driven trend, the
+         backwards behaviour is REAL and the fitting explanation is dead.
+  🔴 F2  the measured TE011/TM111 splitting per size tests the blend story
+         directly. Blending needs the smallest loop's splitting to be a few
+         linewidths and the largest's to be many.
+
+==============================================================================
+  a=88.0045 L=115.4158  wall 3.5e+07  cap loop r=42.286
+
+  --- e0k2_c5x3p5: 5.0 x 3.5 mm, area 35 mm^2
+    reusing e0k2_c5x3p5.msh
+    e0k2_c5x3p5_eig: solver order 2
+    solved in 213s
+    TE011 2.451077  Q=37,525  (+15.5% vs bare)  split 2.356 MHz  q_margin 1.78
+  --- e0k2_c7p5x5p5: 7.5 x 5.5 mm, area 82 mm^2
+    reusing e0k2_c7p5x5p5.msh
+    e0k2_c7p5x5p5_eig: solver order 2
+    solved in 246s
+    TE011 2.451913  Q=29,073  (+34.5% vs bare)  split 6.132 MHz  q_margin 1.26
+  --- e0k2_c11x8: 11.0 x 8.0 mm, area 176 mm^2
+    reusing e0k2_c11x8.msh
+    reusing existing solve e0k2_c11x8_eig
+    TE011 2.450399  Q=30,020  (+32.4% vs bare)  split 11.857 MHz  q_margin 1.38
+  --- e0k2_c16x12: 16.0 x 12.0 mm, area 384 mm^2
+    reusing e0k2_c16x12.msh
+    e0k2_c16x12_eig: solver order 2
+    solved in 242s
+    TE011 2.449456  Q=31,665  (+28.7% vs bare)  split 40.212 MHz  q_margin 1.77
+
+==============================================================================
+     area    eigen Q   vs bare  split MHz  driven Q0  driven vs bare
+       35     37,525     15.5%      2.356     20,005           54.9%
+       82     29,073     34.5%      6.132     24,920           43.9%
+      176     30,020     32.4%     11.857     28,387           36.0%
+      384     31,665     28.7%     40.212     30,112           32.2%
+     bare     44,384      0.0%  0 (exact)
+
+  ⚠️ eigen Q is NON-MONOTONIC in loop area. Neither the fitting
+     explanation nor a simple perturbation picture survives;
+     report the numbers and investigate, do not narrate.
+
+  wrote e0k2_sizeq.result.json
+EXIT=0

@@ -17,7 +17,7 @@ R=/opt/amip/repo/experiments/resonance
 MODE="${APPLY:-0}"
 
 BUSY=$(timeout 30 ssh -i "$K" $H \
-  'r=$(ps -C python3 -o args= 2>/dev/null | grep -c "^python3 -u e[0-9]")
+  'r=$(ps -C python3 -o args= 2>/dev/null | grep -c "^python3 -u [a-z]")
    g=$(ps -C python3 -o args= 2>/dev/null | grep -c "geometry\.py")
    n=$(ps -o stat= -C palace-x86_64.bin 2>/dev/null | grep -v Z | wc -l)
    echo $(( ${r:-0} + ${g:-0} + ${n:-0} ))' 2>/dev/null || echo unreachable)

@@ -91,24 +91,59 @@ linear solve at the end is the SYMPTOM, not the disease. `solvecost.diagnose()`
 detects it; its self-test carries the real diverging run as known-bad input.
 Letting such a case run longer will not finish it.
 
-## 🔴 The barrel loop cannot couple to TE011
+## A coupling loop changes WHICH MODE it reads
 
-`geometry.py` places every barrel-loop cylinder at **z = 0** with `z0 = -L/2`,
-i.e. the cavity **mid-plane**, and the loop lies in the x–y plane so it links
-**H_z**. TE011's H_z ∝ cos(π(z+L/2)/L) is **exactly zero there**, as is its
-barrel wall current. The flux is zero regardless of loop width or depth.
+🔴 Measured, 2026-08-22. A cap loop at r = 0.4805a couples preferentially to a
+**TM111 polarisation** when small, and to **TE011** only above ~176 mm² of loop
+area. The driven |S11| dip is at essentially the same frequency either way — the
+triplet spans a few MHz — so **nothing about the dip tells you which mode you
+measured.**
 
-Any β a barrel loop reports for TE011 is a residual, not a coupling — which is
-why one loop gave β = 0.067 in one cavity and 27.5 in another.
+| loop area | mode read | its Q | TE011's own Q |
+|---:|---|---:|---:|
+| 35 mm² | TM111 | 21,925 | 37,525 |
+| 82 mm² | TM111 | 26,201 | 29,073 |
+| 176 mm² | **TE011** | 30,020 | 30,020 |
+| 384 mm² | **TE011** | 31,665 | 31,665 |
 
-✅ **Use `--loop-cap r`.** TE011's H_r is MAXIMUM at mid-plane and peaks at
-r = 0.4805a, and the cap loop's radius is a free, continuous coupling knob —
-the barrel's never is. Moving the barrel loop off mid-plane is not currently
-expressible; z = 0 is hard-coded, not a flag.
+⚠️ **A driven sweep alone cannot tell you.** It returns a dip, not a label.
+Pair every driven solve with an eigen solve on the SAME mesh and match by energy
+SIGNATURE — a comparison of driven Q against an assumed mode produced a
+confident, entirely spurious "smaller loops cost more Q" trend.
 
-⚠️ R69's *"1.39× the |H_z| a barrel loop sees at the wall"* compares PEAK
-values, not the field at the loop's own plane. As a statement about the barrel
-loop as built it is misleading.
+⚠️ The loop also MIXES the triplet, not merely shifts it: `pair_q_ratio`
+degrades from 1.000 (bare) through 1.087 to 1.364 as the loop grows, and TE011's
+own Q is non-monotonic in loop area (37,525 / 29,073 / 30,020 / 31,665) with a
+minimum near 82 mm². Unexplained; reported.
+
+## Where a coupling loop goes, and what each one links
+
+TE011, caps at z = 0, L:
+
+    H_z ∝ J₀(χ′₀₁ r/a) · sin(πz/L)    ZERO at caps, MAX at mid-plane
+    H_r ∝ J₁(χ′₀₁ r/a) · cos(πz/L)    MAX at caps, ZERO at mid-plane
+
+- **Barrel loop** — `geometry.py` places it at z = 0, the mid-plane, lying in the
+  x–y plane so it links **H_z**. That is the H_z **MAXIMUM**: a good placement.
+  Its only coupling knob is AREA; the radius is fixed at the wall.
+- **Cap loop** (`--loop-cap r`) — links **H_r**, which peaks at **r = 0.4805a**
+  (the J₁ peak). 1.39× the |H_z| a barrel loop sees, so 1.93× in coupled power —
+  and the RADIUS is a free, continuous knob, which the barrel's never is.
+
+🔑 The 1.39 is reproducible from the field forms above and is the check that
+settles which component is which:
+`[(π/L)J₁(1.8412)] / [(χ′₀₁/a)|J₀(χ′₀₁)|] = 1.3875` at a = 103.70, L = 88.53.
+
+🔴 **A retracted claim, kept here so it is not re-derived:** an earlier reading
+of this file had the sin and cos swapped and concluded the barrel loop sits on a
+TE011 node and "cannot couple to TE011". False — it sits at the maximum. The
+inverted forms satisfy neither boundary condition, and the 1.39 check fails on
+them by construction.
+
+⚠️ Related correction: at the cap H is purely RADIAL, so TE011 DOES have
+end-cap current and it is AZIMUTHAL. An annular groove works because it runs
+PARALLEL to that current, not because the current is absent (HYPOTHESES still
+says the latter).
 
 ## Driven or eigen — which question is being asked
 
@@ -137,6 +172,79 @@ driven the efficient way to INTERROGATE.
 **8 frequency samples** to emit 2,001 points; PROM construction and solve are
 0.34 s each. Do not sweep by brute force.
 
+### 🔑 DRIVEN COST SCALES WITH Q — so it is cheapest exactly where eigen fails
+
+Added 2026-08-23. The "driven is 2,500–2,900 s" figure in the record was measured
+on the **empty, high-Q** cavity and does not transfer. A driven sweep's cost is
+its sample count, the step must resolve the linewidth, and linewidth = f₀/Q, so
+**samples ∝ Q**:
+
+| case | Q | linewidth | samples for ±40 MHz | est. |
+|---|---:|---:|---:|---:|
+| empty cavity | 44,384 | 0.056 MHz | ~35,800 | ~3,450 s |
+| **loaded plasma** | **~150** | **~16 MHz** | **~130** | **~12 s** |
+
+⚠️ And the two methods are complementary in the right direction: **eigen's cost
+is roughly Q-independent but it FAILS where the operator is awkward; driven has
+no NLEPS and no divergence-free projection and gets CHEAPER as Q falls.** The
+regimes where eigen fails are the regimes where driven is cheapest.
+
+### 🔴 EIGEN'S CONVERGENCE ENVELOPE — two measured regimes where it stops
+
+1. **ε near ZERO.** At ne=1e19 (ε=−2.109) the divergence-free PCG stagnates: 92
+   non-convergences, reduction factor 1.007. ne=1e20 (ε=−30.09) is healthy
+   (0 non-convergences, factor 0.814) and ε=−310 solves in 100 s. **The failure
+   is at small |ε|, NOT large.**
+2. **High POSITIVE ε beside strong NEGATIVE ε.** At ne=1e20, by ratio ε⁺/|ε⁻|:
+   1.00 (0.033) ✅, 3.78 (0.126) ✅, **6.00 (0.199) ✅, 8.00 (0.266) 🔴**,
+   11.60 (0.386) 🔴. The boundary is between ε⁺ = 6 and 8.
+
+⚠️ Do NOT merge these two — they share a symptom and joining them by symptom
+produced the wrong mechanism first time.
+⚠️ **"0 NLEPS iterations" is NOT a signature.** Identical runs gave 0, 49 and 115
+NLEPS; the count only measures how many outer iterations fit the timeout.
+
+✅ **Driven crosses both regimes.** It measured ε = +0.067 and ε = −2.109
+cleanly, confirming INSTRUMENT's own long-standing claim that *"the geometries
+where the eigensolver diverges are exactly where driven should still work."*
+
+### 🔴 A DRIVEN SWEEP RETURNS THE DEEPEST DIP, NOT YOUR MODE
+
+`analyse_driven` takes the **global** minimum of |S11|. In every loaded sweep on
+the r=2–8.5 mm annulus there is a mode at **2.6232 GHz, up to 19× deeper than
+TE011** — the cap loop couples to it far better. Selecting by depth returns a
+smooth, plausible, entirely wrong row, and **widening the band makes it worse**.
+
+✅ Select by **CONTINUATION** — seed at the unloaded mode and follow it in small
+steps (measured pulls: +2.4, +1.0, +4.6, +15.0, +9.4 MHz) — or by **energy
+signature** against an eigen solve on the same mesh.
+🔑 **A guard on the QUALITY of a fit cannot tell you the fit is of the WRONG
+THING.** Depth-threshold, band-edge and 3 dB-in-band guards all fired correctly
+here and none could catch it. Identify the mode by something other than the
+quantity being fitted.
+
+🔴 **RETRACTED — I claimed the eigensolver could not do a lossy plasma. It can.**
+That entry was written from ONE failed configuration and asserted a capability
+limit. A four-case probe varying one thing at a time (2026-08-23) shows the
+stall was **the SHIFT TARGET**, not the mesh and not Palace:
+
+| plasma_h | target | outcome |
+|---:|---:|---|
+| 0.4 | 2.15 | stalled, nconv=0 |
+| 1.0 | 2.15 | stalled, nconv=0 |
+| 0.4 | **2.40** | **converged, 573 s** |
+| 1.0 | **2.40** | **converged, 284 s** |
+
+Eigen then converged at σ = 2.75e-4 through 275 S/m — the whole intended H3
+range — in 89–284 s per point.
+
+🔑 **And the target was wrong because a physical assumption was wrong.** I set it
+300 MHz BELOW the mode "because loading pulls DOWN and hard". It pulls **UP**:
+an overdense plasma has ε_eff < 0, behaves like a conductor, EXCLUDES field, and
+therefore shrinks the effective volume and RAISES the frequency. Measured
++1.26 MHz at σ = 275 S/m. A shift target placed in an empty region 300 MHz away
+is what NLEPS choked on.
+
 🔑 **Driven has no NLEPS, therefore no convergence cliff.** Every convergence
 failure in this record is a NONLINEAR EIGENVALUE failure — the Newton step and
 Armijo line search collapsing near degeneracies. Driven is a sequence of
@@ -155,6 +263,76 @@ power at 2.45 GHz"* — currently measured as an eigen frequency shift with "no
 power" inferred from it. That is measuring the coefficient and arguing to the
 outcome, the shape of the Q_ext error that once turned a 21-point power gap into
 a "98x deficit". A driven confirmation at the chosen groove costs ~1 minute.
+
+## 🔑 THE LOADED-CAVITY TOOLKIT (2026-08-23) — what to use, and what it cost to learn
+
+The groove omission invalidated the SCOPE of that day's design numbers. **It did not touch the
+instrument work, and that is the part worth keeping.** Measured across the
+session:
+
+| solver | rigs | timeouts | solver-seconds burned on failures |
+|---|---:|---:|---:|
+| **eigen** | 5 | **12** | **10,800 s (3 hours)** |
+| **driven** | 4 | **0** | **0** |
+
+**Zero convergence failures across 17 driven cases — on exactly the problems
+eigen could not solve at all.** The convergence cliff is not a fact about the
+physics; it is a fact about the eigenmode formulation.
+
+### Use DRIVEN for anything loaded. The rule, and why.
+
+- **No NLEPS and no divergence-free projection** — the two things that stagnate
+  at ε ≈ 0 and at high ε⁺/|ε⁻|.
+- **Cost ∝ Q**, so it gets CHEAPER the more heavily loaded the cavity is:
+  ~35,800 samples for the empty cavity, ~130 loaded. The regimes where eigen
+  fails are the regimes where driven is cheapest.
+- Pair with eigen where BOTH work, to validate. Measured agreement: f₀ to
+  **0.83 MHz**, η to **0.0006**, and a dielectric shift to **84 kHz**.
+
+### Sizing a sweep: the BAND brackets the widest feature, the STEP resolves the narrowest
+
+Getting this backwards cost two runs. A 636 kHz step (one linewidth of the most
+loaded case) was blind to a 68 kHz dip; a 45 MHz band could not bracket a 45 MHz
+linewidth. **One wide sweep, 2.30–2.65 GHz at 200 kHz (1,750 samples), covers
+7 MHz to ~350 MHz features and is CHEAPER than the two-stage scheme it replaced.**
+
+### 🔴 Identify the mode by something OTHER than the quantity being fitted
+
+`analyse_driven` returns the **global** minimum. Loaded sweeps routinely contain
+a mode 19× deeper than TE011, and a competing in-band one the tuner would
+genuinely select. Selecting by depth gives a smooth, plausible, entirely wrong
+row — and **widening the band makes it worse**.
+
+✅ **Continuation**: seed at a MEASURED point IN THE SAME REGIME, follow in small
+steps, and **abort if the first case misses the seed**. An analytic value from a
+neighbouring regime is not a seed — seeding the ne=1e20 rig at the unloaded
+frequency put a competing feature 2.8 MHz away and the truth 32 MHz away.
+✅ Or **energy signature** against an eigen solve on the same mesh.
+🔑 **A guard on the QUALITY of a fit cannot tell you the fit is of the WRONG
+THING.** Depth-threshold, band-edge and 3 dB-in-band guards all fired correctly
+on the wrong feature and none could catch it.
+
+### Extracting numbers you can trust
+
+- **Quote η, not Q₀.** They agree on η to 0.0006 while differing ~17% on Q₀,
+  because η = 1 − Q₀/Q_bare is insensitive when Q₀ ≪ Q_bare.
+- **Q_ext is NOT transferable between meshes** — a value carried across gives Q₀
+  12× off. β is not mesh-converged (43% for a 1.25× refinement) and Q_ext
+  inherits it. Re-derive on the loaded mesh.
+- 🔴 **|S11| cannot distinguish β from 1/β.** −11.46 dB is 0.578 OR 1.730.
+  Depth-only β silently assumes undercoupling — fine at β ~ 0.02, wrong the
+  moment a sweep is designed to REACH critical coupling. Resolve the branch from
+  PHASE (`branch_from_phase`), and report AMBIGUOUS near a 180° swing.
+- **One-sided 3 dB widths are usable and must be flagged**: validated against
+  two-sided at 14.00 vs 14.04 and 30.80 vs 30.40 MHz, η agreeing to the fourth
+  decimal.
+
+### Guards now in `run()`, on the config actually solved
+
+`check_torch_bound` (R101, extended — permittivity must match the mesh sidecar, and the
+mesh must match the REQUEST) and `check_groove_declared` (the groove omission — a plasma solve
+on a groove-free cavity refuses). Both live in `run()` rather than the config
+builders because callers assemble geometry themselves.
 
 ## Convergence, unlike cost, CANNOT be predicted
 
@@ -194,12 +372,33 @@ not). Free in every solve.
 
 ## What is NOT characterised
 
-- **Absolute Q has no external anchor** — only its scaling law. A Q number is
-  trustworthy in ratio, not in absolute value.
-- **Dielectric loading is unverified.** E1b failed three times and is retired; no
-  claim about what a dielectric does to this cavity survives.
-- **Driven-mode coupling** — β, Q_ext, S11 — is unmeasured. E0k compared only the
-  resonant frequency.
+- ✅ **Absolute Q EXTRACTION is now anchored** (2026-08-22). Four independent
+  driven-vs-eigen comparisons agree to **4.9–8.8%**, across TWO modes (TE011 and
+  TM111) and an 11× range of coupling-loop area: driven Q₀ from the S11
+  linewidth and dip depth against the eigenvalue's imaginary part. The bare
+  cavity measures **44,384**, reproducing the recorded value exactly.
+  ⚠️ Both routes share one mesh, one wall conductivity and one solver, so this
+  validates the EXTRACTION of Q, not the surface-impedance physics behind it. An
+  external anchor still needs a measured cavity.
+- ✅ **Dielectric loading is MEASURED** (2026-08-23, `h4_field`, supersedes
+  "unverified"). Outer sapphire tube −13.71 MHz, all three tubes −15.00 MHz
+  against a Slater prediction of −15.3 committed before the solve — **2%**, at
+  ε=11.6. Quartz −3.10 (outer) / −3.36 (full). Q cost 0.3%. All configurations
+  stay inside 2.40–2.50 GHz.
+  🔑 **And the plasma SUPPRESSES the dielectric shift by 78%** — quartz −3.104
+  cold → −0.684 loaded — because the plasma excludes field from the bore and cuts
+  E_elec at the tube ~75%, material-independently (74.4% vacuum tube, 74.7%
+  quartz). Constant to 0.6 points over ε 2–6; **ε=11.6 is a 1.9× extrapolation,
+  not a measurement.**
+- ✅ **Driven-mode coupling is now measured** — β = 0.015–0.098 on the loaded
+  annulus, and driven f₀/η validated against eigen on the SAME geometry to
+  0.83 MHz and 0.0006.
+  🔴 **But Q_ext is NOT transferable between meshes.** e0k2's Q_ext≈50,709 gives
+  Q₀ 12× different from the linewidth route on a different mesh. β is not
+  mesh-converged (43% for a 1.25× refinement); Q_ext inherits that.
+  🔑 **Quote η, not Q₀.** Driven and eigen agree on η to **0.0006** while
+  differing ~17% on Q₀, because η = 1 − Q₀/Q_bare is insensitive when
+  Q₀ ≪ Q_bare.
 - **TE121** sits at 0.361 MHz, the worst mode, and is the least-converged in the
   window. The faceting model is validated for modes well inside the window; the
   topmost mode is not a test of it.

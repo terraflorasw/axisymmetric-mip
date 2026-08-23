@@ -1,0 +1,80 @@
+E1b — the loading perturbation, measured as a SAME-MESH material switch.
+
+E1a fixed the empty design point analytically. This measures what the torch and
+filter do to it, which is the one part of E1 that needs a solver.
+
+🔑 THE MEASUREMENT IS A DIFFERENCE ON ONE MESH, NOT A COMPARISON TO A FORMULA.
+Build the mesh ONCE with all the geometry present, then solve it twice:
+
+    transparent   every dielectric eps = 1.0  -> vacuum tubes are EM-invisible,
+                                                so physics.spectrum() applies
+                                                EXACTLY and verifies the mesh
+    loaded        sapphire torch 11.6, quartz filter 3.78
+
+    loading shift = loaded - transparent, SAME MESH
+
+⚠️ This matters because the shift we are after is SMALL. TE011 moves ~3 MHz under
+loading, while the absolute discretisation error of a working mesh is ~1-2 MHz.
+Differencing against the closed form would put a 57% error on the answer;
+differencing on one mesh cancels the discretisation almost entirely (METHODOLOGY
+§2b — the solver is bit-exact, so only the materials differ between the two runs).
+
+TWO ASPECT RATIOS, both resonating TE011 at 2.45 GHz when empty:
+
+    A   a = 103.245, L =  88.53   D/L = 2.332   the inherited shape
+    B   a =  86.743, L = 120.00   D/L = 1.446   3.2x wider rival separation (E1a)
+
+VERIFICATION   two independent checks, both declared before the run:
+    1. the TRANSPARENT solve must match physics.spectrum() — that validates the
+       mesh on the real geometry, with the thin walls present.
+    2. the loading RATIO TM020/TE011 must be ~43-53x, predicted from Bessel
+       energy integrals over the tube walls with no simulation in it, and
+       independently ~49x in the old programme's record.
+
+FALSIFICATION  the SIGN. Adding dielectric can only LOWER a resonant frequency.
+    A positive shift on either mode falsifies the setup, not the physics.
+
+⚠️ sf 1.5 (~35k elements). Not chosen for speed: the measurement is a same-mesh
+difference, so absolute discretisation error cancels and a moderate mesh is
+sufficient. Check 1 above is what confirms that, and it would fail loudly if the
+mesh were inadequate. 🔴 sf 2.5 does NOT mesh this geometry (1.0-1.5 mm walls);
+2.0, 1.5 and 1.0 do, 1.2 does not — constructibility is non-monotonic.
+
+==============================================================================
+
+A: a=103.245 L=88.53 D/L=2.332  35,487 elements
+  transparent: torch eps=1.0 filter eps=1.0
+    solved in 137s
+  loaded: torch eps=11.6 filter eps=3.78
+    solved in 120s
+
+B: a=86.743 L=120.0 D/L=1.446  45,066 elements
+  transparent: torch eps=1.0 filter eps=1.0
+    solved in 286s
+  loaded: torch eps=11.6 filter eps=3.78
+    solved in 279s
+  ✅ mesh check: transparent vs exact, max|Δ| = 1.859 MHz
+     ⚠️ TM111: degenerate partner — use the splitting, not a pairing
+     ⚠️ TE121: above the solved ceiling 3.08962
+  signature matching: optimal, 23 pairs
+     mode  transparent      loaded  shift MHz  sig dist
+    TM010      1.32283     3.10402    1781.18    0.0742  ⚠️ fingerprints differ
+    TE111      1.60813     1.58362     -24.50    0.0177
+    TM011      1.81941     2.75163     932.22    0.0742  ⚠️ fingerprints differ
+    TE211      2.09341     2.09174      -1.67    0.0017
+    TM110      2.10800     2.05217     -55.83    0.0480
+    TE011      2.45004     2.34720    -102.83    0.0699  ⚠️ fingerprints differ
+    TE112      2.69654     2.63474     -61.81    0.0589  ⚠️ fingerprints differ
+    TM210      2.82528     2.76182     -63.46    0.0498
+    TM012      2.82575     2.76221     -63.55    0.0495
+    TE212      3.01235     3.00703      -5.32    0.0073
+    TM020      3.03821     1.19139   -1846.82    0.1855  ⚠️ fingerprints differ
+    TM211      3.08933     1.70548   -1383.85    0.1250  ⚠️ fingerprints differ
+
+
+==============================================================================
+  B: TE011 -102.83  TM020 -1846.82  ratio 18.0x (predicted 43-53x)
+     🔴 POSITIVE shifts: ['TM010', 'TM011']
+
+  wrote e1b.result.json — NO VERDICT HERE
+EXIT=0

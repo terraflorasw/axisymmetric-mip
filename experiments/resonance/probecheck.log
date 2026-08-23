@@ -1,0 +1,67 @@
+Do Palace point probes work, and do they read the field INSIDE a lossy plasma?
+
+🔴 WHY ASK RATHER THAN ASSUME. The sustaining question needs E/N inside the
+plasma. Stored energy CANNOT give it there: electric energy is ~ eps|E|^2, and
+eps_eff is NEGATIVE in the metal-like regime, so the energy goes negative
+(measured: p_elec = -3e-5). Probes are the only route to a field value in that
+regime — IF they work.
+
+⚠️ And a flag doing what it says has a poor record in this project:
+`--tag-groove` defaulted OFF through two rigs, `--no-torch` leaves the torch
+REGION in place, and the lumped port meshed with 2 elements for the whole life
+of the driven programme. So: one cheap solve, look at what actually appears.
+
+## The geometry is chosen so the answer is KNOWN in advance
+
+TE011's E_phi ~ J1(chi'01 r/a) * sin(pi(z+L/2)/L):
+  * EXACTLY ZERO on the axis
+  * grows LINEARLY away from it
+  * peaks at r = 0.4805a = 42.3 mm
+  * zero again at the wall (J1(chi'01) = 0)
+
+Probes on the +x axis at the mid-plane read E_phi as their **y** component.
+
+Plasma: R = 4 mm at ne = 1e20, so delta = 1.80 mm and PI_2 = 2.2 — past the
+penetration transition, so the field SHOULD decay measurably from the plasma
+surface inward. That is the effect the whole sweep depends on being able to see.
+
+VERIFICATION
+  V1  a probe file must appear at all, with one row per probe
+  V2  |E| near the axis must be ~0 and rise with r — TE011's own shape. If it
+      does not, the probe is not reading the field we think it is.
+  V3  |E| must PEAK near r = 42.3 mm (vacuum, outside the plasma) — a known
+      landmark that needs no plasma physics to predict
+FALSIFICATION
+  🔴 F1  if probes inside the plasma return the same value as their vacuum
+         neighbours, they are interpolating across the boundary and are USELESS
+         for this measurement
+  🔴 F2  if |E| does not decay from the plasma surface inward at PI_2 = 2.2,
+         either the probe or the shielding physics is not what is assumed —
+         and the sweep cannot be built on it either way
+
+==============================================================================
+  plasma R=4.0 mm, ne=1e+20: eps=-30.09, sigma=27.53 S/m
+  skin depth 1.94 mm  ->  PI_2 = R/delta = 2.06
+  field peak (vacuum) at 0.4805a = 42.3 mm
+
+  40,746 tets, plasma attr 12
+    probecheck: solver order 2
+  11 probes on the +x axis at z=0: [0.1, 0.5, 1.0, 2.0, 3.0, 3.9, 5.0, 8.0, 15.0, 42.3, 80.0] mm
+
+    solved in 135s
+
+  files in postpro/probecheck/:
+    domain-E.csv                     5 lines   <-- NEW
+    eig.csv                          5 lines   <-- NEW
+    error-indicators.csv             2 lines   <-- NEW
+    palace.json                    243 lines   <-- NEW
+    probe-B.csv                      5 lines   <-- NEW
+    probe-E.csv                      5 lines   <-- NEW
+    probecheck_resolved.json       305 lines   <-- NEW
+
+  V1 probe file present: ✅ ['probe-B.csv', 'probecheck_resolved.json', 'probe-E.csv']
+
+  header:         m,         Re{B_x[1]} (Wb/m²),         Im{B_x[1]} (Wb/m²),         Re{B_y[1]} (Wb/m²),         Im{B_y[1]} (Wb/m²),         Re{B_z[1]} (Wb/m²),         Im{B_z[1]} (Wb/m²),         Re{B_x[2]} (W
+  row:     1.00e+00,        -1.102041256207e-10,        -1.966093581038e-10,        +6.526992069817e-10,        +2.818492706872e-09,        -1.223883878460e-09,        -1.964418952020e-09,        -8.62491941753
+  row:     2.00e+00,        +5.221702472474e-10,        -1.166371823052e-09,        +5.272165674464e-10,        +3.089297146434e-09,        -6.840336389313e-07,        +8.902216820316e-08,        -8.74454875826
+EXIT=0

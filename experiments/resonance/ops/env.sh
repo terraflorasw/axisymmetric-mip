@@ -10,4 +10,4 @@
 # "AMIP_HOST: unbound variable" — which is what ops/remote.sh did. A single
 # source of truth has to actually REACH the thing that consumes it.
 export AMIP_HOST
-AMIP_HOST="${AMIP_HOST:-ubuntu@ec2-18-119-10-220.us-east-2.compute.amazonaws.com}"
+AMIP_HOST="${AMIP_HOST:-ubuntu@ec2-18-227-71-255.us-east-2.compute.amazonaws.com}"

@@ -35,6 +35,14 @@ elif [ ! -f "$D0/rsync.sh" ]; then
   # itself or it is indistinguishable from a working one.
   echo "  🔴 sync: rsync.sh NOT FOUND at $D0 — running against possibly stale remote"
 else
+  # 🔴 AND THE PATTERN MUST MATCH EVERY RIG, NOT THE ONES THAT EXISTED WHEN IT
+  # WAS WRITTEN. It was `^python3 -u e[0-9]`, from the era when every rig was
+  # e-series. h1/h2/h3/h4 are all INVISIBLE to that, so this guard read 0 for
+  # the whole H-programme and would have synced into a live h4_field solve.
+  # Now `^python3 -u [a-z]`, which OVER-matches. That is deliberate: a false
+  # "busy" costs a NOSYNC=1 re-run, a false "idle" corrupts a running solve.
+  # Fail closed. (Same bug shape as §2: the value never reached its consumer.)
+  #
   # 🔴 BUSY MEANS "A RIG IS RUNNING", NOT "PALACE IS RUNNING". The first
   # version counted only palace ranks, and a rig spends a LARGE fraction of its
   # life meshing with zero ranks alive — 5.2 min of E1b case A, 9+ min of case
@@ -44,7 +52,7 @@ else
   # inferring liveness from a downstream symptom instead of asking directly.)
   BUSY=$(timeout 20 ssh -i "$D0/aws.pem" -o ConnectTimeout=8 \
     $H \
-    'r=$(ps -C python3 -o args= 2>/dev/null | grep -c "^python3 -u e[0-9]")
+    'r=$(ps -C python3 -o args= 2>/dev/null | grep -c "^python3 -u [a-z]")
      g=$(ps -C python3 -o args= 2>/dev/null | grep -c "geometry\.py")
      n=$(ps -o stat= -C palace-x86_64.bin 2>/dev/null | grep -v Z | wc -l)
      echo $(( ${r:-0} + ${g:-0} + ${n:-0} ))' 2>/dev/null || echo unreachable)

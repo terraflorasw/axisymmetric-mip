@@ -22,13 +22,13 @@ def counts(path):
     try:
         gmsh.open(path)
         out = collections.Counter()
-        for dim, tag in gmsh.model.getPhysicalGroups(3):
+        for dim, tag in gmsh.model.getPhysicalGroups(2) + gmsh.model.getPhysicalGroups(3):
             name = gmsh.model.getPhysicalName(dim, tag)
             n = 0
             for ent in gmsh.model.getEntitiesForPhysicalGroup(dim, tag):
                 types, tags, _ = gmsh.model.mesh.getElements(dim, ent)
                 n += sum(len(t) for t in tags)
-            out[(tag, name)] = n
+            out[(dim, tag, name)] = n
         return out
     finally:
         gmsh.finalize()
@@ -43,11 +43,13 @@ def main():
         if not c:
             print("    🔴 no 3-D physical groups found")
             continue
-        for (tag, name), n in sorted(c.items()):
+        for (dim, tag, name), n in sorted(c.items()):
             mark = "   🔴 EMPTY — a material bound here solves nothing" if n == 0 else ""
-            print(f"    attribute {tag:>3}  {name or '(unnamed)':<16} "
+            if dim == 2 and n < 10:
+                mark = f"   🔴 ONLY {n} ELEMENTS — surface is UNRESOLVED"
+            print(f"    {dim}D attr {tag:>3}  {name or '(unnamed)':<16} "
                   f"{n:>8,} elements{mark}")
-        print(f"    total {sum(c.values()):,}")
+        print(f"    total 3D {sum(v for (d,_t,_n),v in c.items() if d==3):,}")
 
 
 if __name__ == "__main__":

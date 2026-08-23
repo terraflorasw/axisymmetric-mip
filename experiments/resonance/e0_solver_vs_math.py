@@ -42,13 +42,41 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import physics as ph
 import journal
 import solveconf
+import solvecost
 import solver
 
 A_MM, L_MM = 103.70, 88.53
+# 🔴 THE GROOVE OMISSION (2026-08-23) — THE BASELINE OMITTED THE DESIGN'S MODE FILTER, AND 31
+# RIGS INHERITED IT SILENTLY.
+#
+# `GEO` never passed `--groove`, so every rig built on it meshed a cavity with
+# `groove = [0.0, 0.0]` — including the ENTIRE loaded programme (H3, H6,
+# h3_superpose, h3_sapphire, h3_loopsize). The cavity design is premised on a
+# mode filter; those solves measured a cavity that is not the one being built.
+#
+# ⚠️ `--mode-filter 0` is NOT the omission and must not be read as one. That flag
+# is the QUARTZ ANNULUS, a SUPERSEDED device. The groove replaced it. Two parts
+# share the phrase "mode filter" in this tree and only one of them is current:
+#     --mode-filter <t>   quartz annulus   RETIRED
+#     --groove <w,depth>  annular slot     CURRENT, and this is the design
+#
+# ✅ GEO is now explicitly the BARE cavity — `--groove 0,0` is written out, so
+# the absence is a DECLARATION rather than an omission — and it is for the
+# instrument rigs that compare against closed form, where a plain cylinder is
+# the point.
+# ✅ GEO_DESIGN is the cavity being built. **Any rig whose result is a DESIGN
+# number must use GEO_DESIGN.** `run()` refuses a plasma solve on a groove-free
+# mesh unless the caller says `allow_no_groove=True`.
+GROOVE_DESIGN = (5.0, 10.0)     # H2, frozen: width 5 mm, depth 10 mm
+
 GEO = ["--radius", f"{A_MM}", "--length", f"{L_MM}", "--order", "2",
        "--sectors", "1", "--no-torch", "--no-inner", "--mode-filter", "0",
+       "--groove", "0,0",
        "--viewport", "0", "--trap", "0,0,0", "--chimney", "0,41",
        "--feed", "0,41"]
+
+GEO_DESIGN = [x if x != "0,0" or GEO[GEO.index(x) - 1] != "--groove"
+              else f"{GROOVE_DESIGN[0]:g},{GROOVE_DESIGN[1]:g}" for x in GEO]
 FACTORS = ["0.96", "1.06", "1.00", "1.20", "0.90"]
 PALACE = solver.PALACE          # E1e: single source, env-driven
 # 🔴 E1d CORRECTED. I raised this to 8 saying "every run so far used 4 of the 8
@@ -146,7 +174,192 @@ def eigen_cfg(tag, meta, mesh=None, sigma=None, n=22, target=1.05, order=2):
     return c
 
 
-def run(tag, cfg):
+def lossy_domains(cfg):
+    """[(attributes, eps, tand, sigma)] for every NON-VACUUM domain material."""
+    out = []
+    for m in (cfg.get("Domains", {}) or {}).get("Materials", []) or []:
+        eps = m.get("Permittivity", 1.0)
+        tand = m.get("LossTan", 0.0)
+        sig = m.get("Conductivity", 0.0)
+        if tand or sig:
+            out.append((m.get("Attributes"), eps, tand, sig))
+    return out
+
+
+def check_torch_bound(tag, cfg):
+    """R101 (extended): refuse a solve whose TORCH permittivity disagrees with its mesh.
+
+    🔴 WHY. `eigen_cfg` writes Permittivity 1.0 for EVERY volume, torch
+    included. The torch binding existed only in `solveconf.driven` (R101), so
+    every EIGEN solve carrying a torch solved it as VACUUM — geometrically
+    present, electromagnetically absent. `h4_field` run 1 predicted -11.2 MHz
+    from a sapphire tube and measured +0.06 MHz, which is exactly right for a
+    tube that is not there.
+
+    ⚠️ Fixing `eigen_cfg` does NOT fix this, and that is the whole point. Six
+    rigs REPLACE `Domains.Materials` wholesale after calling it
+    (h3_eigen, h3_annular, h3_loaded, h3_eigenprobe, h4_seed, probecheck), so a
+    better eigen_cfg is silently discarded by exactly the rigs that need it —
+    CONVENTIONS §2, the value never reaching its consumer. Checked HERE because
+    `run()` sees the config actually being solved, the same reasoning that put
+    the lossy-domain check here. §7: a checker must be able to see its subject.
+
+    The MESH is the source of truth (R101's rule). A mismatch means the rig
+    typed a permittivity that is not the one it meshed.
+    """
+    try:
+        meta = solveconf.load_meta(cfg.get("Model", {}).get("Mesh") or f"{tag}.msh")
+    except Exception:
+        return None                      # no sidecar: load_meta's own error owns it
+    attrs = meta.get("attributes") or {}
+    tv = attrs.get("torch")
+    tm = (meta.get("geometry_mm") or {}).get("torch_material")
+    if tv is None:
+        return None                      # --no-torch: nothing to bind
+    if tm is None:
+        raise RuntimeError(
+            f"{tag}: mesh has a torch volume (attribute {tv}) but the sidecar "
+            f"names no torch_material. Refusing to guess the permittivity of "
+            f"the thing under test. Rebuild the mesh with --torch-material.")
+    want = float(tm[0])
+    got = [m for m in cfg.get("Domains", {}).get("Materials", [])
+           if tv in (m.get("Attributes") or [])]
+    if not got:
+        raise RuntimeError(
+            f"{tag}: torch volume {tv} is in the mesh but no material in the "
+            f"config covers it.")
+    have = float(got[0].get("Permittivity", 1.0))
+    if abs(have - want) > 1e-9:
+        raise RuntimeError(
+            f"{tag}: TORCH PERMITTIVITY DISAGREES WITH THE MESH — config says "
+            f"eps={have}, the sidecar says the mesh was built with eps={want}. "
+            f"This is R101: a sapphire tube solving as vacuum shifts f0 by "
+            f"~15 MHz and the meshes are byte-identical, so nothing downstream "
+            f"can notice. Bind the permittivity FROM THE SIDECAR.")
+    print(f"    torch: eps={have} (bound from mesh sidecar)", flush=True)
+    return have
+
+
+def _selftest_torch_bound():
+    """§7: a checker gets known-bad input, or it is believed without evidence."""
+    import types
+    real = solveconf.load_meta
+    meta = {"attributes": {"torch": 7, "wall": 1, "bore": 2},
+            "geometry_mm": {"torch_material": [11.6, 3.5e-05]}}
+    solveconf.load_meta = lambda mesh: meta
+    try:
+        vac = {"Model": {"Mesh": "x.msh"},
+               "Domains": {"Materials": [{"Attributes": [7, 2],
+                                          "Permittivity": 1.0}]}}
+        try:
+            check_torch_bound("selftest", vac)
+            raise AssertionError("FAILED: sapphire-as-vacuum was not caught")
+        except RuntimeError as e:
+            assert "DISAGREES" in str(e), e
+        ok = {"Model": {"Mesh": "x.msh"},
+              "Domains": {"Materials": [{"Attributes": [7], "Permittivity": 11.6},
+                                        {"Attributes": [2], "Permittivity": 1.0}]}}
+        assert check_torch_bound("selftest", ok) == 11.6
+        meta["geometry_mm"] = {}
+        try:
+            check_torch_bound("selftest", ok)
+            raise AssertionError("FAILED: missing torch_material was not caught")
+        except RuntimeError as e:
+            assert "no torch_material" in str(e), e
+    finally:
+        solveconf.load_meta = real
+    return True
+
+
+def check_groove_declared(tag, cfg, allow_no_groove=False):
+    """the groove omission: refuse a LOADED solve on a cavity with no mode filter.
+
+    🔴 WHY. The cavity design is premised on a mode filter. `GEO` never passed
+    `--groove`, so the ENTIRE loaded programme of 2026-08-23 — H3, H6,
+    h3_superpose, h3_sapphire, h3_loopsize — measured a groove-free cavity and
+    every design number from it is scoped to a cavity nobody is building.
+    Nothing crashed, nothing looked wrong, and 31 rigs inherited the omission.
+
+    🔑 A PLASMA is the tell. A groove-free cavity is legitimate for the
+    instrument rigs (closed-form comparison wants a plain cylinder) and is never
+    legitimate for a loaded, design-facing solve — the filter is what decides
+    which modes exist, and a loaded cavity is where mode identity is hardest.
+
+    ⚠️ Checked HERE, on the config actually being solved, for the same reason the
+    torch and lossy-domain checks are: callers assemble geometry themselves.
+    """
+    try:
+        meta = solveconf.load_meta(cfg.get("Model", {}).get("Mesh") or f"{tag}.msh")
+    except Exception:
+        return None
+    g = (meta.get("geometry_mm") or {}).get("groove") or [0.0, 0.0]
+    has_plasma = (meta.get("attributes") or {}).get("plasma") is not None
+    grooved = float(g[0]) > 0.0 and float(g[1]) > 0.0
+    if grooved:
+        print(f"    groove: {g[0]:g} x {g[1]:g} mm (in mesh)", flush=True)
+        return tuple(g)
+    if has_plasma and not allow_no_groove:
+        raise RuntimeError(
+            f"{tag}: LOADED solve on a cavity with NO MODE FILTER (groove="
+            f"{g}). The design is premised on one, and a groove-free loaded "
+            f"cavity has a DIFFERENT MODE LANDSCAPE — which is exactly what a "
+            f"loaded measurement is about. Use GEO_DESIGN, or pass "
+            f"allow_no_groove=True and say in the rig's docstring why a bare "
+            f"cavity is the right control.")
+    return None
+
+
+def run(tag, cfg, allow_lossy_eigen=False, timeout=None,
+        allow_no_groove=False):
+    # 🔴 EIGENMODE + A LOSSY VOLUME DOES NOT CONVERGE. Measured 2026-08-23: a
+    # bulk lossy region with tan-delta ~ 3 stalled NLEPS at nconv=0 after 19
+    # iterations and ~22,500 KSP iterations — 65 minutes, on the WEAKEST plasma
+    # of an intended 16-point grid. The same cavity without it solves in 155 s.
+    #
+    # 🔑 A surface-impedance WALL is a boundary term and is fine; a lossy VOLUME
+    # is in the operator, and the frequency dependence it introduces is what
+    # NLEPS chokes on. INSTRUMENT already said "the geometries where the
+    # eigensolver diverges are exactly where driven should still work" — the
+    # gap was that nothing CHECKED.
+    #
+    # ⚠️ Checked HERE, not in eigen_cfg: eigen_cfg only ever writes vacuum, and
+    # callers mutate Materials afterwards (that is how the plasma got in). This
+    # sees the config actually being solved. CONVENTIONS §7 — a checker must be
+    # able to see what it checks.
+    if (cfg.get("Problem", {}).get("Type") == "Eigenmode"
+            and not allow_lossy_eigen):
+        bad = lossy_domains(cfg)
+        if bad:
+            lines = "\n".join(
+                f"      attributes {a}: eps={e} tan-delta={t} sigma={sg}"
+                for a, e, t, sg in bad)
+            # 🔴 THIS WAS A REFUSAL AND THE PREMISE WAS FALSE. It was added from
+            # ONE stalled solve, generalised into "the eigensolver cannot do a
+            # lossy plasma". A four-case probe showed the stall was the SHIFT
+            # TARGET — placed 300 MHz below the mode because I assumed loading
+            # pulls DOWN, when an overdense plasma (eps<0, conductor-like)
+            # pulls UP. Eigen converges across sigma = 2.75e-4 .. 275 S/m in
+            # 89-284 s. A guard built on a wrong premise blocks correct work,
+            # so this WARNS and states the real hazard instead.
+            print(f"    ⚠️ {tag}: eigenmode with {len(bad)} lossy domain(s):\n"
+                  f"{lines}\n"
+                  f"       This converges — but NLEPS is sensitive to the SHIFT "
+                  f"TARGET. Put the target NEAR the expected loaded frequency, "
+                  f"and note an overdense plasma pulls the mode UP, not down.",
+                  flush=True)
+        if False:
+            raise RuntimeError(
+                f"{tag}: EIGENMODE solve with {len(bad)} LOSSY DOMAIN(S) —\n"
+                f"{lines}\n"
+                f"    This does not converge. Measured: nconv=0 after 19 NLEPS "
+                f"iterations and ~22,500 KSP iterations in 65 minutes, on a "
+                f"weaker load than most. Use a DRIVEN solve — it has no NLEPS "
+                f"and therefore no convergence cliff.\n"
+                f"    If you have reason to believe this particular case "
+                f"converges, say so explicitly: run(..., allow_lossy_eigen=True). "
+                f"Do not remove this check.")
+    check_torch_bound(tag, cfg)
+    check_groove_declared(tag, cfg, allow_no_groove=allow_no_groove)
     pathlib.Path(f"{tag}.json").write_text(json.dumps(cfg, indent=2))
     t0 = time.time()
     # 🔴 subprocess.run(timeout=) RAISES BUT DOES NOT KILL. e1c's k=1.0 solve
@@ -164,9 +377,25 @@ def run(tag, cfg):
                             stdout=open(f"{tag}_p.log", "w"),
                             stderr=subprocess.STDOUT,
                             start_new_session=True)
-    try:
-        rc = proc.wait(timeout=solver.DEFAULT_TIMEOUT_S)
-    except subprocess.TimeoutExpired:
+    # 🔴 THE BUDGET WAS POST-HOC AND THAT IS WHY IT DID NOT HELP.
+    # solvecost.NLEPS_BUDGET has existed since 2026-08-22, but it was only ever
+    # read AFTER run() returned — so a stalled solve still burned its whole
+    # timeout first. The H3 stall sat at nconv=0 for 65 minutes when the budget
+    # would have cut it at ~1,000 NLEPS iterations. A guard that fires after the
+    # cost has been paid is a report, not a guard.
+    #
+    # ⚠️ Exceeding the budget is MISSING DATA, not a bad result — a distinct
+    # exception message, so a caller can tell "did not converge" from "wrong
+    # answer" and from "timed out". Scoring them the same is what teaches a
+    # sweep to avoid regions that are merely hard.
+    def _nleps_count():
+        try:
+            return pathlib.Path(f"{tag}_p.log").read_text(
+                errors="ignore").count("NLEPS (nconv=")
+        except OSError:
+            return 0
+
+    def _kill_tree(why):
         try:
             os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
         except (ProcessLookupError, PermissionError) as e:
@@ -174,8 +403,36 @@ def run(tag, cfg):
                   f"CHECK FOR ORPHANED RANKS with ops/go ops/status.sh",
                   flush=True)
         proc.wait()
-        raise RuntimeError(f"{tag}: TIMED OUT after "
-                           f"{solver.DEFAULT_TIMEOUT_S:.0f}s — rank TREE killed")
+        return why
+
+    # 🔴 A PROBE NEEDS A WALL-CLOCK BUDGET, NOT JUST AN ITERATION ONE.
+    # DEFAULT_TIMEOUT_S is 6 hours, and NLEPS_BUDGET cannot help when each NLEPS
+    # iteration itself takes minutes: the H3 stall managed 19 iterations in 65
+    # minutes, so reaching 1,000 would take ~57 HOURS. The two guards catch
+    # different shapes — many cheap iterations vs few expensive ones — and a
+    # probe needs the second.
+    tmo = solver.DEFAULT_TIMEOUT_S if timeout is None else float(timeout)
+    deadline = t0 + tmo
+    poll = 30.0
+    while True:
+        try:
+            rc = proc.wait(timeout=poll)
+            break
+        except subprocess.TimeoutExpired:
+            pass
+        n = _nleps_count()
+        if n > solvecost.NLEPS_BUDGET:
+            raise RuntimeError(_kill_tree(
+                f"{tag}: DID NOT CONVERGE WITHIN BUDGET — {n} NLEPS iterations "
+                f"exceeds {solvecost.NLEPS_BUDGET} (worst run that DID converge "
+                f"used 869). Killed after {time.time()-t0:.0f}s. This is MISSING "
+                f"DATA, not a bad result: report it as unconverged, do not score "
+                f"it. Raise solvecost.NLEPS_BUDGET deliberately if this case is "
+                f"merely hard."))
+        if time.time() > deadline:
+            raise RuntimeError(_kill_tree(
+                f"{tag}: TIMED OUT after {tmo:.0f}s "
+                f"({n} NLEPS iterations) — rank TREE killed"))
     dt = time.time() - t0
     # 🔴 "TOO FAST" IS NOT EVIDENCE OF FAILURE. This was `rc or dt <
     # MIN_SECONDS`, and MIN_SECONDS=30 was calibrated on 4 ranks at order 2 on

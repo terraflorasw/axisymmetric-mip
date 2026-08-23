@@ -55,6 +55,18 @@ MM="$PREFIX/bin/micromamba"
 [ -d "$PREFIX/envs/emsim" ] || "$MM" create -y -p "$PREFIX/envs/emsim" --file emsim.lock.txt
 echo "  env: $("$PREFIX/envs/emsim/bin/python3" -V)"
 "$PREFIX/envs/emsim/bin/python3" -c "import gmsh; print('  gmsh', gmsh.GMSH_API_VERSION)"
+# 🔴 pyflakes GOES IN THE ENV, NOT THE ROOT FILESYSTEM. `preflight` degrades to
+# "pyflakes not installed — undefined names are NOT being checked" and still
+# EXITS 0, so the instance-side gate — the last check before a rig spends solver
+# time — silently becomes weaker than the local one. §7b's failure (a NameError
+# at call time, after meshing) is exactly what pyflakes catches, and it cost two
+# launches.
+# ⚠️ 2026-08-23: I first installed it with apt, into /usr/bin/python3. That is
+# the WRONG INTERPRETER (rigs run $PREFIX/envs/emsim/bin/python3) and the wrong
+# FILESYSTEM (root is wiped by every spot reclamation; this volume is not).
+# --no-deps: pyflakes has none, and the env may be in use by a running solve.
+"$PREFIX/envs/emsim/bin/pip" install --no-deps --quiet pyflakes
+"$PREFIX/envs/emsim/bin/python3" -c "import pyflakes; print('  pyflakes', pyflakes.__version__)"
 
 say "palace @ $PALACE_COMMIT"
 export PATH="$PREFIX/envs/emsim/bin:$PATH"

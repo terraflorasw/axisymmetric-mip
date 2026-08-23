@@ -95,8 +95,23 @@ done
 n=$(ls -d "$PREFIX"/repo/experiments/resonance/postpro/h2b_* 2>/dev/null | wc -l)
 echo "  postpro/h2b_* cases on the volume: $n   (5 expected — H2B_ONLY skips these)"
 df -h "$PREFIX" | tail -1 | awk '{print "  space: "$4" free ("$5" used)"}'
+# 🔴 pyflakes must live in the ENV ON THIS VOLUME. Installed to the root
+# filesystem it is lost by every reclamation AND it sits in an interpreter no
+# rig ever runs (rigs source env.sh -> envs/emsim/bin/python3). preflight then
+# DEGRADES SILENTLY (warns, exits 0) and the instance-side gate — the last one
+# before solver time is spent — becomes weaker than the local one without
+# saying so at a moment anyone is reading. Report it here, where a fresh
+# instance is being certified.
+if "$PREFIX/envs/emsim/bin/python3" -c 'import pyflakes' 2>/dev/null; then
+  echo "  ✅ pyflakes (preflight checks undefined names)"
+else
+  echo "  🔴 pyflakes MISSING — preflight will NOT check undefined names."
+  echo "     /opt/amip/envs/emsim/bin/pip install --no-deps pyflakes"
+  echo "     (the ENV on this volume — NOT apt, which installs to the root fs"
+  echo "      that reclamation wipes, and to an interpreter no rig runs)"
+fi
 echo "-- rigs running: --"
-r=$(ps -C python3 -o args= 2>/dev/null | grep -c "^python3 -u [eh][0-9]") || true
+r=$(ps -C python3 -o args= 2>/dev/null | grep -c "^python3 -u [a-z]") || true
 p=$(ps -o stat= -C palace-x86_64.bin 2>/dev/null | grep -v Z | wc -l) || true
 echo "  rig python3: ${r:-0}   palace ranks: ${p:-0}"
 [ "$ok" = 1 ] || { echo "🔴 volume is NOT usable"; exit 1; }

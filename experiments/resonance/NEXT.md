@@ -1,115 +1,115 @@
 # Next
 
-State at the end of the session of 2026-08-21. Read `CONVENTIONS.md` first, then
-`INSTRUMENT.md` and `HYPOTHESES.md`. This file is the queue only.
+Read **`KNOWN.md`** first — one page, everything established. Then
+`CONVENTIONS.md`, then `INSTRUMENT.md` / `HYPOTHESES.md` / `OPTIMIZER.md`.
+**This file is the queue only** — it holds no measurements.
+⚠️ `FINDINGS.md` is the ARCHIVE. Do not read it to find out what is known.
 
-## Instance — ec2-18-119-10-220.us-east-2, up 2026-08-21 22:10Z
+🔴 **THIS FILE WENT STALE FOR A DAY (fixed 2026-08-23).** It sat at 2026-08-22
+saying the instance was shut down and *"H3 — THE SOLE GATE, and the whole queue
+now"* while H3 and H6 were both being answered. It is a FIFTH working document
+and the memory index listed only four, so no session opened it. **If you add a
+doc, add it to the index, or it becomes a trap.** See CONVENTIONS §8b.
 
-Second reclamation in one session. Recovery was `NOSYNC=1 ops/go ops/mount.sh`
-and one line in `ops/env.sh`; the volume came back on the same UUID with
-everything intact. **The recovery path is now exercised twice and works.**
+## Instance
 
-Fixed while doing it, all §2 "the value must reach its consumer" faults:
-- **`ops/env.sh` now EXPORTS `AMIP_HOST`.** `ops/go` sources it then exec's the
-  target as a separate process, so without export the child saw nothing —
-  `ops/remote.sh` died on "unbound variable" the first time it ran standalone.
-- **`ops/remote.sh` sources `env.sh`** like every sibling. It had been relying
-  on inheritance.
-- **`ops/riglog.sh` is new.** `ops/getlog.sh` greps a `^A: `..`^B: ` block only
-  the e1 rigs ever emitted, so for any other rig it returns SILENTLY EMPTY —
-  indistinguishable from a rig producing nothing, and a waiter built on it never
-  fires. It also asks directly whether the rig process is alive.
-- **`run()` in `e0_solver_vs_math.py` now kills the process GROUP**
-  (`start_new_session=True` + `os.killpg`). It was the last caller still using
-  `proc.kill()`, which orphans the `prterun` → ranks tree.
+**UP.** Address in `ops/env.sh` (one line — it was hardcoded in 29 places once).
+`ops/go ops/status.sh` for state; `ops/go ops/remote.sh <rig.py> 32` to launch.
 
-## RUNNING — E0k2, the absolute-Q anchor
+**After a spot reclamation:** launch `c7a.8xlarge` **in the volume's AZ** (EBS is
+AZ-scoped — the easy mistake), attach, set the address in `ops/env.sh`, then
+`NOSYNC=1 ops/go ops/mount.sh`. Exercised four times.
+⚠️ `mount.sh` also checks that **pyflakes is in the env** — it lives on
+`/opt/amip/envs/emsim`, NOT the root filesystem, because root is wiped by every
+reclamation. Without it `preflight` silently stops checking undefined names.
 
-`e0k2_anchor.py`, 32 ranks. This is the fix for the E0k audit (FINDINGS
-2026-08-21, *"E0k is the only driven data in the record"*). All four legs:
+## WHERE 2026-08-23 LANDED
 
-| E0k's fault | E0k2 |
-|---|---|
-| driven used SILVER 6.3e7 | aluminium, **bound from baselines.json**, refuses if absent |
-| eigen counterpart was PEC (Q ≈ 2e9, noise) | eigen with the **same lossy wall** |
-| ran D/L 2.343 — the geometry H1 **rejected** | H1 design point, **derived** from `physics.py` |
-| |S11| never analysed | β, Q_L, Q₀ extracted; coupling branch from **phase** |
+✅ **H3 ANSWERED.** TE011 sustains: η = 0.95–0.995 at the operating point.
+Loaded pull **+31.6 MHz** (up), Q 44,384 → 163, linewidth 15.2 MHz, loaded
+f₀ = 2.4815 GHz — in band. Third leg killing the in-band TM companion.
+✅ **H6 ANSWERED (EM half)** — user-raised, and the premise I opened it on was
+wrong. **η ≥ 99.1% across TWO DECADES of ne** (1e18–1e20). Mass loading is NOT a
+hard EM constraint. The "collapse to 0.185" was a 2 mm SOLID-COLUMN artifact;
+the annulus is 17× the plasma and does not collapse.
+✅ **H4 field** — Slater holds at ε=11.6 (predicted −15.3, measured −15.00).
+H1's design point survives the torch AND the plasma together.
+✅ **Superposition FAILS**: the plasma SUPPRESSES a dielectric's shift by **78%**,
+constant over ε 2–6, because it cuts E_elec at the tube ~75% material-independently.
+✅ **Power density is a DEFINITION** (η·P/V), not a measurement — no optimum to
+find; it is a FLOW question. H3's last "open" item closed with arithmetic.
 
-🔑 **What it buys**: Q₀ by two routes that share no machinery — the driven
-LINEWIDTH versus the eigenvalue's imaginary part. Agreement anchors absolute Q
-for the first time; disagreement is a bigger finding than the anchor.
+## Queued, in order
 
-🔑 **Mode identity comes from the field.** Both solves emit the SAME energy
-regions in the SAME order (eigen_cfg and solveconf.driven number them
-differently — that had to be forced), so the driven dip is matched to an
-eigenmode by SIGNATURE. Validated offline on E0k's own data first: distance
-0.0002 with an 18.7× margin. The analysis path was dry-run against E0k's CSV and
-reproduced β=0.0673, Q_L=25,060, 97.6 kHz exactly before any compute was spent.
+🔴 **H3 IS THE PROGRAMME. It has three regimes and one cavity — H2's, with the
+groove.** There is no groove-free variant; everything measured that way on
+2026-08-23 is discarded, not pending.
 
-⚠️ Two declared outputs, not inputs: **β** (the loop is inherited from a=103.7
-and NOT re-derived for a=88.0 — F3 fires if it loads too hard) and **which mode
-the loop couples to** (a barrel loop is not guaranteed to pick TE011 over its
-degenerate TM111 partner; Q settles it, and the anchor is labelled with the mode
-it actually measured).
+0. ✅ **DONE — `h3_groove`.** The filter makes TE011 the mode the tuner locks to,
+   at both loop sizes. Without it the tuner takes a TM-like mode at 2.44 GHz,
+   which the groove moves −63.6 MHz (H2 cold: TM111 −64 MHz).
+   🔴 **Unresolved**: at 28×20 TE011 moved −12.80 MHz vs +0.00 at 11×8. Either
+   the groove differs under load or that mode is misidentified. Settle it in 1.
 
-## H2b — 8 cases still queued at target 2.25
+1. 🔴 **MEASUREMENT HYGIENE — before any loaded number is quoted again.**
+   a. **Re-derive the η reference on the GROOVED, LOOPED mesh.** Every loaded η
+      on 2026-08-23 used `Q_BARE = 44,384` — the no-loop, no-groove value —
+      while every driven mesh had a loop. CONVENTIONS §7c records this exact bug
+      (with-loop reference 29,854) and it was reproduced anyway.
+   b. **Resolve the coupling branch from PHASE** before reporting β.
+      |S11| cannot tell β from 1/β: −11.46 dB is 0.578 OR 1.730.
+      `loopbranch.py` is written and unrun.
+   c. **Fix mode identification under the groove** — settle 0's −12.80 MHz.
+   d. Only then may delivered-power figures be quoted at all.
 
-Unchanged from the analysis above: `anchor`, `exp-eta3`, `exp-eta4` re-solved
-plus the 5 never run. `control-1.525` and `exp-eta1` are sound as they stand.
+2. 🔑 **H3 COLD** — no discharge, gas fill. f₀, Q₀, and what a tuner sees before
+   ignition. This is the acquisition point for the whole ignition sequence and
+   it has never been measured with the groove.
 
-🔑 **`prod-narrow` now has a route that does not exist in the eigen world.**
-Its failure is NLEPS divergence, and **a driven solve has no NLEPS** — it is a
-sequence of well-conditioned linear solves. The comparability objection that
-killed the GMRES→SuperLU idea does not apply the same way: a driven measurement
-of the whole width pair is driven-vs-driven, not one case solved differently
-from its own control. E0k2 is also the proof that the driven path works at this
-design point.
+3. 🔑 **H3 LOADED** — full plasma, in the grooved cavity. Sustained f₀, Q₀,
+   delivered power at the operating point.
 
-⚠️ Wire `solvecost.diagnose()` into the rigs as a budget check before the next
-H2b launch — `NLEPS_BUDGET = 1000` would have cut prod-narrow at 24% of its run.
+4. 🔑 **H3 HOT** — the trajectory between cold and loaded. Where the tuner must
+   track and whether coupling holds through it. ⚠️ The groove-free data hinted
+   at a coupling minimum mid-trajectory; that hint is discarded with the rest
+   and the question stands on its own merits, not on that evidence.
 
-## H2 — the groove, what is left
+5. **H3 LOADED + SAMPLE** — a real high-TDS matrix. The sample travels up the
+   central channel (r < 2 mm), which is TE011's field null.
+   ⚠️ What ne a sample actually produces is CHEMISTRY (aerosol transport,
+   desolvation, atomisation) and is an H5 external input, not an EM question.
 
-- **Scaling law unresolved.** `Z₀·tan(βd)` predicts 2.93×, slot volume fraction
-  2.00×, measured **1.72×**. Two derivations agree with each other and disagree
-  with the data; something saturates. The four-point exponent sweep settles it.
-- **Product test**: does `gw·gd` govern? If `Z₀·tan(βd)` is right, prod-narrow
-  should give **1.23×** the anchor and prod-wide **0.94×** — not equal.
-- **Transfer test**: same η at D/L 1.35 / 1.525 / 1.90. This is the one that says
-  whether the ratio survives adding a torch and viewports.
-- Then a **width sweep for Q cost** at the chosen depth.
+6. **P_required(ne)** — the plasma power balance. Without it the operating point
+   cannot be closed: P_delivered alone does not say whether the discharge holds.
 
-⚠️ Avoid slots narrower than ~3 mm: 2 mm forced 58,303 tets against ~33,000 and
-stalled the linear solve past 248 KSP iterations.
+7. **H4 — ignition.** TM ignition is discarded; auxiliary/thermal-kernel is the
+   adopted route. Needs H3 COLD first (the acquisition point).
 
-## H3 — the loaded cavity. Highest value, and it blocks H4
+8. **H5 — the optical path to LOD. TERMINAL.** Blocked on external inputs
+   (spectrometer f-number, uniformity spec, coolant interlock), not simulation.
 
-Nothing trustworthy exists about what a plasma does to this cavity, and it gates
-the ignition architecture, the tuning-loop bandwidth, and whether the groove's
-50 MHz margin survives operation.
+## Retired / not on the path
 
-- Mode identity across a perturbation this large needs **continuation** — small
-  ε steps where each shift is far below mode spacing — not endpoint pairing.
-- Move **one** dielectric at a time. E1b moved torch and filter together and
-  nothing it produced was attributable.
-- Also here: β, Q_ext, S11 — driven coupling is entirely unmeasured.
+- **H2 (the groove)** — RETIRED `premature` 2026-08-23. Frozen at 5×10 mm; its
+  variables have left the design space. What remains is MODEL VALIDATION (does
+  Slater predict the shift?), a free by-product of any future grooved solve with
+  `--tag-groove`. Not a hypothesis, not on the path.
+- **The loop sizing sweep** — VOID. β is not mesh-converged (43% for a 1.25×
+  refinement) and the sweep was built on it. Supersede with item 2, which sizes
+  against a loaded Q₀ that now exists.
 
-## Smaller, ready to run
+## Still open, recorded and not narrated
 
-- **E0f2's TE121 outlier**: −2.345 MHz at geometric order 1, the only negative of
-  11 modes. Probably the least-converged mode at the top of the window; one solve
-  with more modes settles it.
-- **Bore radius is the dominant coupling lever** (30× vs aspect ratio's 2×) and
-  the 8.5 mm figure is inherited from the retired record. It is capped by gas
-  flow (R², >20 slm is a killer). Nobody has chosen it deliberately — and the
-  actual slm at 8.5 mm is not in the record.
-- **`run()` in `e0_solver_vs_math.py`** still uses `proc.kill()`, which orphans
-  the `prterun` tree. `e0l_scaling.py` was fixed with
-  `start_new_session=True` + `os.killpg`; `run()` should match.
-- **DEPLOY.md still names the old host.** Update once the new one exists.
+- **TE011's Q is non-monotonic in loop area** (37,525 / 29,073 / 30,020 /
+  31,665, minimum near 82 mm²) while `pair_q_ratio` degrades 1.000 → 1.364. The
+  loop MIXES the triplet rather than merely shifting it. May be explained by the
+  port fix; check after item 1.
+- **The 100–150 Td avalanche threshold is a literature figure.** Microwave
+  breakdown at 1 atm is diffusion-loss and therefore geometry dependent. Verify
+  before leaning on the ignition conclusion.
+- **Three inherited assumptions are now marked ASSUMED in OPTIMIZER.md** and
+  must not be used as priors: the 8.5 mm bore (from order-1 solving), the 20 slm
+  N₂ ceiling (from MP-AES/MICAP, not optimised), and the Fassel torch geometry
+  (Argon-optimised; there is no N₂ equivalent).
 
-## Uncommitted
 
-Everything from this session is uncommitted, including `CONVENTIONS.md`,
-`INSTRUMENT.md`, `HYPOTHESES.md`, this file, the `ops/` additions, and the E1
-deletions.

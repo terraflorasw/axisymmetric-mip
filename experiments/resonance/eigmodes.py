@@ -179,6 +179,7 @@ def te011_tm111(freqs, exact_te011, qs=None, fmin=None, fmax=None):
 
     how = "multiplicity"
     te_i = None
+    pair_q_ratio = None
     # 🔴 A PEC SOLVE REPORTS Q ~1e12-1e15 — noise, not a measurement, and the
     # RATIO test passes on noise happily (6.1e15 > 1.5 x 7.3e13) and then picks
     # the wrong mode. Caught by this file's own self-test. Physical wall Q here
@@ -187,9 +188,25 @@ def te011_tm111(freqs, exact_te011, qs=None, fmin=None, fmax=None):
     if q and min(q) > 0 and all(Q_PLAUSIBLE[0] < x < Q_PLAUSIBLE[1] for x in q):
         hi = max(range(3), key=lambda i: q[i])
         rest = [q[i] for i in range(3) if i != hi]
-        # TE011 stands out by ~2x; demand a clear margin before trusting Q
-        if q[hi] > 1.5 * max(rest):
-            te_i, how = hi, "Q"
+        # 🔴 THE 1.5x MARGIN WAS TOO STRICT AND FAILED TWICE. TE011 out-Qs
+        # TM111 by ~2x in an UNPERTURBED cavity, but a probe or a groove moves
+        # the Qs: with an 11x8 cap loop the triplet came out 30,020 / 25,107 /
+        # 18,411, a margin of only 1.196, so this bailed to the frequency
+        # fallback below — which then named the LOWEST-Q mode as TE011 and
+        # tripped its own falsifier.
+        #
+        # 🔑 The physics is an ORDERING, not a margin: TE011 has no axial wall
+        # current and therefore the HIGHEST Q of the triplet. Take the maximum
+        # and REPORT the margin as confidence, rather than refusing to decide
+        # whenever a perturbation has compressed the spread.
+        #
+        # ⚠️ The two remaining modes are TM111's polarisations and should have
+        # SIMILAR Q to each other — that is what makes them a pair. Their ratio
+        # is returned so a bad grouping is visible instead of silent.
+        te_i, how = hi, "Q"
+        pair_q_ratio = max(rest) / min(rest) if min(rest) > 0 else None
+        if q[hi] <= 1.5 * max(rest):
+            how = "Q (compressed spread — perturbed; check q_margin)"
     if te_i is None:
         # the m=1 pair are the two closest TO EACH OTHER; the odd one is TE011
         gaps = [(abs(f[a] - f[b]), a, b) for a, b in ((0, 1), (0, 2), (1, 2))]
@@ -240,13 +257,18 @@ def te011_tm111(freqs, exact_te011, qs=None, fmin=None, fmax=None):
             "te011_index": pick[te_i],
             "tm111_indices": [pick[i] for i in pair],
             "tm111_pair_mhz": 1e3 * abs(f[pair[0]] - f[pair[1]]),
+            # confidence, always reported: TE011's Q lead over the pair, and
+            # how alike the pair's own Qs are (two polarisations should match)
+            "q_margin": (q[te_i] / (sum(q[i] for i in pair) / 2.0)
+                         if q else None),
+            "pair_q_ratio": pair_q_ratio,
             "splitting_mhz": 1e3 * abs(f[te_i] - tm),
             "how": how,
             "triplet": sorted(f)}
 
 
 
-def follow(ref, cur, indices, reject_at=0.010):
+def follow(ref, cur, indices, reject_at=0.002):
     """Follow named modes of solve `ref` into solve `cur` BY SIGNATURE.
 
     ref, cur   [{m, f, sig}] from read()
@@ -258,18 +280,32 @@ def follow(ref, cur, indices, reject_at=0.010):
     A TE mode stays a TE mode: its energy distribution is nearly invariant even
     when its frequency moves 60 MHz.
 
-    Measured on the H2b groove sweep, control -> grooved, where the answer is
-    independently known:
+    🔴 reject_at WAS 0.010 AND THAT VALUE WAS WRONG. It was calibrated on ONE
+    true match against three non-matches taken from solves where the sought mode
+    was ABSENT — telling a present mode from an absent one, which is far easier
+    than telling two PRESENT modes apart. Recalibrated 2026-08-22 on four
+    driven-vs-eigen identifications where the answer is independently known:
 
-        true match (TM111, exp-eta1)          d = 0.0007
-        TE011, every case, 0 to 20 mm depth   d <= 0.00004
-        best NON-match (TM111 absent)         d = 0.0261, 0.0306, 0.0344
+        true matches (4)                   d = 0.00016 .. 0.00088
+        nearest FALSE match (4)            d = 0.00397 .. 0.01169
 
-    A 40x gap. `reject_at=0.010` sits 14x above the true match and 2.6x below
-    the nearest false one. ⚠️ That is ONE true match against three non-matches,
-    which is a discriminator, not a law — it should be re-checked whenever a
-    new kind of perturbation is introduced (a torch, a plasma), and the
-    distance is returned on EVERY call so it can be caught being wrong.
+    The real separation is **4.5x**, not 40x — and 0.010 sat BELOW the nearest
+    false match at 0.00397, so it would have ACCEPTED a wrong mode silently.
+    0.002 is the geometric centre: 2.3x above the worst true match, 2.0x below
+    the nearest false one.
+
+    🔴 THE MARGIN IS WORST WHERE THE COUPLING IS WEAKEST — 58.8x, 33.5x, 26.0x,
+    then 4.5x at the smallest loop. A weakly driven field is less dominated by
+    its resonant mode, so its fingerprint picks up off-resonant background. The
+    probe regime we WANT (non-perturbing) is the one where identification is
+    least reliable. Treat a low margin as a reason to stop, not to round.
+
+    ⚠️ Four true matches is still thin (CONVENTIONS §11). The distance and the
+    margin are returned on EVERY call so this can be caught being wrong, and it
+    must be re-derived for any new region topology (a groove or torch changes
+    what the signature vector MEANS, not just its length) and for any strong
+    load such as a plasma, where energy redistribution is the effect being
+    measured.
 
     🔴 One-to-one assignment, not independent nearest: two reference modes must
     not both claim the same current mode. That is why this delegates to match()
@@ -282,8 +318,13 @@ def follow(ref, cur, indices, reject_at=0.010):
         if i not in indices:
             continue
         found = d <= reject_at
+        # 🔑 the MARGIN over the best alternative is the confidence, and it is
+        # what an unattended caller must gate on — an absolute distance below a
+        # threshold says nothing if a second mode sits just as close.
+        others = sorted(_dist(a["sig"], c["sig"]) for c in cur if c is not b)
+        margin = (others[0] / d) if others and d > 0 else float("inf")
         out[i] = {"f": b["f"], "m": b["m"], "dist": d, "found": found,
-                  "how": how,
+                  "margin": margin, "how": how,
                   "why": None if found else
                   (f"best signature distance {d:.4f} exceeds {reject_at:.4f} — "
                    f"the mode is NOT in this solve (it left the window), or it "
@@ -370,5 +411,30 @@ if __name__ == "__main__":
     print(f"  {'✅' if accepted else '🔴'} "
           f"{'accepts when TM111 IS in the window':<46} "
           f"{goodr['tm111'] if goodr else 'None'}")
+
+
+    # -----------------------------------------------------------------
+    # KNOWN-BAD: the E0k2 cap-loop triplet. A perturbation compressed the
+    # Q spread to 1.196, and the old 1.5x margin bailed to the frequency
+    # fallback, which named the LOWEST-Q mode as TE011.
+    # -----------------------------------------------------------------
+    print("\n  known-bad: E0k2 cap-loop triplet, Q spread compressed to 1.196")
+    # the REAL 6-mode solve, not just the triplet: with only 3 modes the
+    # window ceiling sits on the top mode and the ball guard refuses first,
+    # which is correct behaviour but tests the wrong thing.
+    KF = [2.423178, 2.450399, 2.453905, 2.622966, 2.623151, 2.765853]
+    KQ = [18411.0, 30020.0, 25107.0, 24274.0, 24269.0, 26407.0]
+    rk = te011_tm111(KF, 2.45, KQ, fmin=2.25)
+    good = rk is not None and abs(rk["te011"] - 2.450399) < 1e-9
+    ok &= good
+    print(f"  {'✅' if good else '🔴'} "
+          f"{'TE011 = the HIGHEST-Q mode':<46} "
+          f"{rk['te011'] if rk else 'None'}  how={rk['how'] if rk else '-'}")
+    if rk:
+        fals = rk["q_margin"] > 1.0
+        ok &= fals
+        print(f"  {'✅' if fals else '🔴'} "
+              f"{'falsifier TE011 Q > TM111 Q holds':<46} "
+              f"q_margin={rk['q_margin']:.3f}  pair_q_ratio={rk['pair_q_ratio']:.3f}")
 
     print(f"\n  {'✅ ALL PASS' if ok else '🔴 FAILURES ABOVE'}")

@@ -1,0 +1,184 @@
+H4 (field) — E_phi(r) in the bore WITH THE TORCH PRESENT. Retires the J1 map.
+
+🔴 WHY. Every field number this programme has quoted for ignition — E0=1.691e6,
+2.17 kV/cm at r=8.5 mm, every E/N table, every ignition-contour radius — was
+computed from an ANALYTIC J1 profile normalised to the measured bare-cavity
+Q=44,384. And that Q came from a geometry carrying:
+
+    "--no-torch", "--no-inner"
+
+There is no dielectric in it. Sapphire is eps_r = 11.6 (the geometry default,
+R99); quartz is 3.78. The tubes sit at r = 8.5-10.0 mm and 7.0-8.0 mm — exactly
+where the argon ignition contour lands.
+
+That matters because the margin is thin: at the 1.7-2.1 kV/cm argon threshold the
+contour sits at r = 6.6-8.2 mm in an 8.5 mm bore, and a 10% field error moves it
+~0.6 mm. At 2.5 kV/cm it leaves the gas entirely (r = 9.8 mm) and the torch
+cannot light. Arguing about a 1-2 mm ignition shell against a wall that is not in
+the model is precision the input does not support.
+
+## Committed prediction (stated BEFORE the solve)
+
+Slater, assuming an unperturbed field:
+
+    outer tube  (8.5-10.0 mm, sapphire)  -11.2 MHz
+    intermediate (7.0-8.0 mm, sapphire)   -4.0 MHz
+    injector     (1.0-1.5 mm, sapphire)   -0.0 MHz
+    ALL THREE                            -15.3 MHz  (-0.624%)
+
+⚠️ Slater assumes the perturbation does not reshape the mode. eps=11.6 is NOT
+small, so this is an order of magnitude to TEST, not a value to confirm. If the
+measured shift is far from -15 MHz, Slater is the thing that failed, not the solve.
+
+## Committed prediction for outer-qtz (stated BEFORE the solve, 2026-08-23)
+
+full-sap and full-quartz have IDENTICAL geometry and opposite signs (+10.5% vs
+-6.1% at r=8.2 mm), so the sign is a MATERIAL effect, not an inner-tube effect.
+Therefore:
+
+    outer-qtz DILUTES the bore field at the plasma radii (r = 2-8.5 mm)
+
+🔴 **And that FALSIFIES my reinforcement mechanism.** h3_superpose measured a
+POSITIVE cross-term with quartz. If quartz gives the plasma a WEAKER field, then
+"the dielectric concentrates the field where the plasma sits" cannot be why the
+effects reinforce, and the real cause is something else — most likely an ordinary
+second-order cross-term, which requires no claim about the sign of the field
+change at all.
+
+    outer-qtz dilutes  -> mechanism FALSIFIED, say so and drop it
+    outer-qtz concentrates -> mechanism SUPPORTED, and h4_field's full-quartz
+                              dilution was an inner-tube effect after all
+
+Either way this is decided by measurement rather than by which story is nicer.
+
+## What is measured
+
+    f0, Q          with and without the torch, same mesh machinery
+    E_rms(r)       a radial probe rake through the bore and out to the mode peak,
+                   renormalised to P_REF via W = P*Q/w and W = 2*E_mag
+    E(r)/J1(r)     the ratio that says whether the analytic map survives
+
+VERIFICATION
+  V1  every case identifies TE011 by AZIMUTHAL ORDER (m=0), never by max-Q.
+  V2b every TORCH case must print the permittivity it actually solved with,
+      taken from the MESH SIDECAR. Run 1 solved sapphire as vacuum because
+      eigen_cfg hard-codes Permittivity 1.0 for all volumes; a torch case that
+      cannot name its own eps is refused, not guessed.
+  V2  the NO-TORCH case must reproduce Q = 44,384 (measured twice) within 2%
+      AND the analytic E0 = 1.691e6 V/m within 5%. If the empty case cannot
+      reproduce the map it is replacing, nothing downstream is trustworthy.
+FALSIFICATION
+  🔴 F1  if f0 WITH the torch falls outside 2.40-2.50 GHz, H1's design point
+         (a=88.0045, L=115.4158, chosen with --no-torch) was dimensioned for a
+         cavity that will never be built. Report it; do not retune quietly.
+  🔴 F2  if E(r) departs from the J1 profile by more than 10% anywhere in the
+         bore, the analytic map is RETIRED for ignition work and every E/N
+         number derived from it must be recomputed. Say which radii.
+  🔴 F3  if azimuthal order leaves m=0 the mode is not TE011; report the onset.
+
+==============================================================================
+  cavity a=88.0045 L=115.4158  Q_bare=44,384 (no-torch)  P_ref=1000 W
+  analytic TE011 2.450000 GHz   E0_analytic=1.691e+06 V/m
+
+  --- no-torch: torch=False inner=False material=None
+    h4_field_no_torch: solver order 2
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ h4_field_no_torch: eigenmode with 1 lossy domain(s):
+      attributes [2]: eps=1.0 tan-delta=3.5e-05 sigma=0.0
+       This converges — but NLEPS is sensitive to the SHIFT TARGET. Put the target NEAR the expected loaded frequency, and note an overdense plasma pulls the mode UP, not down.
+    torch: eps=1.0 (bound from mesh sidecar)
+    solved in 106s
+    f=2.450496 GHz  Q=44,245  tets=44,788  A2/A0=0.0010
+    |E| r=0.5:0.38kV/cm  r=5.0:1.54kV/cm  r=8.2:2.34kV/cm  r=10.5:2.90kV/cm  r=42.3:7.21kV/cm
+  --- outer-sap: torch=True inner=False material=11.6,3.5e-5
+    h4_field_outer_sap: solver order 2
+    torch: eps=11.6 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ h4_field_outer_sap: eigenmode with 1 lossy domain(s):
+      attributes [2]: eps=11.6 tan-delta=3.5e-05 sigma=0.0
+       This converges — but NLEPS is sensitive to the SHIFT TARGET. Put the target NEAR the expected loaded frequency, and note an overdense plasma pulls the mode UP, not down.
+    torch: eps=11.6 (bound from mesh sidecar)
+    solved in 85s
+    f=2.436782 GHz  Q=44,280  tets=44,788  A2/A0=0.0002
+    |E| r=0.5:0.17kV/cm  r=5.0:1.60kV/cm  r=8.2:2.59kV/cm  r=10.5:3.14kV/cm  r=42.3:7.02kV/cm
+  --- outer-qtz: torch=True inner=False material=3.78,1e-4
+    h4_field_outer_qtz: solver order 2
+    torch: eps=3.78 tand=0.0001 (from mesh sidecar)
+    ⚠️ h4_field_outer_qtz: eigenmode with 1 lossy domain(s):
+      attributes [2]: eps=3.78 tan-delta=0.0001 sigma=0.0
+       This converges — but NLEPS is sensitive to the SHIFT TARGET. Put the target NEAR the expected loaded frequency, and note an overdense plasma pulls the mode UP, not down.
+    torch: eps=3.78 (bound from mesh sidecar)
+    solved in 102s
+    f=2.447392 GHz  Q=43,937  tets=44,788  A2/A0=0.0002
+    |E| r=0.5:0.15kV/cm  r=5.0:1.38kV/cm  r=8.2:2.22kV/cm  r=10.5:2.77kV/cm  r=42.3:7.04kV/cm
+  --- full-sap: torch=True inner=True material=11.6,3.5e-5
+    h4_field_full_sap: solver order 2
+    torch: eps=11.6 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ h4_field_full_sap: eigenmode with 1 lossy domain(s):
+      attributes [2]: eps=11.6 tan-delta=3.5e-05 sigma=0.0
+       This converges — but NLEPS is sensitive to the SHIFT TARGET. Put the target NEAR the expected loaded frequency, and note an overdense plasma pulls the mode UP, not down.
+    torch: eps=11.6 (bound from mesh sidecar)
+    solved in 106s
+    f=2.435493 GHz  Q=44,215  tets=51,960  A2/A0=0.0001
+    |E| r=0.5:0.16kV/cm  r=5.0:1.60kV/cm  r=8.2:2.59kV/cm  r=10.5:3.14kV/cm  r=42.3:7.08kV/cm
+  --- full-quartz: torch=True inner=True material=3.78,1e-4
+    h4_field_full_quartz: solver order 2
+    torch: eps=3.78 tand=0.0001 (from mesh sidecar)
+    ⚠️ h4_field_full_quartz: eigenmode with 1 lossy domain(s):
+      attributes [2]: eps=3.78 tan-delta=0.0001 sigma=0.0
+       This converges — but NLEPS is sensitive to the SHIFT TARGET. Put the target NEAR the expected loaded frequency, and note an overdense plasma pulls the mode UP, not down.
+    torch: eps=3.78 (bound from mesh sidecar)
+    solved in 136s
+    f=2.447135 GHz  Q=43,895  tets=51,960  A2/A0=0.0001
+    |E| r=0.5:0.13kV/cm  r=5.0:1.36kV/cm  r=8.2:2.20kV/cm  r=10.5:2.76kV/cm  r=42.3:7.10kV/cm
+
+==============================================================================
+           case      f GHz  shift MHz        Q     tets
+       no-torch   2.450496       0.00   44,245   44,788
+      outer-sap   2.436782     -13.71   44,280   44,788
+      outer-qtz   2.447392      -3.10   43,937   44,788
+       full-sap   2.435493     -15.00   44,215   51,960
+    full-quartz   2.447135      -3.36   43,895   51,960
+
+  rake calibration (no-torch meas/J1, exact for an empty cavity):
+    r=0.5:2.82  r=1:1.89  r=2:1.42  r=3:1.26  r=4:1.19  r=5:1.14  r=8.45:1.06  r=10.5:1.04  r=15:1.02  r=20:1.00  r=42.3:0.99
+    -> R_RESOLVED = 6.6 mm (inward from the peak, tol 10%)
+    excluded 7 probe(s) below the floor: 0.5, 1, 2, 3, 4, 5, 6
+  V2 Q no-torch: 44,245 vs 44,384 -> 0.31% ✅
+  V2 E0 no-torch: 1.251e+06 vs analytic rms 1.196e+06 -> 4.7% ✅  (5% gate, E0 fitted on the FLAT region r >= 15 mm)
+     same fit out to r_res=6.6 mm: 1.3e+06 -> 8.8%  (biased high; the inner radii still read 1.04-1.06x)
+  F1 outer-sap: f0=2.436782 GHz ✅ in 2.40-2.50
+  F1 outer-qtz: f0=2.447392 GHz ✅ in 2.40-2.50
+  F1 full-sap: f0=2.435493 GHz ✅ in 2.40-2.50
+  F1 full-quartz: f0=2.447135 GHz ✅ in 2.40-2.50
+
+  F2 outer-sap: worst bore departure from the no-torch map 10.7% at r=8.45 mm
+     🔴 FIRES — the analytic map is RETIRED for ignition work; every E/N number from it must be recomputed
+     Ar 1.7 kV/cm contour: r >= 6.6 mm  ✅ inside the 8.5 mm bore
+     Ar 2.1 kV/cm contour: r >= 7.4 mm  ✅ inside the 8.5 mm bore
+     Ar 2.5 kV/cm contour: r >= 8.2 mm  ✅ inside the 8.5 mm bore
+  F2 outer-qtz: worst bore departure from the no-torch map 7.5% at r=6.6 mm
+     ✅ J1 map survives within 10%
+     Ar 1.7 kV/cm contour: r >= 6.6 mm  ✅ inside the 8.5 mm bore
+     Ar 2.1 kV/cm contour: r >= 8.2 mm  ✅ inside the 8.5 mm bore
+     Ar 2.5 kV/cm contour: r >= 10.5 mm  🔴 OUTSIDE the bore — will not light
+  F2 full-sap: worst bore departure from the no-torch map 10.9% at r=8.45 mm
+     🔴 FIRES — the analytic map is RETIRED for ignition work; every E/N number from it must be recomputed
+     Ar 1.7 kV/cm contour: r >= 6.6 mm  ✅ inside the 8.5 mm bore
+     Ar 2.1 kV/cm contour: r >= 7.4 mm  ✅ inside the 8.5 mm bore
+     Ar 2.5 kV/cm contour: r >= 8.2 mm  ✅ inside the 8.5 mm bore
+  F2 full-quartz: worst bore departure from the no-torch map 8.5% at r=6.6 mm
+     ✅ J1 map survives within 10%
+     Ar 1.7 kV/cm contour: r >= 6.6 mm  ✅ inside the 8.5 mm bore
+     Ar 2.1 kV/cm contour: r >= 8.2 mm  ✅ inside the 8.5 mm bore
+     Ar 2.5 kV/cm contour: r >= 10.5 mm  🔴 OUTSIDE the bore — will not light
+
+  MECHANISM — mean dE/E over the plasma's absorbing skin (r = 6.7-8.5 mm, delta = 1.80 mm):
+       outer-sap: +10.1%  CONCENTRATES  (3 probe(s))
+       outer-qtz: -5.6%  DILUTES  (3 probe(s))
+        full-sap: +10.2%  CONCENTRATES  (3 probe(s))
+     full-quartz: -6.3%  DILUTES  (3 probe(s))
+
+  🔴 MECHANISM FALSIFIED — quartz DILUTES the field where the plasma absorbs, yet h3_superpose measured a POSITIVE cross-term (+2.42 MHz). 'The dielectric concentrates the field where the plasma sits' is NOT why they reinforce. Drop it; an ordinary second-order cross-term needs no claim about the sign of the field change.
+
+  wrote h4_field.result.json
+EXIT=0

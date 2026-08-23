@@ -54,6 +54,10 @@ VERIFICATION
   V3  the loop must not move TE011 more than a few MHz from closed form. The
       "the loop is in both solves so it cancels" argument needs the loop to be
       a perturbation, not a redesign.
+  V4  the TE011/TM111 splitting must exceed ~10 loaded linewidths, or the
+      driven dip is TWO overlapping resonances and the 3 dB fit returns
+      neither Q. This is why the groove is present: the pair is EXACTLY
+      degenerate without it.
 
 FALSIFICATION
   🔴 F1  Q0_driven and Q0_eigen differing by more than 20% means absolute Q is
@@ -83,6 +87,7 @@ a plasma (H3) — but H3 needs exactly this rig, so it is built to be reused.
 import csv
 import json
 import math
+import os
 import pathlib
 import subprocess
 import sys
@@ -96,11 +101,60 @@ from e0_solver_vs_math import GEO, eigen_cfg, run
 
 TAG = "e0k2"
 DL = 1.525                      # H1's answer. Not a hardcoded a/L pair.
-LOOP = ["--loop", "25.8,19.4,1.5,0.3", "--loop-phi", "36"]
-BAND_HALFWIDTH_MHZ = 20.0       # wide enough for the wings at Q ~ 4e4
+
+# 🔑 CAP loop, not barrel. Both are sane placements — the barrel loop sits at
+# TE011's H_z MAXIMUM, not a node (an earlier reading of this had sin and cos
+# swapped; see FINDINGS 2026-08-21 RETRACTION). The cap wins because its RADIUS
+# is a free continuous knob, and it links H_r at 1.39x the field the barrel sees.
+# Mounted at the H_r peak r = 0.4805a, which is also a stationary point and so
+# tolerance-insensitive — the same argument H1 used for D/L.
+CAP_R_FRAC = 0.4805             # J1 peak: 1.8412 / chi'_01
+LOOP_PHI = "36"
+LOOP_RW, LOOP_GAP = 1.0, 0.3    # gap must stay << wire radius
+
+# (depth_mm, half_width_mm). beta ~ area^2 for a small loop; extrapolating from
+# the barrel run's beta = 27.5 x 1.93 (the H_r/H_z power ratio) predicts
+# 0.065 / 0.36 / 1.64 / 7.8 here.
+# ⚠️ That extrapolation rests on ONE number from a run whose coupling branch was
+# AMBIGUOUS, so the sweep deliberately spans ~250x in beta: being wrong by 10x
+# either way still leaves a candidate in range. CONVENTIONS §11 — one point
+# cannot fix a law, so do not bet a single solve on it.
+CANDIDATES = [(5.0, 3.5), (7.5, 5.5), (11.0, 8.0), (16.0, 12.0)]
+
+# 🔴 THE GROOVE IS A PRECONDITION FOR THIS MEASUREMENT, not a separate design
+# question. TE011 and TM111 are EXACTLY degenerate at 2.45000 in an ungrooved
+# cavity (χ′₀₁ = χ₁₁, at every D/L). The cap loop shifts the resonance only
+# 0.37-0.44 MHz, so it splits the pair by well under a MHz — against measured
+# linewidths of 184-306 kHz. The driven dip is then TWO OVERLAPPING RESONANCES
+# and a single-Lorentzian 3 dB fit returns NEITHER Q, which is a systematic
+# sitting directly on the number this rig exists to anchor.
+#
+# H2's validated groove moves TM111 by 64 MHz for a 0.3% cost in TE011's Q —
+# 200-300 linewidths of separation for almost no perturbation to the mode being
+# measured. With it in, the dip at 2.45 is unambiguously TE011.
+#
+# 🔑 --tag-groove costs nothing here and makes Slater's numerator
+# (p_mag[groove] - p_elec[groove]) a free by-product of the same solve.
+#
+# ⚠️ Design variables can be separable while their MEASUREMENTS are not. These
+# two are: the groove is at the cap corner (r near a), the loop at r = 0.4805a,
+# and they barely interact physically — but the groove is what makes the loop's
+# reading interpretable.
+GROOVE_W, GROOVE_D = 5.0, 10.0      # H2's anchor, TM111 -64 MHz, TE011 Q -0.3%
+
+BETA_LO, BETA_HI = 0.1, 1.0     # the window the anchor needs
+BAND_HALFWIDTH_MHZ = 40.0       # a strong loop shifts the resonance; leave room
+# 🔴 5 kHz, NOT 20. At beta << 1 the loaded linewidth is ~55 kHz, and the old
+# 20 kHz step put 2.8 samples across it — far too few to locate 3 dB points.
+# 5 kHz gives 11. The PROM online phase is ~0.3 s regardless of grid size, so
+# resolution here is nearly free; the previous value was simply inherited.
+FREQ_STEP = 5e-6
 N_MODES = 6
 SIG_MARGIN_MIN = 5.0
-BETA_MAX = 0.5
+# 🔴 WAS 0.5, which predates the [BETA_LO, BETA_HI] window and contradicted it:
+# the rig reported "NOT anchored" for beta = 0.5598, a value inside its own
+# stated target. One threshold, one place.
+BETA_MAX = BETA_HI
 AMBIGUOUS_DEG = 10.0    # a phase swing this close to 180 has not decided
 
 
@@ -237,138 +291,172 @@ def analyse_driven(tag):
             "n_samples": len(d)}
 
 
+def _ckpt(path, payload):
+    """Write after EVERY candidate, atomically.
+
+    🔴 A spot reclamation killed a run mid-sweep twice on 2026-08-21. A rig that
+    writes only at the end loses every completed case with it. temp + os.replace
+    so an interrupt DURING the write leaves the previous complete file.
+    """
+    pth = pathlib.Path(path)
+    tmp = pth.with_suffix(pth.suffix + f".tmp{os.getpid()}")
+    tmp.write_text(json.dumps(payload, indent=1) + "\n")
+    os.replace(tmp, pth)
+
+
+def build_mesh(tag, a, L, ld, lw, cap_r):
+    """One mesh with a CAP loop. Returns the sidecar."""
+    geo = list(GEO) + ["--radius", f"{a:.6f}", "--length", f"{L:.6f}"]
+    loop = ["--loop", f"{ld},{lw},{LOOP_RW},{LOOP_GAP}",
+            "--loop-cap", f"{cap_r:.4f}", "--loop-phi", LOOP_PHI]
+    groove = (["--groove", f"{GROOVE_W},{GROOVE_D}", "--tag-groove"]
+              if GROOVE_W > 0 and GROOVE_D > 0 else [])
+    r = subprocess.run([sys.executable, "geometry.py", "--out", f"{tag}.msh",
+                        "--size-factor", "1.5"] + geo + loop + groove,
+                       capture_output=True, text=True)
+    if r.returncode or not pathlib.Path(f"{tag}.msh").exists():
+        raise RuntimeError(f"{tag}: mesh failed — {(r.stdout + r.stderr)[-300:]}")
+    return solveconf.load_meta(f"{tag}.msh")
+
+
+def vacuum_check(cfgs):
+    """Every domain vacuum in EVERY config, or refuse. Returns the edits made.
+
+    🔴 eigen_cfg assigns vacuum to all volumes; solveconf.driven takes materials
+    from the template and the mesh's own torch_material, which reads
+    [1.0, 3.5e-05] — a vacuum permittivity paired with a LOSS TANGENT. The two
+    solves would describe different cavities, differing by a loss term, on the
+    very quantity this rig anchors.
+    """
+    changed = []
+    for name, cfg in cfgs:
+        for mat in cfg["Domains"]["Materials"]:
+            for key, want in (("Permittivity", 1.0), ("LossTan", 0.0),
+                              ("Conductivity", 0.0)):
+                if key in mat and mat[key] != want:
+                    changed.append((name, mat.get("Attributes"), key,
+                                    mat[key], want))
+                    mat[key] = want
+    return changed
+
+
 def main():
     print(__doc__)
     print("=" * 78, flush=True)
     a, L = design_point()
     sigma = wall_sigma()
+    cap_r = CAP_R_FRAC * a
     print(f"  design point (H1, DERIVED): a={a:.4f} mm  L={L:.4f} mm  D/L={DL}")
-    print(f"  wall: {sigma:.3g} S/m from baselines.json", flush=True)
-
-    # 🔴 START FROM GEO, DO NOT HAND-ROLL THE FLAG LIST. The first version of
-    # this rig passed only --radius/--length/--order and got the DEFAULTS for
-    # everything else: 5 sectors, a torch (attr 2), the inner tubes, and every
-    # aperture live. That is CONVENTIONS §12 — "apertures default ON, gate them
-    # explicitly" — and it produced a non-manifold mesh that Palace rejected
-    # ("Interior triangular face found connecting elements 39859, 40152 and
-    # 40153") 2 s into the solve. It would ALSO have measured a loaded cavity
-    # while claiming to anchor the empty one.
-    #
-    # GEO gates all of it and is what every E0/H1 rig uses. Later flags win in
-    # argparse, so appending --radius/--length overrides GEO's own values —
-    # the same pattern as h2b's build().
-    geo = list(GEO) + ["--radius", f"{a:.6f}", "--length", f"{L:.6f}"]
-    r = subprocess.run([sys.executable, "geometry.py", "--out", f"{TAG}.msh",
-                        "--size-factor", "1.5"] + geo + LOOP,
-                       capture_output=True, text=True)
-    if r.returncode or not pathlib.Path(f"{TAG}.msh").exists():
-        sys.exit(f"mesh failed: {(r.stdout + r.stderr)[-300:]}")
-    m = solveconf.load_meta(f"{TAG}.msh")
-    attrs = m["attributes"]
-    energy = shared_energy_list(attrs)
-    print(f"  ONE mesh: {m['tets']:,} tets, {m.get('sectors')} sector(s), "
-          f"port attr {attrs.get('port')}, {len(energy)} energy regions "
-          f"shared by both solves")
-    # 🔴 DO NOT ASK THE ATTRIBUTE TABLE WHETHER THE CAVITY IS EMPTY. attrs
-    # carries reserved attribute IDs — `torch: 2` is present whether or not a
-    # torch was built, so a guard keyed on it refuses a perfectly empty mesh.
-    # That is CONVENTIONS §1 with the proxy one level down from the last one.
-    # The direct question is asked of the CONFIG, below, once both exist:
-    # what permittivity and what loss does each domain actually get?
-    g = m.get("geometry_mm") or {}
-    print(f"  apertures (0 = off): viewport={g.get('viewport')}  "
-          f"trap={g.get('trap')}  groove={g.get('groove')}  "
-          f"torch_ext={g.get('torch_ext')}")
-    print(f"  torch_material (eps, tan-delta): {g.get('torch_material')}\n",
-          flush=True)
-
+    print(f"  wall: {sigma:.3g} S/m from baselines.json")
+    print(f"  CAP loop at r = {CAP_R_FRAC} x a = {cap_r:.3f} mm "
+          f"(TE011 H_r peak, J1 max)")
+    print(f"  GROOVE {GROOVE_W} x {GROOVE_D} mm, TAGGED — separates the "
+          f"degenerate pair so the dip is ONE mode, and gives Slater's bins free")
     EX = ph.spectrum(a, L, fmax=3.2)
     exact = EX["TE011"]
-    # target BELOW the pair so the degenerate pair is inside the window with
-    # room underneath — and declare that floor to te011_tm111.
+    band = (exact - BAND_HALFWIDTH_MHZ / 1e3, exact + BAND_HALFWIDTH_MHZ / 1e3)
     fmin = exact - 0.20
     print(f"  exact TE011 = TM111 = {exact:.6f} GHz (degenerate)")
-    print(f"  eigen window floor {fmin:.4f} GHz\n", flush=True)
+    print(f"  driven band {band[0]:.4f}-{band[1]:.4f} GHz, step {FREQ_STEP*1e6:.0f} kHz")
+    print(f"  TARGET: beta in [{BETA_LO}, {BETA_HI}]\n", flush=True)
 
-    # ---- eigen, LOSSY WALL (E0k's was PEC and could not give Q) ----
-    te = f"{TAG}_eig"
-    ce = eigen_cfg(te, m, mesh=f"{TAG}.msh", sigma=sigma, n=N_MODES, target=fmin)
+    # ---------------- PHASE 1: size the loop, driven solves only -------------
+    print("=" * 78)
+    print("  PHASE 1 — size the loop. Driven only; no eigen solve is spent on a")
+    print("  geometry that turns out to be coupled wrong.\n", flush=True)
+    sized = []
+    for ld, lw in CANDIDATES:
+        tag = f"{TAG}_c{ld:g}x{lw:g}".replace(".", "p")
+        area = 2 * ld * lw
+        print(f"  --- {tag}: {ld} x {lw} mm, area {area:.0f} mm^2", flush=True)
+        try:
+            m = build_mesh(tag, a, L, ld, lw, cap_r)
+        except RuntimeError as e:
+            print(f"    🔴 {e}\n    REPORTED, not skipped.", flush=True)
+            sized.append({"tag": tag, "ld": ld, "lw": lw, "area": area,
+                          "error": str(e)})
+            continue
+        energy = shared_energy_list(m["attributes"])
+        td = f"{tag}_drv"
+        cd, _meta, dropped = solveconf.driven(f"{tag}.msh", td, band,
+                                              step=FREQ_STEP, order=2)
+        cd["Domains"]["Postprocessing"]["Energy"] = energy
+        for nm, att, k, was, now in vacuum_check([("driven", cd)]):
+            print(f"    🔧 {nm} {att}: {k} {was} -> {now}", flush=True)
+        pathlib.Path(f"{td}.json").write_text(json.dumps(cd, indent=2))
+        print(f"    {m['tets']:,} tets" + (f", dropped {dropped}" if dropped else ""),
+              flush=True)
+        try:
+            run(td, cd)
+        except RuntimeError as e:
+            print(f"    🔴 solve failed: {e}\n    REPORTED, not skipped.", flush=True)
+            sized.append({"tag": tag, "ld": ld, "lw": lw, "area": area,
+                          "error": str(e)})
+            continue
+        D = analyse_driven(td)
+        rec = {"tag": tag, "ld": ld, "lw": lw, "area": area, "mesh": m["tets"],
+               "energy": energy, **D}
+        sized.append(rec)
+        if "error" in D:
+            print(f"    🔴 {D['error']}", flush=True)
+        else:
+            print(f"    f0={D['f0']:.6f}  |S11|={D['s11_db']:.3f} dB  "
+                  f"{D['branch']}  beta={D['beta']:.4f}  "
+                  f"Q_L={D['Q_L']:,.0f}  linewidth {D['linewidth_khz']:.1f} kHz",
+                  flush=True)
+        _ckpt(f"{TAG}.sizing.json", {"candidates": sized})
+
+    print("\n" + "=" * 78)
+    print(f"  {'candidate':<20}{'area':>7}{'beta':>12}{'Q_L':>10}{'branch':>14}"
+          f"{'in range':>10}")
+    ok = []
+    for r in sized:
+        if "error" in r or "beta" not in r:
+            print(f"  {r['tag']:<20}{r['area']:>7.0f}{'—':>12}{'—':>10}"
+                  f"{'FAILED':>14}{'':>10}")
+            continue
+        good = BETA_LO <= r["beta"] <= BETA_HI
+        if good:
+            ok.append(r)
+        print(f"  {r['tag']:<20}{r['area']:>7.0f}{r['beta']:>12.4f}"
+              f"{r['Q_L']:>10,.0f}{r['branch']:>14}{'✅' if good else '':>10}")
+
+    if not ok:
+        print(f"\n  🔴 NO candidate landed in [{BETA_LO}, {BETA_HI}]. "
+              f"The anchor is NOT run — a Q0 = Q_L(1+beta) built outside that "
+              f"window rides on the coupling model, which is exactly what the "
+              f"last attempt showed. Re-scale from the betas above: "
+              f"beta ~ area^2, so area_new = area_old * sqrt(target/measured).")
+        json.dump({"candidates": sized}, open(f"{TAG}.sizing.json", "w"), indent=1)
+        return
+
+    # Closest to the geometric centre of the window.
+    # ⚠️ preflight flags this as nearest-value matching, correctly in spirit.
+    # It is safe HERE because `ok` is already filtered to BETA_LO..BETA_HI, so
+    # the pick cannot reach past the edge of the searched set — the same ball
+    # argument as eigmodes.te011_tm111's window guard. If no candidate is in
+    # range the function has already returned above rather than picking the
+    # least-bad one, which is the failure mode the rule exists to catch.
+    import math as _m
+    centre = _m.sqrt(BETA_LO * BETA_HI)
+    best = min(ok, key=lambda r: abs(_m.log(r["beta"] / centre)))
+    print(f"\n  chosen: {best['tag']}  beta={best['beta']:.4f} "
+          f"(window centre {centre:.3f})", flush=True)
+
+    # ---------------- PHASE 2: the anchor, on the chosen mesh ----------------
+    print("\n" + "=" * 78)
+    print("  PHASE 2 — the anchor. Eigen on the SAME mesh, SAME wall; the driven")
+    print("  solve from phase 1 is reused, not repeated.\n", flush=True)
+    tag = best["tag"]
+    m = solveconf.load_meta(f"{tag}.msh")
+    attrs = m["attributes"]
+    te = f"{tag}_eig"
+    ce = eigen_cfg(te, m, mesh=f"{tag}.msh", sigma=sigma, n=N_MODES, target=fmin)
     ce["Solver"]["Order"] = 2
-    ce["Domains"]["Postprocessing"]["Energy"] = energy
-    ce["Boundaries"].setdefault("PEC", {"Attributes": []})
+    ce["Domains"]["Postprocessing"]["Energy"] = best["energy"]
     ce["Boundaries"]["PEC"] = {"Attributes": [attrs["port"]]}   # loop shorted
-
-    td = f"{TAG}_drv"
-    band = (exact - BAND_HALFWIDTH_MHZ / 1e3, exact + BAND_HALFWIDTH_MHZ / 1e3)
-    cd, _meta, dropped = solveconf.driven(f"{TAG}.msh", td, band, step=2e-5, order=2)
-    cd["Domains"]["Postprocessing"]["Energy"] = energy
-    if dropped:
-        print(f"    ⚠️ driven config dropped: {dropped}", flush=True)
-    pathlib.Path(f"{td}.json").write_text(json.dumps(cd, indent=2))
-
-    # 🔴 NORMALISE THE DRIVEN DOMAINS TO VACUUM, AND SAY SO.
-    #
-    # `--no-torch` does NOT remove the torch REGION: attribute 2 still carries
-    # 9,479 elements, 28% of this mesh — it is simply vacuum that happens to be
-    # tagged separately. But the sidecar records torch_material = [1.0, 3.5e-5],
-    # a vacuum permittivity paired with a LOSS TANGENT, which is incoherent, and
-    # solveconf.driven faithfully binds it. eigen_cfg meanwhile assigns
-    # Permittivity 1.0 with no loss to every volume.
-    #
-    # So the two solves describe DIFFERENT CAVITIES, differing by a loss term —
-    # sitting exactly on Q, the quantity this rig exists to anchor. Magnitude
-    # depends on how much energy the region holds and is not the point: an
-    # anchor cannot rest on two models of one cavity.
-    #
-    # ⚠️ SCOPED TO THIS RIG deliberately. The general fix belongs in solveconf
-    # (its own rule: a material bound to something the mesh does not have
-    # "describes a model it is not solving" — and vacuum-with-loss is the same
-    # class of claim), but that changes every driven rig and is not this
-    # measurement's job. FINDINGS records it.
-    changed = []
-    for mat in cd["Domains"]["Materials"]:
-        for key, want in (("Permittivity", 1.0), ("LossTan", 0.0),
-                          ("Conductivity", 0.0)):
-            if key in mat and mat[key] != want:
-                changed.append((mat.get("Attributes"), key, mat[key], want))
-                mat[key] = want
-    if changed:
-        print("  🔧 driven domains normalised to vacuum, to match eigen:")
-        for a_, k, was, now in changed:
-            print(f"       attributes {a_}: {k} {was} -> {now}")
-    pathlib.Path(f"{td}.json").write_text(json.dumps(cd, indent=2))
-
-    # 🔑 BOTH CONFIGS EXIST BEFORE EITHER SOLVE RUNS, so the emptiness check
-    # below costs nothing when it fires. Checking it between the two solves
-    # would have paid for the eigen run first — and "declare the criteria
-    # BEFORE the run" (§9) means before the FIRST one.
-
-    # 🔑 THE DIRECT QUESTION, asked of BOTH configs: is this cavity actually
-    # empty and lossless apart from the wall? An anchor for absolute Q must be
-    # WALL-LOSS ONLY — a stray dielectric loss tangent sits directly on the
-    # number being anchored. eigen_cfg assigns vacuum to every volume, but
-    # solveconf.driven takes its materials from the TEMPLATE and the mesh's own
-    # torch_material, so the two can silently disagree about the same region.
-    bad = []
-    for name, cfg in (("eigen", ce), ("driven", cd)):
-        for mat in cfg["Domains"]["Materials"]:
-            eps = mat.get("Permittivity", 1.0)
-            tand = mat.get("LossTan", 0.0)
-            sig_d = mat.get("Conductivity", 0.0)
-            if abs(eps - 1.0) > 1e-12 or tand or sig_d:
-                bad.append((name, mat.get("Attributes"), eps, tand, sig_d))
-    print(f"  domain materials: {sum(len(c['Domains']['Materials']) for c in (ce, cd))} "
-          f"entries across both configs")
-    if bad:
-        for n, a, e, t, sg in bad:
-            print(f"    🔴 {n}: attributes {a} eps={e} tan-delta={t} sigma={sg}")
-        raise RuntimeError(
-            f"{TAG}: {len(bad)} domain(s) are not vacuum. This rig anchors "
-            f"ABSOLUTE Q and the anchor must be WALL-LOSS ONLY — any dielectric "
-            f"loss lands directly on the quantity being measured. Listed above; "
-            f"fix the geometry flags or the template, do not proceed.")
-    print(f"  ✅ every domain is vacuum in BOTH configs — wall loss only\n",
-          flush=True)
+    for nm, att, k, was, now in vacuum_check([("eigen", ce)]):
+        print(f"    🔧 {nm} {att}: {k} {was} -> {now}", flush=True)
     run(te, ce)
 
     modes = eigmodes.read(te)
@@ -381,97 +469,134 @@ def main():
     for md in modes:
         print(f"      f={md['f']:.6f}  Q={qs.get(md['m'], 0):,.0f}", flush=True)
 
-    # ---- driven, SAME mesh, SAME wall ----
-    print(f"\n  driven band {band[0]:.4f}-{band[1]:.4f} GHz", flush=True)
-    run(td, cd)
-
-    D = analyse_driven(td)
-    out = {"domain_normalisation": [[a_, k, was, now]
-                                   for a_, k, was, now in changed],
-           "design": {"a_mm": a, "L_mm": L, "dl": DL, "sigma": sigma,
-                      "tets": m["tets"], "exact_te011": exact},
-           "driven": D,
+    D = {k: v for k, v in best.items() if k not in ("energy",)}
+    out = {"design": {"a_mm": a, "L_mm": L, "dl": DL, "sigma": sigma,
+                      "cap_r_mm": cap_r, "exact_te011": exact},
+           "sizing": [{k: v for k, v in r.items() if k != "energy"}
+                      for r in sized],
+           "chosen": tag, "driven": D,
            "eigen": [{"m": md["m"], "f": md["f"], "Q": qs.get(md["m"])}
                      for md in modes]}
 
-    if "error" in D:
-        print(f"\n  🔴 driven analysis failed: {D['error']}")
-        json.dump(out, open(f"{TAG}.result.json", "w"), indent=1)
-        return
-
-    print(f"\n  DRIVEN: f0={D['f0']:.6f}  |S11|min={D['s11_db']:.3f} dB  "
-          f"{D['branch']} (phase swing {D['phase_swing_deg']:.1f}°)")
-    print(f"          linewidth {D['linewidth_khz']:.1f} kHz  beta={D['beta']:.4f}  "
-          f"Q_L={D['Q_L']:,.0f}  ->  Q0={D['Q0']:,.0f}", flush=True)
-
-    # ---- V1: identify the driven mode BY SIGNATURE ----
-    dsig = sig_at(td, D["f0"])
+    # identify the driven dip BY SIGNATURE
+    dsig = sig_at(f"{tag}_drv", D["f0"])
     scored = sorted(((eigmodes._dist(dsig, md["sig"]), md) for md in modes),
                     key=lambda x: x[0])
-    d0, best = scored[0]
+    d0, bestmode = scored[0]
     margin = (scored[1][0] / d0) if len(scored) > 1 and d0 > 0 else float("inf")
-    out["identification"] = {"driven_sig": dsig, "best_f": best["f"],
-                             "distance": d0, "margin": margin,
+    out["identification"] = {"distance": d0, "margin": margin,
                              "ranked": [[round(x[0], 5), x[1]["f"]] for x in scored]}
     print(f"\n  IDENTIFICATION by signature (not frequency):")
     for dist, md in scored:
         print(f"    f={md['f']:.6f}  Q={qs.get(md['m'],0):>10,.0f}  d={dist:.5f}"
-              + ("   <-- driven dip" if md is best else ""))
-    print(f"    margin over next {margin:.1f}x "
-          f"(V1 needs > {SIG_MARGIN_MIN})", flush=True)
-
+              + ("   <-- driven dip" if md is bestmode else ""))
+    print(f"    margin over next {margin:.1f}x (V1 needs > {SIG_MARGIN_MIN})",
+          flush=True)
     if margin < SIG_MARGIN_MIN:
-        print(f"\n  🔴 F2 FIRES: signature margin {margin:.1f}x < {SIG_MARGIN_MIN}. "
-              f"The loop has hybridised the degenerate pair. NO Q comparison is "
-              f"claimed — and this does NOT fall back to nearest-frequency.")
+        print(f"\n  🔴 F2 FIRES: margin {margin:.1f}x < {SIG_MARGIN_MIN}. NO Q "
+              f"comparison is claimed, and this does NOT fall back to "
+              f"nearest-frequency.")
         json.dump(out, open(f"{TAG}.result.json", "w"), indent=1)
         return
 
-    # WHICH mode is it? Q separates the degenerate pair; declare the window
-    # floor so te011_tm111 can refuse rather than reach past the edge of what
-    # was searched — the guard added after H2b invented a TM111 at 2.60631.
     fs = [md["f"] for md in modes]
     qlist = [qs.get(md["m"], 0.0) for md in modes]
     pair = eigmodes.te011_tm111(fs, exact, qlist, fmin=fmin)
     label = "unidentified"
     if pair:
-        if abs(best["f"] - pair["te011"]) < 1e-9:
+        if abs(bestmode["f"] - pair["te011"]) < 1e-9:
             label = "TE011"
-        elif best["f"] in [fs[i] for i in pair["tm111_indices"]]:
+        elif bestmode["f"] in [fs[i] for i in pair["tm111_indices"]]:
             label = "TM111 (one polarisation)"
         out["pair"] = {k: v for k, v in pair.items() if k != "triplet"}
-        print(f"\n  the degenerate pair, by Q: TE011={pair['te011']:.6f}  "
+        print(f"\n  degenerate pair by Q: TE011={pair['te011']:.6f}  "
               f"TM111={pair['tm111']:.6f}  (how={pair['how']})")
+        # 🔑 the identification's OWN falsifier, H1's: TE011 must out-Q TM111
+        i_te = pair["te011_index"]
+        q_te = qlist[i_te]
+        q_tm = sum(qlist[i] for i in pair["tm111_indices"]) / 2.0
+        okq = q_te > q_tm
+        print(f"    falsifier TE011 Q > TM111 Q: {q_te:,.0f} vs {q_tm:,.0f} "
+              + ("✅" if okq else "🔴 INVERTED — the labelling is not trustworthy"))
+        out["pair"]["falsifier_te011_outQs_tm111"] = bool(okq)
+        if not okq:
+            label += " [LABEL SUSPECT: Q inversion]"
     else:
-        print(f"\n  ⚠️ te011_tm111 REFUSED — the pair is not resolvable in this "
-              f"window. The anchor below is for an UNLABELLED mode.")
+        print(f"\n  ⚠️ te011_tm111 REFUSED — pair not resolvable in this window.")
     out["identification"]["mode_label"] = label
     print(f"  the loop coupled to: {label}", flush=True)
 
-    qe = qs.get(best["m"])
+    qe = qs.get(bestmode["m"])
     ratio = D["Q0"] / qe if qe else None
-    out["anchor"] = {"Q0_driven": D["Q0"], "Q0_eigen": qe, "ratio": ratio}
+    out["anchor"] = {"Q0_driven": D["Q0"], "Q0_eigen": qe, "ratio": ratio,
+                     "beta": D["beta"], "Q_L": D["Q_L"]}
     print(f"\n  {'='*70}\n  THE ANCHOR")
     print(f"    Q0 from the driven LINEWIDTH : {D['Q0']:>12,.0f}")
     print(f"    Q0 from the EIGENVALUE       : {qe:>12,.0f}")
     print(f"    ...for mode                  : {label:>12}")
     print(f"    ratio driven/eigen           : {ratio:>12.3f}")
+    print(f"    beta                         : {D['beta']:>12.4f}")
+    print(f"    beta's share of Q0           : {100*(1-1/(1+D['beta'])):>11.1f}%")
 
-    # ---- declared falsifiers, judged ----
     print(f"\n  DECLARED CRITERIA")
-    v3 = abs(1e3 * (best["f"] - exact))
-    print(f"    V3 loop perturbation: {v3:.2f} MHz from closed form "
-          f"{'✅' if v3 < 5 else '🔴 the loop is a redesign, not a perturbation'}")
-    print(f"    V2 beta={D['beta']:.4f} {'✅' if D['beta'] < BETA_MAX else '🔴 F3'}"
-          f"  branch={D['branch']} by phase")
+    # V4 — is the dip ONE mode? Ask the eigen solve for the actual splitting
+    # and compare it with the loaded linewidth the driven fit assumed.
+    v4_ok, sep_lw = None, None
+    if pair:
+        sep_mhz = abs(pair["te011"] - pair["tm111"]) * 1e3
+        sep_lw = sep_mhz * 1e3 / D["linewidth_khz"]
+        v4_ok = sep_lw >= 10.0
+        out["blend"] = {"splitting_mhz": sep_mhz, "linewidths": sep_lw,
+                        "resolved": bool(v4_ok)}
+        print(f"    V4 TE011/TM111 splitting {sep_mhz:.3f} MHz = "
+              f"{sep_lw:.1f} loaded linewidths "
+              + ("✅ the dip is ONE mode" if v4_ok else
+                 "🔴 OVERLAPPING — the 3 dB fit returns neither Q, and the "
+                 "anchor below is contaminated"))
+    else:
+        print(f"    V4 splitting UNKNOWN — the pair was not resolvable, so "
+              f"whether the dip is one mode is not established")
+    v3 = abs(1e3 * (bestmode["f"] - exact))
+    print(f"    V3 loop perturbation: {v3:.2f} MHz "
+          + ("✅" if v3 < 5 else "🔴 the loop is a redesign, not a perturbation"))
+    # V5 — what does the PROBE cost in Q? Frequency perturbation (V3) says
+    # nothing about it: f is a volume integral, Q is a surface-current one, and
+    # an obstacle at a current maximum can be negligible in the first and
+    # dominant in the second. Measured by subtraction against a loop-free solve.
+    bare = pathlib.Path(f"{TAG}_bare.result.json")
+    if bare.exists():
+        qb = json.loads(bare.read_text()).get("q_te011")
+        if qb:
+            cost = 1.0 - qe / qb
+            out["v5"] = {"q_bare": qb, "q_with_loop": qe, "q_cost_frac": cost}
+            print(f"    V5 loop Q cost: {qe:,.0f} vs bare {qb:,.0f} = "
+                  f"{100*cost:+.1f}% "
+                  + ("✅ the probe is weak in Q too" if abs(cost) < 0.10 else
+                     "🔴 the probe DOMINATES Q — this anchors cavity+loop, "
+                     "not the design cavity"))
+    else:
+        print(f"    V5 loop Q cost: UNKNOWN — no {TAG}_bare.result.json. "
+              f"Run e0k2_bare.py; do NOT assume the probe is free.")
+    print(f"    V2 beta={D['beta']:.4f} {'✅' if D['beta'] <= BETA_MAX else '⚠️ above BETA_MAX'}"
+          f"  branch={D['branch']} by phase (swing {D['phase_swing_deg']:.1f}°)")
     agree = ratio is not None and abs(ratio - 1) <= 0.20
     print(f"    F1 |ratio-1| = {abs(ratio-1):.1%} "
-          + ("✅ ABSOLUTE Q IS ANCHORED — two independent routes agree"
-             if agree else
-             "🔴 F1 FIRES: the two routes DISAGREE. Absolute Q is NOT anchored. "
-             "This is the result; do not adjust the coupling model to close it."))
-    out["verdict"] = {"anchored": bool(agree), "loop_shift_mhz": v3,
-                      "beta_ok": bool(D["beta"] < BETA_MAX)}
+          + ("✅ two independent routes agree" if agree else
+             "🔴 F1 FIRES: the routes DISAGREE. Do not adjust the coupling "
+             "model to close it."))
+    v5_ok = out.get("v5", {}).get("q_cost_frac")
+    v5_ok = (abs(v5_ok) < 0.10) if v5_ok is not None else False
+    out["verdict"] = {"anchored": bool(agree and v3 < 5 and D["beta"] <= BETA_MAX
+                                       and v4_ok and v5_ok),
+                      "v5_measured": "v5" in out,
+                      "loop_shift_mhz": v3, "F1_agree": bool(agree)}
+    if out["verdict"]["anchored"]:
+        print(f"\n  ✅ ABSOLUTE Q IS ANCHORED: {qe:,.0f} for {label}, confirmed "
+              f"by an independent linewidth measurement to {abs(ratio-1):.1%}.")
+    else:
+        print(f"\n  ⚠️ NOT anchored: F1 agreeing is necessary but not sufficient "
+              f"— V3 and the beta window must hold too, or the number describes "
+              f"a cavity dominated by its own probe.")
     journal.log(TAG, event="anchor", **out["anchor"])
     json.dump(out, open(f"{TAG}.result.json", "w"), indent=1)
     print(f"\n  wrote {TAG}.result.json", flush=True)

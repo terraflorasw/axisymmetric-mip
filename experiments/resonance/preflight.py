@@ -178,9 +178,52 @@ def r_nearest_match(src, tree):
             if re.search(r"min\(.*key=lambda.*abs\(", l) and i + 1 not in inside]
 
 
+
+def r_undefined_name(src, tree):
+    """🔴 A NameError that only fires at CALL TIME, forty minutes into a run.
+
+    Twice in one session a rig was launched and died seconds in on an import
+    removed during a refactor — `eigen_cfg` both times, dropped when the rig was
+    converted to driven and not restored when it was converted back. `ast.parse`
+    cannot see it: the syntax is fine, and the name is only looked up when the
+    function actually runs.
+
+    ⚠️ Delegates to pyflakes rather than hand-rolling scope analysis. A
+    hand-rolled version would have to get comprehensions, walrus, global/nonlocal
+    and star-imports right, and CONVENTIONS §7 is explicit that a checker which
+    cannot see its subject is worse than none — this project has already shipped
+    one scanner that returned a clean bill of health because it was blanking the
+    very strings it was meant to read.
+
+    Reports as an ERROR: an undefined name is not a style opinion.
+    """
+    try:
+        from pyflakes.api import check
+        from pyflakes.reporter import Reporter
+    except ImportError:
+        return [(WARN, 1, "pyflakes not installed — undefined names are NOT "
+                          "being checked. `pip install pyflakes`.")]
+    buf, errbuf = io.StringIO(), io.StringIO()
+    check(src, "<rig>", Reporter(buf, errbuf))
+    out = []
+    for line in buf.getvalue().splitlines():
+        # "<rig>:LINE:COL message"
+        parts = line.split(":", 3)
+        if len(parts) < 4:
+            continue
+        msg = parts[3].strip()
+        if "undefined name" in msg:
+            try:
+                ln = int(parts[1])
+            except ValueError:
+                ln = 1
+            out.append((ERROR, ln, f"{msg} — this is a NameError waiting for "
+                                   f"the line to execute, not a style issue"))
+    return out
+
 # rules needing the raw source (they inspect string CONTENTS); all others are
 # run against code_only() so prose about a pattern is not mistaken for it
-RAW = {"r_help_percent"}
+RAW = {"r_help_percent", "r_undefined_name"}
 
 
 # ---------------------------------------------------------------- shell rules
@@ -231,7 +274,8 @@ SH_GOOD = ('sudo blkid "$DEV" || sudo mkfs.ext4 "$DEV"\n'
            'ps -o pid=,args= -C palace | tail -n +1 | xargs -r kill\n'
            'rm -rf "${PREFIX:?}/build"\n')
 RULES = [r_timeout, r_pkill, r_main_guard, r_help_percent, r_ps_e_with_C,
-         r_falsy_numeric_flag, r_bare_background, r_nearest_match]
+         r_falsy_numeric_flag, r_bare_background, r_nearest_match,
+         r_undefined_name]
 
 BAD = {
     "r_timeout": "import subprocess\nsubprocess.run(['x'], timeout=5)\n",
@@ -245,6 +289,9 @@ BAD = {
                             'a=ap.parse_args()\nif a.viewport:\n    pass\n',
     "r_bare_background": "x = 'nohup python3 job.py &'\n",
     "r_nearest_match": "y = min(v, key=lambda x: abs(x - t))\n",
+    # the real failure: an import dropped in a refactor, used in a function
+    "r_undefined_name": "def f():\n    return eigen_cfg(1)\n"
+                        "if __name__ == '__main__':\n    f()\n",
 }
 GOOD = ('import subprocess\n'
         'def f():\n    subprocess.Popen(["x"]).wait(timeout=5)\n'

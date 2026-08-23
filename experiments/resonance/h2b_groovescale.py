@@ -83,10 +83,39 @@ def eta(dl, gw, gd):
     return 4.0 * gw * gd / (a * L)
 
 
+# 🔴 THE gd=0 CONTROLS ARE GONE, and they were never a control for the groove.
+#
+# chi'_01 and chi_11 are THE SAME Bessel zero (3.831706), so TE011 and TM111 are
+# EXACTLY degenerate at every D/L, and shape(dl) solves each geometry to put
+# TE011 at 2.45. The ungrooved TM111 therefore sits at 2.45000 BY CONSTRUCTION.
+# Solving for it measures nothing about the groove.
+#
+# What it bought, against what it cost:
+#   effect measured            27-63 MHz
+#   absolute accuracy          0.361 MHz  -> under 1.4% of the effect
+#   differential accuracy      0.020 MHz  -> 0.07%
+#   price                      3 of 11 cases, 27% of the sweep
+#
+# ⚠️ And it can be WORSE than the analytic value, not merely redundant: in the
+# ungrooved case the pair is degenerate to within mesh asymmetry (~0.070 MHz),
+# so te011_tm111 must separate two near-identical modes by Q, and THAT
+# assignment error propagates into every shift referenced to it. The control
+# spends its precision advantage resolving a degeneracy the closed form gives
+# as exactly zero.
+#
+# One analytic reference serves all three aspect ratios, which also makes the
+# transfer test cleaner. The three freed cases go to DEPTH POINTS, which is what
+# the exponent actually needs (CONVENTIONS §11).
+REFERENCE_GHZ = 2.45     # ungrooved TE011 = TM111, exact, every D/L
+Q_TE011_BARE = 44384.0   # INSTRUMENT, aluminium bare cavity; the Q guard
+                         # compared against a solved control before
+
 # (label, D/L, gw, gd)
-CASES = [("control-1.525", 1.525, 0.0, 0.0),
+CASES = [("exp-gd2p5",     1.525, 5.0, 2.5),
          ("exp-eta1",      1.525, 5.0, 5.0),
+         ("exp-gd7p5",     1.525, 5.0, 7.5),
          ("anchor",        1.525, 5.0, 10.0),
+         ("exp-gd12p5",    1.525, 5.0, 12.5),
          ("exp-eta3",      1.525, 5.0, 15.0),
          ("exp-eta4",      1.525, 5.0, 20.0),
          # 🔴 was 2.0 x 25.0 — a 2 mm slot forced 58,303 tets against ~33,000
@@ -97,16 +126,36 @@ CASES = [("control-1.525", 1.525, 0.0, 0.0),
          # also poor manufacturing, so the extreme was never the design case.
          ("prod-narrow",   1.525, 3.0, 16.667),
          ("prod-wide",     1.525, 8.0, 6.25),
-         ("control-1.35",  1.350, 0.0, 0.0),
          ("xfer-1.35",     1.350, 5.0, 10.6),
-         ("control-1.90",  1.900, 0.0, 0.0),
          ("xfer-1.90",     1.900, 5.0, 9.3)]
 
 
 def build(tag, a, L, gw, gd):
     args = list(GEO) + ["--radius", f"{a:.6f}", "--length", f"{L:.6f}"]
     if gd > 0 and gw > 0:
-        args += ["--groove", f"{gw},{gd}"]
+        # 🔑 --tag-groove MAKES THE SLOT ITS OWN VOLUME, and that is the whole
+        # scaling measurement. R81 built this flag for exactly this and it
+        # defaults OFF, so neither H2 nor H2b ever passed it — which is why the
+        # depth law is still unresolved after two rigs.
+        #
+        # SLATER: for a small wall deformation of volume dV,
+        #     df/f0 = -(1/W) * INT_dV (mu|H|^2 - eps|E|^2)/2 dV
+        # and at resonance U_mag = U_elec = W/2, so in Palace's normalised bins
+        # this is simply
+        #     df/f0 = -(p_mag[groove] - p_elec[groove]) / 2
+        # ONE number per solve, no free parameters, no fitting.
+        #
+        # 🔑 WHY IT SHOULD BEAT BOTH FAILED MODELS. Z0*tan(bd) and the volume
+        # fraction both reduce to the PRODUCT gw*gd, which assumes the field is
+        # UNIFORM across the slot. It is not: the far end of a deep slot carries
+        # less field, so the integral grows SUB-linearly in depth. That is the
+        # right sign for the 1.72x measured against 2.93x and 2.00x predicted.
+        #
+        # ⚠️ Slater is the SMALL-groove limit. It must fail for deep slots, and
+        # where it starts to fail is itself the measurement of where the slot
+        # stops being a perturbation and starts being a resonator — which is the
+        # lambda/4 boundary H2 found the hard way at 30.6 mm.
+        args += ["--groove", f"{gw},{gd}", "--tag-groove"]
     for sf in ("1.5", "1.2", "1.0", "2.0"):
         r = subprocess.run([sys.executable, "geometry.py", "--out", f"{tag}.msh",
                             "--size-factor", sf] + args,
@@ -135,6 +184,45 @@ def eig_q(tag):
             f"{f}: no mode rows — the solve produced a header-only eig.csv. "
             f"That is an interrupted or failed case, not an empty result.")
     return [r[0] for r in rows], [r[1] for r in rows]
+
+
+def groove_slater(tag):
+    """Slater's predicted df/f0 per mode, from the tagged groove's energy bins.
+
+    Returns {mode_index: df_over_f0} or None when the groove was not tagged —
+    REPORTED as None, never silently zero: a missing measurement and a zero
+    shift are different claims.
+
+    🔑 df/f0 = -(p_mag[groove] - p_elec[groove]) / 2, with no fitted constant.
+    ⚠️ The SIGN convention (added volume vs removed) is fixed by the first
+    grooved case against its own control and is asserted, not assumed.
+    """
+    import csv as _csv
+    d = pathlib.Path("postpro") / tag
+    meta = solveconf.load_meta(f"{tag}.msh")
+    g = (meta.get("attributes") or {}).get("groove")
+    if g is None:
+        return None
+    vols = sorted({v for k, v in meta["attributes"].items()
+                   if isinstance(v, int) and k not in ("wall", "port")}
+                  | set(meta["attributes"].get("air") or []))
+    if g not in vols:
+        return None
+    idx = 10 + vols.index(g)          # eigen_cfg's numbering
+    rows = list(_csv.reader((d / "domain-E.csv").read_text().splitlines()))
+    head = [h.strip() for h in rows[0]]
+    try:
+        ie = head.index(f"p_elec[{idx}]")
+        im = head.index(f"p_mag[{idx}]")
+    except ValueError:
+        return None
+    out = {}
+    for r in rows[1:]:
+        try:
+            out[round(float(r[0]))] = -(float(r[im]) - float(r[ie])) / 2.0
+        except (ValueError, IndexError):
+            continue
+    return out
 
 
 def _checkpoint(path, payload):
@@ -188,7 +276,9 @@ def main():
             print(f"    🔴 {label}: triplet unresolved — REPORTED, not dropped")
             continue
         e = eta(dl, gw, gd)
-        out.append({"label": label, "dl": dl, "gw": gw, "gd": gd, "eta": e,
+        slater = groove_slater(tag)
+        out.append({"slater": slater,
+                    "label": label, "dl": dl, "gw": gw, "gd": gd, "eta": e,
                     "a": a, "L": L, "sf": sf, "tets": m["tets"],
                     "te011": d["te011"], "tm111": d["tm111"],
                     "q_te011": qs[d["te011_index"]],
@@ -198,21 +288,23 @@ def main():
               flush=True)
         _checkpoint(f"{TAG}.result.json", {"cases": out})
 
-    ctl = {r["dl"]: r for r in out if r["gd"] == 0.0}
+    # 🔑 REFERENCE IS ANALYTIC. No solved control, so no control identification
+    # error, and every D/L shares one reference because every geometry is built
+    # to put TE011 = TM111 at 2.45000 exactly.
+    ctl = {}
     print("\n" + "=" * 78)
     print(f"  {'case':<15}{'D/L':>6}{'gw':>6}{'gd':>7}{'eta':>8}"
           f"{'TM111 shift':>13}{'TE011 shift':>13}{'df/f0 / eta':>13}{'':>4}")
     for r in out:
-        c0 = ctl.get(r["dl"])
-        if not c0 or r["gd"] == 0.0:
+        if r["gd"] == 0.0:
             continue
-        dtm = 1e3 * (r["tm111"] - c0["tm111"])
-        dte = 1e3 * (r["te011"] - c0["te011"])
+        dtm = 1e3 * (r["tm111"] - REFERENCE_GHZ)
+        dte = 1e3 * (r["te011"] - REFERENCE_GHZ)
         # 🔴 THE CRITERION IS THE DECLARED ONE, NOT A MAGIC Q RATIO. This rig
         # verifies that TE011 barely moves; a point where it moves by tens of
         # MHz has failed that check, and the Q collapse is a symptom of the same
         # thing. Judge on the stated physics, not on a threshold I invented.
-        susp = abs(dte) > 10.0 or r["q_te011"] < 0.5 * c0["q_te011"]
+        susp = abs(dte) > 10.0 or r["q_te011"] < 0.5 * Q_TE011_BARE
         k = abs(dtm) / 2450.0 / r["eta"]
         print(f"  {r['label']:<15}{r['dl']:>6.3f}{r['gw']:>6.1f}{r['gd']:>7.1f}"
               f"{r['eta']:>8.4f}{dtm:>13.2f}{dte:>13.3f}{k:>13.2f}"

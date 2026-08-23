@@ -366,6 +366,7 @@ def build(p: dict, out: str, msh_order: int) -> None:
     lcr = p["loop_cap_r"]
     port_face = None
     gap2_centre = None
+    port_centre = None
     if ld > 0 and lcr > 0:
         # --- R69: CAP-MOUNTED loop -----------------------------------------
         # The same U, rotated so its normal is RADIAL: two AXIAL legs at
@@ -432,6 +433,10 @@ def build(p: dict, out: str, msh_order: int) -> None:
         if p["loop_phi"]:
             occ.rotate([(2, pf)], 0, 0, 0, 0, 0, 1, p["loop_phi"])
         port_face = pf
+        # R112: the PORT gap needs the same refinement R62 gave the SERIES gap.
+        # Rectangle centre is (lcr, 0, zi) before the phi rotation.
+        _c, _s = math.cos(p["loop_phi"]), math.sin(p["loop_phi"])
+        port_centre = (lcr * _c, lcr * _s, zi)
     elif ld > 0:
         xo, xi = a + 2.0e-3, a - ld          # start outside the wall; the cut trims it
         segs = []
@@ -506,6 +511,10 @@ def build(p: dict, out: str, msh_order: int) -> None:
         if p["loop_phi"]:
             occ.rotate([(2, pf)], 0, 0, 0, 0, 0, 1, p["loop_phi"])
         port_face = pf
+        # R112: see the cap branch. Centre is (xi, 0, 0) before rotation; the
+        # tilt is about the x-axis THROUGH that point, so it does not move it.
+        _c, _s = math.cos(p["loop_phi"]), math.sin(p["loop_phi"])
+        port_centre = (xi * _c, xi * _s, 0.0)
 
     # --- R21 capacitive electrode ------------------------------------------
     # Cut from the air like the loop, so the topological rule tags it WALL. Inner
@@ -899,6 +908,22 @@ def build(p: dict, out: str, msh_order: int) -> None:
     h_gap2 = (p["loop_gap2"] / 2.5) if p["loop_gap2"] > 0 else 0.0
     if h_gap2:
         h_min = min(h_min, h_gap2 * 0.8)
+    # 🔴 R112: THE SAME BUG, ONE GAP OVER. R62 diagnosed exactly this for the
+    # SERIES gap and fixed it there only — the PRIMARY port gap was left below
+    # the floor. Measured consequence: the lumped port surface meshed with
+    # **2 elements**, on a 1.8 x 0.30 mm rectangle against a 1.2 mm floor. The
+    # port IS the drive point, so beta rode on how those two triangles happened
+    # to fall: the SAME geometry at 1 and 5 azimuthal sectors gave beta 0.5598
+    # and 0.3411, a 39% spread, and the loop-area sizing sweep came back
+    # NON-MONOTONIC (1.50, 0.87, 0.56, 1.85) for the same reason.
+    #
+    # ⚠️ Q0 = Q_L(1+beta) SURVIVED this, because Q_L and beta come from the same
+    # S11 curve and track whatever the actual coupling was — four driven-vs-eigen
+    # comparisons agreed to 4.9-8.8% throughout. What was never trustworthy is
+    # beta as a DESIGN quantity: "what coupling will this loop give?"
+    h_gap = (p["loop_gap"] / 2.5) if (ld > 0 and p["loop_gap"] > 0) else 0.0
+    if h_gap:
+        h_min = min(h_min, h_gap * 0.8)
     gmsh.option.setNumber("Mesh.MeshSizeMin", h_min)
     gmsh.option.setNumber("Mesh.MeshSizeFactor", p.get("size_factor", 1.0))
     gmsh.option.setNumber("Mesh.MeshSizeMax", h_air)
@@ -970,6 +995,25 @@ def build(p: dict, out: str, msh_order: int) -> None:
         bg = mn2
         print(f"  gap2 refinement: {h_gap2*1e3:.3f} mm within "
               f"{4e3*p['loop_rw']:.1f} mm of the capacitor")
+    # 🔴 R112: the same Ball for the PRIMARY PORT gap. Lowering the floor above
+    # does NOT refine anything on its own — as R15's comment says, the floor
+    # only stops a deliberate request being overridden. Without this field the
+    # port stays at 2 elements no matter what the floor is.
+    if h_gap and port_centre is not None:
+        pball = gmsh.model.mesh.field.add("Ball")
+        _rp = 1.5 * p["loop_rw"]
+        gmsh.model.mesh.field.setNumber(pball, "Radius", _rp)
+        gmsh.model.mesh.field.setNumber(pball, "Thickness", 2.0 * p["loop_rw"])
+        gmsh.model.mesh.field.setNumber(pball, "VIn", h_gap)
+        gmsh.model.mesh.field.setNumber(pball, "VOut", h_air)
+        gmsh.model.mesh.field.setNumber(pball, "XCenter", port_centre[0])
+        gmsh.model.mesh.field.setNumber(pball, "YCenter", port_centre[1])
+        gmsh.model.mesh.field.setNumber(pball, "ZCenter", port_centre[2])
+        mnp = gmsh.model.mesh.field.add("Min")
+        gmsh.model.mesh.field.setNumbers(mnp, "FieldsList", [bg, pball])
+        bg = mnp
+        print(f"  PORT refinement: {h_gap*1e3:.3f} mm within {_rp*1e3:.1f} mm "
+              f"of the port gap (floor now {h_min*1e3:.3f} mm)")
     gmsh.model.mesh.field.setAsBackgroundMesh(bg)
 
     def set_pts(tags, h):
@@ -1300,7 +1344,15 @@ if __name__ == "__main__":
                     help="azimuthal energy bins (5 resolves m=1..4). Bins are a "
                          "MEASUREMENT construct, not a feed or a boundary")
     ap.add_argument("--sectors", dest="sectors", type=int, default=None,
-                    help="azimuthal energy sectors (5 resolves m=1..4)")
+                    help="azimuthal energy sectors. 🔴 NOT 'm=1..4': energy "
+                         "goes as cos^2(m*phi), so mode m lands on angular "
+                         "harmonic k=2m, and with N sectors k folds to "
+                         "min(k%%N, N-k%%N). At N=5, m=4 -> harmonic 2, the "
+                         "SAME as m=1, and m=5 -> harmonic 0, the same as m=0. "
+                         "N=5 separates only m=0,1,2; N=9 separates m=0..4. "
+                         "Choose N from the m that physics.spectrum() says are "
+                         "in the window, plus margin for slot/loop resonances "
+                         "the closed form does not predict.")
     ap.add_argument("--no-torch", action="store_true",
                     help="omit the quartz tube (bore becomes plain air)")
     ap.add_argument("--loop-tilt", type=float, default=None,
