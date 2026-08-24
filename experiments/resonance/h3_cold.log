@@ -1,0 +1,115 @@
+H3 — COLD and LOADED in the cavity that is actually being built.
+
+**The first measurement of the re-do.** Everything H3 produced on 2026-08-23 ran
+on a groove-free cavity and is discarded. This rig uses `GEO_DESIGN` — H2's
+groove, frozen at 5 x 10 mm — and `run()` refuses a plasma solve without it.
+
+## What it settles, and it is three queue items at once
+
+  1a  **the eta REFERENCE.** Every loaded eta on 2026-08-23 divided by
+      Q_BARE = 44,384: the NO-LOOP, NO-GROOVE value. 29,854 is not the
+      substitute either — it is groove-free AND from a different loop. There is
+      no number to look up. **Q_bare must be SOLVED, per loop size, on the
+      grooved looped mesh.** That is the unloaded case here.
+  1c  **mode identity under the groove.** h3_groove's F2 fired: TE011 appeared to
+      move -12.80 MHz at 28x20 but +0.00 at 11x8. A driven |S11| minimum cannot
+      tell a shifted mode from a misidentified one. Eigen + azimuthal order can.
+  2   **H3 COLD** — f0, Q0 and the mode landscape a tuner sees before ignition.
+
+## Why EIGEN
+
+INSTRUMENT's own rule: *"if the criterion is 'which mode, at what frequency,
+with what Q0', it is eigen."* All three items are exactly that. Driven returns a
+dip, not a label — which is what left 1c unresolved in the first place.
+⚠️ The eigen convergence envelope in INSTRUMENT is itself groove-free and flagged
+for re-check. If a case here fails to converge, that is DATA about the envelope,
+not a reason to switch solvers mid-rig (§7c).
+
+## Anchors, named before starting (§7g)
+
+**E0** — the unloaded frequency must agree with `physics.spectrum()` closed form.
+**H1** — the design point a = 88.0045, L = 115.4158 (analytic max-min optimum).
+**H2** — the groove, 5 x 10 mm, whose sufficiency was established against the
+LDMOS band. Not against any earlier result of mine.
+
+VERIFICATION
+  V1  the groove must be IN THE MESH (sidecar `groove == [5.0, 10.0]`), or the
+      case is refused. Not inferred from the flag list.
+  V2  TE011 identified by AZIMUTHAL ORDER (m=0) and reported with its A2/A0,
+      never by max-Q and never by proximity to 2.45.
+  V3  unloaded TE011 must sit within 2 MHz of `physics.spectrum()`'s closed form
+      after allowing for the loop (e0k2: a cap loop shifts 0.37-0.44 MHz).
+FALSIFICATION
+  🔴 F1  **if MORE THAN ONE mode sits in 2.40-2.50 GHz unloaded, the filter is
+         not doing its job in this configuration.** Report it and stop — do NOT
+         build mode-selection machinery around it. That is CONVENTIONS §7i, and
+         it is the error that cost 2026-08-23.
+  🔴 F2  if TE011's Q_bare with groove+loop is not between 20,000 and 45,000,
+         something is wrong with the loop, the groove or the wall binding.
+         The empty no-loop no-groove value is 44,384; a loop costs real Q.
+  🔴 F3  if the 28x20 case shows TE011 more than 2 MHz from the 11x8 case
+         unloaded, loop size is perturbing the MODE, not just the coupling —
+         which would explain h3_groove's -12.80 MHz without any groove effect.
+  🔴 F4  if a loaded case does not converge, REPORT it as envelope data. Do not
+         retarget, do not switch to driven inside this rig.
+
+==============================================================================
+  cavity a=88.0045 L=115.4158   groove 5x10 (GEO_DESIGN)
+  closed form TE011 = 2.450000 GHz   (E0's anchor)
+  loaded case: ne=1e+20, eps=-30.089, sigma=27.53 S/m
+  identify over (2.35, 2.65), judge the band (2.4, 2.5)
+
+  --- loop 11x8  COLD
+    groove in mesh: [5.0, 10.0] ✅   tets=43,685
+    h3_cold_11x8_cold: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    🔴 F4: h3_cold_11x8_cold: TIMED OUT after 900s (174 NLEPS iterations) — rank TREE killed
+    REPORTED as envelope data.
+  --- loop 28x20  COLD
+    groove in mesh: [5.0, 10.0] ✅   tets=46,182
+    h3_cold_28x20_cold: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 488s
+      2.404838 GHz  Q=   13,623  m=None  A2/A0=0.2557  ← IN BAND
+      2.446027 GHz  Q=   30,222  m=None  A2/A0=0.0475  ← IN BAND
+      2.531434 GHz  Q=    8,570  m=1  A2/A0=0.1679
+      2.602774 GHz  Q=   20,392  m=None  A2/A0=0.0069
+      2.606670 GHz  Q=   20,655  m=0  A2/A0=0.0112
+    🔴 no m=0 mode in the LDMOS band
+  --- loop 11x8  LOADED
+    ⚠️ mesh needed size-factor 1.42; REPORTED
+    groove in mesh: [5.0, 10.0] ✅   tets=80,621
+    h3_cold_11x8_hot: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 702s
+      2.361142 GHz  Q=      241  m=1  A2/A0=0.3513
+      2.362429 GHz  Q=      290  m=None  A2/A0=0.1308
+      2.460040 GHz  Q=      253  m=None  A2/A0=0.3244  ← IN BAND
+      2.507442 GHz  Q=      287  m=None  A2/A0=0.3610
+      2.606313 GHz  Q=   20,768  m=0  A2/A0=0.0004
+      2.607044 GHz  Q=   17,129  m=None  A2/A0=0.0078
+    🔴 no m=0 mode in the LDMOS band
+  --- loop 28x20  LOADED
+    groove in mesh: [5.0, 10.0] ✅   tets=72,969
+    h3_cold_28x20_hot: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    🔴 F4: h3_cold_28x20_hot: TIMED OUT after 900s (27 NLEPS iterations) — rank TREE killed
+    REPORTED as envelope data.
+
+==============================================================================
+       loop   state   TE011 GHz          Q   m    A2/A0  in band
+       11x8    cold   🔴 F4: h3_cold_11x8_cold: TIMED OUT after 900s 
+      28x20    cold   🔴 no m=0 mode in the LDMOS band
+       11x8  LOADED   🔴 no m=0 mode in the LDMOS band
+      28x20  LOADED   🔴 F4: h3_cold_28x20_hot: TIMED OUT after 900s 
+
+  F1 28x20 cold: 2 mode(s) in [2.4, 2.5] — 🔴 FIRES — 2 modes: 2.4048(m=None), 2.4460(m=None). The filter is NOT clearing the band in this configuration. REPORT IT; do not build selection machinery around it (§7i).
+
+  🔑 eta REFERENCES (use these; 44,384 and 29,854 are BOTH wrong):
+
+  wrote h3_cold.result.json
+EXIT=0

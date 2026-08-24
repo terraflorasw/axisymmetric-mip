@@ -74,7 +74,15 @@ def main():
     diag = {}
     for order in (1, 2):
         t = f"{TAG}_eig{order}"
-        c = eigen_cfg(t, m, mesh=f"{TAG}.msh", n=8, target=2.40)
+        # 🔴 port_bc="lumped" — GATE 4, added 2026-08-24 (CONVENTIONS §7v).
+        # This rig measures COUPLING, so the port must be the real 50 ohm
+        # load — same R and Direction the driven template uses. Q is
+        # LOADED (Q_L), not Q0.
+        # ⚠️ UNASSIGNED IS PMC — an OPEN gap, which is an LC resonator
+        # near 2.45 GHz that HYBRIDISES TE011 into a pair. Everything
+        # this rig produced before today was measured that way.
+        c = eigen_cfg(t, m, mesh=f"{TAG}.msh", n=8, target=2.40,
+                      port_bc="lumped")
         c["Solver"]["Order"] = order
         print(f"  eigenmode order {order}", flush=True)
         run(t, c)

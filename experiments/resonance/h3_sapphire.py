@@ -72,10 +72,13 @@ from h3_loaded import drude, Z_FRAC, SECTORS, LOOP_LD, LOOP_LW
 from h3_driven import (local_minima, fit_dip, read_s11, sweep,
                        COARSE_LO_GHZ, COARSE_HI_GHZ, COARSE_STEP_GHZ,
                        COARSE_MIN_DEPTH_DB, COARSE_EDGE_MHZ,
-                       CONTINUATION_JUMP_MHZ, SHALLOW_DB, Q_BARE, RI, RO,
+                       CONTINUATION_JUMP_MHZ, SHALLOW_DB, Q_REF, RI, RO,
                        CASE_TIMEOUT_S, SIZE_FACTORS)
 
 TAG = "h3_sapphire"
+# 🔴 NO PHYSICAL PROVENANCE (§7ab). Copied silently from h3_annular,
+# whose own basis was SOLVER CONVERGENCE (PI_1 = 5.58), not physics.
+# ⚠️ Every result here is CONDITIONAL on an unanchored density.
 NE = 1.0e20
 # (name, eps, tand). Ascending eps so continuation takes small steps and the
 # cheap validated cases land before the one that cannot be checked any other way.
@@ -152,7 +155,7 @@ def main():
           f"sapphire {PRED_SAP_MHZ:+.1f} +- {SAP_TOL_MHZ:.1f} MHz (the law)\n",
           flush=True)
     out = {"ne": NE, "eps_plasma": eps_p, "sigma_plasma": sig_p,
-           "ri_mm": RI, "ro_mm": RO, "q_bare_no_loop": Q_BARE,
+           "ri_mm": RI, "ro_mm": RO, "q_ref": Q_REF,
            "pred_qtz_mhz": PRED_QTZ_MHZ, "pred_sap_mhz": PRED_SAP_MHZ,
            "points": []}
     expect = SEED_GHZ
@@ -217,7 +220,7 @@ def main():
                   f"but any Q from it is low confidence.", flush=True)
         if "Q_L" in fi:
             rec["Q0"] = fi["Q0"]
-            rec["eta"] = 1.0 - fi["Q0"] / Q_BARE
+            rec["eta"] = 1.0 - fi["Q0"] / Q_REF
         print(f"    f0={fi['f0']:.6f} GHz ({jump:+.2f} MHz from expected)"
               + (f"  lw={fi['linewidth_mhz']:.2f} MHz  eta={rec['eta']:.4f}"
                  if "eta" in rec else "  (width not measurable)"), flush=True)

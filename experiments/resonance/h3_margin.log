@@ -1,0 +1,233 @@
+H3 Phase B — LOADED band margin over the JOINT (groove depth x loop size) space.
+
+🔴 THE CONSTRAINT THIS EXISTS TO MAP. At the design point (groove 5x10, loop
+11x8) the loaded mode sits at f0 = 2.4824 GHz with a 16 MHz linewidth, so its
+upper 3 dB edge is **9.6 MHz** below the 2.500 GHz band edge, after a **+30.9
+MHz** pull from cold. That is the thinnest number in the programme and it is a
+HARD feasibility constraint (OPTIMIZER §3c), not an objective to trade off.
+
+🔑 IT MUST BE A JOINT SWEEP, NOT TWO ONE-AXIS SWEEPS. `h3_loopq` F4 measured the
+groove and the loop INTERACTING, and not subtly: the same 11x8 loop reads
+Q_ext = 76,811 / beta = 0.402 without a groove and Q_ext = 9,231 / beta = 4.704
+with one — 8.3x and 12x, crossing from under- to overcoupled. **A one-axis-at-a-
+time sweep is invalid here** and any prior fitted that way is void.
+
+🔑 WHAT PHASE A CHANGED ABOUT THIS SWEEP, and it is why B was not designed first:
+  - **384 mm^2 is DROPPED.** It is dominated — weaker coupling AND 6.0% Q cost
+    against 2.2%. Solving it loaded would spend a cell on a retired candidate.
+  - **~10 mm^2 is ADDED.** Every measured size is OVERCOUPLED and beta = 1
+    extrapolates to ~10 mm^2, so the interesting region is BELOW the swept
+    range and has never been measured. ⚠️ That is an extrapolation off the far
+    side of a turning point: this cell is a TEST of it, not a design point.
+  - **Purity is NOT a constraint and gets no cells.** F2 never fired; the worst
+    spread over a 11x span in area was 0.0010, 20x under the gate.
+
+🔴 ETA IS NOT MEASURED HERE, AND THAT IS DELIBERATE.
+Q0 = 1/(1/Q_L - 1/Q_ext) needs Q_ext for THAT (loop, groove) cell. F4 proved
+Q_ext depends on the groove, so Phase A's value at 5x10 does not transfer to
+other depths, and measuring it per cell is 24 more eigen solves.
+**Band margin needs only f0 and the linewidth** — no Q0, no Q_ext, no coupling
+branch, none of the machinery that has gone wrong four times. Q_L is reported
+because the linewidth gives it for free; **Q0 and eta are NOT, and must not be
+reconstructed from Phase A's Q_ext.**
+⚠️ Also unknown: whether Q_ext is even the same loaded as cold — the plasma
+changes the field at the loop. Eigen cannot check it at eps = -30 (the record
+puts the eigen limit near eps+/|eps-| ~ 0.2-0.27), so it stays open.
+
+⚠️ DRIVEN, ne = 1e20, the operating point. One density: this maps a CONSTRAINT
+SURFACE at the worst case, not eta(ne), which is already measured and flat
+(0.986-0.998) and is not what binds.
+
+VERIFICATION
+  V1  🔑 THE ANCHOR CELL is (groove 5x10, loop 11x8) — `h3_driven` measured it
+      at f0 = 2.4824 GHz, lw = 16.00 MHz, margin 9.6 MHz. It must reproduce
+      within ~1 MHz. **If it does not, no other cell is quotable.**
+  V2  the groove meshed must equal the groove requested, per cell, from the
+      sidecar. Depth is the swept variable here, so an unverified depth is a
+      silently mislabelled row (§7f).
+  V3  every cell reports ALL minima found, and the selected one, and WHY it was
+      selected. Selection is by CONTINUATION from that cell's own cold estimate,
+      never by depth alone (§7u).
+FALSIFICATION
+  🔴 F1  if NO cell clears the band by more than the anchor's 9.6 MHz, groove
+         and loop geometry cannot fix the margin and the fix must come from
+         elsewhere — cavity aspect (H1), operating density, or tuner range.
+         **Report that; do not keep sweeping a space that has no answer in it.**
+  🔴 F2  if the best cell's margin is under ~5 MHz, the DESIGN IS MARGINAL at
+         the operating point and that is a finding about the machine, not about
+         this sweep.
+         ⚠️ ASSUMPTION: that a 16 MHz linewidth and a 3 dB definition are the
+         right measure of "in band". A tuner tracks f0; the linewidth matters
+         because power outside the band is reflected. If the real criterion is
+         f0 alone, every margin here is ~8 MHz more generous.
+  🔴 F3  if deeper grooves make the margin WORSE, the groove is pulling the
+         loaded mode UP as well as pushing competitors down, and depth is not a
+         free knob — it trades band clearance against margin.
+  🔴 F4  if a cell shows TWO comparable minima in band, the filter has failed at
+         that geometry under load. That is the ALARM condition (§7i): report it
+         and do not pick the deeper one.
+
+==============================================================================
+  a=88.0045 L=115.4158   ne=1.0e+20  eps=-30.089  sigma=27.53 S/m
+  band 2.4-2.5 GHz;  sweep 2.42-2.52 @ 200 kHz (500 samples/cell)
+  4 loops x 3 groove depths = 12 cells
+  🔑 margin = 2.500 - (f0 + lw/2).  NO Q0, NO Q_ext, NO branch — none of it is needed.
+
+  --- groove 5x7  loop 3.5x1.5 = 10 mm^2
+    groove in mesh: [5.0, 7.0]   tets=68,090
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 7 mm (in mesh)
+    solved in 88s
+    0 minima: 
+    🔴 no minimum in 2.42-2.52 @ 200 kHz
+  --- groove 5x7  loop 5x3.5 = 35 mm^2
+    groove in mesh: [5.0, 7.0]   tets=69,467
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 7 mm (in mesh)
+    solved in 93s
+    1 minima: 2.4818@-0.16dB
+    f0=2.481800  lw=16.80 MHz  Q_L=148  upper3dB=2.4902  margin=+9.8 MHz  ✅
+  --- groove 5x7  loop 7.5x5.5 = 82 mm^2
+    groove in mesh: [5.0, 7.0]   tets=69,721
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 7 mm (in mesh)
+    solved in 105s
+    1 minima: 2.4820@-0.25dB
+    f0=2.482000  lw=16.40 MHz  Q_L=151  upper3dB=2.4902  margin=+9.8 MHz  ✅
+  --- groove 5x7  loop 11x8 = 176 mm^2
+    groove in mesh: [5.0, 7.0]   tets=70,343
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 7 mm (in mesh)
+    solved in 105s
+    1 minima: 2.4826@-0.30dB
+    f0=2.482600  lw=16.20 MHz  Q_L=153  upper3dB=2.4907  margin=+9.3 MHz  ✅
+  --- groove 5x10  loop 3.5x1.5 = 10 mm^2
+    groove in mesh: [5.0, 10.0]   tets=68,254
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 84s
+    0 minima: 
+    🔴 no minimum in 2.42-2.52 @ 200 kHz
+  --- groove 5x10  loop 5x3.5 = 35 mm^2
+    groove in mesh: [5.0, 10.0]   tets=69,476
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 95s
+    1 minima: 2.4818@-0.16dB
+    f0=2.481800  lw=16.60 MHz  Q_L=150  upper3dB=2.4901  margin=+9.9 MHz  ✅
+  --- groove 5x10  loop 7.5x5.5 = 82 mm^2
+    groove in mesh: [5.0, 10.0]   tets=69,806
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 96s
+    1 minima: 2.4820@-0.25dB
+    f0=2.482000  lw=16.00 MHz  Q_L=155  upper3dB=2.4900  margin=+10.0 MHz  ✅
+  --- groove 5x10  loop 11x8 = 176 mm^2   🔑 V1 ANCHOR CELL
+      ⚠️ mesh needed size-factor 1.42; REPORTED
+    groove in mesh: [5.0, 10.0]   tets=80,621
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 107s
+    1 minima: 2.4824@-0.30dB
+    f0=2.482400  lw=16.00 MHz  Q_L=155  upper3dB=2.4904  margin=+9.6 MHz  ✅
+    🔑 V1: f0 2.4824 vs h3_driven 2.4824 -> 0.00 MHz ✅
+  --- groove 5x14  loop 3.5x1.5 = 10 mm^2
+    groove in mesh: [5.0, 14.0]   tets=67,958
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 14 mm (in mesh)
+    solved in 94s
+    0 minima: 
+    🔴 no minimum in 2.42-2.52 @ 200 kHz
+  --- groove 5x14  loop 5x3.5 = 35 mm^2
+    groove in mesh: [5.0, 14.0]   tets=69,011
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 14 mm (in mesh)
+    solved in 98s
+    1 minima: 2.4818@-0.15dB
+    f0=2.481800  lw=16.60 MHz  Q_L=150  upper3dB=2.4901  margin=+9.9 MHz  ✅
+  --- groove 5x14  loop 7.5x5.5 = 82 mm^2
+    groove in mesh: [5.0, 14.0]   tets=69,543
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 14 mm (in mesh)
+    solved in 92s
+    1 minima: 2.4820@-0.24dB
+    f0=2.482000  lw=16.00 MHz  Q_L=155  upper3dB=2.4900  margin=+10.0 MHz  ✅
+  --- groove 5x14  loop 11x8 = 176 mm^2
+    groove in mesh: [5.0, 14.0]   tets=70,174
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 14 mm (in mesh)
+    solved in 100s
+    1 minima: 2.4826@-0.28dB
+    f0=2.482600  lw=16.00 MHz  Q_L=155  upper3dB=2.4906  margin=+9.4 MHz  ✅
+
+==============================================================================
+  ✅ V1 — anchor cell reproduces h3_driven to 0.00 MHz.
+
+    groove     loop   area     f0 GHz   lw MHz    up 3dB   margin
+  5x7    5x3.5        35   2.481800    16.80    2.4902     9.8
+  5x7    7.5x5.5        82   2.482000    16.40    2.4902     9.8
+  5x7    11x8         176   2.482600    16.20    2.4907     9.3
+  5x10   5x3.5        35   2.481800    16.60    2.4901     9.9
+  5x10   7.5x5.5        82   2.482000    16.00    2.4900    10.0
+  5x10   11x8         176   2.482400    16.00    2.4904     9.6
+  5x14   5x3.5        35   2.481800    16.60    2.4901     9.9
+  5x14   7.5x5.5        82   2.482000    16.00    2.4900    10.0
+  5x14   11x8         176   2.482600    16.00    2.4906     9.4
+
+  🔑 BEST: groove 5x10, loop 7.5x5.5 (82 mm^2) -> margin 10.0 MHz
+     vs the design point's 9.6 MHz -> +0.4 MHz
+
+  F3 loop 5x3.5: 7mm:9.8 -> 10mm:9.9 -> 14mm:9.9   deeper helps
+  F3 loop 7.5x5.5: 7mm:9.8 -> 10mm:10.0 -> 14mm:10.0   deeper helps
+  F3 loop 11x8: 7mm:9.3 -> 10mm:9.6 -> 14mm:9.4   deeper helps
+
+  result -> h3_margin.result.json
+EXIT=0

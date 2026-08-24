@@ -90,8 +90,16 @@ def main():
         if pathlib.Path("postpro", tag, "eig.csv").exists():
             print(f"    reusing existing solve {tag}")
         else:
+            # 🔴 port_bc="pec" — GATE 4, added 2026-08-24 (CONVENTIONS §7v).
+            # This rig wants the UNLOADED Q, so the port must not be a loss
+            # channel. Shorting the gap makes the loop a small closed ring
+            # resonant far above the band: TE011 is left essentially
+            # unperturbed (P=0.9997) and Q excludes port loss.
+            # ⚠️ UNASSIGNED IS PMC — an OPEN gap, which is an LC resonator
+            # near 2.45 GHz that HYBRIDISES TE011 into a pair. Everything
+            # this rig produced before today was measured that way.
             c = eigen_cfg(tag, m, mesh=str(msh), sigma=sigma,
-                          n=N_MODES, target=fmin)
+                          n=N_MODES, target=fmin, port_bc="pec")
             c["Solver"]["Order"] = 2
             c["Domains"]["Postprocessing"]["Energy"] = shared_energy_list(attrs)
             c["Boundaries"]["PEC"] = {"Attributes": [attrs["port"]]}

@@ -94,7 +94,9 @@ TAG = "h3_superpose"
 Q_BARE = 44384.0
 P_REF = 1000.0
 N_MODES = 4
-NE = 1.0e20                 # the row h3_eigen and h3_annular both proved solvable
+# 🔴 §7ab — this cites a rig that cited a rig. The original basis is SOLVER
+# CONVERGENCE (h3_eigen's PI_1 map), not physics. No physical provenance exists.
+NE = 1.0e20                 # a CONVERGENCE choice inherited twice over
 RI, RO = 2.00, 8.50         # h3_annular's operating point
 SAPPHIRE = (11.6, 3.5e-05)  # eps_r, tan-delta — geometry.py's default (R99)
 QUARTZ = (3.78, 1.0e-04)    # h4_field measured this material; 1/3 the contrast

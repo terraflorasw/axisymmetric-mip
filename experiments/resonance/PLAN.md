@@ -101,6 +101,28 @@ E0j's recipe held on an empty cavity because it had no second scale. Loaded, sf
 
 These are recorded so they are not lost. **They do not spawn runs.**
 
+- 🔑 **SALINE AS AN IGNITION BASELINE (user, 2026-08-23).** ⚠️ **Not a proposed device — a REFERENCE.** No beads, no inserted objects. Plain saline is the simplest thing that could work, so it is what every more viable igniter must be measured against. It probably fails on its own; the value is knowing by how much. Khattak, Bianucci
+  & Slepkov, **PNAS 116(10) 4000–4005 (2019)**, in `refs/`. Mie resonances in
+  water spheres (ε̃ = 79 + i10 at 2.45 GHz) interact cooperatively to make a
+  contact hotspot — **≈19× the vacuum field**, superfocusing to λ₀/100 — which
+  field-ionises Na/K and cascades in the air.
+  🔑 **Their Fig 1C is the saline case already done**: skinless >99%-water
+  hydrogel beads form plasma after a brief NaCl immersion.
+  🔑 **Absorption is ESSENTIAL, not a penalty** — it washes out sharp modes and
+  leaves the hotspot, which also makes the effect size-TOLERANT (without it,
+  9.5 mm works and 10 mm does not). A saline slug would stack three mechanisms: dielectric resonance
+  (field concentration), lossy heating (the thermal kernel H4 says is required),
+  and Na seeding (5.14 eV against N₂'s 15.6). **And the sample is already a
+  solution** — no electrode, no erosion.
+  ⚠️ Against it: TE011's field is ZERO on axis, which is exactly where the sample
+  travels; a resonant sphere (~14 mm) barely fits a 17 mm bore; an aerosol is far
+  too small to resonate. ⚠️ The "contamination" objection is WITHDRAWN as facile:
+  the plasma is flushed at 15–20 slm, ignition and measurement are separated in
+  time, and Na is already a major constituent of the high-TDS extracts being
+  measured. What remains is **settling time and memory effects** — quantifiable,
+  not disqualifying. Full treatment in HYPOTHESES H4 Route 3.
+  **Deferred, not queued.**
+
 - A sapphire mode filter costs 9–11% of Q, smooth and reproducible, but the
   mechanism is unestablished: dielectric is only ~2% of the loss budget, so it
   must be wall-loss redistribution. The filter has no Energy index anywhere, so

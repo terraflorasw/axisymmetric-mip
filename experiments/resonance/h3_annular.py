@@ -82,12 +82,37 @@ from e0k2_azim import sector_bins, read_sector_energy
 from h3_loaded import drude, Z_FRAC, EIGEN_TARGET, SECTORS
 
 TAG = "h3_annular"
-Q_BARE = 44384.0
+# 🔴 PER-CONFIGURATION ETA REFERENCE. CONVENTIONS §7c.
+# 44,384 is the BARE cavity (no loop, no groove). This rig meshes GEO_DESIGN.
+# ⚠️ Was 44384.0 until 2026-08-24, which inflates every eta below.
+# 🔴 12,368 IS DISPUTED (2026-08-24) AND ITS PROVENANCE WAS WRONG HERE TOO.
+#    It is NOT from `h3_ladder` (that ran bare+grooved and stopped, no step 3).
+#    It is `h3_cold`'s, selected by "lowest A2/A0" on a mode labelled m_az=1,
+#    and a driven sweep found NO resonance within +-3 MHz of it. See §7s.
+# ✅ THE FIX IS STRUCTURAL, NOT A BETTER CONSTANT (§7t): measure the reference
+#    as a CASE OF THIS RUN, on this mesh, with this solver — as `h3_driven` now
+#    does with ne=0 — instead of importing one. Do that before trusting any eta
+#    this rig prints.
+# 🔴 CORRECTED TWICE ON 2026-08-24 — get the CONFIGURATION right, not just the
+# number. This rig meshes GEO_DESIGN and **NO LOOP** (grep: zero `--loop`), so
+# neither cavity I reached for first applies:
+#   44,384 = bare, no groove, no loop        (E0)
+#   12,368 = an OPEN-GAP ARTIFACT, never real (§7v) — what was here
+#   43,523 = grooved + loop 11x8             (the DESIGN cavity, has a loop)
+#   44,414 = grooved 5x10, NO loop           <- THIS rig's cavity
+# 🔑 `h3_ladder` step 2, externally anchored against H2. Q0 with no port at all,
+# so there is no coupling term to remove.
+Q_REF = 44414.0
+Q_REF_SOURCE = "h3_ladder step 2 — grooved 5x10, no loop, eigen"
 P_REF = 1000.0
 N_MODES = 4                 # DERIVED in h3_eigen: 4 converges where 6 stalls
 TE011_WINDOW = (2.40, 2.50)
 CASE_TIMEOUT_S = 900.0
-NE = 1.0e20                 # PI_1 = 5.58, the row h3_eigen proved solvable
+# 🔴 "proved solvable" IS NOT "is the case" (§7ab). PI_1 = 5.58 is a SOLVER
+# CONVERGENCE parameter; this value was chosen because eigen converges there and
+# has no physical provenance. Downstream rigs then called it "the operating
+# point". ⚠️ Results here are CONDITIONAL on a density nobody chose.
+NE = 1.0e20                 # PI_1 = 5.58 — a CONVERGENCE choice, not physics
 
 # (r_i, r_o) in mm — THE BOX FLOW PERMITS, not a box chosen for EM convenience.
 # Continuity: area = Q*(T/300)/v. Nebulizer 0.5-1.0 slm at 3000-5000 K, 10-25 m/s
@@ -128,10 +153,10 @@ def main():
     zlo, zhi = -Z_FRAC * L, Z_FRAC * L
     Lp = (zhi - zlo) * 1e-3
     eps, sig = drude(NE, w)
-    print(f"  cavity a={a:.4f} L={L:.4f}  Q_bare={Q_BARE:,.0f}  P_ref={P_REF:.0f} W")
+    print(f"  cavity a={a:.4f} L={L:.4f}  Q_ref={Q_REF:,.0f}  P_ref={P_REF:.0f} W")
     print(f"  plasma z = +-{Z_FRAC}L ({Lp*1e3:.1f} mm)   "
           f"ne={NE:.0e}  eps={eps:.3f}  sigma={sig:.3g} S/m\n", flush=True)
-    out = {"q_bare": Q_BARE, "p_ref_w": P_REF, "plasma_len_m": Lp,
+    out = {"q_ref": Q_REF, "p_ref_w": P_REF, "plasma_len_m": Lp,
            "ne": NE, "eps": eps, "sigma": sig, "points": []}
 
     for ri, ro in CASES:
@@ -239,7 +264,7 @@ def main():
                   f"taking nearest 2.45 and saying so", flush=True)
         pick, harm = min(cands, key=lambda cc: abs(cc[0]["f"] - exact))
         Q = qs.get(pick["m"], 0.0)
-        eta = 1.0 - Q / Q_BARE
+        eta = 1.0 - Q / Q_REF
         vol = math.pi * ((ro * 1e-3) ** 2 - (ri * 1e-3) ** 2) * Lp
         pdens = eta * P_REF / vol
 

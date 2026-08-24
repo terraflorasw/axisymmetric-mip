@@ -88,6 +88,11 @@ from e0k2_azim import sector_bins, read_sector_energy
 from h3_loaded import drude, Z_FRAC, EIGEN_TARGET, SECTORS
 
 TAG = "h4_seed"
+# 🔴🔴 THIS RIG IS DISCARDED (groove-free, KNOWN.md § THE FILTER) AND ITS ETA
+# REFERENCE IS ALSO WRONG. Before re-running it on GEO_DESIGN, replace 44,384
+# with that cavity's OWN cold Q0 — 12,368 at groove 5x10 + loop 11x8. See §7c.
+# ⚠️ V2 below ("Q > Q_BARE is unphysical") is calibrated to 44,384, so it will
+# not fire against the right reference either. Re-derive the guard with the Q.
 Q_BARE = 44384.0
 P_REF = 1000.0
 N_MODES = 4                 # DERIVED in h3_eigen: 4 converges where 6 stalls

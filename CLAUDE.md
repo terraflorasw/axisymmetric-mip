@@ -10,8 +10,15 @@ and **must never enter version control**. So:
 
     regenerative-soil-testing/     <- cwd. NOT a repo. holds aws.pem, rsync.sh
       axisymmetric-mip/            <- THIS repo (git root)
-        experiments/resonance/     <- the live programme
+        experiments/resonance/     <- THE LIVE PROGRAMME (the cavity)
+        experiments/control-loop/  <- the SOURCE side: LDMOS, match, control.
+                                      ⏸️ PARKED, opened 2026-08-24
+        experiments/waveguide/     <- ⚠️ SUPERSEDED by resonance
+        experiments/ignition/      <- ⚠️ SUPERSEDED by resonance
       soil-testing/  amip/         <- sibling programmes, not this repo
+
+⚠️ **`waveguide/` and `ignition/` are SUPERSEDED.** Their numbers are from
+earlier cavity designs and do not transfer. Do not cite them.
 
 Consequences worth knowing:
 - `git` commands need `-C axisymmetric-mip`, or run them from inside the repo.
@@ -25,8 +32,12 @@ Consequences worth knowing:
 1. **`experiments/resonance/KNOWN.md`** — one page. Everything
    this programme has established, what is explicitly NOT established, and an
    index of all ten documents. **If it is not in KNOWN.md, it is not known.**
-2. **`experiments/resonance/PLAN.md`** — the FIXED experiment list, **E0–E4**.
-3. **`experiments/resonance/CONVENTIONS.md`** — the recurring errors. Long, and every
+2. **`experiments/resonance/GLOSSARY.md`** — say exactly this, mean exactly
+   this. Short. **Every entry in it caused a real error**, and several cost a
+   day: `hot` is a THERMAL regime not a plasma density; two different parts are
+   called "mode filter"; a Q is meaningless without saying which cavity.
+3. **`experiments/resonance/PLAN.md`** — the FIXED experiment list, **E0–E4**.
+4. **`experiments/resonance/CONVENTIONS.md`** — the recurring errors. Long, and every
    entry is a mistake actually made here, several of them twice.
 
 ⚠️ **`FINDINGS.md` is NOT in the working tree.** It was removed 2026-08-23
@@ -39,12 +50,21 @@ Retrieve it only to follow a citation:
 
 ## Non-negotiable, and each one was learned expensively
 
-- 🔴 **THE CAVITY HAS A MODE FILTER.** An annular groove, frozen at **5 × 10 mm**
-  (H2). It is the design. Use **`GEO_DESIGN`**, not `GEO` — `GEO` is the BARE
-  cavity and exists only for instrument rigs comparing against closed form.
+- 🔴 **THE CAVITY HAS A MODE FILTER.** An annular groove, **baseline 5 × 10 mm**
+  (H2). Use **`GEO_DESIGN`**, not `GEO` — `GEO` is the BARE cavity and exists
+  only for instrument rigs comparing against closed form.
+  ⚠️ **BASELINE, not frozen.** H2 validated it COLD against the LDMOS range.
+  Loading moves every mode, so refining the groove size under load is **H3's
+  job**. Do not treat 5 × 10 as immutable.
   `run()` refuses a plasma solve on a groove-free mesh.
   *A context reset once dropped this fact while leaving every downstream number
   intact and plausible; 31 rigs then measured a cavity nobody is building.*
+- 🔴 **ANYTHING MEASURED WITHOUT THE GROOVE, AFTER H1, IS DISCARDED.** H1 fixed
+  the cavity; a groove-free mesh after that is a different cavity and its mode
+  landscape is not the design's. **The one exception is instrument rigs
+  comparing against CLOSED FORM** — a plain cylinder is the point there, and
+  `GEO` exists for it. Audited by mesh sidecar (`geometry_mm.groove`), this
+  discards **all of h4** and **66 of 72 h3 meshes**. See `KNOWN.md` § THE FILTER.
 - 🔴 **A competing IN-BAND mode is an ALARM, not a puzzle.** A filtered cavity
   has ONE resonance in the source's tuning band. If you find yourself building
   cleverer mode-selection logic, suspect the geometry first (§7i).
@@ -61,6 +81,13 @@ Retrieve it only to follow a citation:
   (instrument, vs closed form), **H1** (cavity D/L, vs an analytic max-min) and
   **H2** (the groove, vs the LDMOS tuning range). A result supported only by
   another result of this programme is not evidence.
+- 🔴 **SEARCH FOR PRIOR ART BEFORE DERIVING SETTINGS OR METHOD.**
+  `KNOWN.md` § PRIOR ART lists which rig already solved what — grooved-cavity
+  eigen settings, coupling-branch resolution, Q₀ extraction, the η reference
+  trap. On 2026-08-23 I derived my own four times and was wrong four times, each
+  in a way the existing solution had already handled. **This is a search
+  failure, not a reasoning failure**, and it is the most repeated error in the
+  record.
 - ⚠️ **Land conclusions in a document before starting the next rig.** A rig is
   done when the conclusion is written, not when it exits 0 (§8b).
 

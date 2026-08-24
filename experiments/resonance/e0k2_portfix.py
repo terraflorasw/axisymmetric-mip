@@ -88,8 +88,15 @@ def main():
               f"{(m.get('sizing_mm') or {}).get('min'):.3f} mm", flush=True)
 
         te = f"{tag}_eig"
+        # 🔴 port_bc="lumped" — GATE 4, added 2026-08-24 (CONVENTIONS §7v).
+        # This rig measures COUPLING, so the port must be the real 50 ohm
+        # load — same R and Direction the driven template uses. Q is
+        # LOADED (Q_L), not Q0.
+        # ⚠️ UNASSIGNED IS PMC — an OPEN gap, which is an LC resonator
+        # near 2.45 GHz that HYBRIDISES TE011 into a pair. Everything
+        # this rig produced before today was measured that way.
         ce = eigen_cfg(te, m, mesh=f"{tag}.msh", sigma=sigma, n=N_MODES,
-                       target=fmin)
+                       target=fmin, port_bc="lumped")
         ce["Solver"]["Order"] = 2
         ce["Domains"]["Postprocessing"]["Energy"] = en
         ce["Boundaries"]["PEC"] = {"Attributes": [m["attributes"]["port"]]}

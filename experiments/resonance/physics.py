@@ -40,17 +40,27 @@ wall_Q(mode, a, L, sigma) — the closed-form conductor Q of a cylindrical cavit
 # ---------------------------------------------------------------- cavity modes
 def bessel_zeros():
     """(chi, chi_prime) tables. scipy if present; otherwise hard-coded."""
+    # 🔴 m UP TO 4 (2026-08-23). The fallback stopped at m=2 while the scipy
+    # path already went to 3, and `spectrum()` iterated only m <= 2 regardless —
+    # so **TE311 at 2.622 GHz was invisible to the reference table.** It is an
+    # ordinary mode, it sits 172 MHz above the design point, and it competed
+    # with every driven sweep while "the closed form has nothing there" was
+    # being said about it.
     try:
         from scipy.special import jn_zeros, jnp_zeros
-        return ({m: list(jn_zeros(m, 4)) for m in range(4)},
-                {m: list(jnp_zeros(m, 4)) for m in range(4)})
+        return ({m: list(jn_zeros(m, 4)) for m in range(5)},
+                {m: list(jnp_zeros(m, 4)) for m in range(5)})
     except ImportError:
         return ({0: [2.404825557695773, 5.520078110286311, 8.653727912911013],
                  1: [3.831705970207512, 7.015586669815619, 10.17346813506272],
-                 2: [5.135622301840683, 8.417244140399864, 11.61984117214906]},
+                 2: [5.135622301840683, 8.417244140399864, 11.61984117214906],
+                 3: [6.380161895923984, 9.761023129981670, 13.015200721698434],
+                 4: [7.588342434503804, 11.064709488501185, 14.372536671617590]},
                 {0: [3.831705970207512, 7.015586669815619, 10.17346813506272],
                  1: [1.841183781340659, 5.331442773525032, 8.536316366346286],
-                 2: [3.054236928227140, 6.706133194158457, 9.969467823087596]})
+                 2: [3.054236928227140, 6.706133194158457, 9.969467823087596],
+                 3: [4.201188941210528, 8.015236598375953, 11.345924310743007],
+                 4: [5.317553126083994, 9.282396285241614, 12.681908442638890]})
 
 
 CHI, CHIP = bessel_zeros()
@@ -70,12 +80,27 @@ def f_mnp(kind, m, n, p, a_mm, L_mm):
 
 
 def spectrum(a_mm, L_mm, fmax=3.0):
-    """Every mode below fmax, exact. The reference a solver is checked against."""
+    """Every mode below fmax, exact — WITHIN THE ENUMERATED RANGE.
+
+    🔴 **"No mode there" is only true up to the limits below.** Until
+    2026-08-23 this iterated m,n,p <= 2 and **TE311 (2.622 GHz) was therefore
+    absent from the reference table** — an ordinary cavity mode that competed
+    with every driven sweep while the table was being cited as showing nothing
+    in that range. Now m <= 4, n <= 3, p <= 3.
+
+    ⚠️ It is STILL FINITE. Any claim of the form "the closed form has nothing
+    at f" means "nothing among the modes enumerated here". Say which.
+    🔑 A mode outside this range is also outside `azimuthal.order()`'s
+    resolving power (m <= N/4, so m <= 1 at the standard 5 sectors) — the two
+    limits were chosen from each other, so neither catches the other's misses.
+    Identify TE011 by FIELD STRUCTURE (E purely azimuthal at every phi), not by
+    absence from this table. See INSTRUMENT.
+    """
     out = {}
     for kind, tbl in (("TE", CHIP), ("TM", CHI)):
-        for m in range(3):
-            for n in range(1, 3):
-                for p in range(0, 3):
+        for m in range(5):
+            for n in range(1, 4):
+                for p in range(0, 4):
                     if kind == "TE" and p == 0:
                         continue          # TE_mn0 does not exist
                     f = f_mnp(kind, m, n, p, a_mm, L_mm)

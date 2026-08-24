@@ -14,13 +14,35 @@ So a loop that actually reaches beta=1.73 is reported as 0.578, and the sweep
 looks like beta RISING THEN SATURATING BELOW 1 — a smooth, physical-looking,
 entirely wrong conclusion, and exactly the shape someone would believe.
 
-🔑 The phase resolves it: an overcoupled one-port advances ~360 deg through
+✅ **THERE IS NOW A BETTER ROUTE, AND IT NEEDS NO PHASE AT ALL** (2026-08-24).
+Two eigen solves on the same mesh give Q_ext directly:
+
+    Q0  = eigen with port_bc="pec"     (gap shorted -> no port loss)
+    Q_L = eigen with port_bc="lumped"  (real 50 ohm load)
+    1/Q_ext = 1/Q_L - 1/Q0   ->   beta = Q0/Q_ext
+
+Measured for the 11x8 loop: Q0=43,523, Q_L=7,538 -> **Q_ext=9,117, beta=4.774,
+OVERCOUPLED**. `h3_driven` now derives Q0 = 1/(1/Q_L - 1/Q_ext) from the
+LINEWIDTH and that Q_ext, so the dip depth never enters and the ambiguity cannot
+arise. **Q_ext is loop GEOMETRY: one eigen pair per loop size serves every
+density.**
+⚠️ Ill-conditioned when Q_L approaches Q_ext (overcoupled): the relative error
+amplifies by Q0/Q_L, which is 5.8x cold and ~1.01x loaded. **Take the cold Q0
+from eigen directly; derive only the loaded ones.**
+
+🔑 THIS RIG IS NOW THE CROSS-CHECK, not the primary. The phase resolves it: an overcoupled one-port advances ~360 deg through
 resonance, an undercoupled one returns to where it started. `e0k2_anchor` has
 carried `branch_from_phase` for this since 2026-08-22 — including its own hard
 lesson that a swing within a few degrees of 180 is AMBIGUOUS and must be
 reported as such rather than decided.
 
 ⚠️ No re-solving. The phase column is already in port-S.csv (§10).
+
+🔴 **UNWRAP THE PHASE BEFORE JUDGING IT.** On 2026-08-24 I read two WRAPPED
+values 6 MHz apart (-3.9 deg and +6.2 deg), called it "returns to baseline ->
+undercoupled", and was wrong: unwrapped, the phase advances **~326 deg**, which
+is the OVERCOUPLED signature. `branch_from_phase` unwraps; eyeballing the CSV
+does not. **The tool existed and I did it by eye anyway** (CONVENTIONS §7x).
 """
 import csv
 import json
@@ -30,7 +52,6 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from e0k2_anchor import branch_from_phase
-from h3_driven import local_minima, fit_dip, Q_BARE
 
 
 def s11_with_phase(tag):
@@ -41,8 +62,17 @@ def s11_with_phase(tag):
 
 
 def main():
+    # 🔴 DEFAULT CHANGED 2026-08-24. It was `h3_loopsize.result.json` — a
+    # GROOVE-FREE run, discarded by KNOWN.md § THE FILTER. Re-scoring discarded
+    # data with a better method produces a better wrong answer.
     src = pathlib.Path(sys.argv[1] if len(sys.argv) > 1
-                       else "h3_loopsize.result.json")
+                       else "h3_driven.result.json")
+    if not src.exists():
+        raise SystemExit(
+            f"🔴 {src} not found. This rig is a POST-PROCESSOR: it re-reads the\n"
+            f"   phase column from postpro/<tag>_wide/port-S.csv of a driven run\n"
+            f"   that has ALREADY happened. Run the driven rig on GEO_DESIGN\n"
+            f"   first, then point this at its result file.")
     out = json.loads(src.read_text())
     print(f"  re-scoring {src} with the branch resolved from PHASE\n")
     print(f"  {'loop':>9}{'area':>8}{'|S11|dB':>9}{'swing':>9}{'branch':>14}"

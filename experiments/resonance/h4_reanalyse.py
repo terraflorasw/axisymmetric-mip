@@ -38,4 +38,9 @@ print(f"  re-scoring {src} with the 13:35 analysis layer")
 print(f"  cavity a={a:.4f} L={L:.4f}  analytic TE011 {exact:.6f} GHz")
 print(f"  RESOLVE_TOL = {h4_field.RESOLVE_TOL} "
       f"(R_RESOLVED is now calibrated per-run from the no-torch rake)")
-h4_field._report(out, exact)
+# 🔴 GUARDED 2026-08-24. This ran on IMPORT: any module that did
+# `import h4_reanalyse` re-ran the whole analysis and REWROTE
+# h4_field.result.json as a side effect. A rig must not act when it
+# is merely read.
+if __name__ == "__main__":
+    h4_field._report(out, exact)

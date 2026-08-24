@@ -78,9 +78,13 @@ from e0k2_anchor import design_point, LOOP_PHI, LOOP_RW, LOOP_GAP, CAP_R_FRAC
 from h3_loaded import drude, Z_FRAC, SECTORS
 from h3_driven import (local_minima, fit_dip, read_s11, sweep,
                        COARSE_LO_GHZ, COARSE_HI_GHZ, COARSE_STEP_GHZ,
-                       COARSE_MIN_DEPTH_DB, Q_BARE, RI, RO, SIZE_FACTORS)
+                       COARSE_MIN_DEPTH_DB, Q0_COLD_EIGEN, RI, RO,
+                       SIZE_FACTORS)
 
 TAG = "h3_groove"
+# 🔴 NO PHYSICAL PROVENANCE (§7ab). Copied silently from h3_annular,
+# whose own basis was SOLVER CONVERGENCE (PI_1 = 5.58), not physics.
+# ⚠️ Every result here is CONDITIONAL on an unanchored density.
 NE = 1.0e20
 GROOVE = (5.0, 10.0)            # H2's frozen design: width 5 mm, depth 10 mm
 BAND = (2.40, 2.50)             # the LDMOS band — what the tuner can reach
@@ -134,7 +138,9 @@ def main():
     print(f"  tuner band {BAND[0]}-{BAND[1]} GHz — a tuner locks to the DEEPEST "
           f"dip in here\n", flush=True)
     out = {"ne": NE, "groove_mm": list(GROOVE), "band": list(BAND),
-           "q_bare_no_loop": Q_BARE, "points": []}
+           "q_ref": Q0_COLD_EIGEN,
+           "q_ref_source": "h3_step3 eigen port_bc=pec, grooved + loop 11x8",
+           "points": []}
     for ld, lw, gon in CASES:
         tag = f"{TAG}_{ld:g}x{lw:g}_{'g' if gon else 'nog'}".replace(".", "p")
         rec = {"ld": ld, "lw": lw, "groove": gon, "tag": tag}
@@ -176,7 +182,10 @@ def main():
                  "in_band": BAND[0] <= f <= BAND[1]}
             if "Q_L" in fi:
                 r.update(linewidth_mhz=fi["linewidth_mhz"], Q0=fi["Q0"],
-                         eta=1.0 - fi["Q0"] / Q_BARE)
+                         # 🔴 was Q_BARE (44,384: bare, NO groove, NO
+                         # loop). This rig meshes a groove AND a loop, so that
+                         # reference belongs to a different cavity (§7c).
+                         eta=1.0 - fi["Q0"] / Q0_COLD_EIGEN)
             S = abs((1 - fi["beta"]) / (1 + fi["beta"]))
             r["net_pct"] = 100 * (1 - S ** 2) * r.get("eta", 0.0)
             rows.append(r)

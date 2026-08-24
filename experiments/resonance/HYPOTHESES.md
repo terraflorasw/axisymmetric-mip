@@ -136,10 +136,22 @@ carries this numbering. Gaps in the sequence are cheaper than broken citations.
 
 ## H3 — sustainment: COLD, HOT and LOADED · **NOT ANSWERED**
 
-**H3 asks one thing: what are the sustainment numbers across the three regimes,
-in the cavity H2 specifies.** Cold (no discharge), hot (gas heated, weakly
-ionised), loaded (full plasma, and a real high-TDS sample). It consumes H2's
-result — the groove, frozen at 5 × 10 mm — because that is the cavity.
+**H3 asks two things, and the second was lost:** (a) the sustainment numbers
+across cold / hot / loaded, and (b) **whether H2's groove still clears the band
+UNDER LOAD — and if not, what size does.**
+
+🔑 **THE GROOVE IS A VARIABLE IN H3, NOT A CONSTANT.** H2's 5 × 10 mm is a
+**BASELINE**, established COLD against the LDMOS range. **Loading moves every
+mode** — the plasma pulled TE011 tens of MHz in the groove-free measurements, and
+it moves the TM modes too. A groove sized to clear the band cold may not clear it
+loaded. **That is precisely why H2 had to be answered first: to give H3 a
+baseline to refine, not a constant to inherit.**
+
+⚠️ I wrote "frozen at 5 × 10 mm" into every document, from the record's phrase
+*"the groove is frozen at 5×10 and its variables have left the design space."*
+**That one clause did two kinds of damage** — it made the groove look OPTIONAL
+(so it never entered `GEO`, see §7f) and IMMUTABLE (so `GEO_DESIGN` treats it as
+a constant). It is neither. `GEO_DESIGN` carries the BASELINE; H3 varies it.
 
 🔴 **THERE IS NO "H3 WITHOUT THE GROOVE".** That is not a variant, a control, or
 a first approximation. The filter decides which modes exist, and every quantity
@@ -167,9 +179,24 @@ at 11×8. Either the groove differs under load or that mode is misidentified.
 
 | regime | state | what H3 must return |
 |---|---|---|
-| **cold** | no discharge, gas fill | f₀, Q₀, and the coupling a tuner sees before ignition |
-| **hot** | heated gas, weakly ionised | the trajectory between cold and loaded — where the tuner must track, and whether coupling holds through it |
-| **loaded** | full plasma **+ a real high-TDS sample** | sustained f₀, Q₀, delivered power, and the sample-loading margin |
+| **COLD** | cavity at ambient, never operated (or cooled). **First ignition.** | f₀, Q₀, and the coupling a tuner sees at start-up |
+| **HOT** | cavity **already operating** — hot walls, hot gas, **no plasma**. **RE-ignition.** | f₀, Q₀ and breakdown margin in a thermally hot cavity |
+| **LOADED** | plasma running, and a real high-TDS sample | sustained f₀, Q₀, delivered power, sample-loading margin |
+
+🔴 **HOT IS A THERMAL STATE, NOT A PLASMA-DENSITY SLICE** (corrected
+2026-08-23 — I had it wrong). It is the re-ignition case: the plasma will go out
+and must be restarted in a cavity that is still hot. Three things differ from
+COLD, and each is large:
+
+| what changes | magnitude |
+|---|---|
+| **cavity dimensions** — aluminium expands, α = 23.1e-6/K | **−2.8 MHz at +50 K, −5.7 at +100 K, −11.3 at +200 K.** The LDMOS band is 100 MHz wide, so this is a real fraction of the tuner's range |
+| **gas density** — n ∝ 1/T at fixed pressure | at 3000 K, n is **10× lower**, so **E/N is 10× higher for the SAME field**. 🔑 **This IS the thermal-kernel mechanism H4 concluded ignition requires** — a hot cavity may re-ignite where a cold one cannot |
+| **wall conductivity** — σ falls ~0.4%/K, and Q ∝ σ^0.5 | **Q × 0.89 at +50 K, × 0.78 at +100 K, × 0.45 at +200 K** |
+
+🔑 **So COLD and HOT are not the same measurement with a different number** —
+they differ in geometry, in breakdown threshold, and in Q. And the HOT case is
+the one that decides whether the instrument can restart itself in service.
 
 ⚠️ **Sample delivery is the LOADED regime, not a separate hypothesis.** It was
 briefly split out as "H6" on 2026-08-23; that was mine and it was wrong. Folded
@@ -193,6 +220,12 @@ and TM020 are m=0; m is the only property separating keep from reject. Measured,
 h2_d0 → h2_d20 by signature matching: TE011 moved **−0.0 MHz / −0% Q** while
 TM010 moved −32.8 MHz (−40% Q) and TM011 −113.8 MHz (−59% Q). The groove spares
 TE011 and nothing else.
+
+🔴 **LEG 2 IS NOT CURRENTLY ANCHORED (2026-08-23).** Every mesh behind it —
+`h4_field`, `h4_seed`, and the analytic J₁ map they replaced — is **groove-free
+and post-H1, therefore discarded**. The conclusion is probably right; it is not
+presently evidenced. **Re-measure with the groove before leaning on it**, and do
+not dismiss H4 Route 3 on its strength.
 
 **Leg 2 — no mode cold-ignites anyway.** Measured bore energy fractions
 (`p_elec[bore]`, h2_d0) converted to reduced field:
@@ -225,6 +258,140 @@ the ionising range. A spark or Tesla discharge supplies exactly that: a hot
 conductive filament. ICP applies it EXTERNALLY through the quartz, which also
 avoids in-plasma electrode erosion — a real concern for a spectroscopy
 instrument.
+
+### 🔑 ROUTE 3 (user-raised 2026-08-23, DEFERRED) — ignite from the SOLUTION itself
+
+**Not queued. Recorded so it is not lost, and because it may be cheaper than
+every other igniter considered.**
+
+**The reference, now in the repo:** Khattak, Bianucci & Slepkov, *"Linking
+plasma formation in grapes to microwave resonances of aqueous dimers"*, **PNAS
+116(10) 4000–4005 (2019)** — `axisymmetric-mip/refs/`. Read 2026-08-23; the
+numbers below are theirs, not recollection.
+
+### What the paper actually establishes
+
+| | |
+|---|---|
+| **mechanism** | **Mie / morphology-dependent resonances (MDRs)** in each sphere, interacting cooperatively → an EM hotspot at the point of contact. Superfocusing on the order of **λ₀/100** |
+| **water at 2.45 GHz, 20 °C** | **ε̃ = 79 + i10**, n = 8.9, k = 0.56. Penetration depth **≈ 1.5 cm** |
+| **field enhancement** | FEM, 16 mm beads, 1 V/m input: energy density **1.30 → 1.47 → 16.6** (×0.1 nJ/m³) as separation closes 20 → 4 → **0.5 mm**. At contact that is ≈ **19× the vacuum field** in the gap |
+| **what ignites** | emission spectra show **K and Na** in grapes, and **Na** in the beads — field-ionised at the hotspot, then a cascade in the AIR that "grows and becomes independent from the dimer" |
+
+🔑 **THE SALINE CASE IS ALREADY DEMONSTRATED (their Fig 1C).** Skinless sodium
+polyacrylate hydrogel beads — **>99% water — form plasma after a brief immersion
+in NaCl solution.** The user's proposal is not an extrapolation from grapes; it
+is the paper's own control for showing the effect is not biological.
+
+### 🔴 Two things I had wrong from memory
+
+1. **The skin is NOT essential.** I attributed ignition to sodium in the grape
+   skin. The paper shows whole uncut grapes and skinless hydrogel beads both
+   work: *"neither of these components are essential to the formation of the
+   plasma."* The effect is **bulk optical**, not surface conductivity.
+2. **ABSORPTION IS ESSENTIAL, NOT A PENALTY.** I treated water's lossiness as an
+   incidental heating mechanism. It is load-bearing: with reduced absorption the
+   simulated Q rises and a "menagerie" of sharp modes appears; with full
+   absorption those **wash out, leaving the emergent contact hotspot**. Their
+   words: *"absorptive dimers support a bright hotspot at the point of contact,
+   even when NO hotspot is found in simulations of negligibly absorbing
+   equivalent dimers."*
+
+🔑 **And that inverts the size-tolerance worry.** Without absorption the effect
+is knife-edge — 9.5 mm-radius beads show an intense hotspot that is **absent** at
+10 mm. **With** absorption, *"the mode strength remains more constant across a
+large size range."* So a lossy saline droplet does not need to be precisely
+sized — which is what makes this practical at all.
+⚠️ Saline is MORE absorptive than pure water (ionic conductivity adds to ε₂), so
+it should broaden further — but there is presumably a limit past which the
+resonance is destroyed rather than broadened. **Unmeasured.**
+
+**Why (a) is the interesting one.** A grape is a ~2 cm sphere of water, and water
+is ε ≈ 78 at 2.45 GHz. A dielectric sphere resonates when d ≈ λ₀/√ε ≈
+122/8.8 ≈ **14 mm** — grape-sized. Two touching spheres put their surface fields
+in phase at the contact point, and the resulting hotspot exceeds air breakdown.
+**This is FIELD CONCENTRATION BY DIELECTRIC RESONANCE, not seeding** — a
+mechanically different route from everything above.
+
+🔑 **SALINE IS THE BASELINE, NOT THE PROPOSAL (user, 2026-08-23).** We are not
+going to use beads, hydrogel, or any inserted object. **Plain saline is worth
+characterising because it is the simplest thing that could possibly work, and
+therefore the reference every more viable igniter must beat.** It probably does
+not work on its own — that is the point of measuring it.
+
+⚠️ Read the rest of this section as *what the baseline case is made of*, not as
+a device being advocated.
+
+Three mechanisms stack in it, and they are not alternatives:
+1. **Dielectric resonance** — a high-ε droplet concentrates E locally.
+2. **Thermal kernel** — saline at 2.45 GHz is strongly lossy; it heats, boils and
+   makes exactly the hot neutral-density hole §H4 concluded ignition requires.
+3. **Chemical seeding** — Na ionises at **5.14 eV** against N₂'s 15.6 eV, so the
+   avalanche threshold in the vapour is far below the ~100–150 Td the record
+   quotes for clean N₂.
+
+🔑 **Why this baseline is the RIGHT one to measure.** The sample is already a
+solution, so a saline reference costs no new hardware to evaluate and shares the
+delivery path the instrument already has. **Whatever igniter is eventually
+chosen, "how much better than plain saline" is the number that justifies it.**
+⚠️ **Its expected value as a DEVICE is low** and that is not a reason to skip it.
+A baseline that fails tells you the size of the gap a real solution must close;
+without it, every later proposal is compared against nothing.
+
+### What would have to be true, and what argues against it
+
+🔴 **TE011's field is ZERO on axis, and that is where the sample goes.** A droplet
+travelling up the central channel sees the null. The grape effect needs the
+droplet to sit where there IS field — off-axis, or large enough to reach r where
+the field is non-zero. **This is the same null that protects TE011 from a
+high-TDS sample shorting it, working against us here.**
+⚠️ Geometry is tight: a resonant water sphere is ~14 mm across; the bore is
+**17 mm in diameter**. Conceivable, not comfortable — and an analytical AEROSOL
+is µm-scale, far too small to resonate. This would be a BULK slug introduced for
+ignition only, then switched to aerosol flow.
+⚠️ ~~Water and Na are a spectroscopic cost~~ — **WITHDRAWN as facile
+(user, 2026-08-23).** The objection treats a transient as a steady state and
+does not survive the actual operating cycle:
+- **The plasma is continuously flushed** at 15–20 slm. An ignition slug is swept
+  out long before a measurement window opens.
+- **Ignition and measurement are separated in TIME.** The record already uses
+  exactly this reasoning for the TM route — *"ignite, transition, THEN introduce
+  the sample."*
+- **Na is already in the analyte.** The programme exists to measure high-TDS soil
+  extracts; sodium is a major constituent of what is being measured, not a
+  foreign contaminant being added.
+
+🔑 **The narrow residue that IS worth quantifying** — and it is a number, not an
+objection: **settling time** (how long after ignition until the background
+returns to its floor) and **memory effects** (NaCl deposition on the torch wall
+between runs). Both are measurable and bounded; neither disqualifies the route.
+⚠️ §5 — I asserted a consequence without estimating its magnitude.
+⚠️ Saline is conductive — a large enough slug stops being a resonator and starts
+being a short.
+
+### What would test it — when it is queued, not now
+
+1. **Cold, no plasma — BASELINE CHARACTERISATION:** a saline volume of swept
+   size at swept radial position in the GROOVED cavity, ε̃ = 79 + i10 (their measured value, adjusted
+   upward in ε₂ for salinity). **Measure local |E| enhancement** against the
+   empty-bore field.
+   🔑 **The prior to beat is ~19×** (Khattak Fig 3I, 0.5 mm dimer gap). A single
+   sphere is weaker — their monomer hotspot is 0.29 vs the dimer's 0.35 nJ/m³ in
+   the 5.5 cm case — so a DIMER, or a sphere near a wall, may be needed.
+   🔴 **Falsifier: if peak |E| never exceeds the empty-cavity value by more than
+   ~2×, dielectric resonance is not operating here** and the route reduces to
+   ordinary thermal seeding.
+   ⚠️ Their geometry is a sphere in free space inside an oven; ours is a sphere
+   inside a resonant cavity with a field null on axis. **The enhancement factor
+   is a prior, not a prediction.**
+2. Only then the threshold comparison, and it must use a **re-measured** bore
+   field — the E/N numbers that killed cold ignition rest on the analytic J₁ map
+   and on `h4_field`, and **both are groove-free and discarded**.
+
+🔴 **Note the dependency: "no mode cold-ignites" is itself built on numbers this
+programme has just invalidated.** That conclusion may survive re-measurement, but
+it is not currently anchored. Route 3 should not be dismissed on the strength of
+it, and neither should it be adopted on the strength of a video.
 
 🔑 **The geometry inverts in our favour.** TE011's on-axis field null — the exact
 reason it cannot ignite — makes an on-axis or near-axis igniter nearly invisible

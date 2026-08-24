@@ -1,0 +1,198 @@
+H3/H6 (driven) — sustainment across the density gap eigen cannot enter.
+
+🔴 WHY THIS RIG EXISTS. Two open questions need the same thing:
+
+  H6  what is the minimum ne that still sustains? eta falls 0.947 (ne=1e20) ->
+      0.185 (1e18), and ne=1e19 has NO DATA — it failed in h3_loaded (mesh
+      ScaledJac) and in h3_eigenprobe (PCG stagnation, 92 non-convergences).
+      Mass loading from a real high-TDS sample pushes ne DOWN, into exactly
+      that gap. This gates H5.
+  sapphire  its loaded point does not converge in eigen either (eps +11.6
+      beside the plasma's -30.09).
+
+🔑 DRIVEN COST SCALES WITH Q, so it is cheapest exactly where eigen fails. The
+step must resolve the linewidth = f0/Q, so samples ~ Q. Calibrated on
+e0k2_c11x8_drv (16,000 samples / 1,542 s = 96 ms/sample):
+
+    empty cavity   Q=44,384  ->  ~24,000 samples  ~2,300 s
+    loaded plasma  Q=156     ->  ~126 samples     ~12 s
+
+⚠️ BUT THE GAP IS NOT THE LOADED REGIME. If eta at ne=1e19 is ~0.5 then
+Q ~ 22,000 and a +-40 MHz sweep is ~18,000 samples (~29 min) — per point. The
+cost is set by Q, which is THE UNKNOWN. So:
+
+## Two stages, and the second is sized by the first
+
+  COARSE  +-40 MHz, step 636 kHz (~126 samples, ~12 s). Finds WHERE the dip is.
+          Too coarse to fit Q; it is not asked to.
+  FINE    +-5 MHz about the located dip, step from the coarse dip's own width.
+          8x cheaper than a wide fine sweep because the band, not the step,
+          is what a located dip lets you shrink.
+
+🔴 EIGEN IS NOT AN OPTION HERE (CONVENTIONS §7c: one rig, one solver — this is
+the DRIVEN driver; h3_eigen and h3_superpose are the eigen ones). Driven has no
+NLEPS and no divergence-free projection, which is the specific machinery that
+stagnates at these permittivities.
+
+## The mode-identity hazard, and how it is handled
+
+🔴 A CAP LOOP CHANGES WHICH MODE IT READS. Small loops couple to a TM111
+polarisation and only reach TE011 above ~176 mm^2; the dip looks the same either
+way, so a driven sweep ALONE cannot tell you. This rig therefore:
+  - uses the 11x8 cap loop (176 mm^2, the measured TE011 branch), and
+  - VALIDATES against eigen at the two densities where eigen converges, before
+    trusting driven where it does not.
+⚠️ The band also protects: TM111 sits 332.7 MHz away, far outside +-40 MHz.
+
+VERIFICATION
+  🔴 V1 and V2 ARE SUSPENDED (2026-08-24). BOTH ANCHORS WERE GROOVE-FREE.
+      V1 was: reproduce h3_superpose's eigen f0=2.481566 / Q=163.
+      V2 was: reproduce h3_loaded's eigen eta=0.185 at ne=1e18.
+      h3_superpose and h3_loaded are discarded (KNOWN.md § THE FILTER), and
+      0.185 was ALSO the wrong geometry — a 2 mm solid column, not this
+      2.0-8.5 mm annulus, 17x the plasma.
+      🔑 Both would have PASSED against void numbers and printed green ticks.
+      ✅ TO RESTORE: loaded eigen at ne=1e20 and ne=1e18 on GEO_DESIGN.
+      ⚠️ UNTIL THEN THIS RIG IS UNVALIDATED AGAINST EIGEN. It reports its
+      numbers and says they are un-cross-checked. That is the honest state.
+      🔴 DO NOT re-point these at a convenient number to get a tick back.
+  V3  every case reports its coarse dip AND its fine fit; a fine band that does
+      not contain the coarse dip is a REFUSAL, not a silent re-centre.
+  V4  the continuation seed and Q_REF must come from ONE cavity: cold TE011
+      2.440003 GHz / Q0 12,368, groove 5x10 + loop 11x8 (`h3_ladder`).
+      `check_eta_reference()` enforces the geometry half at startup.
+FALSIFICATION
+  🔴 F1  if eta at ne=1e19 is below 0.5, the sustaining margin is one decade or
+         less and mass loading is a hard constraint on the nebuliser. Report it.
+  🔴 F2  if driven ALSO fails to converge at eps ~ 0, the limitation is the
+         OPERATOR and not the eigen formulation — no solver in this toolchain
+         answers H6. Say so; do not reach for a third solver.
+  🔴 F3  if the coupling branch is AMBIGUOUS the fit refuses rather than
+         guessing beta; Q_L still stands and is reported alone.
+
+==============================================================================
+  cavity a=88.0045 L=115.4158  Q_ref(groove 5x10 + loop 11x8)=12,368
+    eta reference: h3_cold 11x8 cold, sf 1.5, selected by lowest A2/A0 (m_az=1); continuation argument added later; PROVISIONAL
+  plasma r=2.0-8.5 mm  z=+-0.4L   cap loop 11.0x8.0 mm (TE011 branch)
+  ONE wide sweep 2.3-2.65 GHz @ 200 kHz (1,750 samples per case)
+  selection: CONTINUATION from the unloaded TE011, seeded at 2.440003 GHz (MEASURED cold TE011, not the analytic 2.4500); NOT the global minimum
+  guards: dip >0.05 dB, >2.0 MHz from a band edge, continuation step <25 MHz, 3 dB walk stops at the turning point between features
+
+  coupling forecast (beta = Q0/Q_ext, Q_ext ~ 50,709 from e0k2's 11x8 loop):
+         eta       Q0     beta   |S11|min
+      0.2000    9,894   0.1951     -3.43dB
+      0.5000    6,184   0.1220     -2.13dB
+      0.9000    1,237   0.0244     -0.42dB
+      0.9900      124   0.0024     -0.04dB   🔴 too shallow to fit
+      0.9990       12   0.0002     -0.00dB   🔴 too shallow to fit
+    ⚠️ the ne=1e20 end is where driven is WEAKEST and eigen already works; the gap is where driven is strongest.
+
+  --- COLD (ne=0, plasma region = vacuum) — THE ANCHOR CASE
+      must reproduce eigen: f0=2.440003 GHz, Q0=12,368
+    ⚠️ mesh needed size-factor 1.42; REPORTED
+      LOCATOR sweep 2.400-2.520 GHz @ 25 kHz (4,800 samples)
+      brackets grooved-no-loop 2.450561 (ANCHORED) and both h3_cold candidates 2.440003 / 2.494440
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=+1.000, sigma=0 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 441s
+    1 local minima: 2.4515@-3.67dB
+    🔑 deepest cold dip: 2.451500 GHz @ -3.67 dB
+       vs h3_cold eigen 2.440003 -> +11.497 MHz
+       vs ladder grooved-no-loop 2.450561 -> +0.939 MHz  (the loop's pull)
+    selected 2.451500 GHz (+0.00 MHz from expected 2.4515) — by CONTINUATION, not depth
+    ⚠️ only 14 samples across the 3 dB width — width is under-resolved, Q_L is indicative only
+    🔑 ETA REFERENCE MEASURED HERE: Q0=8,462 at 2.451500 GHz
+       (h3_cold's eigen said 12,368 at 2.440003 — cross-check, not the reference)
+    f0=2.451500 GHz  lw=0.35 MHz  Q_L=7,004  beta=0.2082  Q0=8,462  eta=— (reference case)
+  --- ne=1.0e+18  eps=+0.689  sigma=0.2753 S/m
+    ⚠️ mesh needed size-factor 1.42; REPORTED
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=+0.689, sigma=0.2753 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 986s
+    3 local minima: 2.3836@-0.60dB  2.4520@-1.22dB  2.6064@-1.98dB
+    selected 2.452000 GHz (+0.50 MHz from expected 2.4515) — by CONTINUATION, not depth
+    f0=2.452000 GHz  lw=4.40 MHz  Q_L=557  beta=0.0704  Q0=596  eta=0.9295
+  --- ne=3.0e+18  eps=+0.067  sigma=0.8258 S/m
+    ⚠️ mesh needed size-factor 1.42; REPORTED
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=+0.067, sigma=0.8258 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 319s
+    3 local minima: 2.3732@-0.58dB  2.4534@-0.45dB  2.6064@-1.78dB
+    selected 2.453400 GHz (+1.40 MHz from expected 2.4520) — by CONTINUATION, not depth
+    f0=2.453400 GHz  lw=11.80 MHz  Q_L=208  beta=0.0257  Q0=213  eta=0.9748
+  --- ne=1.0e+19  eps=-2.109  sigma=2.753 S/m
+    ⚠️ mesh needed size-factor 1.42; REPORTED
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-2.109, sigma=2.753 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 290s
+    3 local minima: 2.3726@-0.73dB  2.4608@-0.20dB  2.6064@-1.72dB
+    selected 2.460800 GHz (+7.40 MHz from expected 2.4534) — by CONTINUATION, not depth
+    ⚠️ |S11|min=-0.199 dB — deeply UNDERCOUPLED, beta and Q0 are LOW CONFIDENCE (Q_L stands; beta<<1 makes Q_L ~ Q0)
+    f0=2.460800 GHz  lw=26.80 MHz  Q_L=92  beta=0.0114  Q0=93  eta=0.9890
+  --- ne=3.0e+19  eps=-8.327  sigma=8.258 S/m
+    ⚠️ mesh needed size-factor 1.42; REPORTED
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-8.327, sigma=8.258 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 286s
+    3 local minima: 2.3786@-0.88dB  2.4740@-0.19dB  2.6064@-1.73dB
+    selected 2.474000 GHz (+13.20 MHz from expected 2.4608) — by CONTINUATION, not depth
+    ⚠️ |S11|min=-0.194 dB — deeply UNDERCOUPLED, beta and Q0 are LOW CONFIDENCE (Q_L stands; beta<<1 makes Q_L ~ Q0)
+    f0=2.474000 GHz  lw=26.00 MHz  Q_L=95  beta=0.0112  Q0=96  eta=0.9886
+  --- ne=1.0e+20  eps=-30.089  sigma=27.53 S/m
+    ⚠️ mesh needed size-factor 1.42; REPORTED
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 279s
+    3 local minima: 2.3836@-1.37dB  2.4824@-0.30dB  2.6064@-1.74dB
+    selected 2.482400 GHz (+8.40 MHz from expected 2.4740) — by CONTINUATION, not depth
+    ⚠️ |S11|min=-0.297 dB — deeply UNDERCOUPLED, beta and Q0 are LOW CONFIDENCE (Q_L stands; beta<<1 makes Q_L ~ Q0)
+    f0=2.482400 GHz  lw=16.00 MHz  Q_L=155  beta=0.0171  Q0=158  eta=0.9814
+
+==============================================================================
+         ne      eps     f0 GHz   lw MHz     Q_L    beta     Q0      eta
+    0.0e+00    1.000   🔴 no result
+    1.0e+18    0.689     2.4520     4.40     557  0.0704    596   0.9295
+    3.0e+18    0.067     2.4534    11.80     208  0.0257    213   0.9748
+    1.0e+19   -2.109     2.4608    26.80      92  0.0114     93   0.9890
+    3.0e+19   -8.327     2.4740    26.00      95  0.0112     96   0.9886
+    1.0e+20  -30.089     2.4824    16.00     155  0.0171    158   0.9814
+
+  🔴 COLD LOCATOR PRODUCED NO FIT — no anchor and no seed. Nothing here is quotable.
+
+  🔴 V1 SUSPENDED — no valid eigen anchor on the DESIGN cavity.
+     measured here: f0=2.482400 GHz  eta=0.9814  Q0=158
+     ⚠️ NOT cross-checked. The old anchor (2.481566 / 0.9963) was groove-free and is void.
+     ⚠️ eta = 1 - Q0/Q_ref is INSENSITIVE to Q0 when Q0 << Q_ref. Quote eta, not Q0.
+  🔴 V1 anchor ne=1e20 missing — driven is UNVALIDATED against eigen and nothing here should be quoted.
+
+  🔑 THE GAP: eta(ne=1e19, eps=-2.109) = 0.9890
+  F1 ✅ eta = 0.9890 >= 0.5 — the margin survives. Mass loading is NOT a hard EM constraint.
+
+  eta spans 0.9295-0.9890 across ne 1e+18-1e+20 — absorption stays above 93.0% over 2 decades.
+
+  wrote h3_driven.result.json
+EXIT=0

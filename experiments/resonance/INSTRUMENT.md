@@ -91,6 +91,84 @@ linear solve at the end is the SYMPTOM, not the disease. `solvecost.diagnose()`
 detects it; its self-test carries the real diverging run as known-bad input.
 Letting such a case run longer will not finish it.
 
+## 🔑 IDENTIFY TE011 BY FIELD STRUCTURE, NOT BY AZIMUTHAL ORDER
+
+**User, 2026-08-23: "no matter how many sectors we add, something will modulus
+into the wrong thing."** Correct, and it is unbounded: N sectors resolve
+m ≤ N/4, and there is always an m above that folds back. **Chasing resolution
+cannot close this.**
+
+✅ **Ask the BINARY question instead — "is this TE011?" — and answer it from the
+FIELD COMPONENTS, which do not alias.**
+
+TE011 is TE_0np: **E_z = 0 (it is TE) and E_r = 0 (it is m=0). Its E is purely
+azimuthal.** Palace's probes emit the full complex vector (`Re/Im{E_x,E_y,E_z}`),
+so at a probe on the x-axis E_φ = E_y and E_r = E_x, and
+
+    purity  P = |E_phi|^2 / (|E_r|^2 + |E_phi|^2 + |E_z|^2)
+
+**Validated on `h4_field_no_torch`'s saved probes (no re-solving):**
+
+| mode | \|E_r\| | \|E_φ\| | \|E_z\| | **P** |
+|---|---:|---:|---:|---:|
+| TM111 | 70.6 | 184.5 | 0.007 | 0.872 |
+| TM111 (other pol.) | 185.8 | 70.4 | 0.057 | 0.126 |
+| **TE011** | **0.85** | **184** | 0.032 | **0.9999** |
+| TE311 | 0.36 | 3.49 | 0.054 | 0.989 |
+
+🔑 **AND THE PART THAT DEFEATS ALIASING: TE011 has no φ-dependence, so P = 1 at
+EVERY azimuthal position.** Any m ≠ 0 mode's P VARIES with φ — the two TM111
+entries above are the same degenerate pair sampled at one φ, reading 0.872 and
+0.126 precisely because they are orthogonal polarisations. **So probe several φ
+and require P ≈ 1 at ALL of them.** That is a pointwise field-structure test: no
+harmonic decomposition, no modulus, nothing to alias.
+
+✅ **It is naturally a REJECTION test**, which is what is actually needed: it bins
+into *not TE011* without having to name what the mode is instead.
+⚠️ Single-φ purity is NOT sufficient on its own — an m≠0 polarisation can read
+high at one angle (TE311 gives 0.989 here). **Multi-φ is the test; single-φ is a
+screen.**
+⚠️ Probes here sit at z = 0 (mid-plane) where E_z is small for everything, so
+**E_z did not discriminate in this data** — the work was done by E_r vs E_φ.
+
+## 🔴 THE IDENTIFICATION CHAIN HAS TWO COUPLED BLIND SPOTS (2026-08-23)
+
+**`physics.spectrum` enumerates m ≤ 2, n ≤ 2, p ≤ 2.** Modes outside that are
+absent from the reference table. **TE311 at 2.622012 GHz is one of them**, and it
+sits 172 MHz above the design point where it competed with every driven sweep.
+
+**`azimuthal.order()` uses `SECTORS = 5` and resolves only m ≤ 1.**
+🔑 The limit is **m ≤ N/4**, not N/2: energy goes as cos²(mφ), which carries
+angular harmonic **2m**, so Nyquist needs 2m ≤ N/2. At N=5 that is m ≤ 1.25.
+⚠️ `SECTORS`' own comment claims *"m in {0,1,2}"* — **m=2 was never reliably
+distinguishable either.** m=0 vs m=1 IS safe, which is what the bare-cavity
+anchor (TE011 vs TM111) depends on. Its own
+comment — *"m in {0,1,2} in this window"* — took that range FROM the incomplete
+spectrum above. **The two blind spots are the same blind spot**, so a mode the
+table cannot list is also a mode the classifier cannot label, and it is reported
+as **m=0**: TE311 came back with A2/A0 = 0.0004.
+
+✅ **FIXED 2026-08-23**: `order()` still returns 0 for a flat pattern — that is
+the right answer as far as it can see — but now carries `_m_resolvable_max` and
+`_aliasing_risk=True` in the harmonics dict, so a caller can tell "flat" from
+"axisymmetric".
+🔑 **The enumeration cutoff in `physics.spectrum` is defensible; the BINNING was
+the defect.** A truncated table is a limit you work around by knowing it.
+Returning **0** — which is not "unknown" but the specific answer meaning TE011 —
+for a mode the method cannot resolve is a fault that manufactures confident
+wrong identifications.
+
+🔴 **Therefore "clean m=0" does NOT establish TE011.** It establishes "not m=1 or
+m=2, as far as five sectors can tell". Identification needs a SECOND
+discriminator that fails differently:
+- **Q ratio** — TE011's Q is 2.17× TM111's, measured, and resolution-robust
+- **frequency against a COMPLETE table** — extend the enumeration first
+- **continuation** from a state where the label is already established
+
+⚠️ **This is why the "interloper" kept winning.** It was never an interloper: an
+ordinary mode, invisible to the reference table, mislabelled by the classifier,
+and therefore impossible to rule out by the tests in use.
+
 ## A coupling loop changes WHICH MODE it reads
 
 🔴 **AND THE SPECIFIC MECHANISM IS AN ARTIFACT.** `e0k2_sizeq`, which produced
@@ -407,6 +485,37 @@ mesh must match the REQUEST) and `check_groove_declared` (the groove omission �
 on a groove-free cavity refuses). Both live in `run()` rather than the config
 builders because callers assemble geometry themselves.
 
+## 🔑 SHIFT TARGET: FAR BELOW converges where NEAR-THE-CLUSTER fails
+
+**Measured 2026-08-23 on the GROOVED cavity, three attempts:**
+
+| target | N | outcome |
+|---:|---:|---|
+| 2.30 | 6 | 🔴 1,018 NLEPS — budget exceeded |
+| 2.25 | 10 | 🔴 1,040 NLEPS — budget exceeded |
+| **1.05** | **12** | ✅ **`h2_groove` solved this cavity with these** — its −64.25 MHz is in the record |
+
+🔑 **Why, and it is counter-intuitive.** Shift-invert transforms eigenvalues to
+1/(λ − σ). A σ placed just below a TIGHT CLUSTER makes several transformed
+values simultaneously huge and nearly equal — precisely what Krylov methods
+separate slowly. Starting far below means the first modes converged are the
+**well-separated** low ones, and the cluster is reached with a good subspace
+already built.
+
+⚠️ **This does NOT contradict CONVENTIONS §6**, which records target=1.05 as
+expensive (H1 inherited it and paid an hour per point). **Both are true: it is
+slower per solve AND it converges where the fast setting fails.** Speed and
+convergence are different axes, and `solvecost` predicts only the first — it
+"predicts the time of solves that converge, and says nothing about which
+converge at all" (§6c).
+
+✅ **Rule: put the target in a spectral GAP far from the cluster of interest, and
+size N from a mode count** — `h2_groove`'s formula is
+`n = count(closed-form modes ≤ ceiling) + 5`.
+🔴 **And when a cavity class already has a rig that solved it, copy that rig's
+settings before deriving your own.** Three attempts here; the working one was in
+the repo the whole time.
+
 ## Convergence, unlike cost, CANNOT be predicted
 
 🔴 Tested and negative. Three plausible guards, all of them wrong:
@@ -453,8 +562,10 @@ not). Free in every solve.
   ⚠️ Both routes share one mesh, one wall conductivity and one solver, so this
   validates the EXTRACTION of Q, not the surface-impedance physics behind it. An
   external anchor still needs a measured cavity.
-- ✅ **Dielectric loading is MEASURED** (2026-08-23, `h4_field`, supersedes
-  "unverified"). Outer sapphire tube −13.71 MHz, all three tubes −15.00 MHz
+- 🔴 **Dielectric loading — DISCARDED, groove-free.** `h4_field`'s 11 meshes all
+  carry `groove = [0,0]`; it was measured after H1 on a cavity that is not the
+  design. **Every number below is retained only as a record of what the wrong
+  cavity said.** Outer sapphire tube −13.71 MHz, all three tubes −15.00 MHz
   against a Slater prediction of −15.3 committed before the solve — **2%**, at
   ε=11.6. Quartz −3.10 (outer) / −3.36 (full). Q cost 0.3%. All configurations
   stay inside 2.40–2.50 GHz.
