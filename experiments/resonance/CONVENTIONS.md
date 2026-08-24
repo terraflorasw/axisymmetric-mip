@@ -654,6 +654,539 @@ been looking at it.**
 documents here went unopened for a full session, and two of them — `PLAN.md` and
 `METHODOLOGY.md` — are the ones about not fooling yourself.
 
+## 7l. A strict test on an uncertain classifier discards the measurement
+
+**`h3_cold`, 2026-08-23.** Two eigen cases converged, found their modes, and the
+rig reported *"no m=0 mode in the LDMOS band"* — because `azimuthal.order()`
+returns `m=None` when a mode is MIXED, and the rig tested `m_az == 0`.
+
+🔑 **The mixing was the physics, not a failure.** Loaded, the in-band mode has
+A2/A0 = **0.3244**; the high-Q mode the plasma does not couple to has **0.0004**.
+A plasma mixes the triplet. **A symmetry test is a poor discriminator under a
+perturbation large enough to mix what it classifies** — E1b's lesson in a new
+form.
+
+🔴 **And the cost compounded**: the error path returned before `_report()`, so
+**F1 — the filter check, the entire point of §7i — never printed**, on a run that
+had the data to answer it.
+
+✅ **Rules:**
+- **A classifier that can say "I don't know" must not be consumed with `==`.**
+  Report its value AND its confidence; select by a stated rule; FLAG uncertainty.
+  Never discard a converged measurement because a label is missing.
+- **Verdicts must not be hostage to a missing case.** A report that only runs
+  when everything succeeded is a report you will not have when you need it most.
+- ⚠️ The fallback must not be "nearest to the expected frequency" — that is §1.
+  Use CONTINUATION from a regime where the label IS clean.
+
+🔑 **The general shape: a hard test on a soft output.** The classifier was
+honest; the consumer was not built for honesty. Ask what a checker returns when
+it is unsure, before writing the comparison.
+
+## 7m. Once the design fixes a feature, a measurement without it is a different cavity
+
+**User, 2026-08-23:** *"Anything measured without grooves after H1 should be
+discarded."*
+
+🔑 **H1 fixed the cavity. From that point a groove-free mesh is not an
+approximation of the design — it is a different resonator**, and its mode
+landscape is the thing most measurements are about.
+
+✅ **The rule, and it is a FILTER to run before believing any number:** after the
+design fixes a feature, every measurement must carry it. **The one exception is
+an instrument rig comparing against CLOSED FORM**, where a plain cylinder IS the
+subject — that is what `GEO` is for, and `GEO_DESIGN` is for everything else.
+
+✅ **Audit by the MESH SIDECAR, not by the flag list or the rig's intent.**
+`geometry_mm.groove` is ground truth; a rig can pass a flag that loses to
+`--no-torch`-style precedence, and did.
+
+⚠️ Applying it on 2026-08-23 discarded **all 11 h4 meshes** — including the
+Slater validation that had looked like one of the session's solid results — and
+left `e0k2`'s Q = 44,384 valid only as a BARE-cavity number, never as the design
+cavity's η reference.
+
+🔑 **And note what it does NOT discard:** claims about the INSTRUMENT. "Driven
+and eigen agree on Q extraction" is true of the solver regardless of cavity. The
+split is the same one as §7f — a method claim and a cavity claim can sit in one
+sentence, and only the second one dies.
+
+## 7n. Fix the WORD before the next measurement
+
+**User, 2026-08-23: "we need to get the terminology straight, so we're always
+talking about the right things."**
+
+🔴 **Four errors in one session were purely terminological**, and none of them
+crashed anything:
+
+| word | the two readings | what it cost |
+|---|---|---|
+| **hot** | "thermally hot cavity, re-ignition" vs "weakly ionised" | H3's third regime was planned as the wrong measurement, and a rig tagged its plasma cases `hot` |
+| **mode filter** | `--groove` (current) vs `--mode-filter` (retired quartz annulus) | `--mode-filter 0` read as "deliberately off", so nobody looked for the real flag — the whole loaded programme ran on the wrong cavity |
+| **frozen** | "settled, do not re-optimise" vs "removed from the geometry" | the groove never entered `GEO`, AND was treated as immutable when it is a baseline H3 must refine |
+| **Q_bare** | which cavity? bare / with-loop / grooved+looped | η computed against a reference 3.6× too high, a defect the record had already documented |
+
+🔑 **Ambiguity is invisible in a working system.** A wrong reading produces
+numbers, plots and agreement; only the meaning is wrong, and meanings are not
+type-checked. **The cost is paid later and attributed elsewhere** — I blamed the
+solver, the mesh, the selection logic and the loop before the word.
+
+✅ **`GLOSSARY.md` is the fix**, and it is short on purpose: each entry gives the
+term, what it does NOT mean, and the error it caused. **Read it second, after
+KNOWN.**
+✅ **When a word turns out to carry two meanings, RETIRE THE WORD** — do not
+disambiguate it in prose that the next reader will skip. "Frozen" is banned in
+favour of *baseline* / *discarded*; "scope-invalid" in favour of *discarded*.
+⚠️ And rename the CODE too. A rig that tags plasma cases `hot` teaches the
+confusion to everyone who reads its output.
+
+## 7o. Out-of-range must not bin to a meaningful value
+
+**User, 2026-08-23: "It stands to reason that higher modes wouldn't be
+identified... The problem is the binning into 0."**
+
+🔴 `azimuthal.order()` returned **m=0 for TE311 (m=3)** with its highest
+confidence. Five sectors resolve only m ≤ N/4 = 1; m=3 folds back and presents
+as flat, and the code mapped flat → **0**.
+
+🔑 **The distinction that matters: 0 was not "unknown". It was the answer meaning
+TE011** — the exact conclusion the test existed to support. An out-of-range input
+was silently converted into the most consequential in-range verdict.
+
+⚠️ **The truncation itself was fine.** `physics.spectrum` enumerates m ≤ 2 and
+that is a defensible cutoff — a table you know is truncated is a limit you work
+around. **The fault was the classifier's, not the table's.**
+
+✅ **Rules:**
+- **A classifier must know its own resolvable range and say so.** `order()` now
+  returns `_m_resolvable_max` and `_aliasing_risk` alongside the verdict.
+- **Never let out-of-range collapse onto a MEANINGFUL category.** If it must
+  collapse, collapse to *unknown* — never to the answer someone is hoping for.
+- ⚠️ **Check the aliasing limit from the physics, not from the code comment.**
+  `SECTORS`' comment claimed m ∈ {0,1,2}; the true limit is m ≤ N/4 because
+  |E|² ~ cos²(mφ) carries harmonic **2m**. m=2 was never resolvable either.
+
+🔑 **And the two limits were the SAME limit.** The classifier's range was chosen
+from the incomplete spectrum, so a mode the table could not list was also a mode
+the classifier could not label — and it was labelled anyway. **When two
+components share an assumption, they do not check each other** (§7d, one level
+up: not two values from one source, but two COMPONENTS from one source).
+
+## 7p. A safety margin is a cost, and an unpriced one breaks the solve
+
+🔴 `h3_ladder`'s grooved step **stalled at nconv = 11 of 12** for five straight
+samples while the iteration rate collapsed **2.1 s → 56 s** per NLEPS. Eleven
+converged modes were about to be thrown away by the wall clock.
+
+🔑 **The twelfth mode was mine.** N=10 covers TE011 and TM111 with slack — five
+modes sit below them at this geometry. **I set 12 to also capture TE311 at
+2.622 — a mode ALREADY IDENTIFIED from the bare solve.** Padding the ceiling for
+a result I already had is what made the marginal mode marginal.
+
+⚠️ **The highest requested mode is the one that stalls.** In shift-invert the
+top of the requested set is the worst-conditioned; asking for "a few extra, just
+in case" does not cost a few extra percent, it moves the convergence cliff.
+
+🔑 **THE SAME SHAPE FOUR TIMES**, each a parameter widened for safety without
+pricing the widening: E0's 0.058 MHz threshold quoted outside its resolution ·
+the 636 kHz coarse sweep step · the 307 MHz shift-invert span · N=12 here.
+**Every one of them broke the thing it was meant to protect.**
+
+✅ **Rules:**
+- **If the budget cuts before the last mode converges, ask for FEWER modes** —
+  do not raise the budget. More budget buys more of a stall.
+- **Name what each unit of margin is for.** Margin covering a result you already
+  have is not margin, it is load.
+- **Make the success condition reachable**: N=10 makes `nconv = 10` sufficient.
+  A target that requires the worst-conditioned mode has no partial credit.
+
+## 7q. A wrong label can void a right number
+
+🔴 A converged design-cavity Q₀ of **12,368** was struck from the record —
+*"the η reference it printed is void"* — because the rig's azimuthal binning
+labelled the mode **m=1**. The number was correct. **The classifier was the thing
+that was broken** (§7o), and it took the measurement down with it.
+
+🔑 **Discarding on a classifier verdict destroys evidence the classifier never
+touched.** Frequency, Q and field data were all sound and independently
+checkable; only the label was suspect. Continuation from the grooved state later
+identified the same mode as TE011 and the same 12,368 stood — **a full re-run to
+recover a number that had never actually been wrong.**
+
+✅ **Rules:**
+- **Quarantine the LABEL, not the MEASUREMENT.** Mark the identification
+  disputed and keep f, Q and fields live.
+- **Before voiding a result, ask which of its parts the fault can actually
+  reach.** "The rig had a bug" is not a scope.
+- ⚠️ **Symmetric to §7l.** There, a strict test discarded good data by refusing to
+  label it; here, a bad label discarded good data by mislabelling it. **Both
+  times the classifier's uncertainty was charged to the measurement.**
+
+## 7r. A number corrected in a document is not corrected in the programme
+
+🔴 Item 1a — the η reference — was answered, written into KNOWN, NEXT, OPTIMIZER
+and memory, and **four rigs still had `Q_BARE = 44384.0` hardcoded.** The next
+driven run would have divided by the bare cavity and printed a confident,
+plausible, wrong η, with three documents nearby saying 12,368.
+
+🔑 **The documents and the code are two stores of the same fact, and only one of
+them runs.** Updating the readable one feels like finishing. It is not.
+
+🔴 **Worse than the constant: `h3_driven`'s ANCHORS dict.** It carried
+`1e20: Q=163` and `1e18: eta=0.185` — both from the discarded groove-free era,
+the second also from the wrong geometry (a 2 mm solid column, not the annulus).
+**An anchor from the wrong cavity does not merely fail to help: it VALIDATES a
+wrong answer and REJECTS a right one.** No anchor beats a false one.
+
+✅ **Rules:**
+- **When a reference value changes, grep for it before closing the item.** The
+  constant, its aliases, and anything that IMPORTS it (`h3_sapphire` imported
+  `Q_BARE` from `h3_driven`).
+- **Guard the value with the configuration it was measured on.**
+  `check_eta_reference()` refuses to run when the groove or loop size differs.
+  **A per-configuration constant needs a per-configuration assertion.**
+- **Empty an anchor set you cannot vouch for.** `ANCHORS = {}` is honest; a stale
+  entry is a silent validator.
+- ⚠️ **Found by READING the rig before launching it.** The run would have exited
+  0 and produced numbers. §8b says a rig is done when the conclusion lands; this
+  says a fix is done when the code that consumes it changes.
+
+## 7s. Reasoning added after a measurement is not its provenance
+
+🔴 I recorded the design cavity's TE011 as **"2.440003 GHz, Q₀ = 12,368,
+identified by continuation, `h3_ladder` step 3"** — into KNOWN, NEXT, OPTIMIZER,
+memory and four rigs' source. **Two things in that sentence were false.**
+
+1. **There is no step 3.** The ladder ran `['bare', 'grooved']` and stopped. I
+   had watched it run and still wrote a third step, because the ladder's DESIGN
+   had four steps and I quoted the design instead of the result file.
+2. **It was not identified by continuation.** `h3_cold` picked it with
+   `selected_by: "lowest A2/A0"` on a mode labelled `m_az = 1`. The continuation
+   argument (−10.56 MHz vs +43.88 MHz) is **mine, constructed afterwards**.
+
+🔑 **The argument may still be right — that is not the point.** Reasoning that
+post-dates a measurement is a HYPOTHESIS about it. Recording it in the
+`selected_by` slot overwrites how the number was actually obtained, and the next
+reader cannot tell the difference. A driven sweep then found **zero minima**
+within ±3 MHz of it, which is exactly the check the real provenance would have
+invited and the invented one discouraged.
+
+✅ **Rules:**
+- **Provenance is what the rig DID, copied from the result file.** If you cannot
+  point at the field, you are quoting your own reasoning.
+- **Quote the `selected_by` verbatim**, including when it is a heuristic you no
+  longer trust. `"lowest A2/A0"` carries a warning that `"by continuation"` hides.
+- **A later argument gets its own line**, marked as argument, dated, and never
+  merged into the measurement's description.
+- ⚠️ **Check the RESULT FILE, not your memory of the plan.** Designs have steps
+  that runs do not.
+
+## 7t. Measure the reference with the instrument that measures the cases
+
+🔴 §7c has now caught the η reference **four times**, each time as a different
+wrong constant (44,384 · 29,854 · 12,368-from-another-rig). Patching the constant
+has never worked, because the bug is not the value.
+
+🔑 **The reference was always IMPORTED — a different rig, a different mesh, often
+a different solver — and then divided into locally measured Q₀.** That ratio
+silently carries both discretisation systematics and both selection heuristics.
+
+✅ **The fix is structural: make the reference a CASE in the same run.**
+`h3_driven` now sweeps `ne = 0` first — `drude(0, w)` is exactly ε=1, σ=0 — on
+the same mesh, with the same solver and the same extraction, and every loaded η
+is scored against that measured Q₀. An imported value becomes a CROSS-CHECK,
+printed beside it, never the denominator.
+⚠️ **It also fixes the seed.** The cold case now supplies the continuation start
+empirically instead of hardcoding a frequency from elsewhere.
+
+## 7u. The rig said it did not know, and I supplied the confidence
+
+🔴 `h3_cold` recorded, on the same point, all of:
+`selected_by: "lowest A2/A0"` · `m_az: 1` · **`identification_uncertain: True`**.
+I took the frequency and Q from it and wrote **"TE011, identified by
+continuation"** into five documents. A driven locator later found the real
+resonance **11.5 MHz away**, and 2.440003 has no dip at all.
+
+🔑 **The rig was honest. The flag was there, in the same object, one key above
+the number I quoted.** Nothing was hidden and nothing had to be inferred —
+`identification_uncertain: True` is not subtle. I did not look, because the
+number was the thing I needed and it was right there.
+
+🔴 **AND I BUILT A STORY THAT MADE IT FIT.** Purity 0.9423 concentrated inboard,
+φ-structure aligned with the loop at φ=36°, a −10.56 MHz pull that beat the
++43.88 MHz alternative — mechanism, location and cause, mutually reinforcing.
+**All of it about a mode the rig had labelled m=1.** The story did not survive
+one question the port could answer directly.
+
+✅ **Rules:**
+- **Read the uncertainty fields before the value fields.** If a rig emits a
+  doubt flag, it is part of the number, not metadata about it.
+- **A coherent explanation is not corroboration.** Ask what OBSERVATION would
+  differ if the identification were wrong, then make that observation. Here it
+  cost one sweep.
+- **Prefer the measurement that can say NO.** Purity, A2/A0 and continuation all
+  scored a candidate. The locator asked "where is it?" and admitted the answer
+  "not where you think" — which is why it was the one that worked.
+- ⚠️ **When you find yourself supplying confidence a rig withheld, stop.** That
+  is the whole error, and it has now happened with a label (§7q), a provenance
+  (§7s) and an identification (here).
+
+## 7v. An unassigned boundary is a CHOSEN boundary
+
+🔴 Eigen and driven disagreed about the design cavity by **11.5 MHz** and neither
+was wrong. The mesh has `port = 91`; the eigen config assigns a BC to
+**attribute 90 only**. An unassigned boundary is **PMC** — the NATURAL BC of the
+curl-curl E formulation (n × H = 0). PEC is the ESSENTIAL one and must be
+imposed. **So every eigen solve on a looped cavity left the feed gap OPEN.**
+
+🔑 **An open gap plus the loop is an LC resonator**, and it lands near 2.45 GHz
+and hybridises TE011 into a pair (2.4400 / 2.4944, purity ~0.94, near-equal
+spreads). Short the gap and the loop is a small closed ring resonant far above
+the band, which barely perturbs anything: TE011 reads 2.4516, **P = 0.9997**.
+Terminate it in 50 Ω and eigen matches driven to **12 kHz**. **Same mesh, same
+geometry, same solver — three different cavities, selected by one absent line.**
+
+⚠️ **I FIRST WROTE THE MECHANISM BACKWARDS**: "Palace defaults to PEC, so eigen
+SHORTS the loop." The conclusion was right (different cavities; the port BC is
+the cause; GATE 4 is the fix) and the physics was inverted. **A correct
+conclusion resting on a wrong mechanism will mispredict the next case** — it
+would have had me expect a shorted loop to be the harmful one, when shorting is
+the benign approximation.
+
+🔴 **THE FAILURE IS SILENT IN BOTH DIRECTIONS.** Nothing errors. The eigen solve
+converges, reports plausible frequencies and Qs, and `h3_cold` even flagged
+`identification_uncertain` for an unrelated reason. There is no message anywhere
+saying "the port was not terminated" — the default IS the assignment.
+
+🔴 **AND THE GATE THAT EXISTED IS WHY IT WAS INVISIBLE.** `eigen_cfg` already
+carried **GATE 3**: *"every volume attribute gets vacuum, and we ASSERT none was
+missed"* — and its check reads `k not in ("wall", "port")`, skipping surfaces as
+out of scope. **The port was excluded from the volume gate as a surface, and no
+surface gate existed.** A partial audit reads as an audit. **The presence of a
+check made the uncovered case look covered.**
+
+✅ **Rules:**
+- **Enumerate every attribute in the mesh and assert each has an intended BC.**
+  Not "did I set the ones I meant to" — "is every face accounted for".
+  ✅ Implemented as **GATE 4** (2026-08-24): `port_bc` has NO default;
+  `lumped` (50 Ω, the machine) / `pec` (shorted, and it says so) / `absorbing`.
+  A looped mesh without it is refused. It correctly refuses 10 existing rigs.
+- ⚠️ **When you add a gate, write down what it does NOT cover.** GATE 3's own
+  exclusion list was the map to the hole, and nobody read it as one.
+- **A default is a decision made by someone who was not looking at your problem.**
+  Write it explicitly even when the default is what you want, so the next reader
+  sees a choice rather than an absence.
+- **Cross-solver agreement is not a free check.** Eigen and driven share a mesh
+  and a geometry; they do NOT share boundary conditions, excitation, or what
+  "the cavity" means. Compare them only after listing what differs.
+- ⚠️ **When two instruments disagree by far more than either's error bar, suspect
+  the PROBLEM DEFINITION before the numerics.** I spent the first pass looking
+  for a meshing artifact and an interference blend — both plausible, both wrong —
+  because I assumed the two solvers were asked the same question.
+
+## 7w. A falsifier can fire for a reason its author never enumerated
+
+🔴 `h3_step3` declared F3: *"if NEITHER mesh has an eigenmode near 2.4515, the
+driven dip is not a cavity eigenmode, and `h3_driven`'s loaded series is
+measuring something the eigen formulation does not contain — its eta column is
+SUSPECT."* **F3 fired. Its premise was correct and its conclusion was wrong.**
+
+🔑 The driven dip is not an eigenmode *of the shorted-loop problem eigen solves*.
+It is exactly the resonance of the problem the MACHINE poses. I had written the
+consequence assuming only one explanation for the premise, and the true one was
+not in my list of three.
+
+✅ **Rules:**
+- **A fired falsifier is a prompt to find the mechanism, not a licence to execute
+  a pre-written consequence.** Declaring F/V up front stops motivated reasoning;
+  it does not make the enumeration complete.
+- **State a falsifier's ASSUMPTION alongside its action.** F3 assumed "not an
+  eigenmode" implies "not physical". Written down, that assumption is visibly
+  the weak link.
+- ⚠️ **Do not let a declared consequence override evidence gathered afterwards.**
+  The S11 phase rotated fully through resonance and returned to baseline — a
+  textbook undercoupled one-port. That was already on disk when F3 fired.
+
+## 7x. |S11| cannot pick the branch, and the branch FLIPS mid-sweep
+
+🔴 `h3_driven.fit_dip` computed `b = (1 - S0) / (1 + S0)` — the UNDERCOUPLED
+branch, hardcoded, with a comment saying `beta<<1 here`. |S11| is identical for
+β and 1/β, so that line is a CHOICE presented as a formula.
+
+🔑 **It was wrong for the cold case and right for every loaded one.**
+
+    cold, |S11| = -3.67 dB, Q_L = 7,004
+        undercoupled  beta = 0.208  ->  Q0 =  8,462   <- what was returned
+        OVERCOUPLED   beta = 4.803  ->  Q0 = 40,645   <- the truth
+    eigen, from first principles (no |S11|, no phase):
+        Q0(port PEC) = 43,523 ; Q_L(port 50 ohm) = 7,538
+        1/Q_ext = 1/Q_L - 1/Q0  ->  Q_ext = 9,117  ->  beta = 4.774
+
+**The cold cavity is OVERCOUPLED; every loaded case is UNDERCOUPLED.** The
+plasma drops Q₀ by two orders while Q_ext is geometry and barely moves, so β
+crosses 1 during the sweep. **No single branch choice is safe across a density
+series**, and a per-rig constant is the wrong shape of answer entirely.
+
+🔴 **THE COLD CASE WAS THE η REFERENCE**, so one wrong branch there shifted every
+η in the run (0.9295 → 0.9853 at ne=1e18). ⚠️ f₀, Q_L and linewidths were
+unaffected — they never depended on β. **The measurement was sound; the
+interpretation was not.**
+
+⚠️ **AND I MISREAD THE PHASE CHECK.** I compared two WRAPPED phase values 6 MHz
+apart, saw −3.9° and +6.2°, and called it "returns to baseline → undercoupled".
+Unwrapped, the phase advances **~326°** — overcoupled. `e0k2_anchor.
+branch_from_phase` exists to do exactly this and I eyeballed it instead (§7a).
+
+✅ **Rules:**
+- **Return BOTH branches and make the caller resolve one.** `fit_dip` now emits
+  `beta_undercoupled`, `beta_overcoupled`, `Q0_if_*` and `branch: UNRESOLVED`.
+- **Resolve it with something that is not |S11|**: unwrapped phase, or a pair of
+  eigen solves (`port_bc="pec"` for Q₀ and `"lumped"` for Q_L → Q_ext → β).
+  The eigen route needs no phase and no fitting at all.
+- **Never let a branch constant be a per-rig setting.** It is a per-CASE
+  property that can change inside one sweep.
+- ⚠️ **A comment asserting the regime (`beta<<1 here`) is not a check.** It was
+  true when written and became false without anything failing.
+
+## 7y. A rig must not act when it is merely read
+
+🔴 `h4_reanalyse.py` had no `if __name__ == "__main__":` guard. Its analysis —
+including `h4_field._report(...)`, which **rewrites `h4_field.result.json`** —
+ran at module level. **Any `import h4_reanalyse` silently regenerated a result
+file.** Found by import-checking the tree after a rename, not by anything failing.
+
+🔑 **The danger is not the wasted work, it is the WRITE.** A result file that
+can be rewritten by an unrelated import has no provenance: its mtime, and
+possibly its contents, depend on who imported what and when.
+
+✅ **Rules:**
+- **Every rig ends with `if __name__ == "__main__": main()`.** No exceptions for
+  "it's just a re-scoring script" — those are the ones that write.
+- **Import-check the whole tree after any rename or signature change.** One pass
+  caught this, a broken `Q_BARE` import in `h3_loopsize`, and confirmed the other
+  ~40 modules were clean.
+- ⚠️ **Analysis layers are rigs too.** `h4_reanalyse` is exactly the
+  "separate measurement from evaluation" layer the record asks for — and it
+  still needs the guard, because it produces a file.
+
+## 7z. A binary falsifier passes on a meaningless effect size
+
+🔴 `h3_margin` F1 asked: *"if NO cell clears the band by more than the anchor's
+9.6 MHz, geometry cannot fix the margin."* One cell reached 10.0. **F1 did not
+fire.** The honest reading is the opposite: the best cell beat the design point
+by **0.4 MHz** across a 5× loop-area and 2× groove-depth search, and the ENTIRE
+12-cell grid spans **0.7 MHz**. Geometry cannot fix the margin.
+
+🔑 **The falsifier tested the SIGN of an effect when the question was its SIZE.**
+Written as a threshold it was satisfiable by noise, and it would have licensed
+"F1 does not fire → geometry helps" — a true sentence and a false conclusion.
+
+✅ **Rules:**
+- **State the effect size that would MATTER, not just the direction.** F1 should
+  have read "…by more than N MHz", with N argued from the tuner's real tolerance.
+- **Always report the SPREAD of the whole sweep beside the best cell.** One
+  number cannot distinguish a real optimum from a flat surface with noise on it.
+- **Compare against the next lever, not only against the baseline.** 0.4 MHz
+  from geometry is only legible next to 16.2 MHz from operating density.
+- ⚠️ Related to §7l and §7q: a strict test on an uncertain quantity discards
+  data; a *loose* test on a precise one manufactures a finding.
+
+## 7aa. First-versus-last cannot see a turning point
+
+🔴 `h3_margin` F3 tested `row[-1] < row[0]` and printed **"deeper helps"** for
+9.3 → 9.6 → 9.4. The truth is a **PEAK at 10 mm**. The endpoints were nearly
+equal and the interior held the entire result.
+
+🔴 **THIS PROGRAMME HAS NOW HIT THREE TURNING POINTS AND MISREAD TWO:**
+- **groove DEPTH scaling** — a power law was fitted, then retired when the local
+  exponent fell 1.22 → 0.78. *"It is not a power law, so fitting one was
+  answering the wrong question."*
+- **Q_ext vs loop area** — I read "saturating" from exponents −0.65 then −0.27,
+  and it was the approach to a **minimum at 176 mm²**; Q_ext then RISES.
+- **groove depth vs loaded margin** — first-vs-last called a peak a trend.
+
+🔑 **A monotonic summary of a non-monotonic quantity is not an approximation, it
+is the wrong answer** — it points the optimiser in a direction that does not
+exist, and it extrapolates confidently past the turn.
+
+✅ **Rules:**
+- **Report `argmax`/`argmin`, never endpoint comparisons.** If the extremum is
+  interior, say "OPTIMUM at x", not "increasing" or "decreasing".
+- **Three points is the minimum that can SEE a turning point and cannot
+  characterise it.** Treat an interior extremum on three points as a flag to
+  measure more, not as a located optimum.
+- ⚠️ **Never extrapolate through a turn.** The β = 1 loop-size estimate is valid
+  only on the small-area branch, and saying so is part of the number.
+
+## 7ab. A value chosen for SOLVABILITY became "the operating point"
+
+🔴 **`ne = 1e20` has no physical provenance. Its provenance is that the eigen
+solver converges there.** User, 2026-08-24: *"an estimate from an earlier
+session. As far as I know, it has no provenance."* The code says so plainly:
+
+    h3_eigen    : PI_1 = wp/sqrt(w^2+nu^2); measured SOLVER behaviour --
+                  0.02..0.56 converges | 1.76 FAILS | 5.58..17.6 converges
+    h3_annular  : NE = 1.0e20   # PI_1 = 5.58, the row h3_eigen proved solvable
+    h3_superpose: NE = 1.0e20   # the row h3_eigen and h3_annular both proved
+                                # solvable
+    h3_groove / h3_sapphire / h3_loopsize : NE = 1.0e20   (no comment at all)
+    h3_driven   : top of the density grid
+    h3_margin   : NE = 1.0e20   # the operating point   <- I wrote this TODAY
+
+🔑 **SIX STEPS FROM "the solver converges here" TO "the operating point", and I
+completed the laundering myself.** Each step was individually reasonable: cite
+the rig that proved it solvable, then cite the rig that cited it, then stop
+citing anything. **No step introduced the claim; the claim accumulated.**
+
+🔴 **AND THE SOLVER'S BLIND SPOT IS AT THE INTERESTING DENSITY.** PI_1 = 1.76
+fails, which maps to **ne ~ 1e19** — the density that gives a 25.8 MHz band
+margin against 9.6 at 1e20. **The one place eigen cannot look is the place the
+design would prefer to be.** (Driven works there, which is why it could be
+measured at all.)
+
+✅ **Rules:**
+- **A value picked for numerical convenience must carry that label FOREVER**, in
+  the constant's own comment, not in the docstring of the rig three steps back.
+- **"Proved solvable" is not "is the case."** When a sampling point is chosen
+  from convergence behaviour, the physical value remains UNKNOWN and every
+  result at that point is *conditional*, not *operating*.
+- **Grep for the value before calling anything "the operating point."** If no
+  file states where it came from, it came from nowhere.
+- ⚠️ **Check whether the solver's unusable band overlaps the region of
+  interest.** If it does, that is an instrument limitation to report, not a
+  region to quietly avoid sampling.
+
+## 7ac. Do not mix a verified analysis with an unverified suggestion
+
+🔴 I evaluated four PIN-diode datasheets against a 2.45 GHz requirement —
+capacitances, package inductances, self-resonances, thermal limits, all computed
+from stated numbers — concluded none worked, and then in the same breath offered
+*"motorised waveguide stub tuners at 2.45 GHz / kW are an established product
+class for exactly this application."*
+
+🔑 **That last sentence had no datasheet behind it.** It came from general
+knowledge, was never checked against the VSWR ~100 / 1 kW requirement, and was
+delivered in the same register as the computed results. **A reader cannot tell
+which parts of that message were measured and which were asserted.**
+
+⚠️ **The rejections were the finding; the suggestion was not.** User, 2026-08-24:
+*"if anything SOURCE would need to say that magnitude tuning is an unsolved
+problem so far, and why the suggested options wouldn't work."* Correct — an
+unsolved problem, honestly bounded, is worth more than a plausible answer,
+because the next person acts on it differently.
+
+✅ **Rules:**
+- **Mark the register when it changes.** "Computed from the datasheet" and "I
+  believe this class exists" are different claims and must not share a paragraph
+  unlabelled.
+- **A negative result is a result. Do not soften it with an unverified positive.**
+  The urge to end on a solution is what produces the unchecked sentence.
+- **When recording, write what was RULED OUT and why.** Untested directions go in
+  a list explicitly marked untested, never as a recommendation.
+- ⚠️ Same shape as §7u (supplying confidence a rig withheld) and §7s (reasoning
+  becoming provenance): **the failure is always presenting a weaker claim in the
+  register of a stronger one.**
+
 ## 8. Land results in files, immediately
 
 A spot reclamation killed the instance mid-run. H1, H2 and H2b wrote their result

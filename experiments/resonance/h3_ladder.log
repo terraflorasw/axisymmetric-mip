@@ -1,0 +1,89 @@
+H3 — the CONTINUATION LADDER. Where does TE011 actually go?
+
+🔴 WHY. `h3_cold` solved the finished cavity and could not identify TE011 in it.
+Closed form says the BARE cavity has exactly TWO modes in 2.35-2.70 — TE011 and
+TM111, both at **2.450000, exactly degenerate** (chi'01 = chi11). We measured
+FOUR, none cleanly m=0 in band, and three different methods put TE011 in three
+different places.
+
+🔑 **"Where did it go" cannot be answered by solving the end state.** It needs
+CONTINUATION from the one configuration where the label is EXACT, adding ONE
+perturbation at a time — E1b's durable lesson, and what INSTRUMENT prescribes.
+
+    step 1  bare (no groove, no loop)   ANCHOR: closed form, 2.450000 exactly
+    step 2  + groove 5x10 (no loop)     ANCHOR: H2 — TM111 -64.25 MHz, TE011 +14 kHz
+    step 3  + loop 11x8                 the design cavity, COLD
+    (step 4 + plasma = LOADED, once 1-3 identify the mode)
+
+All three are COLD (no plasma) — see GLOSSARY: cold/hot/loaded is a THERMAL and
+plasma axis, and this ladder varies the CAVITY, not the regime.
+
+## Why step 1 is identifiable at all, despite the degeneracy
+
+The pair is degenerate in FREQUENCY, so frequency cannot separate it. Two things
+can, and both are independent of frequency:
+  - **azimuthal order** — TE011 is m=0, TM111 is m=1. Unmixed in a bare cavity,
+    where INSTRUMENT records a 134x m=0/m=1 separation.
+  - **Q ratio** — TE011's Q exceeds TM111's. H1's own falsifier used exactly this.
+
+VERIFICATION
+  V1  step 1: TE011 within **1.0 MHz** of 2.450000, offset POSITIVE (a
+      discretised mesh is smaller than the true cavity, so it reads HIGH), one
+      m=0 and one m=1 present, and **TE011's Q > TM111's Q**.
+      🔴 **NOT E0's 0.058 MHz** — that bound was measured at **sf 0.96**, a
+      finer mesh, and does not apply at sf 1.5. Measured here: two INDEPENDENT
+      rigs at sf 1.5 give +0.467 (this) and +0.496 MHz (`h4_field` no-torch) —
+      **a +0.48 MHz systematic with 0.029 MHz spread.** Quoting a bound from a
+      different mesh resolution is CONVENTIONS §6, in the falsifier itself.
+      🔑 The Q RATIO is the load-bearing half of V1 and is resolution-robust.
+  V2  step 2: TM111 moves **-64.25 MHz** and TE011 moves **+0.014 MHz**, each
+      within 15% — H2's measured numbers, an EXTERNAL anchor.
+  V3  every step reports EVERY mode in the window with f, Q, m, A2/A0. A mode is
+      followed by CONTINUATION from the previous step, never by nearest-2.45.
+FALSIFICATION
+  🔴 F1  if step 2 does not reproduce H2 within 15%, then H2's groove numbers do
+         not transfer to this mesh/settings and **the baseline itself is in
+         question**. Report it; do not adjust the groove to fit.
+  🔴 F2  if adding the LOOP (step 3) moves TE011 by more than one linewidth,
+         the loop is not a probe — it is part of the resonator, and every
+         loop-size result must be re-read as a different cavity.
+  🔴 F3  if a step's continuation jump exceeds 40 MHz, the mode was lost.
+         Report; do not follow the nearest dip.
+
+==============================================================================
+  a=88.0045 L=115.4158   closed form TE011 = TM111 = 2.450000 GHz (EXACTLY degenerate)
+  loop for step 3: 11x8 mm = 176 mm^2
+
+  --- step: bare  (BARE)
+    groove in mesh: [0.0, 0.0]   tets=35,182
+    h3_ladder_bare: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    solved in 144s
+      2.450086 GHz  Q=   20,312  m=1  A2/A0=0.3055
+      2.450467 GHz  Q=   44,057  m=0  A2/A0=0.0023
+    🔑 TE011: 2.450467 GHz  Q=44,057  m=0  A2/A0=0.0023   by m=0 (bare, unmixed)
+       purity P = 0.9973-1.0000, spread 0.0027 across 6 probes  ✅ consistent with TE011 (E purely azimuthal at every phi)
+  --- step: grooved  (groove 5x10)
+    groove in mesh: [5.0, 10.0]   tets=35,285
+    h3_ladder_grooved: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 270s
+      2.387135 GHz  Q=   13,339  m=1  A2/A0=0.3029
+      2.450561 GHz  Q=   44,414  m=0  A2/A0=0.0003
+    🔑 TE011: 2.450561 GHz  Q=44,414  m=0  A2/A0=0.0003   by continuation (+0.09 MHz)
+       purity P = 0.9985-1.0000, spread 0.0015 across 6 probes  ✅ consistent with TE011 (E purely azimuthal at every phi)
+
+==============================================================================
+       step    groove  loop   TE011 GHz         Q   m    A2/A0      move
+       bare      none    no    2.450467    44,057   0   0.0023         —
+    grooved      5x10    no    2.450561    44,414   0   0.0003 +0.09 MHz
+
+  V1 bare TE011 2.450467 vs closed form 2.450000 -> +0.467 MHz ✅ within the sf-1.5 systematic (+0.48 +- 0.03 MHz, measured on two independent rigs); a discretised mesh reads HIGH
+     TM111 (m=1) at 2.450086, Q=20,312 — TE011 Q > TM111 Q ✅
+
+  V2 groove moves TE011 +0.094 MHz vs H2's +0.014 -> 0.080 MHz ✅
+     groove moves TM111 -62.95 MHz vs H2's -64.25 -> 2.0% ✅
+
+  wrote h3_ladder.result.json
+EXIT=0

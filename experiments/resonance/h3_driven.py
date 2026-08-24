@@ -45,12 +45,22 @@ way, so a driven sweep ALONE cannot tell you. This rig therefore:
 ⚠️ The band also protects: TM111 sits 332.7 MHz away, far outside +-40 MHz.
 
 VERIFICATION
-  V1  ne=1e20 driven must reproduce h3_superpose's eigen f0=2.481566 GHz within
-      1 MHz and Q0 = Q_L(1+beta) within 15% of eigen's 163.
-  V2  ne=1e18 driven must reproduce h3_loaded's eigen eta=0.185 within 0.05.
-      Two anchors, one at each end of the gap, or the gap is not bridged.
+  🔴 V1 and V2 ARE SUSPENDED (2026-08-24). BOTH ANCHORS WERE GROOVE-FREE.
+      V1 was: reproduce h3_superpose's eigen f0=2.481566 / Q=163.
+      V2 was: reproduce h3_loaded's eigen eta=0.185 at ne=1e18.
+      h3_superpose and h3_loaded are discarded (KNOWN.md § THE FILTER), and
+      0.185 was ALSO the wrong geometry — a 2 mm solid column, not this
+      2.0-8.5 mm annulus, 17x the plasma.
+      🔑 Both would have PASSED against void numbers and printed green ticks.
+      ✅ TO RESTORE: loaded eigen at ne=1e20 and ne=1e18 on GEO_DESIGN.
+      ⚠️ UNTIL THEN THIS RIG IS UNVALIDATED AGAINST EIGEN. It reports its
+      numbers and says they are un-cross-checked. That is the honest state.
+      🔴 DO NOT re-point these at a convenient number to get a tick back.
   V3  every case reports its coarse dip AND its fine fit; a fine band that does
       not contain the coarse dip is a REFUSAL, not a silent re-centre.
+  V4  the continuation seed and Q_REF must come from ONE cavity: cold TE011
+      2.440003 GHz / Q0 12,368, groove 5x10 + loop 11x8 (`h3_ladder`).
+      `check_eta_reference()` enforces the geometry half at startup.
 FALSIFICATION
   🔴 F1  if eta at ne=1e19 is below 0.5, the sustaining margin is one decade or
          less and mass loading is a hard constraint on the nebuliser. Report it.
@@ -81,16 +91,75 @@ from e0k2_anchor import (design_point, wall_sigma, analyse_driven as fit,
 from h3_loaded import drude, Z_FRAC, SECTORS, LOOP_LD, LOOP_LW, CAP_R_FRAC
 
 TAG = "h3_driven"
-Q_BARE = 44384.0            # empty, NO loop — the eta reference
+
+# 🔴 THE ETA REFERENCE IS PER-CONFIGURATION. CONVENTIONS §7c.
+# This rig meshes GEO_DESIGN (groove 5x10) with an 11x8 cap loop, so the ONLY
+# valid reference is that cavity's own cold Q0 — measured 2026-08-24 by
+# `h3_ladder` step 3 via continuation from the grooved state.
+#   44,384 = no loop, no groove   (E0, a BARE cavity)
+#   29,854 = loop, no groove
+#   12,368 = groove 5x10 + loop 11x8  <- THIS cavity
+# ⚠️ It was 44384.0 here until 2026-08-24. That is the bare-cavity number and it
+# would have inflated every eta in this rig: 1 - Q0/44384 instead of
+# 1 - Q0/12368 reads HIGH, and the error grows as the plasma loads the cavity.
+Q_REF = 12368.0
+Q_REF_CONFIG = {"groove_mm": (5.0, 10.0), "loop_mm": (11.0, 8.0)}
+# 🔴 PROVENANCE, CORRECTED 2026-08-24. I first wrote "h3_ladder step 3" here.
+# THERE IS NO STEP 3 — the ladder ran ['bare', 'grooved'] and stopped. The number
+# comes from `h3_cold`, whose own selection was **"lowest A2/A0"** on a mode it
+# labelled **m_az = 1** — the heuristic TE311 defeated, not purity, not
+# continuation. The continuation argument (grooved 2.450561 -> -10.56 MHz here,
+# vs +43.88 to 2.494440) is REASONING I added afterwards, not how it was picked.
+# ⚠️ TREAT 12,368 AS PROVISIONAL until the cold driven sweep below confirms it.
+Q_REF_SOURCE = ("h3_cold 11x8 cold, sf 1.5, selected by lowest A2/A0 (m_az=1); "
+                "continuation argument added later; PROVISIONAL")
+COLD_TE011_GHZ = 2.440003   # the SAME solve Q_REF came from — seed and reference
+                            # must describe one cavity, or they disagree silently
+
+# 🔴 THE COLD CASE NEEDS ITS OWN SWEEP, AND THIS IS WHY.
+# Cold linewidth = f0/Q0 = 2.440/12,368 = **197 kHz**. COARSE_STEP_GHZ is
+# 200 kHz, so the wide sweep puts ~1 SAMPLE ACROSS THE COLD RESONANCE — it
+# would miss or mangle the very dip the anchor depends on.
+# ⚠️ The loaded cases are the opposite problem and the wide sweep is right for
+# them: Q ~ 163-253 means a 10-15 MHz linewidth, 50-75 samples across.
+# 🔑 "The BAND must bracket the widest feature; the STEP only has to resolve the
+# narrowest." Cold is the narrowest by ~50x, so it gets its own band and step.
+# It is a CHECK AT A KNOWN LOCATION, not a search — a narrow band is legitimate
+# here in a way it would not be for an unknown loaded mode.
+# 🔴 THE COLD CASE LOCATES THE RESONANCE. IT DOES NOT CHECK AT AN ASSUMED SPOT.
+# First attempt swept +-3 MHz around 2.440003 and found **ZERO local minima**.
+# That is the correct outcome for a wrong assumption, and the lesson is that a
+# narrow band around an unconfirmed number cannot tell "not here" from "nowhere".
+# ⚠️ The band must bracket every candidate: grooved-no-loop TE011 sits at
+# 2.450561 (ladder, ANCHORED), and h3_cold's two design candidates are 2.440003
+# and 2.494440. 2.40-2.52 contains all three with room.
+# 🔑 The step still only has to resolve the NARROWEST feature: 197 kHz cold
+# linewidth / 25 kHz = ~8 samples across the 3 dB width.
+COLD_LO_GHZ, COLD_HI_GHZ = 2.40, 2.52
+COLD_STEP_GHZ = 25e-6             # ~4,800 samples, ~8 across the cold 3 dB width
 RI, RO = 2.00, 8.50         # h3_annular's operating point
 CASE_TIMEOUT_S = 1800.0
 SIZE_FACTORS = ["1.5", "1.42", "1.58"]
 
 # the density grid. 1e18 and 1e20 are ANCHORS (eigen has them); the rest is the
 # gap. 3e18 sits closest to the eps sign change (eps=+0.067).
-NE_GRID = [1.0e18, 3.0e18, 1.0e19, 3.0e19, 1.0e20]
-ANCHORS = {1.0e20: {"f_ghz": 2.481566, "Q": 163.0},
-           1.0e18: {"eta": 0.185}}
+# 🔑 ne=0.0 IS THE ANCHOR CASE, AND IT IS FIRST ON PURPOSE.
+# drude(0, w) returns exactly (eps=1.0, sigma=0.0) — the plasma region becomes
+# vacuum, so this is the SAME cavity `h3_ladder` solved by EIGEN, on the SAME
+# mesh this rig builds. It restores the external anchor chain that suspending
+# V1/V2 removed: closed form -> H2 -> ladder eigen -> THIS driven sweep.
+# 🔴 It is not a data point about plasma. It is the instrument check, and if it
+# fails nothing after it is quotable.
+NE_GRID = [0.0, 1.0e18, 3.0e18, 1.0e19, 3.0e19, 1.0e20]
+# 🔴 EMPTY ON PURPOSE — BOTH FORMER ANCHORS WERE VOID (2026-08-24).
+# They were:
+#   1e20: f0=2.481566, Q=163   <- groove-free. KNOWN discards the +31.6 MHz pull.
+#   1e18: eta=0.185            <- groove-free AND the wrong geometry: it is the
+#                                 2 mm SOLID-COLUMN artifact, not this r=2-8.5
+#                                 annulus, which does not collapse.
+# 🔑 An anchor from the wrong cavity is worse than no anchor: it validates a
+# wrong answer and rejects a right one. Re-earn these on GEO_DESIGN.
+ANCHORS = {}
 
 # 🔴 STAGE 1 IS WIDE AND COARSE, and both halves of that were wrong before.
 #
@@ -112,7 +181,17 @@ COARSE_MIN_DEPTH_DB = 0.05      # a real dip in a noiseless solve is still a dip
 COARSE_EDGE_MHZ = 2.0           # a selected dip this close to an edge is unbracketed
 CONTINUATION_JUMP_MHZ = 25.0    # a bigger step than this between cases is REPORTED
 
-Q_EXT_EST = 50709.0
+# 🔴 MEASURED, NOT ESTIMATED (2026-08-24). Was 50,709 "from e0k2's 11x8 loop" —
+# an eigen number from the era when the port was UNASSIGNED, i.e. the loop gap
+# was OPEN (§7v). The real value is 5.6x smaller.
+#   Q0(port PEC) = 43,523 ; Q_L(port 50 ohm) = 7,538  ->  Q_ext = 9,117
+# 🔑 Q_ext is set by LOOP GEOMETRY and is nearly independent of the plasma, so
+# ONE measurement serves the whole density sweep. That is what makes the
+# branch-free Q0 below possible.
+Q_EXT_MEASURED = 9117.0
+Q_EXT_SOURCE = "h3_step3 eigen pair (port_bc pec vs lumped), 11x8 loop"
+Q0_COLD_EIGEN = 43523.0     # direct eigen measurement, port shorted = no port loss
+Q_EXT_EST = Q_EXT_MEASURED  # legacy name, kept so the forecast block still reads
 SHALLOW_DB = 0.30       # below this the dip is too shallow to trust a fit from
 
 
@@ -173,8 +252,13 @@ def local_minima(d, window=MINIMA_WINDOW):
     return out
 
 
-def fit_dip(d, i0):
+def fit_dip(d, i0, step_ghz=None):
     """beta, 3 dB width, Q_L, Q0 for the resonance at index i0.
+
+    ⚠️ `step_ghz` is the step ACTUALLY swept. `n_across` was hardcoded to
+    COARSE_STEP_GHZ, which silently OVERSTATED resolution for any sweep using a
+    different step — including the cold anchor's 20 kHz. A resolution guard
+    computed from the wrong step cannot fire.
 
     🔑 The outward search STOPS AT A LOCAL MAXIMUM. With two overlapping
     resonances the baseline is not flat, and a naive 3 dB crossing walks out of
@@ -184,7 +268,23 @@ def fit_dip(d, i0):
     """
     f0, s0db = d[i0]
     S0 = 10 ** (s0db / 20)
-    b = (1 - S0) / (1 + S0)                 # undercoupled branch; beta<<1 here
+    # 🔴🔴 |S11| CANNOT DISTINGUISH beta FROM 1/beta, AND THIS LINE PICKED ONE.
+    # It hardcoded the UNDERCOUPLED branch. On 2026-08-24 that was WRONG for the
+    # COLD case and RIGHT for every loaded one — the branch FLIPS as the plasma
+    # loads the cavity, so no single choice is safe:
+    #   cold  measured Q_L=7,004, |S11|=-3.67 dB
+    #         undercoupled beta=0.208 -> Q0= 8,462   <- what this line returned
+    #         OVERCOUPLED  beta=4.803 -> Q0=40,645   <- the truth
+    #   eigen settled it from first principles (no |S11|, no phase):
+    #         Q0(port PEC)=43,523 and Q_L(port 50 ohm)=7,538 -> Q_ext=9,117,
+    #         beta=4.774. `h3_step3`, 2026-08-24.
+    # 🔑 The cold case is the ETA REFERENCE, so one wrong branch there shifted
+    # EVERY eta in the run (0.9295 -> 0.9853 at ne=1e18).
+    # ✅ Both branches are now returned and the CALLER must resolve it —
+    # `e0k2_anchor.branch_from_phase` on the UNWRAPPED phase, or an eigen pair.
+    b_under = (1 - S0) / (1 + S0)
+    b_over = (1 + S0) / (1 - S0) if S0 < 1 else float("inf")
+    b = b_under                             # reported for continuity; SUSPECT
     amax = 1 - S0 ** 2
     tgt = math.sqrt(max(0.0, 1 - amax / 2))
 
@@ -222,9 +322,35 @@ def fit_dip(d, i0):
                 "error": f"3 dB width not measurable (low: {why_l or 'ok'}; "
                          f"high: {why_h or 'ok'})"}
     ql = f0 / lw
-    r = {"f0": f0, "s11_db": s0db, "beta": b, "f_lo": fl, "f_hi": fh,
-         "linewidth_mhz": lw * 1e3, "Q_L": ql, "Q0": ql * (1 + b),
-         "n_across": abs(lw) / COARSE_STEP_GHZ}
+    r = {"f0": f0, "s11_db": s0db, "beta": b,
+         "beta_undercoupled": b_under, "beta_overcoupled": b_over,
+         "Q0_if_undercoupled": None, "Q0_if_overcoupled": None,
+         "branch": "UNRESOLVED — |S11| alone cannot pick; see fit_dip",
+         "f_lo": fl, "f_hi": fh,
+         "linewidth_mhz": lw * 1e3, "Q_L": ql,
+         # 🔑 BRANCH-FREE Q0. Was `ql * (1 + b)` with b pinned to the
+         # UNDERCOUPLED root of |S11| — a choice dressed as a formula (§7x).
+         #     1/Q_L = 1/Q0 + 1/Q_ext   ->   Q0 = 1/(1/Q_L - 1/Q_ext)
+         # Q_L comes from the LINEWIDTH and Q_ext from GEOMETRY; neither needs
+         # the dip depth, so the beta/1-beta ambiguity never enters.
+         "Q0": (1.0 / (1.0 / ql - 1.0 / Q_EXT_MEASURED)
+                if ql < Q_EXT_MEASURED else None),
+         "n_across": abs(lw) / (step_ghz or COARSE_STEP_GHZ)}
+    r["Q0_if_undercoupled"] = ql * (1 + b_under)
+    r["Q0_if_overcoupled"] = ql * (1 + b_over) if b_over != float("inf") else None
+    if r["Q0"] is not None:
+        r["beta_resolved"] = r["Q0"] / Q_EXT_MEASURED
+        r["branch"] = ("OVERCOUPLED" if r["beta_resolved"] > 1.0
+                       else "undercoupled")
+        # 🔴 ILL-CONDITIONING GUARD. Q0 = 1/(1/Q_L - 1/Q_ext) subtracts two
+        # nearly-equal reciprocals when Q_L approaches Q_ext, and the relative
+        # error amplifies by exactly Q0/Q_L. Cold: 5.8x, so 7% in Q_L becomes
+        # 40% in Q0. Loaded: ~1.01x, harmless. **Say which regime you are in.**
+        r["error_amplification"] = r["Q0"] / ql
+        if r["error_amplification"] > 2.0:
+            r["Q0_ill_conditioned"] = True
+    else:
+        r["branch"] = "Q_L exceeds Q_ext — Q0 not derivable"
     if half:
         r["one_sided"] = half
         r["one_sided_reason"] = why_h if half == "low" else why_l
@@ -285,49 +411,93 @@ def sweep(mesh_tag, out_tag, band, step, eps_p, sig_p, attrs):
     return fit(out_tag)
 
 
+def check_eta_reference():
+    """🔴 Refuse to score eta against a reference from a different cavity.
+
+    CONVENTIONS §7c. The reference is per-configuration AND per loop size;
+    this rig hardcodes one, so assert the geometry it is about to mesh is
+    the geometry the reference was measured on.
+    """
+    from e0_solver_vs_math import GROOVE_DESIGN
+    want_g = tuple(Q_REF_CONFIG["groove_mm"])
+    if tuple(GROOVE_DESIGN) != want_g:
+        raise SystemExit(
+            f"🔴 eta reference {Q_REF:,.0f} was measured at groove "
+            f"{want_g[0]:g}x{want_g[1]:g}, but GROOVE_DESIGN is now "
+            f"{GROOVE_DESIGN[0]:g}x{GROOVE_DESIGN[1]:g}. Re-measure the "
+            f"reference on the new groove before quoting any eta.")
+    want_l = tuple(Q_REF_CONFIG["loop_mm"])
+    if (LOOP_LD, LOOP_LW) != want_l:
+        raise SystemExit(
+            f"🔴 eta reference {Q_REF:,.0f} was measured with an "
+            f"{want_l[0]:g}x{want_l[1]:g} loop, but this rig meshes "
+            f"{LOOP_LD:g}x{LOOP_LW:g}. Q0 depends on loop size "
+            f"(44,414 no loop -> 12,368 at 11x8): re-measure, do not scale.")
+
+
 def main():
+    check_eta_reference()
     print(__doc__)
     print("=" * 78, flush=True)
     a, L = design_point()
     w = 2.0 * math.pi * 2.45e9
     zlo, zhi = -Z_FRAC * L, Z_FRAC * L
     exact = ph.spectrum(a, L, fmax=3.2)["TE011"]
-    print(f"  cavity a={a:.4f} L={L:.4f}  Q_bare(no loop)={Q_BARE:,.0f}")
+    print(f"  cavity a={a:.4f} L={L:.4f}  "
+          f"Q_ref(groove 5x10 + loop 11x8)={Q_REF:,.0f}")
+    print(f"    eta reference: {Q_REF_SOURCE}")
     print(f"  plasma r={RI}-{RO} mm  z=+-{Z_FRAC}L   cap loop "
           f"{LOOP_LD}x{LOOP_LW} mm (TE011 branch)")
     ncoarse = round((COARSE_HI_GHZ - COARSE_LO_GHZ) / COARSE_STEP_GHZ)
     print(f"  ONE wide sweep {COARSE_LO_GHZ}-{COARSE_HI_GHZ} GHz @ "
           f"{COARSE_STEP_GHZ*1e6:.0f} kHz ({ncoarse:,} samples per case)")
     print(f"  selection: CONTINUATION from the unloaded TE011, seeded at "
-          f"{exact:.4f} GHz; NOT the global minimum")
+          f"{COLD_TE011_GHZ:.6f} GHz (MEASURED cold TE011, not the "
+          f"analytic {exact:.4f}); NOT the global minimum")
     print(f"  guards: dip >{COARSE_MIN_DEPTH_DB} dB, >{COARSE_EDGE_MHZ} MHz from "
           f"a band edge, continuation step <{CONTINUATION_JUMP_MHZ:.0f} MHz, "
           f"3 dB walk stops at the turning point between features\n", flush=True)
     print("  coupling forecast (beta = Q0/Q_ext, Q_ext ~ "
           f"{Q_EXT_EST:,.0f} from e0k2's 11x8 loop):")
     print(f"    {'eta':>8}{'Q0':>9}{'beta':>9}{'|S11|min':>11}")
-    for eta in (0.185, 0.5, 0.9, 0.99, 0.9963):
-        q0 = Q_BARE * (1 - eta)
+    for eta in (0.2, 0.5, 0.9, 0.99, 0.999):   # illustrative only;
+        # ⚠️ was (0.185, ..., 0.9963) — both VOID groove-free results,
+        # and printing them as reference points lent them authority.
+        q0 = Q_REF * (1 - eta)
         b = q0 / Q_EXT_EST
         db = 20.0 * math.log10(abs((1 - b) / (1 + b)))
         print(f"    {eta:>8.4f}{q0:>9,.0f}{b:>9.4f}{db:>10.2f}dB"
               + ("" if abs(db) >= SHALLOW_DB else "   🔴 too shallow to fit"))
     print("    ⚠️ the ne=1e20 end is where driven is WEAKEST and eigen already "
           "works; the gap is where driven is strongest.\n", flush=True)
-    out = {"q_bare_no_loop": Q_BARE, "ri_mm": RI, "ro_mm": RO,
+    out = {"q_ref": Q_REF, "q_ref_config": {k: list(v) for k, v in
+           Q_REF_CONFIG.items()}, "q_ref_source": Q_REF_SOURCE,
+           "ri_mm": RI, "ro_mm": RO,
            "q_ext_est": Q_EXT_EST, "shallow_db": SHALLOW_DB,
            "ne_grid": NE_GRID, "anchors": {str(k): v for k, v in ANCHORS.items()},
            "points": []}
 
-    # continuation seed: the UNLOADED TE011. At ne=1e18 the pull is
-    # only ~+2 MHz, so the first step is unambiguous.
-    expect = exact
+    # 🔴 CONTINUATION SEED — MEASURED, NOT ANALYTIC. Was `exact` (2.4500, the
+    # closed-form BARE value) until 2026-08-24. This rig meshes groove 5x10 +
+    # loop 11x8, whose cold TE011 sits at 2.440003 — **10.56 MHz below the
+    # seed**, and the loop is what moves it.
+    # ⚠️ THIS EXACT BUG ALREADY COST A RUN: `h3_sapphire` was seeded from another
+    # regime and selected 2.4472 instead of 2.4824. A seed from the wrong cavity
+    # does not fail loudly — it walks the continuation onto the wrong dip.
+    expect = COLD_TE011_GHZ
     for ne in NE_GRID:
         eps_p, sig_p = drude(ne, w)
-        tag = f"{TAG}_n{math.log10(ne):.2f}".replace(".", "p").replace("+", "")
+        tag = ("%s_cold" % TAG if ne == 0.0 else
+               f"{TAG}_n{math.log10(ne):.2f}".replace(".", "p").replace("+", ""))
         rec = {"ne": ne, "eps": eps_p, "sigma": sig_p, "tag": tag}
-        print(f"  --- ne={ne:.1e}  eps={eps_p:+.3f}  sigma={sig_p:.4g} S/m",
-              flush=True)
+        if ne == 0.0:
+            print("  --- COLD (ne=0, plasma region = vacuum) — THE ANCHOR CASE",
+                  flush=True)
+            print(f"      must reproduce eigen: f0={COLD_TE011_GHZ:.6f} GHz, "
+                  f"Q0={Q_REF:,.0f}", flush=True)
+        else:
+            print(f"  --- ne={ne:.1e}  eps={eps_p:+.3f}  sigma={sig_p:.4g} S/m",
+                  flush=True)
         meta = build_mesh(tag, a, L, zlo, zhi, eps_p, sig_p, rec)
         if meta is None:
             rec["error"] = f"mesh failed: {rec.pop('_last_mesh_err','')[:150]}"
@@ -338,9 +508,20 @@ def main():
         rec["tets"] = meta["tets"]
 
         # ---- STAGE 1: one WIDE sweep. Everything is extracted from it.
-        band = (COARSE_LO_GHZ, COARSE_HI_GHZ)
+        if ne == 0.0:
+            band = (COLD_LO_GHZ, COLD_HI_GHZ)
+            step = COLD_STEP_GHZ
+            print(f"      LOCATOR sweep {band[0]:.3f}-{band[1]:.3f} GHz @ "
+                  f"{step*1e6:.0f} kHz "
+                  f"({round((band[1]-band[0])/step):,} samples)", flush=True)
+            print("      brackets grooved-no-loop 2.450561 (ANCHORED) and both "
+                  "h3_cold candidates 2.440003 / 2.494440", flush=True)
+        else:
+            band = (COARSE_LO_GHZ, COARSE_HI_GHZ)
+            step = COARSE_STEP_GHZ
+        rec["sweep_band_ghz"], rec["sweep_step_ghz"] = list(band), step
         try:
-            sweep(tag, f"{tag}_wide", band, COARSE_STEP_GHZ, eps_p, sig_p, attrs)
+            sweep(tag, f"{tag}_wide", band, step, eps_p, sig_p, attrs)
         except RuntimeError as e:
             rec["error"] = f"wide sweep failed: {str(e)[:160]}"
             print(f"    🔴 {rec['error']}\n    REPORTED.", flush=True)
@@ -351,9 +532,42 @@ def main():
         print(f"    {len(mins)} local minima: "
               + "  ".join(f"{f:.4f}@{v:.2f}dB" for _, f, v in mins[:6]), flush=True)
         if not mins:
-            rec["error"] = "no local minimum anywhere in 2.30-2.65 GHz"
+            # ⚠️ Was hardcoded "2.30-2.65 GHz" regardless of what was swept, so
+            # the cold failure reported a band it never touched. Print the truth.
+            rec["error"] = (f"no local minimum in {band[0]:.4f}-{band[1]:.4f} GHz "
+                            f"@ {step*1e6:.0f} kHz "
+                            f"(depth threshold {COARSE_MIN_DEPTH_DB} dB)")
             print(f"    🔴 {rec['error']}", flush=True)
+            if ne == 0.0:
+                raise SystemExit(
+                    "🔴 THE COLD LOCATOR FOUND NOTHING. STOPPING.\n"
+                    "   The cold sweep supplies BOTH the external anchor and the\n"
+                    "   continuation seed for every loaded case. Without it the\n"
+                    "   loaded runs would walk from an assumed frequency onto\n"
+                    "   whatever dip happens to sit nearest — which is how a rig\n"
+                    "   returns confident numbers for the wrong mode.\n"
+                    "   Widen COLD_LO_GHZ/COLD_HI_GHZ or lower "
+                    "COARSE_MIN_DEPTH_DB, then re-run.")
             out["points"].append(rec); save(out); continue
+
+        if ne == 0.0:
+            # 🔑 THE SEED IS MEASURED HERE, NOT ASSUMED. Deepest dip wins for the
+            # cold case only: with no plasma there is no continuation history to
+            # follow, and depth is the honest discriminator for which resonance
+            # this port actually couples to.
+            i_c, f_c, v_c = min(mins, key=lambda m: m[2])
+            print(f"    🔑 deepest cold dip: {f_c:.6f} GHz @ {v_c:.2f} dB",
+                  flush=True)
+            d_eig = (f_c - COLD_TE011_GHZ) * 1e3
+            print(f"       vs h3_cold eigen {COLD_TE011_GHZ:.6f} -> "
+                  f"{d_eig:+.3f} MHz", flush=True)
+            print(f"       vs ladder grooved-no-loop 2.450561 -> "
+                  f"{(f_c - 2.450561)*1e3:+.3f} MHz  (the loop's pull)",
+                  flush=True)
+            rec["cold_locator"] = {"f_ghz": f_c, "s11_db": v_c,
+                                   "delta_vs_eigen_mhz": d_eig,
+                                   "n_minima": len(mins)}
+            expect = f_c        # 🔑 every loaded case now continues from MEASURED
 
         # ---- SELECT BY CONTINUATION, not by depth.
         # 🔑 `expect` starts at the UNLOADED TE011 (the plasma is a weak
@@ -380,7 +594,7 @@ def main():
         print(f"    selected {f_sel:.6f} GHz ({jump:+.2f} MHz from expected "
               f"{expect:.4f}) — by CONTINUATION, not depth", flush=True)
 
-        fi = fit_dip(d, i_sel)
+        fi = fit_dip(d, i_sel, rec.get('sweep_step_ghz'))
         rec["wide_fit"] = fi
         if "Q_L" not in fi:
             rec["error"] = f"wide: {fi['error']}"
@@ -398,11 +612,49 @@ def main():
                   f"beta and Q0 are LOW CONFIDENCE (Q_L stands; beta<<1 makes "
                   f"Q_L ~ Q0)", flush=True)
         rec["Q0"] = fi["Q0"]
-        rec["eta"] = 1.0 - fi["Q0"] / Q_BARE
+        if ne == 0.0:
+            # 🔑 THE COLD CASE IS THE REFERENCE, NOT A POINT SCORED AGAINST ONE.
+            # 🔴 BUT TAKE IT FROM EIGEN, NOT FROM HERE. The cold cavity is
+            # OVERCOUPLED (beta 4.77), so its Q0 is exactly where the
+            # 1/Q_L - 1/Q_ext subtraction is worst conditioned (5.8x). Eigen
+            # with the port SHORTED measures Q0 DIRECTLY — no port loss to
+            # subtract, no amplification. Driven's own value is the CROSS-CHECK.
+            # ⚠️ §7t still holds: this is not "importing a reference from
+            # another cavity". Eigen and driven agree on f0 to 12 kHz, so it is
+            # the same cavity — it is importing the BETTER-CONDITIONED estimate
+            # of one quantity, and saying so.
+            out["q_ref_driven_derived"] = fi["Q0"]
+            out["q_ref_measured"] = Q0_COLD_EIGEN
+            out["q_ref_source"] = "h3_step3 eigen, port_bc=pec (direct Q0)"
+            out["q_ref_measured_f0"] = fi["f0"]
+            rec["eta"] = None
+            dd = fi["Q0"]
+            print(f"    🔑 ETA REFERENCE: Q0={Q0_COLD_EIGEN:,.0f} "
+                  f"(eigen, port shorted — direct)", flush=True)
+            print(f"       driven-derived here: {dd:,.0f}"
+                  + (f"  ({abs(dd-Q0_COLD_EIGEN)/Q0_COLD_EIGEN*100:.0f}% apart)"
+                     if dd else "")
+                  + "  — CROSS-CHECK; ill-conditioned when overcoupled",
+                  flush=True)
+            print(f"       branch here: {fi.get('branch')}  "
+                  f"beta={fi.get('beta_resolved', float('nan')):.3f}  "
+                  f"(error amplification {fi.get('error_amplification', 0):.1f}x)",
+                  flush=True)
+        else:
+            # 🔴 SAME MESH, SAME SOLVER, SAME CAVITY. eta from a reference
+            # measured by a DIFFERENT solver on a DIFFERENT mesh imports both
+            # discretisation systematics into the ratio (§7c).
+            qref = out.get("q_ref_measured")
+            if qref is None:
+                rec["eta"] = None
+                rec["eta_error"] = "cold reference missing — eta not computable"
+            else:
+                rec["eta"] = 1.0 - fi["Q0"] / qref
         expect = fi["f0"]                   # advance the continuation
         print(f"    f0={fi['f0']:.6f} GHz  lw={fi['linewidth_mhz']:.2f} MHz  "
               f"Q_L={fi['Q_L']:,.0f}  beta={fi['beta']:.4f}  Q0={fi['Q0']:,.0f}  "
-              f"eta={rec['eta']:.4f}", flush=True)
+              + (f"eta={rec['eta']:.4f}" if rec.get("eta") is not None
+                 else "eta=— (reference case)"), flush=True)
         out["points"].append(rec); save(out)
     _report(out)
 
@@ -425,28 +677,76 @@ def _report(out):
         print(f"  {p['ne']:>9.1e}{p['eps']:>9.3f}{f['f0']:>11.4f}"
               f"{f['linewidth_mhz']:>9.2f}{f['Q_L']:>8.0f}{f['beta']:>8.4f}"
               f"{f['Q0']:>7.0f}{p['eta']:>9.4f}{flag}")
-    P = {p["ne"]: p for p in out["points"] if p.get("eta") is not None}
+    # 🔴 KEY ON A SUCCESSFUL FIT, NOT ON eta. The cold reference case has
+    # eta=None BY DESIGN — it is the denominator, not a scored point — so
+    # keying on eta silently dropped it and the summary reported the anchor
+    # "PRODUCED NO FIT" while its Q0=8,462 sat in the result file being used
+    # by every loaded point. §7d: two statements from one source disagreed.
+    P = {p["ne"]: p for p in out["points"] if p.get("wide_fit")}
     print()
-    # 🔴 THE ANCHOR IS ne=1e20 AGAINST EIGEN ON THE SAME GEOMETRY.
-    # It was ne=1e18 vs h3_loaded's eta=0.185 — a 2 mm SOLID COLUMN against this
-    # rig's 2.0-8.5 mm ANNULUS, 17x the plasma. That is a §4b geometry mismatch
-    # and it fired on my own error, not on the method. The only eigen number for
-    # THIS geometry is h3_superpose's vac_hot: f0=2.481566, Q=163, eta=0.9963.
+    # 🔴🔴 V1 IS SUSPENDED, 2026-08-24 — ITS ANCHOR WAS DISCARDED.
+    # It compared ne=1e20 against `h3_superpose`'s vac_hot (f0=2.481566, Q=163,
+    # eta=0.9963). That run is GROOVE-FREE and KNOWN.md § NOT ESTABLISHED
+    # discards it by name (the "+31.6 MHz loaded pull").
+    # 🔑 The check would have PASSED against a void number and printed a green
+    # tick — a validator anchored to the wrong cavity is worse than none (§7r).
+    # ✅ TO RESTORE: run the loaded eigen case at ne=1e20 on GEO_DESIGN, then put
+    #    its f0/eta here. Until then this rig is UNVALIDATED against eigen and
+    #    says so, which is the honest state, not a defect.
+    # ✅ V1' — THE COLD ANCHOR, AS A THREE-WAY. The cold sweep LOCATES the
+    # resonance this port couples to; that location says which eigen story is
+    # right, and the answer is not assumed either way.
+    c = P.get(0.0)
+    if c and c.get("wide_fit"):
+        f0c = c["wide_fit"]["f0"]; q0c = c["wide_fit"]["Q0"]
+        d_cold = (f0c - COLD_TE011_GHZ) * 1e3       # h3_cold's design candidate
+        d_grv = (f0c - 2.450561) * 1e3              # ladder grooved, NO loop
+        print("  ✅ V1' COLD LOCATOR — where does this port actually resonate?")
+        print(f"     measured  f0={f0c:.6f} GHz   Q0={q0c:,.0f}   "
+              f"|S11|={c['wide_fit']['s11_db']:.2f} dB")
+        print(f"     vs h3_cold eigen 2.440003 (A2/A0-selected, m_az=1) "
+              f"-> {d_cold:+.3f} MHz")
+        print(f"     vs ladder grooved-NO-loop 2.450561 (ANCHORED)   "
+              f"-> {d_grv:+.3f} MHz")
+        if abs(d_cold) <= 1.0:
+            print("     🔑 h3_cold's 2.440003 IS the coupled resonance. The loop "
+                  "pulls TE011 down\n"
+                  "        ~10.6 MHz and Q0 12,368 stands as the eta reference.")
+        elif abs(d_grv) <= 1.0:
+            print("     🔴 THE LOOP BARELY MOVES TE011 — the port resonates at "
+                  "the GROOVED-no-loop\n"
+                  "        frequency. Then h3_cold's 2.440003 was a DIFFERENT "
+                  "mode (it labelled it\n"
+                  "        m_az=1 and picked it on lowest A2/A0), and "
+                  "**Q0=12,368 is not the eta\n"
+                  "        reference for TE011**. The -10.56 MHz continuation "
+                  "argument fails with it.")
+        else:
+            print("     🔴 NEITHER. The coupled resonance is at neither eigen "
+                  "candidate.\n"
+                  "        Do not name this mode from frequency alone — get "
+                  "purity on the eigen\n"
+                  "        solve of THIS mesh before calling it TE011.")
+        print(f"     🔑 eta below is referenced to THIS measured Q0={q0c:,.0f} "
+              f"— same mesh, same solver.")
+    else:
+        print("  🔴 COLD LOCATOR PRODUCED NO FIT — no anchor and no seed. "
+              "Nothing here is quotable.")
+    print()
+
     a = P.get(1.0e20)
     if a:
-        df = abs(a["wide_fit"]["f0"] - 2.481566) * 1e3
-        de = abs(a["eta"] - 0.9963)
-        print(f"  V1 ne=1e20 vs eigen (SAME geometry, h3_superpose vac_hot):")
-        print(f"     f0 {a['wide_fit']['f0']:.4f} vs 2.481566 -> {df:.2f} MHz "
-              + ("✅" if df <= 2.0 else "🔴 FIRES"))
-        print(f"     eta {a['eta']:.4f} vs 0.9963 -> {de:.4f} "
-              + ("✅" if de <= 0.01 else "🔴 FIRES"))
-        print(f"     ⚠️ Q0 {a['wide_fit']['Q0']:.0f} vs eigen 163 — these differ "
-              f"much more than eta does, because eta = 1 - Q0/Q_bare is "
-              f"INSENSITIVE to Q0 when Q0 << Q_bare. Quote eta, not Q0.")
+        print("  🔴 V1 SUSPENDED — no valid eigen anchor on the DESIGN cavity.")
+        print(f"     measured here: f0={a['wide_fit']['f0']:.6f} GHz  "
+              f"eta={a['eta']:.4f}  Q0={a['wide_fit']['Q0']:,.0f}")
+        print("     ⚠️ NOT cross-checked. The old anchor (2.481566 / 0.9963) was "
+              "groove-free and is void.")
+        print("     ⚠️ eta = 1 - Q0/Q_ref is INSENSITIVE to Q0 when Q0 << Q_ref. "
+              "Quote eta, not Q0.")
     else:
-        print("  🔴 V1 anchor ne=1e20 missing — driven is UNVALIDATED against "
-              "eigen and nothing here should be quoted.")
+        # ⚠️ This `else:` was lost in an edit and its body ran inside the `if`,
+        # so the rig printed a measured eta AND "missing" for the same case.
+        print("  🔴 ne=1e20 missing — the operating point was not measured.")
     g = P.get(1.0e19)
     if g:
         print(f"\n  🔑 THE GAP: eta(ne=1e19, eps=-2.109) = {g['eta']:.4f}")

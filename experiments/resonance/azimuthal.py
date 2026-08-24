@@ -87,6 +87,16 @@ def order(sector_energies, flat_below=0.05):
     other one, so a mode that is neither cleanly flat nor cleanly cos(2phi)
     reports LOW confidence rather than a wrong answer.
 
+    🔴 **m=0 MEANS "FLAT AS FAR AS N SECTORS CAN SEE", NOT "AXISYMMETRIC".**
+    |E|^2 ~ cos^2(m phi) carries angular harmonic 2m, so N sectors resolve only
+    m <= N/4 without aliasing. At the standard N=5 that is m <= 1, and a
+    higher-m mode can fold back to flat. **TE311 was returned as m=0** with the
+    highest possible confidence on 2026-08-23. When m=0 is returned, the
+    harmonics dict carries `_m_resolvable_max` and `_aliasing_risk=True`.
+    ⚠️ **Never identify TE011 by m=0 alone.** Pair it with a discriminator that
+    fails differently: the Q ratio (TE011 is 2.17x TM111, measured and
+    resolution-robust), a COMPLETE closed-form table, or continuation.
+
     🔴 Returns m=None when nothing dominates. An unattended caller must treat
     that as "did not identify", never as a default.
     """
@@ -95,9 +105,23 @@ def order(sector_energies, flat_below=0.05):
     others = [v for k, v in h.items() if k != 2]
     biggest_other = max(others) if others else 0.0
     if h2 < flat_below and biggest_other < flat_below:
-        # flat: no azimuthal structure at all
+        # 🔴 FLAT IS NOT THE SAME AS m=0, AND RETURNING 0 HERE WAS WRONG.
+        # With N sectors the energy pattern |E|^2 ~ cos^2(m phi) carries angular
+        # harmonic 2m, so only m <= N/4 is resolved without aliasing; higher m
+        # folds back and CAN present as flat. On 2026-08-23 **TE311 (m=3) was
+        # returned as m=0 with A2/A0 = 0.0004** — the classifier's most
+        # confident verdict, and the exact test used to identify TE011.
+        #
+        # 🔑 The enumeration limit in physics.spectrum (m <= 2) is a defensible
+        # cutoff you can work around by knowing it. Binning an UNRESOLVABLE mode
+        # into 0 is not: 0 is not "unknown", it is the answer that means TE011.
+        #
+        # Flat is therefore reported as m=0 ONLY as far as this sector count can
+        # see, and the caller is told what that is.
+        n = len(list(sector_energies))
+        m_max = n // 4
         conf = flat_below / max(h2, biggest_other, 1e-12)
-        return 0, conf, h
+        return 0, conf, dict(h, _m_resolvable_max=m_max, _aliasing_risk=True)
     if h2 >= flat_below and h2 > 2.0 * biggest_other:
         return 1, h2 / max(biggest_other, 1e-12), h
     return None, 0.0, h

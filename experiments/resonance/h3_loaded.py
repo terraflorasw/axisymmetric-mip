@@ -294,8 +294,17 @@ def main():
 
             try:
                 if mode == "eigen":
+                    # 🔴 port_bc="pec" — GATE 4, added 2026-08-24 (CONVENTIONS §7v).
+                    # This rig wants the UNLOADED Q, so the port must not be a loss
+                    # channel. Shorting the gap makes the loop a small closed ring
+                    # resonant far above the band: TE011 is left essentially
+                    # unperturbed (P=0.9997) and Q excludes port loss.
+                    # ⚠️ UNASSIGNED IS PMC — an OPEN gap, which is an LC resonator
+                    # near 2.45 GHz that HYBRIDISES TE011 into a pair. Everything
+                    # this rig produced before today was measured that way.
                     c = eigen_cfg(tag, m, mesh=f"{tag}.msh", sigma=sigma_w,
-                                  n=N_MODES, target=EIGEN_TARGET)
+                                  n=N_MODES, target=EIGEN_TARGET,
+                                  port_bc="pec")
                     c["Solver"]["Order"] = 2
                     c["Domains"]["Postprocessing"]["Energy"] = energy
                     c["Domains"]["Materials"] = mats

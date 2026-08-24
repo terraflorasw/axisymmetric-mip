@@ -54,7 +54,12 @@ FALSIFICATION
          independently of beta.
 
 ⚠️ SHARES h3_driven's ANALYSIS, duplicates only the DRIVER (§7c).
-⚠️ eta here uses Q_BARE = 44,384, the NO-LOOP empty value, so a large lossy loop
+🔴 THIS RIG IS DOUBLY INVALID AND IS KEPT ONLY SO IT IMPORTS (2026-08-24).
+   1. GROOVE-FREE — discarded by KNOWN.md § THE FILTER.
+   2. Its beta came from |S11| depth on the UNDERCOUPLED branch, and the branch
+      FLIPS with loading (§7x), so every beta-vs-loop-area number here is
+      unresolved, not merely imprecise.
+⚠️ eta here used Q_BARE = 44,384, the NO-LOOP empty value, so a large lossy loop
 inflates apparent absorption. That is F3's subject, not a bug — but do not quote
 eta from this rig as "power into the plasma" without reading F3.
 """
@@ -78,9 +83,13 @@ from h3_loaded import drude, Z_FRAC, SECTORS
 from h3_driven import (local_minima, fit_dip, read_s11, sweep,
                        COARSE_LO_GHZ, COARSE_HI_GHZ, COARSE_STEP_GHZ,
                        COARSE_MIN_DEPTH_DB, COARSE_EDGE_MHZ,
-                       CONTINUATION_JUMP_MHZ, Q_BARE, RI, RO, SIZE_FACTORS)
+                       CONTINUATION_JUMP_MHZ, Q0_COLD_EIGEN, RI, RO,
+                       SIZE_FACTORS)
 
 TAG = "h3_loopsize"
+# 🔴 NO PHYSICAL PROVENANCE (§7ab). Copied silently from h3_annular,
+# whose own basis was SOLVER CONVERGENCE (PI_1 = 5.58), not physics.
+# ⚠️ Every result here is CONDITIONAL on an unanchored density.
 NE = 1.0e20
 LOOPS = [(11.0, 8.0), (16.0, 12.0), (22.0, 16.0), (28.0, 20.0), (34.0, 24.0)]
 BETA_REF, AREA_REF = 0.0201, 176.0      # measured, h3_driven ne=1e20
@@ -143,7 +152,7 @@ def main():
               f"{BETA_REF*(ar/AREA_REF)**2:>11.3f}"
               f"{f'{cap_r-lw:.1f}-{cap_r+lw:.1f} mm':>16}")
     print(flush=True)
-    out = {"ne": NE, "q_bare_no_loop": Q_BARE, "beta_ref": BETA_REF,
+    out = {"ne": NE, "q_ref": Q0_COLD_EIGEN, "beta_ref": BETA_REF,
            "area_ref": AREA_REF, "cap_r_mm": cap_r, "points": []}
     expect = SEED_GHZ
     for ld, lw in LOOPS:
@@ -197,7 +206,7 @@ def main():
         rec["beta"] = fi["beta"]
         if "Q_L" in fi:
             rec["Q0"] = fi["Q0"]
-            rec["eta"] = 1.0 - fi["Q0"] / Q_BARE
+            rec["eta"] = 1.0 - fi["Q0"] / Q0_COLD_EIGEN
             rec["Q_ext"] = fi["Q0"] / fi["beta"] if fi["beta"] else None
         if ld == LOOPS[0][0] and lw == LOOPS[0][1]:
             off = abs(fi["f0"] - SEED_GHZ) * 1e3

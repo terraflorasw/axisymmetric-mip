@@ -117,10 +117,42 @@ def build(tag, extra=()):
     return m, fac
 
 
-def eigen_cfg(tag, meta, mesh=None, sigma=None, n=22, target=1.05, order=2):
+def eigen_cfg(tag, meta, mesh=None, sigma=None, n=22, target=1.05, order=2,
+              port_bc=None):
     """PEC by default — the closed form assumes it. sigma= switches to metal.
 
     GATE 3: every volume attribute gets vacuum, and we ASSERT none was missed.
+    GATE 4: every SURFACE attribute gets an INTENTIONAL boundary condition.
+
+    🔴 GATE 4 EXISTS BECAUSE GATE 3 WAS NOT ENOUGH. GATE 3 checks volumes and
+    explicitly SKIPS "wall" and "port" as surfaces — so the port fell through
+    both: not a volume, and nothing assigned it a boundary either.
+
+    ⚠️ AN UNASSIGNED BOUNDARY IS **PMC**, NOT PEC. It is the NATURAL boundary
+    condition of the curl-curl E formulation (n x H = 0); PEC is the ESSENTIAL
+    one and must be imposed. So the loop gap was left **OPEN**, and an open gap
+    plus the loop is an LC resonator that lands near 2.45 GHz and HYBRIDISES
+    TE011 into a pair (2.4400 / 2.4944, matched purity spreads ~0.94).
+    🔑 Measured, same mesh, only the port BC changed (`h3_step3`, 2026-08-24):
+        unassigned (PMC, gap OPEN) -> 2.440003 + 2.494440, best P = 0.9423
+        port_bc="pec"  (gap SHORT) -> TE011 2.451633, Q 43,422, P = 0.9997
+    A SHORTED loop is a small closed ring resonant far above 2.45 GHz, so it
+    barely perturbs the cavity. **The open gap was the resonator, not the ring.**
+
+    `port_bc` makes the choice EXPLICIT and has no default:
+      "lumped"     — 50 ohm LumpedPort, Excitation off. **THE MACHINE.** Same
+                     port, same R and Direction the driven template uses, so
+                     the eigen and driven cavities are finally the SAME cavity.
+                     Makes the eigenproblem LOSSY: pass allow_lossy_eigen=True
+                     and read Q as LOADED (Q_L), not Q0.
+      "pec"        — short the gap. The loop becomes a small closed ring whose
+                     own resonance is far above the band, so TE011 is left
+                     nearly unperturbed. Agrees with driven to ~10 kHz.
+      "absorbing"  — radiation BC. ⚠️ NOT the 50 ohm feed; use "lumped" for that.
+      None         — allowed ONLY when the mesh has no port attribute.
+                     🔴 There is NO "leave it to Palace" option, because that
+                     silently selects PMC and opens the gap.
+    ⚠️ A mesh WITH a port and `port_bc=None` is now a REFUSAL, not a default.
     """
     a = meta["attributes"]
     vols = sorted({v for k, v in a.items()
@@ -167,6 +199,72 @@ def eigen_cfg(tag, meta, mesh=None, sigma=None, n=22, target=1.05, order=2):
         c["Boundaries"]["Conductivity"] = [
             {"Attributes": [a["wall"]], "Conductivity": sigma,
              "Permeability": 1.0}]
+
+    # ---- GATE 4: no surface may reach the solver by DEFAULT.
+    port = a.get("port")
+    if port is None:
+        if port_bc is not None:
+            raise RuntimeError(
+                f"{tag}: port_bc={port_bc!r} was given but this mesh has NO "
+                f"port attribute. Passing it means you think there is a loop.")
+    else:
+        if port_bc is None:
+            raise RuntimeError(
+                f"{tag}: mesh has a PORT (attribute {port}) and no port_bc.\n"
+                f"  🔴 Palace would leave it at PMC (the NATURAL BC) — i.e. "
+                f"leave the loop gap\n"
+                f"     OPEN. An open gap + loop is an LC resonator near "
+                f"2.45 GHz and it\n"
+                f"     HYBRIDISES TE011 into a pair. That is a DIFFERENT cavity "
+                f"from the\n"
+                f"     machine, which feeds the loop through 50 ohm "
+                f"(CONVENTIONS §7v).\n"
+                f"  ✅ port_bc='lumped' is the MACHINE (50 ohm feed). "
+                f"'pec' shorts it on\n"
+                f"     purpose; 'absorbing' is a radiation BC. There is no "
+                f"default because\n"
+                f"     there is no safe default.")
+        if port_bc == "pec":
+            c["Boundaries"].setdefault("PEC", {"Attributes": []})
+            c["Boundaries"]["PEC"]["Attributes"] = sorted(
+                set(c["Boundaries"]["PEC"].get("Attributes", [])) | {port})
+            print(f"    {tag}: port {port} gap SHORTED (port_bc=pec) — loop "
+                  f"is a closed ring, resonant far above band; Q excludes port "
+                  f"loss", flush=True)
+        elif port_bc == "lumped":
+            d = meta.get("port_direction")
+            if d is None:
+                raise RuntimeError(
+                    f"{tag}: port_bc='lumped' needs `port_direction` in the "
+                    f"mesh sidecar and it is absent.")
+            c["Boundaries"]["LumpedPort"] = [
+                {"Index": 1, "Attributes": [port], "Direction": d,
+                 "R": 50.0, "Excitation": False}]
+            print(f"    🔑 {tag}: port {port} terminated in 50 ohm "
+                  f"(port_bc=lumped) — the OPERATING configuration. "
+                  f"Q is LOADED.", flush=True)
+        elif port_bc == "absorbing":
+            c["Boundaries"]["Absorbing"] = {"Attributes": [port], "Order": 1}
+            print(f"    {tag}: port {port} terminated (port_bc=absorbing)",
+                  flush=True)
+        else:
+            raise RuntimeError(
+                f"{tag}: port_bc must be 'lumped', 'pec' or "
+                f"'absorbing', got {port_bc!r}")
+
+    # every surface attribute the mesh declares must now be accounted for
+    surfaces = {k: v for k, v in a.items()
+                if k in ("wall", "port") and isinstance(v, int)}
+    assigned = set()
+    for _k, _v in c["Boundaries"].items():
+        for d in (_v if isinstance(_v, list) else [_v]):
+            if isinstance(d, dict):
+                assigned |= set(d.get("Attributes", []))
+    missed = {k: v for k, v in surfaces.items() if v not in assigned}
+    if missed:
+        raise RuntimeError(
+            f"{tag}: GATE 4 — surface(s) {missed} reach the solver with NO "
+            f"boundary condition. Palace would default them to PEC.")
     # 🔑 SAY IT. The solver order was a hardcoded 1 that six rigs inherited
     # silently, and every result from them had to be invalidated. An
     # inherited discretisation must at least be a VISIBLE one.
