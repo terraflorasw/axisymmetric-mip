@@ -45,7 +45,7 @@ control problem, not addressed here.
 | **frequency slew during ignition** | **+30.9 MHz** | same |
 | **frequency resolution** | **≲ 100 kHz** (see §3) | cold linewidth 350 kHz |
 | **match range** | **β 4.715 → 0.017 — a factor of 275** | `h3_loopq` + `h3_driven` |
-| **worst VSWR** | **99.3, at n_e ≈ 1e19** | Q₀ minimum |
+| **worst VSWR** | **99.3, at n_e ≈ 1e19** — and the ANCHORED density is 7.3–8.6e18, just below it (§4f) | Q₀ minimum |
 | **match direction** | **REVERSES** — over → under at n_e ≈ 5×10¹⁶ | β crosses 1 |
 | **circulator dump** | up to **961 W of 1 kW** unmatched | Γ² at worst VSWR |
 | **LDMOS load-pull** | must survive VSWR ~99 behind the circulator | same |
@@ -140,11 +140,13 @@ No part is assumed anywhere.**
 >
 > 📋 **REQUIREMENT —** *2.400–2.500 GHz, 1 kW CW forward: transform a purely-real
 > load spanning VSWR 1:1 to 100:1 on both sides of 50 Ω, and survive ~1 kW
-> reflected. Load side carries 34–45 A or 1.7–2.2 kV.*
+> reflected. Load side carries up to ~45 A or ~2.2 kV.*
 >
 > ⚠️ **Relaxed version, if the tuner is engaged only after ignition** (§4c):
-> *…must transform a purely-real load of VSWR up to 60:1, one side of 50 Ω.*
-> Materially easier to source. The full-range line is the safe one.
+> *…must transform a purely-real load of VSWR up to **90:1**, one side of 50 Ω.*
+> 🔴 **REVISED UP 2026-08-24 from 60:1**, when n_e was anchored — see §4f. The
+> steady-state requirement got HARDER, not easier.
+
 
 
 1. **Frequency** — 2.4515–2.4824 GHz minimum; sensibly the full ISM band.
@@ -173,7 +175,36 @@ No part is assumed anywhere.**
    not just a tuning limit.** Harmonic content into a high-Q multi-mode cavity
    (TE112 sits at 2.7827 GHz) has never been considered here.
 
-### 3. CIRCULATOR
+### 3. CAVITY TEMPERATURE SENSOR
+
+🔑 **Added 2026-08-24. Small requirement, and it removes a search problem.**
+
+✅ **MEASURED 2026-08-24 (`h3_hot`), not estimated:**
+
+| T_wall | f₀ GHz | Δf | Q₀ | Q_ext | β | VSWR |
+|---:|---:|---:|---:|---:|---:|---:|
+| 293 K | 2.451633 | — | 43,422 | 9,231 | 4.704 | 4.7 |
+| 393 K | 2.445935 | **−5.70** | 36,374 | 9,194 | 3.956 | 4.0 |
+| 493 K | 2.440206 | **−11.43** | 31,938 | 9,229 | 3.461 | 3.5 |
+
+🔑 **Q_ext IS THERMALLY INVARIANT** (×0.996, ×0.9997) while Q₀ falls ×0.838 per
+100 K. **So β tracks Q₀ alone, and one temperature reading gives BOTH derived
+quantities**: f₀ = f₀(cold) − 5.70 MHz × ΔT/100, and β = Q₀(T)/9,215.
+⚠️ Wall heating is slow (minutes), so this is not a fast-tracking problem — but
+**a search window centred on the cold f₀ would miss a warm cavity**, and
+first-start and restart begin at different frequencies.
+
+1. **A wall temperature reading**, resolution ~10 K (≈0.6 MHz of detuning).
+2. Used to compute f₀ ≈ f₀(cold) − 5.7 MHz × ΔT/100 as the **acquisition
+   starting point**, instead of searching a 100 MHz band blind.
+⚠️ **Unloaded only, for the MATCH.** Measured: unloaded β 4.704 → 3.956 at
++100 K → 3.461 at +200 K. **Loaded, the plasma is ~275× the wall loss and β does
+not care.** ⚠️ Note the unloaded VSWR IMPROVES with heat (4.7 → 3.5), the
+opposite direction to the loaded requirement.
+🔑 **Thermal pulls OPPOSITE to the plasma** (−5.7 vs +30.9 MHz), so heating
+partially cancels the loading shift and **buys back band margin**.
+
+### 4. CIRCULATOR
 
 1. Frequency 2.400–2.500 GHz.
 2. **Isolation** sufficient to protect the LDMOS at VSWR ~100.
@@ -181,7 +212,7 @@ No part is assumed anywhere.**
    ⚠️ **Duty depends on the sequencing choice**: transient-only if the tuner
    matches steady state, **CONTINUOUS if no tuner covers the required VSWR.**
 
-### 4. CONTROL LOOP
+### 5. CONTROL LOOP
 
 1. **Cold acquisition is the hard part** — 350 kHz needle, 100 MHz haystack,
    ~1,000 points at ≲100 kHz steps, before anything has ignited (§3).
@@ -211,6 +242,55 @@ No part is assumed anywhere.**
    acquisition in one look rather than ~1,000 steps — is UNVERIFIED architecture
    reasoning, and it needs a swept or broadband probe source, which a CW LDMOS
    is not.**
+
+## 4f. 🔴 REQUIREMENT REVISED UP — n_e IS NOW ANCHORED, AND IT IS WORSE
+
+**2026-08-24. `n_e` was the solver-convenience value `1e20`. It is now anchored
+to a measured gas temperature, and the tuner requirement moved the WRONG WAY.**
+
+**Anchor:** Kuonen, Hattendorf & Günther, *JAAS* **39**(5) 1388–1397 (2024),
+Table 2 — **pressure-reduction method, N₂ MICAP: 5220 K / 5270 K.** Via LTE Saha
+that is **n_e = 7.3–8.6 × 10¹⁸**, i.e. the assumed 1e20 was **13× too high**.
+🔑 Only the pressure method is EMPIRICAL (it measures an interface pressure
+ratio). The other two in that table infer T from the same MO⁺/M⁺ measurement
+through different models and disagree by ~2×.
+
+✅ **SUPERSEDED 2026-08-25 — THE ANCHOR BAND IS NOW MEASURED, NOT INTERPOLATED.**
+`h3_driven` solved 7.3 / 7.9 / 8.6e18 directly (`../resonance/` item 8). The
+column below marked *interpolated* was derived by interpolating across the
+3e18→1e19 gap **and using a COLD Q_ext of 9,231 at every density**. β is now
+taken from the **measured S11 dip**, which imports no Q_ext at all.
+
+| | at 1e20 (assumed) | anchored, *interpolated* | **anchored, MEASURED** |
+|---|---:|---:|---:|
+| **VSWR** | 58.4 | ~~80–89~~ | ✅ **75–82** |
+| load-side current @1 kW | 34.2 A | ~~40–42 A~~ | ✅ **39–40 A** |
+| load-side voltage (hi-Z branch) | 1,709 V | ~~2,004–2,113 V~~ | ✅ **1,940–2,024 V** |
+| circulator dump | 934 W | ~~951–956 W~~ | **948–952 W** |
+| band margin | *17.6 MHz* | *40–41 MHz* | ✅ **41.4 MHz** |
+| **ignition slew** | **+30.9 MHz** | — | 🔑 **+6.3 to +7.9 MHz** |
+| **loaded linewidth** | 16.0 MHz | — | ✅ **23.0–25.0 MHz** |
+
+🔑 **THE WORST CASE ACROSS THE WHOLE PLAUSIBLE RANGE IS NOW VSWR 90, AT 3e19** —
+not 99.3 at 1e19. The peak is flatter and lower than the interpolation implied.
+⚠️ **DESIGN TO ~90:1.** The anchor band's own upper end is 82; 90 covers the
+whole grid with the density free to drift a decade.
+✅ **Two requirements got materially easier and neither was expected to:** the
+**ignition slew is 4.4× smaller** (+7.1 MHz, not +30.9 — that number came from
+assuming 1e20), and the **loaded resonance is 1.5× WIDER** (23.8 MHz, not 16.0),
+so the tracking loop has a broader target to hold.
+⚠️ **Still a vacuum-torch cavity** — `GEO_DESIGN` carries `--no-torch` and
+`h3_driven` meshes ε = 1. The design sapphire torch moves f₀ by ≈ −13.9 MHz
+(which *widens* band margin to ≈ 55 MHz) and Q₀ by ≈ +2 %. **β and VSWR are
+ratios and barely move.**
+
+⚠️ **CAVEATS THAT TRAVEL WITH THE ANCHOR:** it is the plasma **as sampled through
+the MS interface**, not the r = 2–8.5 mm annulus the EM model uses — different
+region, and atmospheric plasmas have gradients. LTE is assumed, and non-LTE puts
+n_e **above** Saha, which pushes VSWR further toward the peak.
+✅ **Power is NOT a caveat**: an atmospheric plasma at 1450 W is BIGGER, not
+hotter, so the paper's power vs this programme's 1 kW does not matter. Nor does
+MS-vs-OES — same plasma, different detector.
 
 ## 4c. ✅ THE TUNER PROBABLY DOES NOT NEED TO TRACK IGNITION
 
@@ -245,9 +325,11 @@ assumption that a part exists.
 
 ### What has to be met
 
-Transform a **real** load of **VSWR up to ~100** at **2.45 GHz**, passing **1 kW**.
+Transform a **real** load of **VSWR up to ~90** at **2.45 GHz**, passing **1 kW**.
+*(was ~100, from interpolated β; measured 2026-08-25 — worst case 90 at 3e19,
+75–82 across the anchor band.)*
 🔴 **And the binding number is not the diode, it is the load side**: a matched
-transformation at 1 kW forces **34–45 A** (low-Z branch) or **1.7–2.2 kV**
+transformation at 1 kW forces **39–42 A** (low-Z branch) or **1.9–2.1 kV**
 (high-Z branch). That is set by P and Z — **it is what 1 kW into that impedance
 IS**, independent of network topology. Both scale as **√VSWR**.
 
@@ -282,12 +364,22 @@ in the network. Treat them as indicative of the class, not as ratings.
 - **Series/parallel diode stacking** to divide voltage and share current.
   ⚠️ Every element added reintroduces the package parasitics that rejected the
   first two candidates. Unquantified here.
-- **Reduce the mismatch upstream instead of matching it.** Two live levers, both
-  outside the tuner: **anchor n_e** (§7ab — VSWR spans 15.6→99.3, and the demand
-  scales as √VSWR), and **test the coupler CLASS** (`geometry.py`'s "iris-free
-  route" was a docstring decision, never a measurement; Q_ext floors at 9,231 for
-  a LOOP, and `h3_loopq`'s eigen-pair method measures Q_ext for any coupler the
-  mesher can build).
+- **Reduce the mismatch upstream instead of matching it.** Two levers; the
+  situation is NOT as closed as this document said on 2026-08-24.
+  ❌ **APERTURE COUPLING IS CLOSED** — the magnetic aperture is **patented**, and
+  an iris needs a FEED GUIDE and a cavity to sit between, but **this cavity IS
+  the waveguide**, so there is no shared wall to cut.
+  🔴 **BUT THE LOOP ITSELF WAS NEVER DESIGNED.** User, 2026-08-24: *"some kind of
+  loop was forced so we could evaluate driven, but we never evaluated the design
+  options."* It exists because a DRIVEN solve needs a port. `h3_loopq` swept
+  **AREA ONLY**, at fixed wire radius 1.0 mm, fixed cap radius 0.4805a, single
+  turn, rectangular. **Q_ext floored at 9,231 WITHIN THAT FAMILY — the family was
+  never chosen.**
+  🔑 **AND THE TARGET IS NOT ABSURD.** β = 1 needs Q_ext 84× lower and is very
+  likely unreachable. **But VSWR 85 → 20 — the difference between "no part
+  exists" and "a standard 3-stub tuner works" — needs only 4.2×.**
+  ⚠️ **So "magnitude tuning is unsolved" holds GIVEN AN UNDESIGNED COUPLER.**
+  That is weaker than the claim this section previously made.
 
 🔑 **THE TWO UPSTREAM QUESTIONS MUST BE ANSWERED BEFORE ANY TUNER IS DESIGNED OR
 BOUGHT**, because either could remove the requirement rather than satisfy it.
@@ -310,8 +402,12 @@ the cavity queue anyway for cavity reasons:**
 requirement as a side effect.** ⚠️ **Do not open tuner design work before they
 are answered** — the requirement could move by 3× in current, or disappear.
 
-**RE-ENTRY CONDITION:** n_e anchored, or a coupler class measured that floors
-Q_ext below 9,231.
+**RE-ENTRY CONDITIONS — n_e is anchored (done); the coupler is REOPENED.**
+❌ Aperture coupling stays closed (patent + the cavity is the waveguide).
+🔴 **But the LOOP was never designed** — only its area was swept, within one
+arbitrary family. **A 4.2× reduction in Q_ext moves VSWR 85 → 20 and would
+change what part is needed.** Whether loop design can deliver that is UNKNOWN
+and has never been asked.
 
 ---
 

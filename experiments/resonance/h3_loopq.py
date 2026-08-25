@@ -26,6 +26,17 @@ error might; blended fits might; both untested. **Do not record it as explained
 by the audit** — this rig measures Q0 per loop size a way that cannot have
 either defect, and the answer is whatever it is.
 
+⚠️⚠️ THE CLAIM BELOW -- "Q_ext is set by loop geometry, not by the load" -- IS
+NOT ESTABLISHED, and driven data questions it (2026-08-25). h3_driven's measured
+S11 dip implies Q_ext ~8,100-8,600 from cold through 3e19 and 9,221 at 1e20.
+🔴 THAT IS NOT A REFUTATION: those are VACUUM-TORCH meshes and this rig is
+NO-TORCH (GEO_DESIGN carries --no-torch), so it is a cross-geometry comparison
+and CONVENTIONS 7aq forbids reading it as a disagreement. It is flagged, not
+resolved. The eigen pair on h3_driven's OWN meshes settles it.
+⚠️ ALSO: this file's V1_ANCHOR says Q_ext = 9,117 (h3_step3) while the sweep at
+11x8 returns 9,231, and h3_driven hardcodes Q_EXT_MEASURED = 9,231. Two values,
+~1.25% apart, and their mesh styles are NOT documented in either place.
+
 🔑 AND IT GIVES THE OPTIMISER ITS COUPLING AXIS. Q_ext is set by loop geometry
 and is nearly independent of the plasma, so ONE eigen pair per loop size serves
 every density. beta(ne) is then Q0(ne)/Q_ext — **matching to beta=1 becomes a

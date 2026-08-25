@@ -35,7 +35,7 @@ The load side, all from measurement:
 | loaded linewidth @1e20 | **16.0 MHz** (Q_L 155) |
 | β range | **4.715 → 0.017** — a factor of **275**, crossing 1 at n_e ≈ 5×10¹⁶ |
 | VSWR | **4.7 → 99.3**, worst MID-range (Q₀ minimises near 1e19) |
-| load-side at 1 kW matched | **34–45 A**, or **1.7–2.2 kV** on the high-Z branch |
+| load-side at 1 kW matched | ✅ **39–42 A**, or **1.9–2.1 kV** on the high-Z branch *(MEASURED 2026-08-25; was 34–45 A from interpolated β)* |
 | circulator dump | up to **961 W of 1 kW** unmatched |
 
 **Architecture (STATED):** dual directional coupler at the LDMOS output reading
@@ -44,6 +44,15 @@ tuner · circulator.
 
 ### Three findings worth having up front
 
+0. 🔴🔴 **THE COUPLING REQUIREMENT IS BIMODAL, AND NO FIXED LOOP MEETS IT.**
+   β = Q₀/Q_ext, and **Q_ext is the coupling loop and nothing else.** Cold wants
+   Q_ext = **43,422** (Q₀ = 43,422); loaded at the anchored density wants
+   **109**. **The two states want couplers ~400× apart.** Every β and VSWR
+   quoted below is therefore **a consequence of a loop we chose**, not a property
+   of the cavity (`../resonance/CONVENTIONS.md` §7am).
+   🔑 **This restates requirement 1 correctly:** the tuner was being asked to
+   absorb a 400× swing **that the coupler could absorb part of, and nobody asked
+   the coupler.** Whether it can is one cheap eigen sweep — see there.
 1. 🔴 **THE HARD PART IS COLD ACQUISITION, NOT LOADED TRACKING.** Cold, the
    resonance is **0.35 MHz wide in a 100 MHz band** — ~1,000 blind steps, before
    anything has ignited. Loaded it is 16 MHz, **45× easier**. And cold is EASY to
@@ -52,7 +61,7 @@ tuner · circulator.
 2. 🔴 **MAGNITUDE TUNING IS UNSOLVED.** Four PIN-diode candidates evaluated and
    rejected (`SOURCE.md` §4d). The reason is **structural**: low C_j needs a
    small die, a small die has high thermal resistance, **so the parts that work
-   at 2.45 GHz cannot carry 34–45 A.** Not a sourcing failure.
+   at 2.45 GHz cannot carry 39–42 A.** Not a sourcing failure.
 3. 🔑 **A MAGNITUDE-ONLY DETECTOR INHERITS RESONANCE'S OWN §7x ERROR.** |Γ|
    cannot distinguish β from 1/β. Either side of the ignition crossing reads
    −13.98 vs −13.99 dB: identical reflected power, **opposite tuner directions.**
@@ -62,7 +71,7 @@ tuner · circulator.
 
 | | | status |
 |---|---|---|
-| **1** | **A magnitude-matching approach that survives 34–45 A at 2.45 GHz** | 🔴 **UNSOLVED.** No verified option. |
+| **1** | **A magnitude-matching approach that survives 39–42 A at 2.45 GHz** | 🔴 **UNSOLVED.** No verified option. ⚠️ And see the loop question below — the requirement itself is not yet final. |
 | **2** | Frequency acquisition of a 350 kHz resonance in a 100 MHz band | not designed |
 | **3** | Complex-Γ sensing (vs magnitude-only) | argued, not designed |
 | **4** | Tuner SPEED requirement | 🔴 **NOT DERIVABLE** — set by ignition dynamics, which no programme here has measured. Everything in resonance is steady-state. |
@@ -73,15 +82,26 @@ tuner · circulator.
 **Both could REMOVE requirement 1 rather than satisfy it, and both are queued
 there for cavity reasons anyway:**
 
-- **Anchor n_e.** It has no physical provenance — its origin is *solver
-  convergence* (resonance CONVENTIONS §7ab). VSWR spans **15.6 → 99.3** across
-  the plausible range and the current demand goes as **√VSWR**: 17.7 A at 1e18
-  against 44.6 A at 1e19. **This is a hardware-cost decision.**
-- **Test the coupler class.** `geometry.py`'s *"iris-free route… no coupling
-  structure"* was a docstring decision, never a measurement. **Q_ext floors at
-  9,231 for a loop**, so loop size cannot reduce the mismatch — but an
-  iris/aperture might, and `h3_loopq`'s eigen-pair method measures Q_ext for any
-  coupler the mesher can build.
+- ✅ **ANCHORED 2026-08-24 — and it made the requirement WORSE.** n_e = **7.3–8.6
+  × 10¹⁸** from a measured N₂ MICAP gas temperature of **5220–5270 K** (Kuonen
+  et al., *JAAS* 39(5) 2024, Table 2, pressure-reduction method — the only
+  empirical one of the three). The assumed 1e20 was **13× too high**.
+  ✅ **MEASURED 2026-08-25, and MILDER than the interpolation said: VSWR
+  75–82** at the anchor (not 80–89), **39–40 A** (not ~42), worst case **90 at
+  3e19** (not 99.3 at 1e19). **Design to ~90:1.** See `SOURCE.md` §4f.
+  🔑 **Two requirements got materially EASIER:** ignition slew **+7.1 MHz**, not
+  +30.9 (that came from assuming 1e20), and the loaded resonance is **1.5×
+  WIDER** at 23.8 MHz.
+  ✅ Band margin went the other way: **17.6 → 41 MHz.**
+- ⚠️ **Coupler — PARTLY closed, and I overstated it.** ❌ Aperture coupling is
+  out (patented; and this cavity IS the waveguide, so there is no shared wall to
+  cut an iris in). 🔴 **But the LOOP was never designed** — it was forced into
+  existence so driven solves would have a port, and only its AREA was ever swept,
+  at fixed wire radius, cap radius, turn count and shape. **Q_ext = 9,231 is the
+  floor of ONE arbitrary family.**
+  🔑 **VSWR 85 → 20 needs Q_ext only 4.2× lower** — the difference between "no
+  part exists" and "a standard tuner works". β = 1 needs 84× and is out of reach.
+  **Whether loop design can deliver 4.2× has never been asked.**
 
 ## Rules
 
@@ -101,8 +121,26 @@ already cost real work and apply directly here:
 
 ## When to come back
 
-⏸️ **PARKED.** Re-entry condition: **n_e anchored**, or **a coupler class
-measured that floors Q_ext below 9,231.**
+⚠️ **RE-ENTRY CONDITION PARTLY MET 2026-08-24 — and I had called it fully met.**
+✅ n_e is anchored **and now MEASURED at the operating point (2026-08-25):
+VSWR ~90:1 worst case, 75–82 at the anchor, 39–42 A, 1.9–2.1 kV, ~950 W dump.**
+⚠️ Harder than cold, but **milder than the interpolated figures this programme
+was parked on.**
+🔴 **But the second lever is NOT spent.** The aperture CLASS is closed; the
+**loop was never designed** (`../resonance/CONVENTIONS.md` §7al). Q_ext = 9,231
+is the floor of one arbitrary family — area swept, everything else frozen at
+values two of which have no provenance at all.
 
-🔴 **Do not open design work before then** — the requirement could move 3× in
-current, or disappear.
+🔑 **THE SIZING DECIDES WHETHER THAT MATTERS:**
+
+| target | VSWR | Q_ext needed | vs 9,231 | verdict |
+|---|---:|---:|---:|---|
+| as built | 85 | 9,350 | 1.0× | — |
+| **3-stub tuner is comfortable** | **20** | **2,200** | **4.2×** | 🔑 **open question** |
+| matched | 1 | 110 | 84× | ❌ out of reach for a loop |
+
+**Requirement 1 is unsolved for the loop AS BUILT. It is not established that it
+is unsolved for a DESIGNED loop** — 4.2× is the difference between "no part
+exists" and "buy a standard tuner". **Do not open magnitude-tuner design work
+until the loop family question is answered**, because it could still move the
+requirement out of the impossible region.

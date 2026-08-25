@@ -883,6 +883,22 @@ invited and the invented one discouraged.
 
 ## 7t. Measure the reference with the instrument that measures the cases
 
+### ⚠️ 7t-bis. Citing §7t is not the same as CHECKING which case is the control
+
+🔴 **2026-08-24.** I landed E3 case B, correctly refused to quote it against
+`h3_loopq` **citing §7t**, and named case E as the matched control — **from
+memory, without opening the case matrix.** `e3_closure.py` line 115 says
+`E_vac_torch = (wall=True, plasma=True, diel=True, VACUUM)`. **E carries the
+plasma; B does not.** They differ in two variables. The rig's own torch-shift
+line had it right all along: **A − E**, the matched all-loss pair.
+🔑 **The consequence was not cosmetic.** A and E BOTH carry plasma, and plasma is
+what breaks the preconditioner — so the torch shift is **not measurable by this
+rig at all**, not "waiting on one more case". **Naming the wrong control hid a
+blocker behind a delay.**
+✅ **Invoking a rule proves you remembered the rule. It does not prove you
+applied it.** The case matrix is eight lines; read it.
+
+
 🔴 §7c has now caught the η reference **four times**, each time as a different
 wrong constant (44,384 · 29,854 · 12,368-from-another-rig). Patching the constant
 has never worked, because the bug is not the value.
@@ -1186,6 +1202,822 @@ because the next person acts on it differently.
 - ⚠️ Same shape as §7u (supplying confidence a rig withheld) and §7s (reasoning
   becoming provenance): **the failure is always presenting a weaker claim in the
   register of a stronger one.**
+
+## 7ad. Coupled state variables set as independent constants
+
+🔴 The plasma model carries **`NE = 1.0e20`** and **`NU_M = 1.0e11  # N2 at
+1 atm`** as two separate constants. **They are not independent.** ν_m =
+n_gas·⟨σ_m v_e⟩ and n_gas = P/kT, so a collision RATE at fixed PRESSURE is a
+TEMPERATURE statement — and under LTE that same temperature fixes n_e through
+Saha. **One state, three symbols, two of them assigned by hand.**
+
+🔑 **NOTHING ERRORS when they disagree.** The solve runs, converges, and returns
+a self-consistent-looking answer for a plasma that cannot exist. This is worse
+than a wrong constant: it is a wrong *state*, and no single value is identifiably
+at fault.
+
+✅ **AND THE FIX WAS A REFRAMING, NOT A MEASUREMENT.** Saha turns n_e into a
+thermometer: **n_e = 1e20 ⟺ T_gas ≈ 6,200 K**, and the whole measured EM grid
+spans only 4,650–6,200 K. **An unanswerable question ("what density?") became a
+checkable one ("what temperature does the analysis need?")** — answerable by
+someone else, with an instrument, in units the application already uses.
+
+✅ **Rules:**
+- **Before assigning a constant, ask what else it determines.** If two constants
+  are functions of one physical state, deriving both from that state is the only
+  coherent option.
+- **Prefer the parameterisation the APPLICATION speaks.** n_e is an EM
+  convenience; T_gas is what the chemistry specifies and what an instrument
+  reads. **Anchor on the axis someone can measure.**
+- ⚠️ **Check the sensitivity before trusting a loose spec.** n_e moves two
+  decades per 1,500 K here, so "about 6,000 K" is not a tight n_e — but it does
+  bracket, which an unanchored density never did.
+- ⚠️ **§7ab's sibling.** There the constant had no provenance; here it has no
+  *consistency*. Both pass every test the code performs.
+
+## 7ae. A relative quantity needs an origin, and "ΔT = 0" is not a temperature
+
+🔴 `h3_hot` printed **"wall dT = +0 K"** and the user asked, reasonably, whether
+that meant absolute zero. It did not — it was a RISE above a baseline. **But the
+baseline was never stated anywhere.** `baselines.json` gives wall
+σ = 3.5e7 S/m for "bare electropolished aluminium 6061" with **no reference
+temperature**, and GLOSSARY defines COLD only as *"cavity at ambient"*.
+
+🔑 **So the sweep was measuring from an unstated origin** — and it matters,
+because α_R is itself quoted at 20 °C, so the linearisation needs to know where
+it starts. **A ΔT with no T is the same species of unanchored constant as
+§7ab's n_e**, just harder to notice because it looks like a well-defined zero.
+
+✅ **Rules:**
+- **Report the ABSOLUTE quantity, or state the origin in the same line.** The
+  rig now prints `wall T = 293.1 K (20 C), i.e. dT = +0 K`.
+- **A stated assumption can be argued with; an implied one cannot.** `T_COLD_K`
+  is now a named constant marked ASSUMED, so the next reader can disagree with
+  it instead of not seeing it.
+- ⚠️ **Suspect every "Δ" in the record for a missing origin.** Δf has one (the
+  cold f₀, measured). ΔT did not.
+
+## 7af. GATE 5 — solve the mesh the sidecar describes
+
+🔴 `h3_hot` built `h3_hot_0.msh` and asked the solver for `h3_hot_0_pec.msh`,
+because one mesh is solved TWICE (port_bc pec and lumped) and the output tag was
+reused as the mesh tag. **Palace returned `rc=1 in 2 s` with no useful message**,
+three times, and the run exited 0 having measured nothing.
+
+🔑 **THIS IS THE THIRD TIME THIS EXACT SHAPE HAS APPEARED.** `sweep()` once used
+the OUTPUT tag to find the mesh; that was fixed with separate `mesh_tag`/
+`out_tag`, the lesson was recorded — **and I reintroduced it in a new rig.**
+A convention that is written down but not ENFORCED gets re-broken.
+
+✅ **Now enforced, not remembered:** `eigen_cfg` compares the `mesh` argument
+against `meta["mesh"]` — the sidecar records its own source — and refuses on
+mismatch. **The metadata and the mesh cannot describe different cavities.**
+- **When one input feeds several outputs, the tags MUST be separate parameters**,
+  never derived from each other.
+- ⚠️ **An opaque `rc=1` is a configuration error, not a solver failure.** Two
+  seconds is not enough time to fail at physics.
+
+## 7ag. When methods disagree, ask which one MEASURED something
+
+🔴 A paper reported three plasma temperatures for the same instrument: **5220 K**
+(pressure reduction), **12,850 K** (Longerich), **5,910–6,430 K** (Houk &
+Praphairaksit). I first read that as a spread and quoted the abstract's
+"~5000–6000 K". **User: *"Only one of those methods is empirical."***
+
+🔑 **And that is decisive, not pedantic.** Pressure reduction MEASURES an
+interface-pressure ratio with the plasma on and off. The other two infer T from
+**the same MO⁺/M⁺ ion-ratio measurement** through different equilibrium models.
+**Their 2× disagreement is model spread on identical data** — it says nothing
+about the plasma and everything about the models. Averaging them, or quoting
+their range, treats a modelling artefact as measurement uncertainty.
+
+✅ **The empirical method was also the one that could be cross-checked**: it reads
+5,680–5,780 K on an Ar ICP where independent literature says 5,000–5,280 K.
+
+✅ **Rules:**
+- **Classify before combining.** Measurement, model-fit, and calculation are
+  three registers (§7ac again). A "range across methods" that mixes them is not
+  an uncertainty band.
+- **Prefer the method with an independent cross-check** over the method with the
+  most sophisticated theory.
+- **Look for the shared input.** Two methods that use the same raw data are not
+  two pieces of evidence.
+- ⚠️ **An abstract's summary range may span registers.** "~5000–6000 K" merged an
+  empirical 5220 K with a modelled 5910–6430 K. The table had what the abstract
+  did not.
+
+## 7ah. Interpolating across a turning point you already found
+
+🔴 With n_e anchored at 7–9e18 I reported that the tuner requirement "eases
+substantially to VSWR ~25–35". **It does not — it rises to 80–89.** The anchored
+density sits just BELOW n_e = 1e19, which is exactly where VSWR PEAKS at 99.3.
+
+🔑 **I had measured that turning point myself the same day** (Q₀ minimises near
+1e19 and recovers at 1e20) and written it into three documents — then eyeballed
+an interpolation straight across it and got the SIGN of the consequence wrong.
+
+⚠️ **The assumed value happened to sit on the FAR side of the worst case.** So
+"moving to the truth" moved TOWARD the peak, which is the opposite of the
+intuition that a corrected input improves things.
+
+✅ **Rules:**
+- **Interpolate in code against the measured grid, never by eye** — the arithmetic
+  took one line and reversed the conclusion.
+- **When a quantity is known to be non-monotonic, say where the extremum is
+  BEFORE quoting any value near it.** §7aa said report argmax; this says USE it.
+- ⚠️ **Correcting an input does not reliably improve an outcome.** Expecting it to
+  is how a wrong sign survives a sanity check.
+
+## 7ai. Simplify to isolate — then RESTORE. Nothing restored automatically.
+
+**User, 2026-08-24: *"We simplified greatly to answer the instrument and
+methodology issues, and then didn't add critical features back."*** That is the
+whole mechanism, and it is not carelessness — **the simplification was correct.**
+Stripping the cavity to a bare resonator is exactly how you find out whether the
+mesher and solver can be trusted, which is what E0 and H1 needed.
+
+🔴 **What failed is that a simplification has no expiry.** Four features came out
+and stayed out:
+
+| feature | how it reads in the config | how it behaves |
+|---|---|---|
+| groove | `--groove 0,0` | no mode filter — 31 rigs |
+| port boundary | *unassigned* | PMC = feed gap OPEN — every looped eigen |
+| torch | `--torch-material 1.0` or `--no-torch` | no dielectric — every rig |
+| gas feed / chimney | `--feed 0,41`, `--chimney 0,41` | **torch sealed in solid metal — every rig, always** |
+
+🔑 **EVERY ONE READS AS "NOT CONFIGURED" AND BEHAVES AS "NOT PRESENT".** A zero
+diameter, an omitted flag, an unassigned boundary — none of them looks like a
+claim about the machine, and all of them are one.
+🔑 **AND EACH WAS CAUGHT FROM OUTSIDE THE RIG** — a person, a cross-solver
+disagreement of 11.5 MHz, a downstream rig that NEEDED the missing dielectric,
+and a question about where the gas goes. **Not one was caught by the rig that
+had the defect**, because a rig cannot check what it does not represent.
+⚠️ **R49 added the feed aperture BECAUSE its absence was a known defect**
+(*"the model ended the tube flush against solid metal"*) — and the config that
+everything inherits then set it back to zero. **A fix that is not the default is
+not a fix.**
+
+✅ **Rules:**
+- **A simplification must carry its restoration.** Record what was removed, why,
+  and the condition for putting it back — in the CONFIG, not in a commit
+  message. `GEO` should have carried "these four are OFF for instrument work".
+- **Enumerate the DESIGN's features and assert each is in the mesh**, against a
+  list of what the machine has — not against what the rig meant to build.
+- **A default that models ABSENCE is the dangerous kind.** Prefer a default that
+  refuses, the way `port_bc` now does (§7v).
+- ⚠️ **Ask what the thing physically has to do.** "Where does the gas go?" found
+  in one question what four rigs and a full audit missed.
+
+## 7aj. ~~Three times now, the rigs have modelled a cavity the design is not~~
+
+🔴 **The groove.** `GEO` carried `--groove 0,0`; 31 rigs measured a cavity with
+no mode filter. Caught by the user, not by a check.
+🔴 **The port boundary.** Every looped eigen left the loop's feed gap
+UNASSIGNED — which is PMC, i.e. OPEN — so it solved an LC resonator that
+hybridised TE011. Caught by a driven/eigen disagreement of 11.5 MHz.
+🔴 **The torch.** Five rigs mesh ε = 1.0; the design is sapphire ε = 11.6, and
+`geometry.py` says so explicitly. Caught while designing a rig that NEEDED the
+dielectric to exist.
+
+🔑 **Three different features, three different mechanisms, ONE SHAPE: the design
+has a thing, and the model does not.** None of them errored. All produced
+converged, plausible, internally consistent numbers.
+
+🔑 **AND EACH WAS CAUGHT BY SOMETHING OUTSIDE THE RIG** — a person, a
+cross-solver disagreement, a downstream rig that needed the missing part. **Not
+one was caught by the rig that had the defect**, because a rig cannot check what
+it does not represent.
+
+✅ **Rules:**
+- **Enumerate the DESIGN's features, then assert each one is in the mesh.** The
+  sidecar records geometry; compare it against a list of what the machine has,
+  not against what the rig meant to build.
+- **A default that models absence is the dangerous kind.** `--groove 0,0`,
+  an unassigned boundary, `--torch-material 1.0` — each reads as "not
+  configured" and behaves as "not present".
+- **When a rig needs a feature to exist, check whether it does BEFORE relying on
+  it.** E3 needed the dielectric; that is why it found the torch.
+- ⚠️ **Suspect the next one.** Three found in one day means the audit is not
+  finished, and the remaining ones are in the features nothing has needed yet.
+
+## 7ak. A bound whose bad end is a geometry that does not exist
+
+🔴 I computed the feed aperture's TE11 cutoff for **uniform fill** — air
+8.37 GHz, quartz 4.30, sapphire **2.46 GHz** — and wrote up *"the consumable
+choice may have removed the RF seal."* Attenuation over the 41 mm aperture:
+**59.7 / 51.3 / 4.6 dB.** Alarming, and wrong.
+
+🔑 **The aperture is not uniformly filled and never was.** The ceramic is an
+annulus holding **18.8% of the TE11 field energy** — three quarters sits in the
+gas core. Field-weighted, sapphire's ε_eff is **3.0, not 11.6**, and the seal is
+**53.8 dB.** No problem exists.
+
+⚠️ **User: *"Uniform-fill? So, useless in other words."*** Worse than useless.
+A bracket is honest when both ends are reachable. **Here the pessimistic end
+described a solid sapphire rod filling the aperture — an object that is not in
+the design** — so the "bound" was not conservative, it was fictional, and it
+pointed attention at a non-problem.
+
+✅ **Rules:**
+- **Before quoting a bound, ask what geometry each end corresponds to.** If an
+  end is unphysical, it is not a bound, it is a distraction.
+- **A 55 dB bracket is not an answer.** When the range spans the decision
+  threshold, the calculation has not been done yet — say so instead of reporting
+  the alarming end.
+- **The field distribution is usually available in closed form.** Weighting ε by
+  |E|² took one integral and moved the answer by 49 dB. **The better calculation
+  was cheap; I just did not do it before speaking.**
+- ⚠️ **Same register error as §7ac**: a bound stated in the voice of a result.
+
+## 7al. A component built to enable a MEASUREMENT is not a design choice
+
+🔴 **The coupling loop exists because a DRIVEN solve needs a port.** User,
+2026-08-24: *"some kind of loop was forced so we could evaluate driven, but we
+never evaluated the design options."* Two of its five parameters have no
+provenance at all (wire radius, gap), one is a meshing convenience (φ = 36°, a
+sector centre), and the two that ARE justified were justified *afterwards*.
+
+🔑 **AND THE PROGRAMME THEN BUILT ON IT AS IF IT WERE CHOSEN.** Q_ext = 9,231
+became "a hard property of this design"; loaded β ≤ 0.017 followed; the tuner
+requirement of VSWR ~100 followed from that; and "magnitude tuning is unsolved"
+followed from that. **Four inferences deep, resting on a part nobody designed.**
+
+⚠️ **The sweep that appeared to validate it did not.** `h3_loopq` varied AREA and
+found an optimum — real, but an optimum *within* a family fixed by arbitrary
+constants. **A parameter study inside an unchosen family reads exactly like a
+design study and is not one.**
+
+✅ **Rules:**
+- **Label instrument-driven components at birth.** "This exists so the solver has
+  a port" belongs in the constant's comment, not in someone's memory.
+- **Before treating a measured floor as physical, ask what was held fixed.**
+  Q_ext floored at 9,231 with r_w, turns, shape and mount all frozen.
+- **Sizing the gap tells you whether it matters**: β = 1 needs 84× and is dead;
+  VSWR 85 → 20 needs 4.2× and is a live question. **Compute the required factor
+  before declaring something closed.**
+- ⚠️ **Same family as §7ai** (simplify then fail to restore) and §7ab (a
+  convenience becoming an operating point): **a decision made for the
+  INSTRUMENT'S benefit, inherited as though it were the MACHINE'S.**
+
+## 7am. A DESIGN OUTPUT reported as a MEASURED PROPERTY
+
+🔴 **User, 2026-08-24: *"we designed a loop and then complained about
+over/undercoupling as if we needed to simply accept the loop geometry as
+given."*** β = Q₀/Q_ext. **Q_ext is the loop and nothing else.** So *"the cavity
+is overcoupled"* is a category error — the cavity is not coupled to anything;
+**the coupler WE CHOSE is.** Every β in the record described a part we picked and
+read as a property we found.
+
+⚠️ **The tell is the verb.** We wrote *"β RANGES over 275×"*, *"VSWR is worst
+mid-range"*, *"the coupler class is closed"* — **observational grammar applied to
+our own choices.** Nothing in the record ever said *"we SET β = 4.7."*
+
+🔴 **The damage is that it propagates as a CONSTRAINT.** β → VSWR ~100 → 45 A →
+960 W dump → *"magnitude tuning is unsolved; no part exists."* **A hardware
+impossibility was derived from a number we were free to change**, and the
+freedom was invisible because of how it was written down.
+
+✅ **Rules:**
+- **For every quantity, name what sets it.** If the answer is *"a choice we
+  made"*, it is a **design variable** and it belongs in a design table with a
+  target, not in a results table with a value.
+- **Ask "what do we WANT this to be?" before "what is it?"** Asking it here
+  produced the actual finding in one step: cold wants Q_ext = 43,422, loaded
+  wants 109, **the two states want couplers 400× apart and no fixed one works.**
+  That was derivable from numbers already in the record, months of them.
+- ⚠️ **A parameter study is not permission to stop.** `h3_loopq` swept area and
+  found an optimum — for an unstated state. **It is the best of four for LOADED
+  and the worst of four for COLD.** An optimum without an objective is a
+  coincidence.
+- 🔑 **Check whether the knob is already pinned.** Three of the loop's five axes
+  were already at maximum coupling (J₁ peak, normal orientation, sweep minimum).
+  **Knowing that turns "make the coupling stronger" into a specific question:
+  it can only come from turns or mount.**
+- ⚠️ Related but distinct from **§7al** — that is about *provenance* (nobody
+  chose it); this is about *grammar* (we chose it, then forgot we had).
+
+## 7an. I re-derived a documented failure, and got it WRONG on the way
+
+🔴 **2026-08-24.** E3's cases A and C died in the eigensolver. I spent a
+forensic pass on 240 KB and 370 KB of solver logs, concluded *"perfect
+correlation with the plasma"*, **landed that in KNOWN.md**, and was **falsified
+40 minutes later by case E** — which carries the plasma and does NOT fail.
+
+🔴 **The correct answer was in the opening docstring of a rig I had open in the
+same session.** `h3_driven.py` lines 10–11: *"sapphire — its loaded point does
+not converge in eigen either (**eps +11.6 beside the plasma's −30.09**)."*
+**The mechanism, both numbers, one sentence.** The same header cites
+`h3_eigenprobe`'s **92 PCG non-convergences.**
+
+🔑 **Two independent failures, and the second is the expensive one:**
+1. **The index was incomplete.** KNOWN's PRIOR ART table had no row for it, so
+   even a correct search of the INDEX would have missed it. *(Now added.)*
+2. **I did not search the rigs.** `grep -n "converge" *.py` finds it. I went to
+   the logs instead — **forensics on an artefact of the failure, rather than a
+   search for whether the failure was known.**
+
+⚠️ **AND IT COST INSTANCE TIME BEFORE IT COST REASONING.** E3 paired sapphire
+with plasma in three of five cases. **The record already said that combination
+does not converge in eigen. A, C and E were doomed at launch**, ~2 hours of
+32-core time, and the search that would have caught it costs seconds.
+
+✅ **Rules:**
+- **A rig's DOCSTRING is prior art.** The index is a convenience, not the
+  corpus. **Grep the rigs before deriving a mechanism**, not just KNOWN.md.
+- 🔑 **When a solve fails, the FIRST question is "has this failed before?",
+  not "what do the logs say?"** Logs describe *this* failure; the record tells
+  you whether it is *a* failure. I inverted that order.
+- **If you find prior art that was not indexed, index it in the same edit.**
+  Otherwise the next person repeats exactly this.
+- ⚠️ **This is CLAUDE.md's most-repeated error** (*"derived my own four times and
+  was wrong four times"*). It was four. **It is five.**
+
+## 7ao. `.result.json` is overwritten in place — and the journal is NOT a backup
+
+🔴 **2026-08-25.** Relaunching `h3_driven` overwrote its own
+`h3_driven.result.json` (the rig `save()`s incrementally to a fixed path). I
+wrote in KNOWN.md that the prior values *"survive in `h3_driven.jsonl`, the
+append-only journal"*. **They do not.** The journal is **22 lines of solve
+metadata** — `{t, event, tag, seconds, ranks, order, mesh}` — with **zero**
+occurrences of `f0`, `Q0` or `eta`. **It records that a solve happened, not what
+it measured.**
+
+⚠️ **I asserted the existence of an archive without opening it, in the document
+that is supposed to be the authority.** One `head -2` disproved it. §7d.
+
+✅ **Rules:**
+- **Capture a `.result.json` before relaunching the same rig**, or accept the
+  previous numbers are gone. Nothing else holds them.
+- **`.jsonl` answers "what ran, how long, on what mesh".** For provenance and
+  cost, it is the record. For PHYSICS, it holds nothing.
+- 🔑 **Before citing any store as a backup, read one line of it.** The cost is a
+  single command; the failure mode is discovering the gap after the data is
+  already overwritten.
+- ⚠️ This one landed soft — the new grid was a superset of the old, so nothing
+  was actually lost. **That is luck, and it is not a reason to skip the check.**
+
+## 7ap. 🔴 `ops/go` SYNCS BEFORE IT RUNS — a read-only tail DESTROYED a finished run
+
+🔴 **2026-08-25, and this is the worst operational failure in the record.**
+`h3_driven` completed its 9th and last solve at **00:45:58**. Seconds later I ran
+
+    ops/go ops/riglog.sh h3_driven          # read-only. tails a log.
+
+**`ops/go` syncs local→remote before running ANYTHING.** My local
+`h3_driven.result.json` was the **stale 6-point file from the previous day**, and
+`.gitignore:26` carries `!*.result.json` — an explicit **un-ignore**, so rsync
+pushes it. The complete 9-point result was **overwritten by a day-old copy**,
+along with `h3_driven.log`.
+
+🔴 **AND `rsync -a` PRESERVES MTIME, SO THE CLOBBER IS INVISIBLE.** The remote
+file did not look freshly written — it looked like it was from *yesterday*, which
+is exactly what it now was. **The forensic signal a normal overwrite leaves —
+a new timestamp — is the one thing rsync erases.**
+
+⚠️ **THE GUARD DID NOT FIRE, AND IT WAS RIGHT NOT TO.** `ops/go` refuses to sync
+while rigs run; the rig had finished ~30 s earlier. **The guard protects a
+RUNNING solve. Nothing protects a FINISHED one**, and a finished one is exactly
+when you reach for the log.
+
+✅ **WHAT SAVED IT — and none of it was designed as a backup:**
+- **8 of 9 points** were already in my scratchpad from progress reads.
+- 🔑 **`postpro/<tag>/port-S.csv` SURVIVED.** Palace's raw output is per-tag and
+  has no stale local counterpart, so rsync had nothing to push over it. The
+  9th point was **re-fitted from the raw S11 sweep** and reproduced the previous
+  run exactly (f₀ 2.4824, Q_L 155.1, Q₀ 157.8).
+
+✅ **Rules:**
+- 🔴 **Never `ops/go` anything after a run finishes until its results are
+  pulled.** `ops/fetch.sh` first, or use plain `ssh` — read-only inspection does
+  not need the gate.
+- **`NOSYNC=1` for every read-only op.** The gate exists to stop bad *writes*;
+  a tail is not a write.
+- 🔑 **`postpro/<tag>/*.csv` is the real archive.** Not `.result.json` (clobbered
+  by sync), not `.jsonl` (§7ao — metadata only). **Raw solver output is the only
+  thing that survives, because nothing local shadows it.**
+- ⚠️ **A safety gate scoped to one window teaches you to trust it in all
+  windows.** I ran the command *because* the run was over.
+
+## 7aq. Cross-SOLVER comparisons need the same GEOMETRY — and the same MESH
+
+🔴 **User, 2026-08-25: *"Comparisons between eigen and driven have to happen on
+the same geometry (torch, cavity, everything)."*** I had just published a
+**"~9 % eigen↔driven disagreement on Q_ext"** built from eigen on a **NO-TORCH**
+mesh (`h3_loopq`) against driven on a **vacuum-torch + plasma-region** mesh
+(`h3_driven`). **Two cavities. There was no disagreement to report.**
+
+⚠️ **AND I DEFENDED IT WITH THE WRONG NUMBER.** I argued the torch could not
+matter because no-torch vs vacuum-torch shifts **Q₀** by only 0.23 %. **Q_ext is
+not Q₀** — it is set by how the mode couples to the LOOP, and nothing in the
+record measures the torch's effect on it. **Insensitivity of one quantity is not
+evidence about another.**
+
+🔑 **GEOMETRY IS NOT THE WHOLE OF "SAME".** `h3_step3` compares its `cold` and
+`driven` styles at **`size_factor` 1.5 vs 1.42 — 43,685 vs 80,621 tets.**
+A difference measured across that pair contains a **discretisation** term as
+well as a geometry one, and they cannot be separated afterwards.
+
+✅ **Rules:**
+- **Before comparing two solvers, diff their `geometry_argv` and their mesh.**
+  Both are in the result files. It is a mechanical check and it takes seconds.
+- 🔑 **`--no-torch` is IN `GEO_DESIGN`** — so "both used GEO_DESIGN" does **not**
+  mean "same cavity" once a rig strips or overrides it, as `h3_driven` does.
+- **When solvers disagree, the first hypothesis is that they solved different
+  problems**, not that one of them is wrong (§7ag asks which one MEASURED
+  something; this asks whether they measured *the same thing*).
+- ✅ **Prefer the estimator that needs no cross-rig import.** β from the dip
+  depth uses one solve; β from Q₀/Q_ext imports a constant from another rig on
+  another mesh, and inherits every difference between them.
+
+## 7ar. 🔴 FIX IT NOW — a defect known only in the session is not known
+
+🔴 **User, 2026-08-25: *"In general, always fix immediately. Otherwise the
+understanding is only in the session context window and doesn't persist."***
+
+⚠️ **I had just done the opposite, twice in one hour:**
+- Found `GEO_DESIGN` contains `--no-torch` and wrote *"do not patch it silently
+  — it belongs with the restoration."* **True about the RE-RUN. False about the
+  CODE**, which kept a constant named `GEO_DESIGN` that is not the design.
+- Found `h3_loopq`'s docstring asserts Q_ext is density-independent while my
+  driven data questioned it — **and left the assertion standing.**
+
+🔑 **A CONTEXT WINDOW IS NOT STORAGE.** Every session so far has ended with
+someone re-deriving something the previous session knew (§7an: five times). The
+gap is never *understanding*; it is that the understanding stayed in a
+conversation instead of landing where the next reader will hit it.
+
+✅ **Rules:**
+- **Fix at the point of discovery.** Not at the end of the task, not "with the
+  restoration", not "once the run finishes."
+- 🔑 **"Fixing" a defect that would change results does NOT mean changing them
+  silently.** It means making the defect **impossible to miss in the code**: a
+  loud comment at the constant, a renamed symbol, an assertion that fires. **The
+  behaviour can wait for a deliberate re-run; the WARNING cannot.**
+- **Land it where the mistake would be repeated**, which is usually the source
+  file — not only in `KNOWN.md`. A reader reaching for `GEO_DESIGN` is in
+  `e0_solver_vs_math.py`, not in the findings.
+- ⚠️ **Deferring is itself a decision with a failure mode**, and its failure mode
+  is silent: the next session simply does not know.
+
+## 7as. I assumed three APIs and read none — the same shape as `azimuthal.order()`
+
+🔴 **2026-08-25.** `h3_qext` died on launch with
+`TypeError: tuple indices must be integers or slices, not str` — **the exact
+error the record already carries** for `azimuthal.order()` returning a tuple
+that was treated as a dict. **Second occurrence, same shape.**
+
+⚠️ **AND ONLY THE FIRST OF THREE FIRED.** Reading the sources afterwards:
+
+| I wrote | it actually is |
+|---|---|
+| `design_point()["a_mm"]` | returns a **tuple** `(a_mm, L_mm)` |
+| `purity(tag, mode)` | `purity(tag, mode_index, pts)` — **three** args |
+| `mode["f_ghz"]`, `mode["Q"]` | `eigmodes.read()` yields `{m, f, sig}`; **Q is not in it** — it comes from `eig.csv` column 3, keyed by mode index |
+
+🔑 **The crash was cheap because it happened at line 138, before any solve. The
+other two would have fired AFTER a 500–1100 s eigen solve** — which is precisely
+how the `azimuthal.order()` one cost 514 s.
+
+✅ **AND THE WORKING PATTERN WAS TWENTY LINES AWAY.** `h3_loopq.solve_one` does
+all three correctly. I imported from the same modules it imports from, and
+invented my own calls instead of copying its.
+
+✅ **Rules:**
+- 🔑 **Before launching ANY rig, print the signatures you call:**
+  `inspect.signature(f)` for each import, and one real invocation of the cheap
+  ones. **It takes one command and it is not optional** — a rig that dies after
+  the solve costs a session, one that dies before costs nothing.
+- **If another rig already calls the function, copy its call site verbatim.**
+  Do not re-derive the arguments from the docstring (§7an, again).
+- ⚠️ **A return value described in prose is not a schema.** *"P and its SPREAD"*
+  is a dict with two keys; *"f0, beta, Q_L, Q0"* is a dict; *"H1's cavity"* is a
+  bare tuple. **Read the `return` statement.**
+
+## 7at. `OPTIMIZER.md` IS the posterior store — read it before every evaluation
+
+🔴 **User, 2026-08-25: *"Feels like we're having to do bayesian optimization
+manually. Which is fine."*** ✅ **Exactly right, and it is the DESIGN.**
+`OPTIMIZER.md` line 5: *"an expensive black-box problem — Bayesian Optimisation's
+home ground. This file is what the isolation phase is producing FOR it."* It has
+a **search box** (§1), **prior mean functions** (§2), an **evaluation policy**
+(§3), and **measured evaluation cost for the acquisition function** (§3d).
+**The manual phase is prior elicitation, on purpose.**
+
+🔴 **AND I HAD STOPPED READING IT.** On 2026-08-25 I re-derived the cold coupling
+branch from raw S11 CSVs and reported Q₀ = 40,652 as a finding. **`OPTIMIZER.md`
+already said "branch-corrected cold Q₀ = 40,645"** — 0.02 % away — *and* noted
+the earlier wrong-branch report. **Sixth §7an occurrence, and the most avoidable:
+the file exists to be the memory.**
+
+⚠️ **WORSE, I BLAMED THE RIG FOR MY OWN MISREAD.** I published *"the rig put the
+cold point on the wrong branch"* after reading `wide_fit["beta"]`. **That field
+is the raw root; the rig labels it `"branch": "UNRESOLVED — |S11| alone cannot
+pick"` and separately returns `beta_undercoupled`, `beta_overcoupled`,
+`Q0_if_undercoupled`, `Q0_if_overcoupled`, `beta_resolved`, `branch`,
+`error_amplification` and `Q0_ill_conditioned`.** It got everything right. **I
+took the one field it marks as unresolved and called it the rig's answer.**
+
+✅ **Rules:**
+- **Before designing the next evaluation, read `OPTIMIZER.md`.** It is where the
+  last evaluation's information was supposed to go. A sequential design that
+  ignores its own posterior is just a random walk with extra steps.
+- 🔑 **When a rig returns several forms of a quantity, find the one it marks
+  AUTHORITATIVE.** A field named `beta` is not automatically the answer; this rig
+  deliberately returns the ambiguous root *and* the resolved one.
+- ✅ **Disagreement between a rig's OWN estimates is a free measurement.** Cold
+  `Q0_branch_free` (29,037) and `Q0_if_overcoupled` (40,645) agree only if
+  `Q_EXT_MEASURED` is correct. They differ by 40 %, and the Q_ext that reconciles
+  them is **8,462**. **That check was sitting unread in every result file.**
+- ⚠️ **Land findings INTO `OPTIMIZER.md`, not only `KNOWN.md`** — as a function
+  the surrogate can use, which is what that file asks for in its own §1.
+
+## 7au. ✅ CANONICAL NAMES WITH CONTEXT — the fix for the whole 7c/7t/7aq family
+
+🔑 **User, 2026-08-25: *"Rather than record values in files, we should
+canonicalize their names. Basically, add a level of indirection, so we can record
+different values in different contexts and refer to them by name."***
+
+✅ **This is the general form of a bug this programme has hit at least ten
+times.** Every one was a NAME meaning different measured things in different
+contexts, and a value crossing that boundary unnoticed:
+
+| name | values that have carried it |
+|---|---|
+| `eta.reference` | 44,384 · 29,854 · 12,368 · 43,523 — **§7c caught this ONE name four times** |
+| `cavity.Q_ext` | 9,231 (no-torch eigen) · 9,117 (vacuum-torch eigen) · 8,462 (driven dip) |
+| `cavity.Q0.cold` | 43,422 · 43,523 · 29,037 · 40,645 |
+| `cavity.f0.cold` | 2.451633 · 2.451500 · 2.437762 |
+
+✅ **IMPLEMENTED**: `values.py` + `contexts` in `baselines.json`.
+**A name alone no longer resolves.** `get("cavity.Q_ext")` raises and prints all
+three with the discriminating keys; `get("cavity.Q_ext", solver="driven_dip",
+mesh="vacuum_torch", ne=0.0, loop_mm=[11,8])` returns one. **An unmeasured
+context raises rather than falling back to the nearest** — which is §7aq stated
+as code instead of as a warning. Retracted values stay recorded but invisible
+unless asked for.
+
+🔑 **IT GENERALISES THREE GUARDS ALREADY HAND-ROLLED HERE** — `wall_sigma()`
+refusing an undeclared metal, `Q_REF_CONFIG` asserting groove/loop, GATE 4/5
+refusing an implicit port BC or a mismatched mesh. **Same instinct, three
+implementations, one value each.**
+
+🔴 **AND WIRING IT FOUND ANOTHER ONE IMMEDIATELY.** `h3_driven` meshes a VACUUM
+torch and hardcodes `Q_EXT_MEASURED = 9231` — **the NO-TORCH value.** The
+mesh-matched number is 9,117. **+1.25 %, carried by every `beta_resolved`,
+`Q0_branch_free` and derived VSWR in that rig.** Flagged at the constant; not
+switched, because that moves stored numbers and `h3_qext` is measuring the right
+one now.
+
+✅ **Rules:**
+- **A measured value that any other rig might read gets a canonical name and a
+  context.** Not a literal in the rig that produced it.
+- **Name the context axes that could differ**: solver, mesh/geometry state,
+  extraction method, operating point. **If two rows differ only in an axis you
+  did not record, you cannot tell them apart later** — which is exactly why
+  `h3_step3`'s 9,117 has no documented mesh style.
+- ⚠️ **Do not delete retracted values.** Record them with `retracted: true` and
+  their falsification; a number that reappears is then recognisable.
+
+## 7av. ✅ THE LINTER NOW ENFORCES IT — and the audit found what drifted
+
+🔑 **User, 2026-08-25: *"That's what baselines.json was for, but we kind of
+drifted away from it. We should audit everything for hardcoded values."*** and
+***"There might be a linter opportunity. Any value not read from baselines.json
+is an error."***
+
+✅ **AUDITED** (`hardcoded_audit.py`, AST not grep): **49 measured values
+hardcoded at module level across 27 files.** Worst first:
+
+| finding | why it matters |
+|---|---|
+| 🔴 **`NE = 1e20` in NINE rigs** | the density was **anchored at 7.3–8.6e18** on 2026-08-24. **13× too high.** Every one, re-run today, measures a plasma we do not build |
+| 🔴 **44,384 in EIGHT places under FIVE names** | `BARE_Q` · `Q_BARE` · `Q_BARE_EMPTY` · `Q_EMPTY_NO_LOOP` · `Q_TE011_BARE` — **and it is a RETRACTED `eta.reference`** (§7c) |
+| 🔴 **35,000,000 in THREE rigs** | **`wall_sigma()` exists to bind exactly this and REFUSE without it.** The guard was bypassed by typing the number |
+| ⚠️ **`Q_REF` means two things** | 44,414 (`h3_annular`) vs 43,523 (`h3_driven`) |
+| ⚠️ 43,523 · 9,231 · 2.4515 · 44,414 | each under **two** names in different files |
+
+✅ **ENFORCED**: `preflight.r_hardcoded_value`, in the gate `ops/go` already runs.
+A measured-looking literal is an **ERROR**; a value from `values.get(...)` or
+`wall_sigma()` passes; machinery (`N_MODES`, `CASE_TIMEOUT_S`) is ignored.
+🔑 **RATCHET, NOT BIG BANG.** All 49 are grandfathered by `(file, name)` so the
+gate did not brick 27 rigs. **A NEW hardcoded value errors immediately, and the
+list may only shrink.**
+✅ Verified with the consumer, not just the fixture: a fresh rig with
+`Q_BARE`/`SIGMA`/`NE` produces **3 errors**; the same rig binding them produces
+**0**.
+
+### 🔴 AND THE SELF-TEST CAUGHT A GUARD THAT HAD NEVER FIRED
+
+Adding the rule ran `--self-test`, which reported **`sh_rm_rf_var` does not fire
+on its own known-bad.** Its regex was `rm\s+-[rf]{2}\s+$[A-Za-z_]` — **`$` is
+an end-of-line anchor**, so it could never match. **The rule protecting against
+`rm -rf $VAR/` deleting `/` has been dead since it was written.** Fixed to `\$`.
+⚠️ **I made the inverse error in the same hour** — `\$` where I wanted an anchor
+— which is why the fix comment names both directions.
+🔑 **This is the file's own thesis proving itself:** *"a linter that never fires
+is theatre."* **The self-test is the only reason anyone found out.**
+
+## 7aw. ✅ ONE SLUG DETERMINES BOTH FILENAMES — inputs and outputs cannot drift
+
+🔑 **User, 2026-08-25: *"characterize everything by config file, found by a
+`--slug` parameter that contains the provenance from the docs"*** and
+***"the slug could be anything, but it determines both the input and output
+filenames."***
+
+    --slug <slug>   reads  baseline-<slug>.json
+                    writes <slug>.result.json · <slug>.log
+                           <slug>_<case>.msh · postpro/<slug>_*
+
+✅ **IMPLEMENTED**: `slug.py` — `parse()` (REFUSES without `--slug`, no default),
+`config()` (REFUSES if the config is absent, and if the file's own `slug`
+field disagrees with how it was loaded), `outfile()` / `out()` for names, and
+`bind()` which resolves a canonical value **through the run's declared context**
+rather than letting a rig reach for `values.get()` unrecorded.
+
+🔴 **WHAT IT FIXES, ALL OF WHICH HAPPENED:**
+- **§7ap the collision** — `h3_driven.result.json` was named for the **program**,
+  so every run aimed at one path. A re-run overwrote the previous numbers; an
+  rsync then pushed a day-old copy back with **mtime preserved**, so the clobber
+  looked like an ordinary old file. **29 rig-named `.result.json` files were in
+  this directory when the rule was written.**
+- **§7ao the lost baseline** — nothing archives a result file. **A slug per run
+  IS the archive**; there is no other.
+- **§7au the context collapse** — the config's `binds` records *which* `Q_ext`
+  this run used, in which context. `h3-driven-anchor-01` records, in its own
+  caveats, that it binds `mesh=no_torch` while **meshing** `vacuum_torch`.
+- **§7s the provenance gap** — "which run produced this?" is answered by the
+  filename.
+
+✅ **ENFORCED**: `preflight.r_output_not_slugged`. A module-level literal
+`TAG = "..."` is an **ERROR** — it names the program, not the run. 32 existing
+tags grandfathered; **the list may only shrink.**
+
+⚠️ **VALIDATION IS FILESYSTEM-SAFETY ONLY.** The slug may be anything usable as
+a filename component. **Carrying provenance is advice, not a gate** — the gate's
+only job is that input and output cannot drift apart.
+
+### ✅ AND THE REFERENCE IS CHECKED, NOT ASSERTED — `slug.py --check`
+
+**User: *"ideally, we should use slugs that reference the docs so that we get
+round-trips between code and prose."*** Both directions are verified:
+
+- **forward** — every `baseline-*.json`'s `provenance.document` names a file and
+  a section, and **the section text must actually appear in that file.** A run
+  claiming a doc section nobody wrote is an error.
+- **reverse** — every `baseline-*.json` a document cites **must exist on disk.**
+  A document pointing at a run whose config is gone is an error.
+
+🔑 **Its first run caught this very entry**, which used `baseline-<slug>.json` as a
+metavariable and so "cited" a config that does not exist. **That is the checker
+working**: prose drifts silently — a reference that is checked is the only kind
+that stays true.
+
+### 🔴 AND THE RATCHET BROKE ONCE, SILENTLY, BEFORE I CHECKED
+
+My first grandfather list was built from the **filenames** that declare a `TAG`,
+not the **TAG values** the rule compares against. **The self-test still passed**
+— it only proves a rule fires on known-bad and is quiet on known-good — while
+**33 of 34 rigs became unlaunchable.** Only running the rule across the whole
+corpus showed it.
+🔑 **A self-test proves a rule DISCRIMINATES. It says nothing about whether the
+rule is survivable.** Any ratchet must be run against every existing file
+before it is trusted, and that is now the last step of adding one.
+
+## 7ax. ✅ COPY the store per run — never edit the global to ask a question
+
+🔑 **User, 2026-08-25: *"we keep a global baselines.json, and then mutate it to
+an appropriate slug version depending on case, run the sweeps against it, and
+then either land the values back into the global baselines.json or if they're
+not definitive, sideline them as tentative pending further investigation"*** —
+and ***"I don't mean we edit baselines.json for every question, we COPY it."***
+
+```
+ baselines.json ──derive──▶ baseline-<slug>.json ──run──▶ <slug>.result.json
+      ▲                       (a FULL COPY, frozen)              │
+      └──── promote(definitive) ◀────── or ──────▶ promote(tentative)
+```
+
+✅ **`baseline-<slug>.json` IS a baselines.json** — same schema, every entry —
+plus a `_run` block holding provenance, binds, parameters and the **sha256 of
+the global it forked from.** The rig reads its values from **its own copy** and
+never touches the global at run time.
+
+🔴 **WHY THE COPY, NOT AN OVERRIDE FILE:**
+- **The global can move mid-run** without changing what the run used.
+- *"Which baselines did this run produce against?"* is **the file next to the
+  result**, not a reconstruction from dates.
+- **Mutating an input for one question is a local edit**, not a change everyone
+  else silently inherits — **which is exactly how `eta.reference` was wrong four
+  times (§7c) while no single run looked wrong.**
+
+### ✅ `tentative` IS THE HALF THAT WAS ALWAYS MISSING
+
+Values were previously either **asserted or absent**. A number that is measured
+but **not yet trustworthy had nowhere to live, so it got asserted.** Now:
+- `promote(..., status="definitive")` **REFUSES without a `verification`** —
+  baselines.json's own `_meta` rule, finally enforced in code.
+- `status="tentative"` is recorded, is visible in `describe()` marked
+  **⚠️TENTATIVE**, and is **NOT returned by `values.get()`** unless the caller
+  passes `allow_tentative=True` and says so at the call site.
+- ⚠️ **The first real sideline is cold `Q_ext = 8,462` (driven dip)** — not
+  wrong, **under-resolved**: 0.35 MHz linewidth at a 25 kHz step. It sits beside
+  the definitive 9,117 with its own falsification.
+- `promote()` also **refuses an undated row** — scripts here must not generate
+  timestamps, and an undated result cannot be ordered against a retraction.
+
+### ✅ ALL OF IT IS GIT-TRACKED, WHICH WAS ALREADY THE INTENT
+
+`.gitignore` carries `!*.result.json` with the comment *"a bare `*.json` would
+swallow baselines.json and every result file, **which are the evidence for every
+claim**."* So value history, retractions and promotions are **diffs**, and a
+retracted number is recoverable rather than deleted.
+
+⚠️ **`baseline-h3-driven-anchor-01.json` carries `sha256: null` on purpose.**
+That run executed **before this workflow existed**, so the global it ran against
+was never snapshotted and cannot be recovered. **It is the reason the mechanism
+exists**, and it is flagged in the file rather than quietly backfilled.
+
+## 7ay. Slugs PIN doc identifiers — supersede in prose, never renumber
+
+🔑 **User, 2026-08-25: *"every intermediate file needs the slug as well: meshes,
+logs, etc. So that they never collide and always retain their reference back to
+the docs. This means we can't reorder doc identifiers (such as with the H2 ↔ H3
+fiasco) but the docs can be edited to say 'invalid, superseded' or whatever."***
+
+✅ **This turns §7j from a rule people must remember into a property of the
+filesystem.** §7j's cost is on the record: the sustainment/groove **swap** moved
+the numbers while the status labels stayed with the numbers, `premature` landed
+on a question that was already ANSWERED, the groove never entered `GEO`, and
+**31 rigs measured a cavity nobody is building.**
+
+🔴 **ONCE A SLUG EXISTS, ITS IDENTIFIER IS PINNED** — by every artefact carrying
+it: `h3-qext-01.result.json`, `h3-qext-01.log`, `h3-qext-01_n18p90.msh`,
+`postpro/h3-qext-01_n18p90_wide/`. **Renumbering H3 does not rename those**, and
+nothing ever will. **The name on disk is the identifier's true owner.**
+
+✅ **SO SUPERSESSION IS AN EDIT, NOT A MOVE:**
+- Mark the doc section **"invalid, superseded by X"** and leave the identifier
+  where it is. **Identifiers are append-only.**
+- A new question gets a **new** identifier, never a recycled one.
+- **This is exactly §7j's "DROP, do not swap"**, now with the drop enforced:
+  a swap would orphan every artefact that cites the old number.
+
+✅ **CHECKED**: `slug.py --check` verifies a slug's leading segment against the
+`hypothesis` its config declares — so a run labelled `h3-*` that starts claiming
+H4 is an ERROR, not a silent reattribution. **Verified by simulating exactly the
+§7j drift: the check fires.**
+
+⚠️ **Coverage today:** 241 artefact f-strings already build from `TAG`, so they
+inherit the slug as soon as `TAG` does — which `r_output_not_slugged` forces.
+**49 build filenames with no tag at all** (e.g. `e0h_s{}.result.json`), and those
+are the remaining leaks. **They are the burn-down list**, not a claim of done.
+
+## 7az. ⏳ THE MIGRATION — scoped, planned, and NOT executed yet
+
+🔑 **User, 2026-08-25: *"we also have to rename everything extant to conform to
+the slug regime. And modify all scripts, and update CONVENTIONS.md."*** ✅ Right,
+and the inventory says it is bigger than it looks.
+
+### The inventory — 385 artefact files/dirs, 34 prefixes
+
+| class | count | what happens |
+|---|---:|---|
+| ✅ prefix maps to a rig | **25 prefixes** | retro slug `<rig>-00` |
+| 🔴 **NO OWNING RIG** | **9 prefixes, 37 files** | `e1b` `e1c` `e1cc` `scale` `e0fine` `e0coarse` `e0cond` `sfprobe` — **cannot be migrated** |
+| ✅ already slugged | 1 | `h3-driven-anchor-01` |
+
+🔴 **THE ORPHANS ARE THE INTERESTING PART. A slug must reference a doc section;
+these can reference nothing** — their producing code is gone (the deleted
+`waveguide`/`ignition` programmes, or earlier eras). **They are artefacts with
+no provenance and no way to acquire any.** Quarantine or delete is a user call,
+not a rename.
+
+⚠️ **`00` IS A WEAK CLAIM.** These are the residue of an era where a re-run
+overwrote its predecessor in place (§7ap), so "run 00" may be the third run with
+the first two destroyed. The retro configs carry `sha256: null` and say so.
+
+### 🔴 MY FIRST PLAN WAS WRONG AND THE DRY RUN CAUGHT IT
+
+I keyed the migration on `TAG`. It produced **195 renames and missed every
+mesh** — because **only 32 of 87 rigs declare a `TAG` at all.** The prefixes on
+disk are ground truth; the TAG table is a partial index of them. **A migration
+planned from the code would have renamed the logs and orphaned 369 MB of meshes
+from their sidecars.**
+
+### ⏳ TWO PRECONDITIONS, BOTH CURRENTLY UNMET
+
+1. 🔴 **NO RESTORE POINT.** 37 files are uncommitted, so `git checkout` to undo
+   a bad rename would also discard today's work. **And `*.msh` and `*.meta.json`
+   are GITIGNORED** — 369 MB with no safety net at all, including **the sidecar
+   GATE 5 validates every mesh against.** A rename that misses a sidecar breaks
+   every solve that uses it.
+2. 🔴 **A RIG IS RUNNING.** `h3_qext` is writing artefacts now. It is excluded
+   from the plan by name, and nothing may be synced until it exits.
+
+✅ **`migrate_slugs.py` plans and refuses.** `--apply` is deliberately
+unimplemented until both clear. **The plan file is the deliverable; the rename
+is not, yet.**
 
 ## 8. Land results in files, immediately
 

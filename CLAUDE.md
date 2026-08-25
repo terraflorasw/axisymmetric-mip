@@ -13,12 +13,22 @@ and **must never enter version control**. So:
         experiments/resonance/     <- THE LIVE PROGRAMME (the cavity)
         experiments/control-loop/  <- the SOURCE side: LDMOS, match, control.
                                       ⏸️ PARKED, opened 2026-08-24
-        experiments/waveguide/     <- ⚠️ SUPERSEDED by resonance
-        experiments/ignition/      <- ⚠️ SUPERSEDED by resonance
+        experiments/spectroscopy/  <- WHY any of it exists: the analytical
+                                      measurement. Opened 2026-08-24.
+                                      🔴 resonance is BLOCKED on one answer
+                                      from here: the required GAS TEMPERATURE
       soil-testing/  amip/         <- sibling programmes, not this repo
 
-⚠️ **`waveguide/` and `ignition/` are SUPERSEDED.** Their numbers are from
-earlier cavity designs and do not transfer. Do not cite them.
+⚠️ **`experiments/waveguide/` and `experiments/ignition/` were REMOVED**
+(commit `2db1d59`, 2026-08-24) — superseded by resonance. Their numbers come
+from earlier cavity designs and **do not transfer**; retrieve only to follow a
+citation, the way `FINDINGS.md` is handled:
+
+    git show 2db1d59^:experiments/waveguide/FINDINGS.md
+
+⚠️ Untracked solver artefacts (csv/msh/log/vtu) may still sit in those paths on
+a given machine. **They are data with no surviving documents — do not read them
+as results.**
 
 Consequences worth knowing:
 - `git` commands need `-C axisymmetric-mip`, or run them from inside the repo.
