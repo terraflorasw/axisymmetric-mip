@@ -259,6 +259,11 @@ def sh_rm_rf_var(src, _t=None):
     return [(ERROR, i + 1, "rm -rf on an unbraced variable — if it is empty "
              "this targets /. Use \"${VAR:?}\".")
             for i, l in enumerate(src.splitlines())
+            # 🔴 WAS `\s+$[A-Za-z_]` — `$` is an END-OF-LINE ANCHOR, so this
+            # could never match and the rule NEVER FIRED. Found 2026-08-25 by
+            # the self-test, which is the only reason it was caught. The shell
+            # sigil needs escaping: `\$`. (The same escape, inverted, is how the
+            # r_hardcoded_value regexes were wrong on the way in.)
             if re.search(r"rm\s+-[rf]{2}\s+\$[A-Za-z_]", l)
             and not l.strip().startswith("#")]
 
@@ -273,9 +278,181 @@ SH_BAD = {
 SH_GOOD = ('sudo blkid "$DEV" || sudo mkfs.ext4 "$DEV"\n'
            'ps -o pid=,args= -C palace | tail -n +1 | xargs -r kill\n'
            'rm -rf "${PREFIX:?}/build"\n')
+# ---------------------------------------------------------------------------
+# 🔴 User, 2026-08-25: *"There might be a linter opportunity. Any value not read
+# from baselines.json is an error."*
+#
+# baselines.json was created 2026-08-20 with wall_sigma() as the pattern: bind
+# the name, REFUSE if undeclared. It ended with ONE entry while 49 measured
+# values went into rigs as literals. The audit that found them is
+# hardcoded_audit.py; this rule is what stops the next one.
+#
+# 🔑 RATCHET, NOT BIG BANG. Every finding below is GRANDFATHERED by (file, name)
+# so the gate does not brick 27 existing rigs. A NEW hardcoded value is an ERROR
+# immediately. THIS LIST MAY ONLY SHRINK — deleting an entry is the fix, adding
+# one is how the rule dies.
+#
+# Worst of what it grandfathers, so the burn-down has an order:
+#   NE = 1e20 in NINE rigs   — anchored at 7.3-8.6e18 on 2026-08-24; 13x high
+#   44,384 in EIGHT places under FIVE names — a RETRACTED eta.reference (7c)
+#   35,000,000 in THREE rigs — wall_sigma() exists precisely to bind this
+_HARDCODED_GRANDFATHERED = {
+    "dimensionless.py":        {"C_MM_GHZ", "EPS0", "F0"},
+    "e0k2_anchor.py":          {"BAND_HALFWIDTH_MHZ"},
+    "e0k2_sizeq.py":           {"BARE_Q"},
+    "e3_closure.py":           {"NE"},
+    "h1_aspect.py":            {"F0", "SIGMA"},
+    "h2_groove.py":            {"SIGMA", "WIDTH"},
+    "h2b_groovescale.py":      {"Q_TE011_BARE", "REFERENCE_GHZ", "SIGMA"},
+    "h3_annular.py":           {"NE", "Q_REF"},
+    "h3_cold.py":              {"NE_HOT", "Q_EMPTY_NO_LOOP"},
+    "h3_driven.py":            {"COARSE_MIN_DEPTH_DB", "COLD_TE011_GHZ", "Q0_COLD_EIGEN", "Q_EXT_MEASURED", "Q_REF"},
+    "h3_eigen.py":             {"Q_BARE"},
+    "h3_eigenprobe.py":        {"R_MM"},
+    "h3_groove.py":            {"NE"},
+    "h3_hot.py":               {"T_COLD_K"},
+    "h3_loaded.py":            {"Q_BARE_EMPTY", "Q_BARE_WITH_LOOP"},
+    "h3_loopq.py":             {"Q_NOLOOP_GROOVED"},
+    "h3_loopsize.py":          {"BETA_TARGET", "NE"},
+    "h3_margin.py":            {"COLD_F0_FALLBACK", "NE"},
+    "h3_qext.py":              {"LOOPQ_EIGEN_NO_TORCH"},
+    "h3_sapphire.py":          {"NE"},
+    "h3_step3.py":             {"ANCHOR_GROOVED_GHZ", "DRIVEN_DIP_GHZ", "H3COLD_PICK_GHZ"},
+    "h3_superpose.py":         {"NE", "Q_BARE"},
+    "h4_field.py":             {"Q_BARE"},
+    "h4_seed.py":              {"ETA_FLOOR", "ETA_SAT", "Q_BARE"},
+    "physics.py":              {"ETA0", "T_GAS_ANCHOR_K"},
+    "probecheck.py":           {"NE", "R_MM"},
+    "results.py":              {"EPS0"}
+}
+
+_MEASURED = [
+    (re.compile(r"Q"), lambda v: abs(v) > 50, "a Q"),
+    (re.compile(r"SIGMA|COND"), lambda v: abs(v) > 1e5, "a conductivity"),
+    (re.compile(r"GHZ|FREQ|F0|_F$"), lambda v: 0.1 < abs(v) < 100, "a frequency"),
+    (re.compile(r"NE|N_E|DENS"), lambda v: abs(v) > 1e14, "a density"),
+    (re.compile(r"EPS|PERMIT|TAND"), lambda v: 0 < abs(v) < 100, "a material property"),
+    (re.compile(r"TEMP|_K$|KELVIN"), lambda v: abs(v) > 100, "a temperature"),
+]
+_MACHINERY = re.compile(r"^(N_|MAX|MIN|TOL|STEP|TIMEOUT|SIZE_|SECTORS|ORDER|"
+                        r"SAMPLES|SEED|DPI|VERBOSE|DEBUG|.*_S$|.*_DEG$|"
+                        r".*_ITER.*|.*_COUNT)")
+
+
+def r_hardcoded_value(src, tree, path=None):
+    """A MEASURED value must come from baselines.json, not from a literal."""
+    if tree is None:
+        return []
+    fname = (path or "").split("/")[-1]
+    allowed = _HARDCODED_GRANDFATHERED.get(fname, set())
+    skip = _fixture_lines(tree)
+    out = []
+    for node in tree.body:
+        if not isinstance(node, ast.Assign) or node.lineno in skip:
+            continue
+        for t in node.targets:
+            if not isinstance(t, ast.Name) or not t.id.isupper():
+                continue
+            if _MACHINERY.match(t.id) or t.id in allowed:
+                continue
+            v = node.value
+            if isinstance(v, ast.Constant) and isinstance(v.value, (int, float)):
+                val = v.value
+            elif (isinstance(v, ast.UnaryOp) and isinstance(v.op, ast.USub)
+                  and isinstance(v.operand, ast.Constant)):
+                val = -v.operand.value
+            else:
+                continue          # a call (values.get(...), wall_sigma()) is fine
+            if isinstance(val, bool):
+                continue
+            for pat, rng, what in _MEASURED:
+                if pat.search(t.id) and rng(val):
+                    out.append((ERROR, node.lineno,
+                                f"{t.id} = {val!r} looks like {what} hardcoded. "
+                                f"Measured values live in baselines.json: "
+                                f"values.get('<name>', **context). If it is not "
+                                f"a measurement, rename it so it does not read "
+                                f"as one."))
+                    break
+    return out
+
+
+# ---------------------------------------------------------------------------
+# 🔴 User, 2026-08-25: *"Any output files have to contain the slug as well, so
+# that we don't have the results.json collision from before."*
+#
+# `h3_driven` wrote `h3_driven.result.json` — named for the PROGRAM. Every run
+# of that program aimed at the same path, so a re-run overwrote the previous
+# run's numbers, and an rsync then pushed a day-old copy back over the fresh
+# one with its mtime preserved, making the clobber invisible (CONVENTIONS 7ap).
+# There were 29 such files in this directory when the rule was written.
+#
+# 🔑 RATCHET: the 32 existing rigs are grandfathered. A NEW rig must take its
+# tag from slug.parse()/slug.out(), and THIS LIST MAY ONLY SHRINK.
+_RIG_NAMED_TAGS = {
+    "e0k",
+    "e0k2",
+    "e0k2_azim",
+    "e0k2_bare",
+    "e0k2_betacause",
+    "e0k2_portfix",
+    "e0k2_sizeq",
+    "e0kp",
+    "e0q",
+    "e3_closure",
+    "h1",
+    "h2",
+    "h2b",
+    "h3_annular",
+    "h3_cold",
+    "h3_driven",
+    "h3_eigen",
+    "h3_eigenprobe",
+    "h3_groove",
+    "h3_hot",
+    "h3_ladder",
+    "h3_loaded",
+    "h3_loopq",
+    "h3_loopsize",
+    "h3_margin",
+    "h3_qext",
+    "h3_sapphire",
+    "h3_step3",
+    "h3_superpose",
+    "h4_field",
+    "h4_seed",
+    "probecheck",
+}
+
+
+def r_output_not_slugged(src, tree, path=None):
+    """A module-level literal TAG names the PROGRAM, so every run collides."""
+    if tree is None:
+        return []
+    skip = _fixture_lines(tree)
+    out = []
+    for node in tree.body:
+        if not isinstance(node, ast.Assign) or node.lineno in skip:
+            continue
+        for t in node.targets:
+            if (isinstance(t, ast.Name) and t.id == "TAG"
+                    and isinstance(node.value, ast.Constant)
+                    and isinstance(node.value.value, str)):
+                if node.value.value in _RIG_NAMED_TAGS:
+                    continue
+                out.append((ERROR, node.lineno,
+                            f'TAG = "{node.value.value}" names the PROGRAM, not '
+                            f'the RUN — every run of it writes to the same '
+                            f'.result.json and overwrites the last. Take the '
+                            f'tag from the slug: TAG = slug.parse(); outputs '
+                            f'via slug.out()/slug.outfile().'))
+    return out
+
+
 RULES = [r_timeout, r_pkill, r_main_guard, r_help_percent, r_ps_e_with_C,
          r_falsy_numeric_flag, r_bare_background, r_nearest_match,
-         r_undefined_name]
+         r_undefined_name, r_hardcoded_value,
+         r_output_not_slugged]
 
 BAD = {
     "r_timeout": "import subprocess\nsubprocess.run(['x'], timeout=5)\n",
@@ -288,6 +465,10 @@ BAD = {
                             'ap.add_argument("--viewport", type=float)\n'
                             'a=ap.parse_args()\nif a.viewport:\n    pass\n',
     "r_bare_background": "x = 'nohup python3 job.py &'\n",
+    # 🔴 an ungrandfathered file (self-test passes no path) hardcoding a Q
+    "r_hardcoded_value": "Q_BARE = 44384.0\n",
+    # 🔴 a NEW rig naming its outputs after itself
+    "r_output_not_slugged": 'TAG = "my_new_rig"\n',
     "r_nearest_match": "y = min(v, key=lambda x: abs(x - t))\n",
     # the real failure: an import dropped in a refactor, used in a function
     "r_undefined_name": "def f():\n    return eigen_cfg(1)\n"
@@ -308,8 +489,17 @@ def lint(path):
     except SyntaxError as e:
         return [(ERROR, e.lineno or 0, f"SyntaxError: {e.msg}")]
     blanked = code_only(src)
-    return [f for rule in RULES
-            for f in rule(src if rule.__name__ in RAW else blanked, tree)]
+    out = []
+    for rule in RULES:
+        text = src if rule.__name__ in RAW else blanked
+        # 🔑 r_hardcoded_value grandfathers by (FILE, name), so it needs the
+        # path. Passing it positionally to every rule would break their
+        # signatures, so it is opt-in by keyword.
+        if "path" in rule.__code__.co_varnames[:rule.__code__.co_argcount]:
+            out += rule(text, tree, path=path)
+        else:
+            out += rule(text, tree)
+    return out
 
 
 def self_test():

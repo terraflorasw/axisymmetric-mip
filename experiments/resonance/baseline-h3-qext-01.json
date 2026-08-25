@@ -12,8 +12,7 @@
   "unit": "S/m",
   "material": "bare electropolished aluminium 6061",
   "source": "R58 adopted bare electropolished aluminium on OPTICAL grounds (no plating to degrade or flake into the optical path). The conductivity is the handbook value for 6061 at 20 C, not a measurement of our surface \u2014 a real electropolished wall will fall SHORT of it, so every Q computed from this is an UPPER bound.",
-  "adopted": "2026-08-20",
-  "note": "Declared here because this programme's baselines start empty by design and nothing is inherited without re-derivation. The MATERIAL CHOICE is inherited from R58 and still needs its own re-derivation (optical vs Q trade); the NUMBER is a handbook input, which is why kind=input and it carries source rather than verification/falsification."
+  "adopted": "2026-08-20"
  },
  "cavity.Q_ext": {
   "kind": "result",
@@ -42,37 +41,34 @@
     "context": {
      "solver": "eigen_pair",
      "mesh": "vacuum_torch",
-     "ne": 0.0,
      "loop_mm": [
       11.0,
       8.0
-     ]
+     ],
+     "ne": 0.0
     },
-    "rig": "h3-qext-01",
-    "date": "2026-08-25",
-    "status": "definitive",
-    "verification": "h3_qext reproduces h3_step3 V1_ANCHOR to 4 figures on a mesh of known fingerprint",
-    "falsification": "had the driven dip on the SAME mesh agreed, the 7.7% gap would be a method artefact",
-    "supersedes": 9117.0
+    "rig": "h3_step3; reproduced by h3_qext",
+    "date": "2026-08-24",
+    "verification": "REPRODUCED EXACTLY 2026-08-25 by h3_qext, eigen pair on h3_driven_cold.msh: Q0=43,523 Q_L=7,538 Q_ext=9,117 beta=4.774. This SETTLES which h3_step3 mesh style produced it: the VACUUM-TORCH one.",
+    "falsification": null,
+    "note": "Was 'WHICH of h3_step3's two styles produced it is NOT documented'. Now documented by reproduction on a mesh of known fingerprint."
    },
    {
     "value": 8462.0,
     "context": {
      "solver": "driven_dip",
      "mesh": "vacuum_torch",
-     "ne": 0.0,
      "loop_mm": [
       11.0,
       8.0
-     ]
+     ],
+     "ne": 0.0
     },
-    "rig": "h3-qext-01",
+    "rig": "h3_driven",
     "date": "2026-08-25",
-    "status": "tentative",
-    "verification": null,
-    "falsification": "eigen on the identical mesh gives 9,117; the gap is entirely Q_L, and the cold linewidth is 0.35 MHz at a 25 kHz step (~14 samples)",
-    "note": "NOT wrong, UNDER-RESOLVED. Promote only if a finer cold sweep reproduces it.",
-    "supersedes": 8462.0
+    "verification": "the Q_ext that reconciles the rig's OWN Q0_branch_free (29,037) with its Q0_if_overcoupled (40,645)",
+    "falsification": "h3_qext measures the eigen pair on this exact mesh",
+    "note": "Q_L(1+beta)/beta from the measured S11 dip. Imports nothing."
    }
   ]
  },
@@ -232,5 +228,46 @@
     "retracted": true
    }
   ]
- }
+ },
+ "_run": {
+  "slug": "h3-qext-01",
+  "derived_from": {
+   "file": "baselines.json",
+   "sha256_16": "27332ea642719a99"
+  },
+  "provenance": {
+   "hypothesis": "H3 / NEXT.md item 8 follow-up",
+   "document": "KNOWN.md \u00a7 F1 ANSWERED \u2014 eigen and driven DO disagree, and the gap is in Q_L alone",
+   "question": "Does the eigen pair on h3_driven's OWN meshes agree with the driven dip on Q_ext?",
+   "supersedes": null,
+   "date": "2026-08-25",
+   "rig": "h3_qext.py"
+  },
+  "binds": {
+   "cavity.Q_ext": {
+    "solver": "eigen_pair",
+    "mesh": "vacuum_torch",
+    "ne": 0.0,
+    "loop_mm": [
+     11.0,
+     8.0
+    ]
+   }
+  },
+  "parameters": {
+   "cases": [
+    "cold",
+    "n18p90",
+    "n20p00"
+   ],
+   "port_bc": [
+    "pec",
+    "lumped"
+   ],
+   "ranks": 32,
+   "wall_conductivity_note": "unmodified from the global: h3_qext binds wall_sigma() at 3.5e7"
+  },
+  "note": "Copied from the global store, then mutated for this run. Edit THIS file, never the global, to change an input for one question. Land results back with slug.promote()."
+ },
+ "slug": "h3-qext-01"
 }

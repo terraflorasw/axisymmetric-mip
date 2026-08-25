@@ -134,7 +134,25 @@ it.** See CONVENTIONS §7f. The frozen value now lives in `GEO_DESIGN`.
 of them in FINDINGS.md — append-only provenance whose committed history already
 carries this numbering. Gaps in the sequence are cheaper than broken citations.
 
-## H3 — sustainment: COLD, HOT and LOADED · **NOT ANSWERED**
+## H3 — sustainment: COLD, HOT and LOADED · ✅ **ANSWERED 2026-08-24**
+
+✅ **All three regimes measured**, and both halves of the question closed:
+- **COLD** — TE011 2.451633 GHz, Q₀ 43,422, β 4.704, purity 0.9997 (`h3_loopq`)
+- **HOT** — f₀ −5.70 MHz/100 K, Q₀ ×0.838/100 K, **Q_ext thermally INVARIANT**
+  so β tracks Q₀; purity untouched (`h3_hot`)
+- **LOADED** — η = 0.986–0.998 over n_e 1e18–1e20, pull +30.9 MHz (`h3_driven`)
+- **(b) the groove under load** — `h3_margin`: groove depth moves the loaded f₀
+  by **0.000 MHz**, and depth PEAKS at 10 mm. **5 × 10 needs no refinement.**
+
+🔑 **The answer to (b) is the one nobody expected: the groove was not a variable
+after all.** It was right to ask — H2 was moved up precisely so H3 would have a
+baseline to refine — and the refinement turned out to be unnecessary.
+
+⚠️ **What H3 did NOT establish:** mode competition under load (driven shows what
+the PORT COUPLES TO, not what exists), and the energy-balance closure that would
+falsify η (PLAN E3, still never done).
+
+### The original H3, retained as provenance
 
 **H3 asks two things, and the second was lost:** (a) the sustainment numbers
 across cold / hot / loaded, and (b) **whether H2's groove still clears the band

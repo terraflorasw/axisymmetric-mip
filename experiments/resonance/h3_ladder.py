@@ -150,7 +150,11 @@ SF15_TOL_MHZ = 1.0
 # H2's measured groove effect, the external anchor for step 2
 H2_TM111_MHZ, H2_TE011_MHZ = -64.25, +0.014
 #        (name, geo,          loop)
-# 🔑 BARE + GROOVED only. `design` already converged (2.440003, Q=12,368) and is
+# 🔑 BARE + GROOVED only. ⚠️ 2026-08-24: this comment used to say `design`
+# "already converged (2.440003, Q=12,368)". **Both numbers are RETRACTED** —
+# they came from an eigen solve with the loop's port UNASSIGNED (= PMC = gap
+# OPEN), which hybridises TE011 (§7v). The design cavity is 2.451490 / 43,523.
+# The step is still skipped here, but for a different reason: it is
 # banked; re-running it costs 30 min for a number we have. **bare is KEPT** — it
 # is ~2 min and it supplies the continuation seed, without which `grooved` falls
 # back to m=0 identification, which is exactly the test that cannot tell TE011

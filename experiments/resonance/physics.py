@@ -396,3 +396,67 @@ if __name__ == "__main__":
           f"only {_rs:.0%} as hard as it moves TM010\n")
 
     print(f"\n  {'✅ ALL PASS' if ok else '🔴 FAILURES ABOVE'}")
+
+
+# ---------------------------------------------------------------------------
+# PLASMA STATE — one temperature sets everything (CONVENTIONS §7ad)
+# ---------------------------------------------------------------------------
+# 🔴 n_e, nu_m and n_gas are ONE STATE, not three constants. The code used to
+# set NE and NU_M independently, and nothing errored when they disagreed: the
+# solve converged and returned a coherent-looking answer for a plasma that
+# cannot exist. This function is the fix — give it a temperature, take all three.
+#
+# ✅ THE TEMPERATURE IS ANCHORED (2026-08-24):
+#    Kuonen, Hattendorf & Gunther, J. Anal. At. Spectrom. 39(5) 1388-1397 (2024),
+#    "Quantification capabilities of N2 MICAP-MS...", Table 2.
+#    PRESSURE-REDUCTION method, N2 MICAP: **5220 K and 5270 K** (two sample
+#    introduction conditions). refs/Quantification capabilities of N2 MICAP-MS...
+#
+# 🔑 WHY THAT METHOD AND NOT THE OTHERS. Table 2 gives three: pressure reduction
+#    (5220/5270 K), Longerich (12850/13800 K) and Houk & Praphairaksit
+#    (5910-6430 K). **ONLY THE PRESSURE METHOD IS EMPIRICAL** — it measures an
+#    interface pressure ratio with the plasma on and off. The other two infer T
+#    from the SAME MO+/M+ ion-ratio measurement through different equilibrium
+#    models, and they disagree by ~2x, which is model spread, not measurement
+#    spread. The paper itself notes Longerich "has always resulted in values
+#    between 9000 K and 13000 K" regardless of plasma.
+#    ✅ Internal check: the same method reads 5680-5780 K on their Ar ICP, and
+#    independent literature puts an Ar ICP at 5000-5280 K.
+#
+# ⚠️ CAVEATS THAT TRAVEL WITH THIS NUMBER:
+#    - It is the plasma AS SAMPLED THROUGH THE MS INTERFACE — the analytical zone
+#      at the sampling cone. The EM model's plasma is an r=2-8.5 mm annulus over
+#      +-46 mm. **Not the same region**, and an atmospheric plasma has gradients.
+#    - LTE is assumed. Non-LTE would put n_e ABOVE Saha-at-T_gas, so this is a
+#      LOWER BOUND on n_e.
+#    - Full N2 dissociation is assumed for the heavy density (fair above ~5000 K).
+#    - SIGMA_M is an order-of-magnitude cross-section, NOT a measured value; nu_m
+#      inherits its uncertainty directly. Stated, not hidden.
+#    ✅ Power does NOT enter: in an atmospheric plasma more power makes a BIGGER
+#    plasma, not a hotter one, so the paper's 1450 W vs this programme's 1 kW is
+#    not a discrepancy. Nor does MS-vs-OES — same plasma, different detector.
+
+T_GAS_ANCHOR_K = (5220.0, 5270.0)      # empirical range, pressure-reduction
+T_GAS_SOURCE = ("Kuonen/Hattendorf/Gunther JAAS 39(5) 2024 Table 2, "
+                "pressure-reduction method, N2 MICAP")
+E_ION_N_EV = 14.53                      # atomic nitrogen
+G_ION, G_NEUTRAL = 9.0, 4.0             # N+ (3P) / N (4S)
+SIGMA_M = 1.0e-19                       # m^2, momentum transfer — ORDER ONLY
+
+
+def plasma_state(T_gas, pressure=101325.0, sigma_m=SIGMA_M):
+    """(n_e, nu_m, n_heavy) from ONE temperature. See the note above.
+
+    n_e   — LTE Saha for atomic N, quasineutral, against the heavy density.
+    nu_m  — n_heavy * sigma_m * <v_e>, with <v_e> the electron thermal speed
+            at T_e = T_gas (LTE).
+    ⚠️ nu_m carries SIGMA_M's order-of-magnitude uncertainty. n_e does not.
+    """
+    kB, me, h, eV = 1.380649e-23, 9.1093837015e-31, 6.62607015e-34, 1.602176634e-19
+    n_heavy = pressure / (kB * T_gas)
+    A = (2.0 * (G_ION / G_NEUTRAL)
+         * ((2.0 * math.pi * me * kB * T_gas) / (h * h)) ** 1.5
+         * math.exp(-E_ION_N_EV * eV / (kB * T_gas)))
+    n_e = (-A + math.sqrt(A * A + 4.0 * A * n_heavy)) / 2.0
+    v_e = math.sqrt(8.0 * kB * T_gas / (math.pi * me))
+    return n_e, n_heavy * sigma_m * v_e, n_heavy

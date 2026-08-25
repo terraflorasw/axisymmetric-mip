@@ -59,7 +59,9 @@ VERIFICATION
   V3  every case reports its coarse dip AND its fine fit; a fine band that does
       not contain the coarse dip is a REFUSAL, not a silent re-centre.
   V4  the continuation seed and Q_REF must come from ONE cavity: cold TE011
-      2.440003 GHz / Q0 12,368, groove 5x10 + loop 11x8 (`h3_ladder`).
+      **2.451500 GHz / Q0 43,523**, groove 5x10 + loop 11x8 (`h3_step3`,
+      port terminated). ⚠️ This line once read "2.440003 / 12,368 (h3_ladder)" —
+      wrong numbers AND wrong provenance; both are retracted (§7v, §7s).
       `check_eta_reference()` enforces the geometry half at startup.
 FALSIFICATION
   🔴 F1  if eta at ne=1e19 is below 0.5, the sustaining margin is one decade or
@@ -102,19 +104,29 @@ TAG = "h3_driven"
 # ⚠️ It was 44384.0 here until 2026-08-24. That is the bare-cavity number and it
 # would have inflated every eta in this rig: 1 - Q0/44384 instead of
 # 1 - Q0/12368 reads HIGH, and the error grows as the plasma loads the cavity.
-Q_REF = 12368.0
+# 🔴🔴 BOTH CONSTANTS BELOW WERE RETRACTED 2026-08-24. Kept ONLY as a record.
+#   Q_REF = 12,368 and COLD_TE011_GHZ = 2.440003 came from `h3_cold`, whose eigen
+#   solve left the loop's port UNASSIGNED — which is PMC, not PEC, so the feed gap
+#   was OPEN. An open gap plus the loop is an LC resonator near 2.45 GHz that
+#   HYBRIDISES TE011 into a pair (CONVENTIONS §7v). **Neither number describes any
+#   mode this machine has.**
+# ✅ THE MEASURED DESIGN CAVITY (port terminated, `h3_step3` / `h3_loopq`):
+#       TE011 f0 = 2.451490 GHz (driven mesh) · 2.451633 (cold mesh)
+#       Q0     = 43,523        Q_ext = 9,231        beta = 4.70
+# ⚠️ Q_REF IS A VACUUM-TORCH NUMBER. h3_step3 meshed the torch at eps=1; the
+# design torch is SAPPHIRE eps=11.6, worth +2.0% on Q0 (e3_closure case B:
+# 44,387 wall-only with sapphire vs 43,523 here). So every eta normalised
+# against it is ~2% off in the SAME direction -- a systematic, not noise.
+# 🔴 Do not "correct" it by scaling: re-measure it on the design mesh when the
+# torch is restored (NEXT.md). Stated here so the next reader is not surprised.
+Q_REF = 43523.0                 # vacuum-torch cavity Q0, port terminated
 Q_REF_CONFIG = {"groove_mm": (5.0, 10.0), "loop_mm": (11.0, 8.0)}
-# 🔴 PROVENANCE, CORRECTED 2026-08-24. I first wrote "h3_ladder step 3" here.
-# THERE IS NO STEP 3 — the ladder ran ['bare', 'grooved'] and stopped. The number
-# comes from `h3_cold`, whose own selection was **"lowest A2/A0"** on a mode it
-# labelled **m_az = 1** — the heuristic TE311 defeated, not purity, not
-# continuation. The continuation argument (grooved 2.450561 -> -10.56 MHz here,
-# vs +43.88 to 2.494440) is REASONING I added afterwards, not how it was picked.
-# ⚠️ TREAT 12,368 AS PROVISIONAL until the cold driven sweep below confirms it.
-Q_REF_SOURCE = ("h3_cold 11x8 cold, sf 1.5, selected by lowest A2/A0 (m_az=1); "
-                "continuation argument added later; PROVISIONAL")
-COLD_TE011_GHZ = 2.440003   # the SAME solve Q_REF came from — seed and reference
-                            # must describe one cavity, or they disagree silently
+Q_REF_SOURCE = ("h3_step3 eigen, port_bc=pec (direct Q0, no port loss); "
+                "cross-checked by h3_loopq at 43,422 on the cold-style mesh")
+COLD_TE011_GHZ = 2.451500       # driven S11 locator; eigen agrees to 12 kHz
+# ⚠️ COLD_TE011_GHZ is a CROSS-CHECK only. The cold case LOCATES f0 empirically
+# and sets the continuation seed from what it finds (§7s) — this constant must
+# never become the seed again.
 
 # 🔴 THE COLD CASE NEEDS ITS OWN SWEEP, AND THIS IS WHY.
 # Cold linewidth = f0/Q0 = 2.440/12,368 = **197 kHz**. COARSE_STEP_GHZ is
@@ -150,7 +162,18 @@ SIZE_FACTORS = ["1.5", "1.42", "1.58"]
 # V1/V2 removed: closed form -> H2 -> ladder eigen -> THIS driven sweep.
 # 🔴 It is not a data point about plasma. It is the instrument check, and if it
 # fails nothing after it is quotable.
-NE_GRID = [0.0, 1.0e18, 3.0e18, 1.0e19, 3.0e19, 1.0e20]
+# 🔴 THE ANCHORED OPERATING POINT, ADDED 2026-08-24. It was NEVER ON THIS GRID.
+# n_e = 7.3-8.6e18 (LTE Saha from MICAP's measured 5220-5270 K). It falls in the
+# 3e18 -> 1e19 gap, a 3.3x span across which VSWR runs 43.3 -> 99.3 on the
+# STEEPEST limb of the curve, just below the peak between 1e19 and 3e19.
+# Every operating-point number in the record -- VSWR 80-89, Q0~109, beta~0.012,
+# ~45 A, 960 W dump -- was INTERPOLATED across that gap and never solved.
+N_E_ANCHOR    = 7.9e18            # centre; the value to quote
+N_E_ANCHOR_LO = 7.3e18            # MICAP 5220 K
+N_E_ANCHOR_HI = 8.6e18            # MICAP 5270 K
+NE_GRID = [0.0, 1.0e18, 3.0e18,
+           N_E_ANCHOR_LO, N_E_ANCHOR, N_E_ANCHOR_HI,      # <-- the machine
+           1.0e19, 3.0e19, 1.0e20]
 # 🔴 EMPTY ON PURPOSE — BOTH FORMER ANCHORS WERE VOID (2026-08-24).
 # They were:
 #   1e20: f0=2.481566, Q=163   <- groove-free. KNOWN discards the +31.6 MHz pull.
@@ -159,7 +182,19 @@ NE_GRID = [0.0, 1.0e18, 3.0e18, 1.0e19, 3.0e19, 1.0e20]
 #                                 annulus, which does not collapse.
 # 🔑 An anchor from the wrong cavity is worse than no anchor: it validates a
 # wrong answer and rejects a right one. Re-earn these on GEO_DESIGN.
-ANCHORS = {}
+# ✅ RESTORED 2026-08-24 — the anchor this rig asked for now EXISTS.
+# The note below said: "TO RESTORE: run the loaded eigen case at ne=1e20 on
+# GEO_DESIGN". `e3_closure` case E_vac_torch IS that run — loaded eigen, 1e20,
+# GEO_DESIGN (grooved, 11x8 loop), VACUUM torch (matches this rig's
+# --torch-material 1.0), port_bc=pec so Q is Q0. Solved 1140 s, P>=0.9996.
+#   f0 = 2.482470 GHz   Q0 = 163.2
+# 🔑 It already AGREES with this rig's previous 1e20 point to 70 kHz (2.8e-5)
+# and 3.42% in Q0 — an eigen-vs-driven cross-check on the DESIGN cavity, which
+# is the external anchor V1 lost when both groove-free anchors were voided.
+# ⚠️ 1e20 is NOT the operating point (see N_E_ANCHOR). This is an INSTRUMENT
+# anchor -- it validates the solver pair, not the machine.
+ANCHORS = {1.0e20: {"f0": 2.482470, "Q0": 163.2,
+                    "src": "e3_closure E_vac_torch (eigen, GEO_DESIGN, pec)"}}
 
 # 🔴 STAGE 1 IS WIDE AND COARSE, and both halves of that were wrong before.
 #
@@ -188,8 +223,25 @@ CONTINUATION_JUMP_MHZ = 25.0    # a bigger step than this between cases is REPOR
 # 🔑 Q_ext is set by LOOP GEOMETRY and is nearly independent of the plasma, so
 # ONE measurement serves the whole density sweep. That is what makes the
 # branch-free Q0 below possible.
-Q_EXT_MEASURED = 9117.0
-Q_EXT_SOURCE = "h3_step3 eigen pair (port_bc pec vs lumped), 11x8 loop"
+# ✅ UPDATED 2026-08-24 to h3_loopq's value: it measured Q_ext across FOUR loop
+# sizes and found the turning point (Q_ext MINIMISES at 176 mm^2), where
+# h3_step3 measured one. The two agree to 1.2% at 11x8 (9,117 vs 9,231).
+# 🔑 Q_ext is also THERMALLY INVARIANT (h3_hot: x0.996 over +100 K), so one
+# number serves cold, hot and loaded.
+# 🔴 CANONICAL NAME: `cavity.Q_ext` — see values.py / baselines.json.
+# ⚠️ THIS RIG IMPORTS A VALUE MEASURED ON A DIFFERENT CAVITY. It meshes a
+# VACUUM torch (80,621 tets, sf 1.42); 9,231 is the NO-TORCH eigen pair
+# (h3_loopq, GEO_DESIGN which carries --no-torch). The mesh-matched value is
+# h3_step3's 9,117 — +1.25% apart. Every beta_resolved, Q0_branch_free and
+# derived VSWR in this rig carries that import.
+#   values.get("cavity.Q_ext", solver="eigen_pair", mesh="vacuum_torch",
+#              ne=0.0, loop_mm=[11.0, 8.0])   -> 9117.0
+# 🔴 NOT SWITCHED HERE: changing it moves every stored number, so it belongs to
+# a deliberate re-run — and h3_qext is measuring the right value now anyway.
+# The WARNING must not wait for that (CONVENTIONS 7ar).
+Q_EXT_MEASURED = 9231.0
+Q_EXT_SOURCE = ("h3_loopq eigen pairs (port_bc pec vs lumped), 11x8 loop; "
+                "h3_step3 gives 9,117 on the driven-style mesh, 1.2% apart")
 Q0_COLD_EIGEN = 43523.0     # direct eigen measurement, port shorted = no port loss
 Q_EXT_EST = Q_EXT_MEASURED  # legacy name, kept so the forecast block still reads
 SHALLOW_DB = 0.30       # below this the dip is too shallow to trust a fit from
@@ -479,7 +531,9 @@ def main():
 
     # 🔴 CONTINUATION SEED — MEASURED, NOT ANALYTIC. Was `exact` (2.4500, the
     # closed-form BARE value) until 2026-08-24. This rig meshes groove 5x10 +
-    # loop 11x8, whose cold TE011 sits at 2.440003 — **10.56 MHz below the
+    # loop 11x8, whose cold TE011 sits at 2.451500 — ⚠️ this comment once said
+    # 2.440003, an open-gap artifact. The seed is now LOCATED empirically
+    # anyway, so no constant can steer it. Historically it was **10.56 MHz from the
     # seed**, and the loop is what moves it.
     # ⚠️ THIS EXACT BUG ALREADY COST A RUN: `h3_sapphire` was seeded from another
     # regime and selected 2.4472 instead of 2.4824. A seed from the wrong cavity
@@ -734,7 +788,9 @@ def _report(out):
               "Nothing here is quotable.")
     print()
 
-    a = P.get(1.0e20)
+    # 🔴 WAS `P.get(1.0e20)`. 1e20 is NOT the operating point and never was —
+    # it is 13x the anchored density (CONVENTIONS §7ab). Report the ANCHOR.
+    a = P.get(N_E_ANCHOR)
     if a:
         print("  🔴 V1 SUSPENDED — no valid eigen anchor on the DESIGN cavity.")
         print(f"     measured here: f0={a['wide_fit']['f0']:.6f} GHz  "
@@ -746,10 +802,20 @@ def _report(out):
     else:
         # ⚠️ This `else:` was lost in an edit and its body ran inside the `if`,
         # so the rig printed a measured eta AND "missing" for the same case.
-        print("  🔴 ne=1e20 missing — the operating point was not measured.")
+        print(f"  🔴 ne={N_E_ANCHOR:.1e} missing — THE OPERATING POINT WAS NOT "
+              f"MEASURED. (Do not substitute 1e20: different regime — the plasma "
+              f"shields there, delta/shell 0.30, vs 1.06 here.)")
     g = P.get(1.0e19)
     if g:
         print(f"\n  🔑 THE GAP: eta(ne=1e19, eps=-2.109) = {g['eta']:.4f}")
+        # ⚠️ F1's PREMISE IS NOW STALE and its threshold is not re-tuned here.
+        # It calls 1e19 "one decade below the operating point" — true when the
+        # operating point was assumed to be 1e20. Against the anchored 7.9e18,
+        # 1e19 is ABOVE it. And eta is flat (0.986-0.998) across the whole grid,
+        # so this falsifier cannot discriminate anyway (§7z). Read it as a
+        # RECORDED VALUE, not as a test, until it is restated.
+        print("  ⚠️ F1's premise is stale: 1e19 is ABOVE the anchored 7.9e18, "
+              "not a decade below it. Reported, not tested.")
         print("  F1 " + ("🔴 FIRES — eta < 0.5 one decade below the operating "
                          "point; mass loading is a HARD nebuliser constraint."
                          if g["eta"] < 0.5 else

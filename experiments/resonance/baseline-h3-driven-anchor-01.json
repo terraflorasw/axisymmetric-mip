@@ -232,5 +232,81 @@
     "retracted": true
    }
   ]
+ },
+ "slug": "h3-driven-anchor-01",
+ "_run": {
+  "slug": "h3-driven-anchor-01",
+  "derived_from": {
+   "file": "baselines.json",
+   "sha256_16": null,
+   "note": "\ud83d\udd34 RETROFITTED 2026-08-25. This run executed BEFORE the copy-per-slug workflow existed, so the global it ran against was never snapshotted and its hash cannot be recovered. The values below are the CURRENT global, not necessarily what the run saw. Every later run has a real hash; this one is the reason the mechanism exists."
+  },
+  "provenance": {
+   "hypothesis": "H3 / NEXT.md item 8",
+   "document": "KNOWN.md \u00a7 THE OPERATING POINT IS MEASURED",
+   "question": "What are f0, Q0, beta and band margin at the ANCHORED density 7.3-8.6e18, which no grid had ever contained?",
+   "supersedes": "the 6-point grid of 2026-08-24, whose result.json was overwritten (CONVENTIONS 7ap) and whose values survive only where they were captured before the clobber",
+   "date": "2026-08-25",
+   "rig": "h3_driven.py",
+   "user": "'E3 seems like a waste of time at 1e20. In fact, we probably have to re-run H3 with the right number'"
+  },
+  "binds": {
+   "cavity.Q_ext": {
+    "solver": "eigen_pair",
+    "mesh": "no_torch",
+    "ne": 0.0,
+    "loop_mm": [
+     11.0,
+     8.0
+    ]
+   },
+   "eta.reference": {
+    "status": "current",
+    "mesh": "vacuum_torch"
+   }
+  },
+  "parameters": {
+   "ne_grid": [
+    0.0,
+    1e+18,
+    3e+18,
+    7.3e+18,
+    7.9e+18,
+    8.6e+18,
+    1e+19,
+    3e+19,
+    1e+20
+   ],
+   "n_e_anchor": 7.9e+18,
+   "n_e_anchor_band": [
+    7.3e+18,
+    8.6e+18
+   ],
+   "torch_material": [
+    1.0,
+    3.5e-05
+   ],
+   "groove_mm": [
+    5.0,
+    10.0
+   ],
+   "loop_mm": [
+    11.0,
+    8.0
+   ],
+   "mesh": {
+    "tets": 80621,
+    "size_factor": 1.42
+   },
+   "solver": "driven",
+   "ranks": 32,
+   "order": 2
+  },
+  "caveats": [
+   "\u26a0\ufe0f VACUUM TORCH. GEO_DESIGN carries --no-torch and this rig meshes eps=1. The design torch is sapphire 11.6: f0 -13.87 MHz, Q0 +2.0% (e3_closure case B).",
+   "\ud83d\udd34 binds cavity.Q_ext at mesh=no_torch while MESHING vacuum_torch -- a cross-context import of +1.25%, recorded here rather than hidden. h3_qext is measuring the matched value.",
+   "\u26a0\ufe0f Results were RECONSTRUCTED from postpro/*/port-S.csv after the clobber; the cold point differs from the rig's own field because the rig's `beta` is the raw unresolved root (CONVENTIONS 7at)."
+  ],
+  "note": "Copied from the global store, then mutated for this run. Edit THIS file, never the global, to change an input for one question."
  }
 }

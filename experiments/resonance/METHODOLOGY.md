@@ -1,18 +1,22 @@
 # METHODOLOGY — using gmsh and Palace without fooling yourself
 
 **Working artifact, rev 4 (2026-08-20). REGENERATED, not appended** — like
-`EXPERIMENTS.md` and `AUDIT.md`.
+`waveguide/EXPERIMENTS.md` and `waveguide/AUDIT.md` **(both REMOVED)**.
+⚠️ **2026-08-24: they lived in `experiments/waveguide/`, which was REMOVED**
+(commit `2db1d59`) as superseded by resonance. Retrieve only to follow a
+citation: `git show 2db1d59^:experiments/waveguide/EXPERIMENTS.md`. **Their
+numbers are from earlier cavity designs and do not transfer.**
 
 ⚠️ **UPDATED 2026-08-23.** `FINDINGS.md` was removed from the working tree (it
 had grown to 5,300 lines across three invalidated eras). **`KNOWN.md` is now the
 authority on what is established**; where this file disagrees with KNOWN.md,
 KNOWN.md wins. FINDINGS is retrievable for citations:
 `git -C axisymmetric-mip show ba740d6:experiments/resonance/FINDINGS.md`
-⚠️ `EXPERIMENTS.md` and `AUDIT.md` are also absent from this directory.
+⚠️ Both are absent from this directory — see the note above.
 
 **What this is.** Tool-specific lessons, each paid for with at least one wrong
 answer. It is not a tutorial and not general epistemics — the reasoning hazards
-live in `EXPERIMENTS.md` §5. This is what these two programs do that is
+lived in `waveguide/EXPERIMENTS.md` §5 **(REMOVED — see above)**. This is what these two programs do that is
 surprising, silent, or both.
 
 > 🔑 **THE ONE RULE.** *The solver is deterministic; the mesher is not stable

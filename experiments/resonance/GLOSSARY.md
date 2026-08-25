@@ -17,7 +17,14 @@ be, and the wrong reading survives because nothing crashes.
 built a rig that tagged the plasma cases "hot", propagating the confusion.
 Hot differs from cold by: dimensions (α = 23.1e-6/K → **−5.7 MHz at +100 K**),
 gas density (n ∝ 1/T → **E/N 10× higher at 3000 K**), wall σ (**Q × 0.78 at
-+100 K**). It is the regime that decides whether the instrument restarts itself.
++100 K** — 🔴 **MEASURED ×0.838 on 2026-08-24 (`h3_hot`)**, which is exactly
+√σ with standard aluminium α_R = 4.29e-3/K. 0.78 needs α_R = 6.44e-3/K, ~1.5×
+aluminium. **Unresolved: σ is a solver INPUT, so where did 0.78 come from?**). It is the regime that decides whether the instrument restarts itself.
+⚠️ **2026-08-24: read that as EMPHASIS, not a finding.** It was written to stop
+HOT being dropped, and it has been over-read since. A hot cavity can be allowed
+to cool, or cooled harder. **The real consequence is that the control loop needs
+a cavity TEMPERATURE input** — with it, thermal detuning is a computed offset
+(−5.7 MHz/100 K) rather than a search. **A parameter to read, not a barrier.**
 
 ## The MODE FILTER — two devices, one name
 

@@ -64,9 +64,24 @@ A_MM, L_MM = 103.70, 88.53
 # the absence is a DECLARATION rather than an omission — and it is for the
 # instrument rigs that compare against closed form, where a plain cylinder is
 # the point.
-# ✅ GEO_DESIGN is the cavity being built. **Any rig whose result is a DESIGN
-# number must use GEO_DESIGN.** `run()` refuses a plasma solve on a groove-free
-# mesh unless the caller says `allow_no_groove=True`.
+# ⚠️⚠️ GEO_DESIGN IS NOT THE FULL DESIGN — READ THIS BEFORE TRUSTING ITS NAME.
+# It is GEO with the GROOVE restored, and NOTHING ELSE. In particular it still
+# carries `--no-torch` from GEO, so **every rig that uses GEO_DESIGN as-is
+# solves a cavity with NO TORCH BODY** (h3_loopq, h2_groove, h3_ladder, ...).
+# The cavity being built has a SAPPHIRE torch, eps = 11.6.
+#   measured 2026-08-25 (e3_closure case B vs h3_loopq):
+#     sapphire torch vs none ->  f0  -13.87 MHz,  Q0  +2.0%
+# 🔴 So every eigen f0 in the record is ~14 MHz HIGH, and Q_REF is ~2% LOW.
+# h3_driven strips `--no-torch` and meshes the torch at eps=1 (vacuum), which is
+# NOT the same cavity either -- see CONVENTIONS 7aq: cross-solver comparisons
+# must match geometry AND mesh.
+# ⚠️ NOT PATCHED HERE ON PURPOSE: adding the torch invalidates every stored f0,
+# so it belongs to one deliberate re-mesh with the apertures and chimney
+# (NEXT.md restoration). The WARNING must not wait for that; the change may.
+#
+# ✅ Any rig whose result is a DESIGN number must use GEO_DESIGN **and state its
+# torch state**. `run()` refuses a plasma solve on a groove-free mesh unless the
+# caller says `allow_no_groove=True`.
 GROOVE_DESIGN = (5.0, 10.0)     # H2, frozen: width 5 mm, depth 10 mm
 
 GEO = ["--radius", f"{A_MM}", "--length", f"{L_MM}", "--order", "2",
@@ -199,6 +214,22 @@ def eigen_cfg(tag, meta, mesh=None, sigma=None, n=22, target=1.05, order=2,
         c["Boundaries"]["Conductivity"] = [
             {"Attributes": [a["wall"]], "Conductivity": sigma,
              "Permeability": 1.0}]
+
+    # ---- GATE 5: the mesh the solver is told to read must be the mesh the
+    # SIDECAR describes. `meta` records its own source in meta["mesh"]; a caller
+    # that builds "x.msh" and then asks for "x_pec.msh" gets rc=1 in 2 s with no
+    # useful message. That exact bug cost a launch on 2026-08-24, and it is the
+    # SAME shape as `sweep()` using the OUTPUT tag to find the mesh (§7).
+    _m = meta.get("mesh")
+    _want = pathlib.Path(mesh or f"{tag}.msh").name
+    if _m and pathlib.Path(_m).name != _want:
+        raise RuntimeError(
+            f"{tag}: GATE 5 — asked to solve '{_want}' but the sidecar "
+            f"describes '{pathlib.Path(_m).name}'.\n"
+            f"  🔑 Pass the MESH tag and the OUTPUT tag separately. Binding the "
+            f"solve to a mesh\n"
+            f"     the metadata does not describe is how a rig solves the wrong "
+            f"cavity in silence.")
 
     # ---- GATE 4: no surface may reach the solver by DEFAULT.
     port = a.get("port")

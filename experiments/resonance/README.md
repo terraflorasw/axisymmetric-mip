@@ -31,8 +31,9 @@ the cavity does reaches it through exactly two doors — **delivered power** and
 Its register grew by generating its own questions: R99→R101→R103→R105→R106→
 R107→R109→R110→R111→R112→R113, each opened by the previous result's
 uncertainty. An inward-facing loop with no external anchor can only expand.
-`CONSOLIDATION.md` in `../waveguide` records what survived the audit and what
-did not.
+⚠️ **`../waveguide/` was REMOVED 2026-08-24** (commit `2db1d59`) as superseded.
+Its `waveguide/CONSOLIDATION.md` recorded what survived that audit and
+what did not.
 
 ⚠️ **Not everything there was wrong** — frequencies, same-mesh differences, mode
 character and **lit η** all survive. But the explanatory layer does not, and no

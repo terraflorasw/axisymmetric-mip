@@ -577,7 +577,7 @@ not). Free in every solve.
 - ✅ **Driven-mode coupling is now measured** — β = 0.015–0.098 on the loaded
   annulus, and driven f₀/η validated against eigen on the SAME geometry to
   0.83 MHz and 0.0006.
-  🔴 **But Q_ext is NOT transferable between meshes.** e0k2's Q_ext≈50,709 gives
+  🔴 **But Q_ext is NOT transferable between meshes.** ⚠️ **2026-08-24: e0k2's 50,709 was measured with the loop's port UNASSIGNED (= gap OPEN, §7v) and is retracted. Measured value: Q_ext = 9,231**, and it is thermally invariant (`h3_loopq`, `h3_hot`). Historically, e0k2's Q_ext≈50,709 gives
   Q₀ 12× different from the linewidth route on a different mesh. β is not
   mesh-converged (43% for a 1.25× refinement); Q_ext inherits that.
   🔑 **Quote η, not Q₀.** Driven and eigen agree on η to **0.0006** while
