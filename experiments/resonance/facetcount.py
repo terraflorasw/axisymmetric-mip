@@ -29,7 +29,13 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import physics as ph
 
 MESH = "e0f2_o1.msh"
-A_MM, L_MM = 103.70, 88.53
+# 🔴 LEGACY CAVITY, DELIBERATELY NOT BOUND. 103.70/88.53 is D/L = 2.343 —
+# candidate A, which H1 REJECTED. This script ANALYSES data meshed at those
+# dimensions, so the closed form here must use them or the comparison is
+# meaningless. Binding it to cavity.d_over_l would silently break that.
+# ⚠️ THEREFORE NOTHING HERE IS A DESIGN NUMBER. Re-run on H1's cavity is
+# queued in NEXT.md § THE GEO RE-RUN LIST (2026-08-25).
+A_MM, L_MM = 103.70, 88.53   # LEGACY — see above
 MODEL = {"TE011": ("TE", 0, 1, 1), "TM010": ("TM", 0, 1, 0),
          "TM020": ("TM", 0, 2, 0), "TM011": ("TM", 0, 1, 1),
          "TM110": ("TM", 1, 1, 0), "TE111": ("TE", 1, 1, 1)}

@@ -90,7 +90,21 @@ def parse(argv=None):
     return s
 
 
+def _require_slug(slug):
+    """A slug is a short string. Passing a config DICT built a 6 KB filename
+    and raised deep in pathlib instead of here (2026-08-25)."""
+    if not isinstance(slug, str):
+        raise TypeError(
+            f"slug must be a str, got {type(slug).__name__}. "
+            f"config() returns the CONFIG; stamp()/out()/config() all take the "
+            f"SLUG. You probably wrote stamp(config(slug)) for stamp(slug).")
+    if not slug or len(slug) > 64 or "/" in slug or "\n" in slug:
+        raise ValueError(f"implausible slug {slug[:40]!r}")
+    return slug
+
+
 def config_path(slug):
+    _require_slug(slug)
     return pathlib.Path(__file__).with_name(CONFIG_FMT.format(slug=slug))
 
 
@@ -119,27 +133,68 @@ def config(slug):
     return d
 
 
-def out(slug, *parts):
-    """A TAG guaranteed to carry the slug:  slug_part_part.
+# ---------------------------------------------------------------------------
+# 🔑 User, 2026-08-25: *"intermediate files and outputs include the hash of
+# their input baselines, up to 8 characters, say. So if the input file changes
+# without the slug changing, we can see if they differ."*
+#
+# The slug pins WHICH question. The STAMP pins WHICH INPUTS answered it.
+#
+#     h3-qext-01.4f2a9c31.result.json
+#     h3-qext-01.4f2a9c31_n18p90.msh
+#     ^---------^ ^------^
+#      question    the exact bytes of baseline-h3-qext-01.json
+#
+# 🔴 WHAT IT CATCHES THAT THE SLUG ALONE CANNOT: a config edited between two
+# runs of the same slug. Without the stamp the second run overwrites the first
+# and the difference is invisible — which is CONVENTIONS 7ap with extra steps.
+# With it, the outputs land at DIFFERENT NAMES and the divergence is a directory
+# listing.
+#
+# ✅ AND IT CONVERTS IDEMPOTENCE FROM A HOPE INTO A CHECK (7bc): same slug +
+# same stamp must mean same output. If it does not, the non-determinism is in
+# the SOLVER, not the inputs — and that is now a separable question.
+#
+# ⚠️ The config itself is NOT stamped: it cannot contain its own hash. Only
+# what it produces carries it.
+def stamp(slug):
+    """First 8 hex of sha256(baseline-<slug>.json) — the input fingerprint."""
+    return _sha(config_path(slug))[:8]
 
-    For per-case artefacts — meshes, Palace output dirs, solve tags.
-        out("h3-driven-anchor-01", "n18p90")  -> h3-driven-anchor-01_n18p90
-    """
+
+def out(slug, *parts):
+    """A stamped TAG:  slug.stamp_part_part  — meshes, postpro dirs, solves."""
     tail = "_".join(str(p) for p in parts if p not in (None, ""))
-    return f"{slug}_{tail}" if tail else slug
+    base = f"{slug}.{stamp(slug)}"
+    return f"{base}_{tail}" if tail else base
 
 
 def outfile(slug, suffix):
-    """A FILE NAME guaranteed to carry the slug:  slug.suffix
+    """A stamped FILE NAME:  slug.stamp.suffix
 
-        outfile("h3-driven-anchor-01", "result.json")
-            -> h3-driven-anchor-01.result.json
-
-    🔴 This is the one that stops CONVENTIONS 7ap. The clobbered file was
-    `h3_driven.result.json` — named for the PROGRAM, so every run of that
-    program aimed at the same path.
+    🔴 This is what stops 7ap AND its subtler cousin. `h3_driven.result.json`
+    was named for the PROGRAM, so every run collided. `<slug>.result.json` fixes
+    that across questions; `<slug>.<stamp>.result.json` fixes it across INPUT
+    REVISIONS of the same question.
     """
-    return f"{slug}.{suffix.lstrip('.')}"
+    # 🔴 "result.json is not a valid filename" — user, 2026-08-25. The suffix is
+    # a SUFFIX, not a path: a caller passing an absolute/relative path, or a
+    # name already carrying a stamp, would produce something that reads like a
+    # qualified artefact but is not one.
+    suffix = suffix.lstrip(".")
+    if "/" in suffix or suffix.startswith("baseline-"):
+        raise SlugError(f"outfile suffix {suffix!r} is a PATH or a config name, "
+                        f"not a suffix. Pass e.g. 'result.json'.")
+    if stamp_of_artefact(f"x.{suffix}"):
+        raise SlugError(f"outfile suffix {suffix!r} already carries a stamp — "
+                        f"the result would be double-stamped.")
+    return f"{slug}.{stamp(slug)}.{suffix}"
+
+
+def stamp_of_artefact(name):
+    """The stamp embedded in an artefact name, or None."""
+    m = re.match(r"^(?P<slug>.+?)\.(?P<stamp>[0-9a-f]{8})[._]", name)
+    return (m.group("slug"), m.group("stamp")) if m else None
 
 
 def bind(slug, name):
@@ -189,10 +244,66 @@ def doc_ref(cfg):
     return f.strip(), anchor.strip()
 
 
+
+def check_stamps(root=None):
+    """Do the artefacts on disk still match the config that claims to describe them?
+
+    🔴 THIS IS THE DETECTION THE STAMP EXISTS FOR. An artefact carries the hash
+    of the inputs that produced it. If the config has been edited since, the
+    stamps disagree — and the config no longer describes the result sitting next
+    to it. Without this the edit is invisible and the result silently acquires a
+    provenance it never had (CONVENTIONS 7s).
+    """
+    root = pathlib.Path(root or pathlib.Path(__file__).parent)
+    known = {p.name[len("baseline-"):-len(".json")] for p in root.glob("baseline-*.json")}
+    out, seen = [], {}
+    for p in sorted(root.glob("*")) + sorted((root / "postpro").glob("*")):
+        got = stamp_of_artefact(p.name)
+        if not got:
+            continue
+        sl, st = got
+        if sl not in known:
+            continue
+        seen.setdefault(sl, set()).add(st)
+    for sl, stamps in sorted(seen.items()):
+        cur = stamp(sl)
+        stale = sorted(stamps - {cur})
+        if stale:
+            out.append(("ERROR",
+                        f"{sl}: artefacts carry stamp(s) {stale} but "
+                        f"baseline-{sl}.json now hashes to {cur} — THE CONFIG "
+                        f"WAS EDITED AFTER THE RUN. Those results were produced "
+                        f"by inputs that no longer exist. Either restore the "
+                        f"config or re-run under a new slug."))
+    # 🔴 THIS SWEEP WAS KNOWN-SLUG-DRIVEN AND THEREFORE NEARLY BLIND.
+    # It only looked at slugs that HAVE a baseline-*.json, so every artefact
+    # whose slug never got a config was invisible: 30 of 32 *.result.json files
+    # carried no stamp and the check reported ONE. An audit that can only see
+    # the things already registered is not an audit (7d).
+    # ✅ Now driven by what is ON DISK.
+    unstamped = [p.name for p in sorted(root.glob("*.result.json"))
+                 if not stamp_of_artefact(p.name)]
+    if unstamped:
+        out.append(("WARN",
+                    f"{len(unstamped)} result file(s) carry NO stamp, so the "
+                    f"inputs that produced them cannot be verified "
+                    f"(e.g. {unstamped[:3]}). These predate the stamp regime. "
+                    f"Under CONVENTIONS 7bm they are NOT citable as current "
+                    f"results without a re-run; see NEXT.md."))
+    return out
+
+
+def unstamped_artefacts(root=None):
+    """Every result file on disk with no stamp, so the burn-down is countable."""
+    root = pathlib.Path(root or pathlib.Path(__file__).parent)
+    return sorted(p.name for p in root.glob("*.result.json")
+                  if not stamp_of_artefact(p.name))
+
+
 def check_roundtrip(root=None):
     """Findings as (severity, message). Empty means both directions resolve."""
     root = pathlib.Path(root or pathlib.Path(__file__).parent)
-    out, slugs = [], {}
+    out, slugs = list(check_all_unique(root)) + list(check_stamps(root)), {}
     for c in sorted(root.glob("baseline-*.json")):
         slug = c.name[len("baseline-"):-len(".json")]
         try:
@@ -288,10 +399,8 @@ def derive(slug, provenance=None, binds=None, parameters=None):
         change everyone else silently inherits — which is how `eta.reference`
         was wrong four times without any single run looking wrong (7c).
     """
+    check_unique(slug)          # 🔑 uniqueness is a PRECONDITION, not a hope
     p = config_path(slug)
-    if p.exists():
-        raise SlugError(f"{p.name} exists — a run's config is immutable once "
-                        f"written. Take the next run number.")
     g = pathlib.Path(__file__).with_name("baselines.json")
     cfg = json.loads(g.read_text())          # ← the WHOLE store, copied
     cfg["_run"] = {
@@ -305,6 +414,53 @@ def derive(slug, provenance=None, binds=None, parameters=None):
                 "question. Land results back with slug.promote().",
     }
     cfg["slug"] = slug
+    p.write_text(json.dumps(cfg, indent=1) + "\n")
+    return p
+
+
+
+def retro(slug, provenance=None, root=None):
+    """Write a config for an artefact set that ALREADY EXISTS, honestly marked.
+
+    🔴 THE MIGRATION CREATED 50 RETRO SLUGS WITH ARTEFACTS AND NO CONFIG — the
+    exact state this whole regime exists to eliminate: results on disk with no
+    record of what produced them. But `derive()` REFUSES over existing artefacts
+    (check_unique 4), and rightly: a normal run must never adopt files it did
+    not write.
+
+    ⚠️ SO A RETRO CONFIG IS A DIFFERENT OBJECT AND SAYS SO. It carries
+    `retrofit: true` and `derived_from.sha256_16: null`, because the global it
+    ran against was never snapshotted and CANNOT be recovered. It documents what
+    the artefacts are; it does NOT claim to reproduce them.
+    """
+    root = pathlib.Path(root or pathlib.Path(__file__).parent)
+    p = config_path(slug)
+    if p.exists():
+        raise SlugError(f"{p.name} exists")
+    found = sorted({q.name for q in root.glob(f"{slug}*")}
+                   | {q.name for q in (root / "postpro").glob(f"{slug}*")})
+    if not found:
+        raise SlugError(f"no artefacts named {slug}* — use derive() for a new run")
+    g = root / "baselines.json"
+    cfg = json.loads(g.read_text())
+    cfg["slug"] = slug
+    cfg["_run"] = {
+        "slug": slug,
+        "retrofit": True,
+        "derived_from": {"file": g.name, "sha256_16": None,
+                         "note": "🔴 UNRECOVERABLE. This run predates the "
+                                 "copy-per-slug workflow, so the global it used "
+                                 "was never snapshotted. The entries in this "
+                                 "file are the CURRENT global, not what the run "
+                                 "saw."},
+        "provenance": provenance or dict(TEMPLATE["provenance"]),
+        "binds": {},
+        "parameters": {},
+        "artefacts": found[:200],
+        "note": "🔴 RETROFIT, NOT A RECORD. Written after the fact to give an "
+                "existing artefact set a name and a doc reference. It documents "
+                "what these files are; it does NOT claim to reproduce them.",
+    }
     p.write_text(json.dumps(cfg, indent=1) + "\n")
     return p
 
@@ -349,6 +505,69 @@ def promote(slug, name, value, context, status="definitive",
     return row
 
 
+
+# ---------------------------------------------------------------------------
+# 🔑 User, 2026-08-25: *"all slugs must be unique. No collisions."*
+#
+# "The config does not exist yet" is NOT uniqueness. Four ways two runs can
+# still collide, all of which the slug regime is supposed to prevent:
+#
+#   1. ARTEFACTS WITHOUT A CONFIG. A slug whose baseline-*.json was never
+#      written, or was deleted, silently adopts whatever `<slug>*` is already
+#      on disk — inheriting another run's meshes and postpro dirs.
+#   2. CASE. `H3-Qext-01` and `h3-qext-01` are different slugs and the SAME
+#      file on a case-insensitive filesystem. Case is preserved deliberately
+#      (doc identifiers bear it), so it must be checked explicitly.
+#   3. PREFIX. `h3-qext-01` and `h3-qext-01b` never collide exactly, but every
+#      glob in ops/ is `<slug>*` — fetch, cleanup and status would sweep both.
+#      That is a collision in every tool that matters.
+#   4. REUSE AFTER DELETION. Deleting a config does not delete its artefacts,
+#      so the name is NOT free again. It is retired.
+def check_unique(slug, root=None):
+    """Raise unless `slug` can own its whole filename namespace. """
+    root = pathlib.Path(root or pathlib.Path(__file__).parent)
+    if config_path(slug).exists():
+        raise SlugError(f"baseline-{slug}.json already exists — a run config is "
+                        f"immutable. Take the next run number.")
+    known = [p.name[len("baseline-"):-len(".json")]
+             for p in root.glob("baseline-*.json")]
+    low = slug.lower()
+    for k in known:
+        if k.lower() == low:
+            raise SlugError(
+                f"{slug!r} collides with {k!r} by CASE. They are different "
+                f"slugs and the same file on a case-insensitive filesystem.")
+        if low.startswith(k.lower()) or k.lower().startswith(low):
+            raise SlugError(
+                f"{slug!r} and the existing {k!r} are PREFIXES of one another. "
+                f"Every glob in ops/ is `<slug>*`, so fetch, cleanup and status "
+                f"would sweep both runs. Pick a name that is not a prefix.")
+    stray = sorted({p.name for p in root.glob(f"{slug}*")}
+                   | {p.name for p in (root / "postpro").glob(f"{slug}*")})
+    if stray:
+        raise SlugError(
+            f"{slug!r} has {len(stray)} artefact(s) on disk already "
+            f"(e.g. {stray[:3]}). A deleted config does NOT free the name — "
+            f"the artefacts still carry it. That name is RETIRED.")
+    return True
+
+
+def check_all_unique(root=None):
+    """Findings for every existing slug pair. Used by --check."""
+    root = pathlib.Path(root or pathlib.Path(__file__).parent)
+    names = sorted(p.name[len("baseline-"):-len(".json")]
+                   for p in root.glob("baseline-*.json"))
+    out = []
+    for i, a in enumerate(names):
+        for b in names[i + 1:]:
+            if a.lower() == b.lower():
+                out.append(("ERROR", f"slugs {a!r} and {b!r} differ only by CASE"))
+            elif a.lower().startswith(b.lower()) or b.lower().startswith(a.lower()):
+                out.append(("ERROR", f"slugs {a!r} and {b!r} are PREFIXES of one "
+                                     f"another — `<slug>*` globs sweep both"))
+    return out
+
+
 TEMPLATE = {
     "slug": None,
     "provenance": {
@@ -377,9 +596,10 @@ def main():
     if "--check" in sys.argv:
         fs = check_roundtrip()
         for lvl, msg in fs:
-            print(f"  🔴 {msg}")
-        print(f"  {'✅ code and prose round-trip' if not fs else f'🔴 {len(fs)} broken reference(s)'}")
-        return 1 if fs else 0
+            print(f"  {'🔴' if lvl == 'ERROR' else '⚠️ '} {msg}")
+        errs = [f for f in fs if f[0] == 'ERROR']
+        print(f"  {'✅ slugs, stamps and prose all agree' if not errs else f'🔴 {len(errs)} error(s)'}")
+        return 1 if errs else 0
     if "--new" in sys.argv:
         s = sys.argv[sys.argv.index("--new") + 1]
         if not SLUG_RE.match(s):

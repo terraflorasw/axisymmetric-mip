@@ -17,6 +17,18 @@ and **must never enter version control**. So:
                                       measurement. Opened 2026-08-24.
                                       🔴 resonance is BLOCKED on one answer
                                       from here: the required GAS TEMPERATURE
+        experiments/ignition-options/ <- HOW the plasma starts. Opened
+                                      2026-08-25. 🔴 HOLDS A LIVE BLOCKER:
+                                      resonance item 7's loop TARGET flips
+                                      on the answer. NOT the removed
+                                      `ignition/`, which was TM-specific
+        experiments/torch-geometry/ <- where EM, residency/LOD and the NITROGEN
+                                      GENERATOR collide. Opened 2026-08-25.
+                                      🔑 gas flow is a PRODUCT constraint:
+                                      10-12 L/min = quiet bench compressor,
+                                      20+ = utility room. The programme
+                                      assumes 20. ⏸️ No modelling: the
+                                      standing decision is standard Fassel
       soil-testing/  amip/         <- sibling programmes, not this repo
 
 ⚠️ **`experiments/waveguide/` and `experiments/ignition/` were REMOVED**

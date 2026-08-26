@@ -12,6 +12,15 @@ timeout 90 ssh -i "$K" $H "
     echo \"  killing rig \$p\"; kill -TERM \$p 2>/dev/null || true
   done
   sleep 2
+  # 🔴 AND ITS MESHER. Killing the rig ORPHANS a running geometry.py: gmsh is a
+  # child process, not part of the palace tree, so the loop below never saw it.
+  # Found 2026-08-25 — a stopped rig left geometry.py meshing for minutes, and
+  # the next launch was refused by ops/go's BUSY guard with no obvious cause.
+  # A rig spends a large fraction of its life meshing (ops/go says so in terms),
+  # so this is the MOST likely thing to be running when you stop one.
+  for g in \$(ps -C python3 -o pid=,args= | grep -- 'geometry\.py' | awk '{print \$1}'); do
+    echo \"  killing mesher \$g\"; kill -TERM \$g 2>/dev/null || true
+  done
   # the wrapper is orphaned by that kill; take its whole group
   for r in \$(ps -eo pid=,ppid=,comm= | awk '\$2==1 && (\$3==\"palace\" || \$3==\"prterun\") {print \$1}'); do
     for p in \$(ps -eo pid=,ppid= | awk -v P=\$r '\$2==P {print \$1}'); do

@@ -79,6 +79,23 @@ def f_mnp(kind, m, n, p, a_mm, L_mm):
     return C / (2 * math.pi) * math.hypot(chi / a, p * math.pi / L) / 1e9
 
 
+def design_point(d_over_l, f_ghz):
+    """(a_mm, L_mm) for a TE011 cavity of this shape resonating at f_ghz.
+
+    🔑 THE ONE PLACE THE CAVITY'S DIMENSIONS ARE DERIVED. D/L and the target
+    frequency are INPUTS — pass them from baselines.json, never a literal.
+
+    🔴 Written 2026-08-25 because the same fact existed three times and one of
+    them disagreed: `DL = 1.525` in e0k2_anchor.py AND h2_groove.py, plus
+    `A_MM, L_MM = 103.70, 88.53` in e0_solver_vs_math.py — D/L = 2.343, a
+    DIFFERENT cavity, sitting as the default in GEO.
+    """
+    from scipy.optimize import brentq
+    L = brentq(lambda LL: f_mnp("TE", 0, 1, 1, d_over_l * LL / 2, LL) - f_ghz,
+               20.0, 400.0, xtol=1e-10)
+    return d_over_l * L / 2, L
+
+
 def spectrum(a_mm, L_mm, fmax=3.0):
     """Every mode below fmax, exact — WITHIN THE ENUMERATED RANGE.
 

@@ -1,0 +1,344 @@
+{
+ "_meta": {
+  "programme": "resonance",
+  "started": "2026-08-20",
+  "rule": "An entry requires BOTH a `verification` (what outside the instrument it agrees with) and a `falsification` (the measurement that would have shown it wrong, and its outcome). Inputs -- material properties, physical constants, requirements -- carry `source` instead, and are marked kind=input. Results carry kind=result. error:null means UNMEASURED, never zero.",
+  "entries": "starts EMPTY by design: nothing is inherited from ../waveguide without re-derivation",
+  "indirection": "A NAME ALONE MUST NOT RESOLVE. Entries with a `contexts` list hold several recorded values discriminated by context (solver, mesh, extraction, ne, ...). values.get(name, **context) returns one or REFUSES, printing the alternatives. Added 2026-08-25 after CONVENTIONS 7aq/7at: every serious error in that window was one name meaning different measured things in different contexts. Legacy single-value entries (no `contexts`) still resolve."
+ },
+ "cavity.Q_ext": {
+  "kind": "result",
+  "unit": "1",
+  "description": "External (port) Q of the 11x8 cap loop. NOT a constant: it depends on the mesh's torch state and on how it was extracted.",
+  "contexts": [
+   {
+    "value": 9231.0,
+    "context": {
+     "solver": "eigen_pair",
+     "mesh": "no_torch",
+     "loop_mm": [
+      11.0,
+      8.0
+     ],
+     "ne": 0.0
+    },
+    "rig": "h3_loopq",
+    "date": "2026-08-24",
+    "verification": "reproduces h3_step3's anchor to 1.25%",
+    "falsification": "F4 no-groove control gave 76,811 - the groove is what makes this number possible",
+    "note": "GEO_DESIGN as-is, which CARRIES --no-torch. A torchless cavity."
+   },
+   {
+    "value": 9117.0,
+    "context": {
+     "solver": "eigen_pair",
+     "mesh": "vacuum_torch",
+     "ne": 0.0,
+     "loop_mm": [
+      11.0,
+      8.0
+     ]
+    },
+    "rig": "h3-qext-01",
+    "date": "2026-08-25",
+    "status": "definitive",
+    "verification": "h3_qext reproduces h3_step3 V1_ANCHOR to 4 figures on a mesh of known fingerprint \u2705 INDEPENDENTLY CONFIRMED 2026-08-25 by the DRIVEN fit once its 3 dB edges interpolate: Q_ext 9,045 (-0.78%), Q0 43,455 vs 43,523 (-0.16%).",
+    "falsification": "had the driven dip on the SAME mesh agreed, the 7.7% gap would be a method artefact",
+    "supersedes": 9117.0
+   },
+   {
+    "value": 8462.0,
+    "context": {
+     "solver": "driven_dip",
+     "mesh": "vacuum_torch",
+     "ne": 0.0,
+     "loop_mm": [
+      11.0,
+      8.0
+     ]
+    },
+    "rig": "h3-qext-01",
+    "date": "2026-08-25",
+    "status": "tentative",
+    "verification": null,
+    "falsification": "\ud83d\udd34 RETRACTED 2026-08-25. Refitting the SAME sweep with INTERPOLATED 3 dB crossings gives Q_ext = 9,045 \u2014 0.78% from the eigen pair's 9,117, not 7.7%. 8,462 was an artefact of snapping both edges to the sample grid. Neither a solver disagreement nor a sample-count problem: 1e20 gives 0.0% error at ten samples because its width is commensurate with the step.",
+    "note": "Retained as the measured artefact of a grid-snapped 3 dB fit (CONVENTIONS 7bh).",
+    "supersedes": 8462.0,
+    "retracted": true
+   }
+  ]
+ },
+ "cavity.Q0.cold": {
+  "kind": "result",
+  "unit": "1",
+  "description": "Unloaded Q of the cold grooved cavity with the 11x8 loop. FOUR numbers have carried this name.",
+  "contexts": [
+   {
+    "value": 43422.0,
+    "context": {
+     "solver": "eigen",
+     "mesh": "no_torch",
+     "port_bc": "pec"
+    },
+    "rig": "h3_loopq",
+    "date": "2026-08-24",
+    "verification": "cross-checks h3_step3 to 0.23%",
+    "falsification": null
+   },
+   {
+    "value": 43523.0,
+    "context": {
+     "solver": "eigen",
+     "mesh": "vacuum_torch",
+     "port_bc": "pec"
+    },
+    "rig": "h3_step3",
+    "date": "2026-08-24",
+    "verification": "used as the eta reference Q_REF",
+    "falsification": null,
+    "note": "\u26a0\ufe0f THE ETA REFERENCE. Vacuum torch; the design sapphire torch is worth +2.0% (e3 case B)."
+   },
+   {
+    "value": 29037.0,
+    "context": {
+     "solver": "driven",
+     "mesh": "vacuum_torch",
+     "extraction": "branch_free"
+    },
+    "rig": "h3_driven",
+    "date": "2026-08-25",
+    "verification": null,
+    "falsification": "disagrees 40% with the overcoupled branch on the SAME solve - which is the signal that Q_ext=9,231 does not apply here",
+    "note": "1/(1/Q_L - 1/Q_ext) with Q_ext=9,231. error_amplification 4.15, Q0_ill_conditioned=true. NOT the rig's authoritative answer."
+   },
+   {
+    "value": 40645.0,
+    "context": {
+     "solver": "driven",
+     "mesh": "vacuum_torch",
+     "extraction": "overcoupled_branch"
+    },
+    "rig": "h3_driven",
+    "date": "2026-08-24",
+    "verification": "OPTIMIZER.md records this as the branch-corrected value; independent re-fit from raw S11 gave 40,652 (0.02%)",
+    "falsification": null,
+    "note": "Q_L(1+beta_overcoupled). 6.4% below the eigen value - but eigen is a DIFFERENT mesh, so that gap is NOT a method result (7aq)."
+   }
+  ]
+ },
+ "eta.reference": {
+  "kind": "result",
+  "unit": "1",
+  "description": "Q0 that eta = 1 - Q0/Q_ref is measured against. CONVENTIONS 7c has caught this ONE name four times.",
+  "contexts": [
+   {
+    "value": 43523.0,
+    "context": {
+     "status": "current",
+     "mesh": "vacuum_torch"
+    },
+    "rig": "h3_step3",
+    "date": "2026-08-24",
+    "verification": "guarded by h3_driven.Q_REF_CONFIG (groove 5x10, loop 11x8)",
+    "falsification": null,
+    "note": "\u26a0\ufe0f Vacuum torch. The design value is ~2% higher (e3 case B: 44,387 wall-only with sapphire)."
+   },
+   {
+    "value": 44384.0,
+    "context": {
+     "status": "retracted",
+     "mesh": "no_loop_no_groove"
+    },
+    "rig": "?",
+    "date": "2026-08-23",
+    "verification": null,
+    "falsification": "wrong cavity - no loop and no groove",
+    "retracted": true
+   },
+   {
+    "value": 29854.0,
+    "context": {
+     "status": "retracted",
+     "mesh": "loop_no_groove"
+    },
+    "rig": "?",
+    "date": "2026-08-23",
+    "verification": null,
+    "falsification": "a HYBRID's Q (7v)",
+    "retracted": true
+   },
+   {
+    "value": 12368.0,
+    "context": {
+     "status": "retracted",
+     "mesh": "other_rig"
+    },
+    "rig": "h3_cold",
+    "date": "2026-08-23",
+    "verification": null,
+    "falsification": "open-gap artifact; came with f0=2.440003, also retracted",
+    "retracted": true
+   }
+  ]
+ },
+ "torch.sapphire.permittivity": {
+  "kind": "input",
+  "value": 9.39,
+  "unit": "1",
+  "material": "single-crystal sapphire (Al2O3), eps PERPENDICULAR to the anisotropy (c) axis \u2014 what TE011's E_phi sees when c lies along the tube axis",
+  "source": "\u2705 MEASURED. Krupka J, Huang W-T, Tung M-J, 'Complex permittivity measurements of low-loss microwave ceramics employing higher order quasi TE0np modes excited in a cylindrical dielectric sample', Meas. Sci. Technol. 16 (2005) 1014-1020, doi:10.1088/0957-0233/16/4/014. Figure 10 caption: 'Dielectric loss tangents PERPENDICULAR TO THE ANISOTROPY AXIS ... The measured permittivity was 4.43 +-0.5% for single-crystal quartz and 9.39 +-0.5% for sapphire.' refs/Complex_Permittivity_Measurements_of_Low-Loss_Micr.pdf, supplied by the user 2026-08-25. \ud83d\udd11 The method is TE0np modes in a cylindrical sample \u2014 the SAME mode family as this cavity.",
+  "adopted": "inherited, date unknown",
+  "note": "\u2705 THE AXIS CORRECTION IS REAL; ITS CONSEQUENCE IS SMALLER THAN FIRST CLAIMED. Measured on this cavity (e3-torch-01 B_sap): eps 11.6 -> 9.39 moves f0 by only +3.325 MHz, a slope of 1.50 MHz per unit eps. The R-era slope of 6.56 used to predict a cancellation is 4.4x too large and does NOT transfer. So the torch shift goes from about -13.9 MHz to about -10.5 MHz -- a 24% reduction, NOT the cancellation predicted. The torch restoration keeps its urgency.",
+  "status": "definitive",
+  "verification": "Independent of this programme, peer-reviewed, quoted uncertainty +-0.5% on the real part. Agrees with the standard uniaxial convention (eps_perp ~9.4 ordinary, eps_par ~11.6 extraordinary) that geometry.py's comment INVERTED.",
+  "falsification": "geometry.py:1416 (from R98) asserted '11.6 is eps_PERP_c ... 9.4 is eps_PARALLEL_c'. This measurement says the reverse. R32's supporting check was CIRCULAR: 'c-longitudinal reproduces isotropic 11.6' confirms only that the simulation put 11.6 on the perpendicular axis, which was the assumption under test.",
+  "supersedes": 11.6,
+  "date": "2026-08-25"
+ },
+ "torch.sapphire.loss_tangent": {
+  "kind": "input",
+  "value": 3.5e-05,
+  "unit": "1",
+  "material": "single-crystal sapphire",
+  "source": "geometry.py default, alongside the permittivity (R99). Same inheritance, same gap.",
+  "adopted": "inherited, date unknown",
+  "note": "Used by e3_closure case D -> Q_dielectric 1,911,259 and the F2 bound eta_diel <= 2.27%. The BOUND survives any plausible change here because it only needs plasma loss >= 0."
+ },
+ "cavity.f0.cold.ghz": {
+  "kind": "result",
+  "unit": "GHz",
+  "description": "TE011 of the cold grooved cavity with the 11x8 loop. Torch state moves this by ~14 MHz.",
+  "contexts": [
+   {
+    "value": 2.451633,
+    "context": {
+     "solver": "eigen",
+     "mesh": "no_torch",
+     "port_bc": "pec"
+    },
+    "rig": "h3_loopq",
+    "date": "2026-08-24",
+    "verification": "h3_ladder step 2 continuation",
+    "falsification": null
+   },
+   {
+    "value": 2.4515,
+    "context": {
+     "solver": "driven",
+     "mesh": "vacuum_torch",
+     "extraction": "s11_locator"
+    },
+    "rig": "h3_driven",
+    "date": "2026-08-25",
+    "verification": "agrees with eigen to 133 kHz = 0.38 linewidths",
+    "falsification": null
+   },
+   {
+    "value": 2.437762,
+    "context": {
+     "solver": "eigen",
+     "mesh": "sapphire_torch",
+     "port_bc": "pec"
+    },
+    "rig": "e3_closure",
+    "date": "2026-08-24",
+    "verification": "case B, wall loss only; -13.87 MHz vs no_torch, as predicted in sign and order",
+    "falsification": null,
+    "note": "\ud83d\udd11 THE ONLY ENTRY HERE ON THE CAVITY ACTUALLY BEING BUILT."
+   },
+   {
+    "value": 2.441087,
+    "context": {
+     "solver": "eigen",
+     "mesh": "sapphire_torch",
+     "port_bc": "pec",
+     "eps_r": 9.39
+    },
+    "rig": "e3-torch-01",
+    "date": "2026-08-25",
+    "status": "definitive",
+    "verification": "matched pair with B_vac (eps=1.0, f0=2.451490) on identical geometry; B_vac reproduces h3-qext-01's cold pec exactly",
+    "falsification": "if the torch shift were the -13.87 MHz in the record, f0 would be 2.4376",
+    "note": "\ud83d\udd11 THE DESIGN TORCH AT THE MEASURED PERMITTIVITY. Shift -10.403 MHz vs vacuum torch."
+   }
+  ]
+ },
+ "wall.conductivity.s_per_m": {
+  "kind": "input",
+  "value": 35000000.0,
+  "unit": "S/m",
+  "material": "bare electropolished aluminium 6061",
+  "source": "R58 adopted bare electropolished aluminium on OPTICAL grounds (no plating to degrade or flake into the optical path). The conductivity is the handbook value for 6061 at 20 C, not a measurement of our surface \u2014 a real electropolished wall will fall SHORT of it, so every Q computed from this is an UPPER bound.",
+  "adopted": "2026-08-20",
+  "note": "Declared here because this programme's baselines start empty by design and nothing is inherited without re-derivation. The MATERIAL CHOICE is inherited from R58 and still needs its own re-derivation (optical vs Q trade); the NUMBER is a handbook input, which is why kind=input and it carries source rather than verification/falsification."
+ },
+ "torch.quartz.permittivity": {
+  "kind": "input",
+  "value": 3.78,
+  "unit": "1",
+  "material": "fused quartz (amorphous SiO2) \u2014 ISOTROPIC, so no axis question",
+  "source": "geometry.py filter_eps default, inherited from R107. \u26a0\ufe0f NOT independently cited here. The same paper that settles sapphire (Krupka et al., Meas. Sci. Technol. 16 (2005) 1014) measures SINGLE-CRYSTAL quartz at 4.43 +-0.5% perpendicular to the anisotropy axis \u2014 a DIFFERENT material from fused quartz, so it does NOT transfer.",
+  "adopted": "inherited, date unknown",
+  "status": "tentative",
+  "note": "Used for the development-build torch and the retired mode-filter annulus. \ud83d\udd11 Fused quartz ~3.78 is a standard handbook value and plausible, but this programme has not cited one. Marked tentative so it cannot be quoted as measured."
+ },
+ "_run": {
+  "slug": "h3-bore-01",
+  "derived_from": {
+   "file": "baselines.json",
+   "sha256_16": "8df7fc6919ff9b2d"
+  },
+  "provenance": {
+   "hypothesis": "H3 / coupling \u2014 a lever surfaced 2026-08-25",
+   "document": "KNOWN.md \u00a7 THE TORCH BORE IS A COUPLING LEVER \u2014 and possibly the dominant one",
+   "question": "How much does the plasma ANNULUS radius move Q0, and therefore beta and VSWR? First-order scaling says MP-AES-like 1-4 mm takes VSWR 79 -> ~4; this measures it.",
+   "supersedes": null,
+   "date": "2026-08-25",
+   "rig": "h3_driven.py",
+   "user": "'MP-AES uses a much narrower torch while MICAP uses Fassel.'"
+  },
+  "binds": {},
+  "parameters": {
+   "ne_fixed": 7.9e+18,
+   "ne_fixed_note": "the ANCHORED operating point. Density is held; the BORE is the sweep axis.",
+   "annulus_grid": [
+    [
+     2.0,
+     4.0
+    ],
+    [
+     2.0,
+     6.0
+    ],
+    [
+     2.0,
+     8.5
+    ]
+   ],
+   "annulus_note": "RI FIXED at 2.0; only RO varies \u2014 one variable, and 2.0 avoids the tube surfaces. 2-8.5 is the CONTROL and must reproduce Q_L~104. \ud83d\udd34 FIRST ATTEMPT WAS BADLY DESIGNED, killed after 27 min: (a) RI=1.0 is EXACTLY the injector ID radius (2.0 mm OD -> r=1.00) \u2014 a coincident surface, and gmsh hung on the boolean for 27 minutes with no error; (b) RO=11.0 is OUTSIDE the torch entirely (outer tube ID 17.0 mm -> r=8.50), i.e. plasma in the cavity rather than in a tube. I built the sweep from the FIELD profile without checking it against the TORCH.",
+   "ranks": 32,
+   "threads": 1,
+   "order": 2,
+   "geometry": {
+    "radius": 103.7,
+    "length": 88.53,
+    "order": 2,
+    "sectors": 1,
+    "no-inner": true,
+    "mode-filter": 0,
+    "groove": "5,10",
+    "viewport": 0,
+    "trap": "0,0,0",
+    "chimney": "0,41",
+    "feed": "0,41",
+    "torch-material": "1.0,3.5e-05"
+   },
+   "geometry_note": "VACUUM torch, matching h3-driven-anchor-01 so the 2-8.5 control is directly comparable. \u26a0\ufe0f NOT the design torch (eps 9.39) \u2014 this measures a RATIO between bores, and mixing in the torch change would confound it.",
+   "constraint_note": "\ud83d\udd11 THE PLASMA CANNOT EXCEED r = 8.5 mm WITHOUT A BIGGER TORCH. Tube surfaces are at r = 1.00, 2.50 (injector), 7.00, 8.00 (intermediate), 8.50, 10.00 (outer). So the modelled 2-8.5 is ALREADY the widest this torch allows: the only direction available is NARROWER \u2014 which is the direction that helps the match. Going wider is a different geometry change (larger torch OD), not a sweep point.",
+   "plasma_h": 1.0,
+   "plasma_h_note": "\ud83d\udd11 HELD CONSTANT ACROSS THE SWEEP. The rig's default heuristic is min(1.0, max(0.30, thick/6)), which makes element size a function of the SWEPT variable \u2014 it confounds the comparison AND inverts the cost (2-4 mm wanted ~564k plasma tets vs the baseline's ~119k; gmsh sat on it 16 min with no error). 1.0 mm is what the 2-8.5 baseline used, so the control reproduces exactly. Ample: skin depth 6.89 mm >> any annulus here."
+  },
+  "note": "Copied from the global store, then mutated for this run. Edit THIS file, never the global, to change an input for one question. Land results back with slug.promote()."
+ },
+ "slug": "h3-bore-01"
+}

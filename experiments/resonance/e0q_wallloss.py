@@ -32,6 +32,7 @@ delta/2 wall-recession estimate came in 2-3x low with mode-dependent scatter
 The PEC solve is the frequency reference, and E0 already has it.
 """
 import json
+import values
 import math
 import pathlib
 import sys
@@ -43,7 +44,11 @@ from e0_solver_vs_math import A_MM, L_MM, build, eigen_cfg, run
 TAG = "e0q"
 # spans 10x, so a wrong exponent cannot hide in the noise of a narrow range
 SIGMAS = [1.0e7, 2.0e7, 3.5e7, 6.3e7, 1.0e8]
-AL, AG = 3.5e7, 6.3e7
+# AL is the DESIGN wall (bound); AG is SILVER, a deliberate comparator for the
+# scaling study only — never a design value. Substituting it silently is what
+# made every Q in the record ~34% high (7bl).
+AL = values.get("wall.conductivity.s_per_m")
+AG = 6.3e7   # silver, COMPARATOR ONLY
 
 
 def eig_q(tag):

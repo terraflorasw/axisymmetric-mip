@@ -6,15 +6,6 @@
   "entries": "starts EMPTY by design: nothing is inherited from ../waveguide without re-derivation",
   "indirection": "A NAME ALONE MUST NOT RESOLVE. Entries with a `contexts` list hold several recorded values discriminated by context (solver, mesh, extraction, ne, ...). values.get(name, **context) returns one or REFUSES, printing the alternatives. Added 2026-08-25 after CONVENTIONS 7aq/7at: every serious error in that window was one name meaning different measured things in different contexts. Legacy single-value entries (no `contexts`) still resolve."
  },
- "wall.conductivity": {
-  "kind": "input",
-  "value": 35000000.0,
-  "unit": "S/m",
-  "material": "bare electropolished aluminium 6061",
-  "source": "R58 adopted bare electropolished aluminium on OPTICAL grounds (no plating to degrade or flake into the optical path). The conductivity is the handbook value for 6061 at 20 C, not a measurement of our surface \u2014 a real electropolished wall will fall SHORT of it, so every Q computed from this is an UPPER bound.",
-  "adopted": "2026-08-20",
-  "note": "Declared here because this programme's baselines start empty by design and nothing is inherited without re-derivation. The MATERIAL CHOICE is inherited from R58 and still needs its own re-derivation (optical vs Q trade); the NUMBER is a handbook input, which is why kind=input and it carries source rather than verification/falsification."
- },
  "cavity.Q_ext": {
   "kind": "result",
   "unit": "1",
@@ -131,50 +122,6 @@
     "verification": "OPTIMIZER.md records this as the branch-corrected value; independent re-fit from raw S11 gave 40,652 (0.02%)",
     "falsification": null,
     "note": "Q_L(1+beta_overcoupled). 6.4% below the eigen value - but eigen is a DIFFERENT mesh, so that gap is NOT a method result (7aq)."
-   }
-  ]
- },
- "cavity.f0.cold": {
-  "kind": "result",
-  "unit": "GHz",
-  "description": "TE011 of the cold grooved cavity with the 11x8 loop. Torch state moves this by ~14 MHz.",
-  "contexts": [
-   {
-    "value": 2.451633,
-    "context": {
-     "solver": "eigen",
-     "mesh": "no_torch",
-     "port_bc": "pec"
-    },
-    "rig": "h3_loopq",
-    "date": "2026-08-24",
-    "verification": "h3_ladder step 2 continuation",
-    "falsification": null
-   },
-   {
-    "value": 2.4515,
-    "context": {
-     "solver": "driven",
-     "mesh": "vacuum_torch",
-     "extraction": "s11_locator"
-    },
-    "rig": "h3_driven",
-    "date": "2026-08-25",
-    "verification": "agrees with eigen to 133 kHz = 0.38 linewidths",
-    "falsification": null
-   },
-   {
-    "value": 2.437762,
-    "context": {
-     "solver": "eigen",
-     "mesh": "sapphire_torch",
-     "port_bc": "pec"
-    },
-    "rig": "e3_closure",
-    "date": "2026-08-24",
-    "verification": "case B, wall loss only; -13.87 MHz vs no_torch, as predicted in sign and order",
-    "falsification": null,
-    "note": "\ud83d\udd11 THE ONLY ENTRY HERE ON THE CAVITY ACTUALLY BEING BUILT."
    }
   ]
  },
@@ -300,13 +247,84 @@
    },
    "solver": "driven",
    "ranks": 32,
-   "order": 2
+   "order": 2,
+   "geometry": {
+    "radius": 103.7,
+    "length": 88.53,
+    "order": 2,
+    "sectors": 1,
+    "no-inner": true,
+    "mode-filter": 0,
+    "groove": "5,10",
+    "viewport": 0,
+    "trap": "0,0,0",
+    "chimney": "0,41",
+    "feed": "0,41",
+    "torch-material": "1.0,3.5e-05"
+   },
+   "geometry_note": "GEO_DESIGN with --no-torch STRIPPED and the torch meshed at eps=1 (vacuum). Now a typed field instead of a string edit on a 15-element list.",
+   "threads": 1,
+   "threads_note": "gmsh General.NumThreads. geometry.py defaults to 1 'so meshes stay byte-reproducible; >1 is only safe once ops/gmshcaps.sh --determinism has confirmed it'. Recorded here because a mesh that is not byte-reproducible makes the whole run non-idempotent, and this was the one determinism knob living outside the config."
   },
   "caveats": [
    "\u26a0\ufe0f VACUUM TORCH. GEO_DESIGN carries --no-torch and this rig meshes eps=1. The design torch is sapphire 11.6: f0 -13.87 MHz, Q0 +2.0% (e3_closure case B).",
    "\ud83d\udd34 binds cavity.Q_ext at mesh=no_torch while MESHING vacuum_torch -- a cross-context import of +1.25%, recorded here rather than hidden. h3_qext is measuring the matched value.",
    "\u26a0\ufe0f Results were RECONSTRUCTED from postpro/*/port-S.csv after the clobber; the cold point differs from the rig's own field because the rig's `beta` is the raw unresolved root (CONVENTIONS 7at)."
   ],
-  "note": "Copied from the global store, then mutated for this run. Edit THIS file, never the global, to change an input for one question."
+  "note": "Copied from the global store, then mutated for this run. Edit THIS file, never the global, to change an input for one question.",
+  "frozen_names_note": "\ud83d\udd34 This copy deliberately keeps the UNIT-LESS names it was frozen with. The global renamed them to carry units (2026-08-25); a frozen run config must NOT follow, because it describes the inputs the run actually used. I renamed them here by mistake and reverted \u2014 which is exactly the drift the output stamp exists to detect."
+ },
+ "cavity.f0.cold": {
+  "kind": "result",
+  "unit": "GHz",
+  "description": "TE011 of the cold grooved cavity with the 11x8 loop. Torch state moves this by ~14 MHz.",
+  "contexts": [
+   {
+    "value": 2.451633,
+    "context": {
+     "solver": "eigen",
+     "mesh": "no_torch",
+     "port_bc": "pec"
+    },
+    "rig": "h3_loopq",
+    "date": "2026-08-24",
+    "verification": "h3_ladder step 2 continuation",
+    "falsification": null
+   },
+   {
+    "value": 2.4515,
+    "context": {
+     "solver": "driven",
+     "mesh": "vacuum_torch",
+     "extraction": "s11_locator"
+    },
+    "rig": "h3_driven",
+    "date": "2026-08-25",
+    "verification": "agrees with eigen to 133 kHz = 0.38 linewidths",
+    "falsification": null
+   },
+   {
+    "value": 2.437762,
+    "context": {
+     "solver": "eigen",
+     "mesh": "sapphire_torch",
+     "port_bc": "pec"
+    },
+    "rig": "e3_closure",
+    "date": "2026-08-24",
+    "verification": "case B, wall loss only; -13.87 MHz vs no_torch, as predicted in sign and order",
+    "falsification": null,
+    "note": "\ud83d\udd11 THE ONLY ENTRY HERE ON THE CAVITY ACTUALLY BEING BUILT."
+   }
+  ]
+ },
+ "wall.conductivity": {
+  "kind": "input",
+  "value": 35000000.0,
+  "unit": "S/m",
+  "material": "bare electropolished aluminium 6061",
+  "source": "R58 adopted bare electropolished aluminium on OPTICAL grounds (no plating to degrade or flake into the optical path). The conductivity is the handbook value for 6061 at 20 C, not a measurement of our surface \u2014 a real electropolished wall will fall SHORT of it, so every Q computed from this is an UPPER bound.",
+  "adopted": "2026-08-20",
+  "note": "Declared here because this programme's baselines start empty by design and nothing is inherited without re-derivation. The MATERIAL CHOICE is inherited from R58 and still needs its own re-derivation (optical vs Q trade); the NUMBER is a handbook input, which is why kind=input and it carries source rather than verification/falsification."
  }
 }

@@ -101,7 +101,12 @@ def main():
         _d = eigmodes.te011_tm111(v, EX["TE011"])
         n = [_d['tm111'], _d['te011']] if _d else sorted(v, key=lambda x: abs(x - EX["TE011"]))[:2]
         print(f"  degeneracy splitting, {tag}: {1e3*abs(n[1]-n[0]):.6f} MHz")
-    json.dump({"origin": a, "shifted": b, "delta_mhz": ds},
+    # 🔴 WAS "delta_mhz" AND HELD GHz — a 1000x trap in a result file, found
+    # 2026-08-25. `origin`/`shifted` are GHz, and ds is their difference in
+    # the same units. Anyone reading delta_mhz as MHz would have called a
+    # 71 Hz mesh floor a 71 kHz one. Emitting BOTH names would perpetuate
+    # the wrong one, so it is renamed.
+    json.dump({"origin": a, "shifted": b, "delta_ghz": ds},
               open("e0e.result.json", "w"), indent=1)
     print("\n  wrote e0e.result.json — NO VERDICT HERE", flush=True)
 

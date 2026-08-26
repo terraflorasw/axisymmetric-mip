@@ -169,6 +169,191 @@ alias.** 6 probes, no extra solve.
 *more* axisymmetric-looking than TE011 by the old test, and indistinguishable
 from it. **Purity rejects it at a spread of 0.836.**
 
+## 🔑🔑 THE CAVITY IS ITS OWN PLASMA DIAGNOSTIC — for free, if T is known
+
+**User, 2026-08-25: *"with an RF phase detector, we can distinguish Beta from
+1/Beta."*** ✅ **And the consequence reaches past the tuner.**
+
+**1. UNAMBIGUOUS Q₀ IN OPERATION.** Q₀ = Q_L(1+β), so the branch IS the answer:
+cold, the wrong branch gives **8,462** and the right one **40,652** — a **4.8×**
+error, and **exactly the one this programme made on its own cold case this
+week.** 🔑 **The hardware phase detector does for the MACHINE what
+`e0k2_anchor.branch_from_phase` does for the SOLVER.**
+
+**2. AND f₀ ALREADY MEASURES n_e.** The pull is **monotonic across the whole
+grid** (2.4515 → 2.4824 over cold → 1e20), so it **inverts**. Near the anchor the
+slope is **1.141 MHz per 1e18** *(from INTERPOLATED f₀; the grid-quantised
+ladder gave 1.231 — a 7.3 % overestimate, §7bh)*:
+
+| locate f₀ to | n_e to | of 7.9e18 |
+|---:|---:|---:|
+| 240 kHz (1/100 of the loaded linewidth) | 0.20e18 | **2.5 %** |
+| 100 kHz | 0.08e18 | **1.0 %** |
+
+🔑 **The frequency-tracking loop is a density diagnostic and does not know it.**
+It already finds f₀ — that is its job — and f₀ is n_e. **No optical access, no
+new hardware.**
+
+### ✅ TESTED 2026-08-25 — by DECIMATING an existing sweep, no new solves
+
+**The anchor's 200 kHz wide sweep, resampled to coarser steps and re-fitted:**
+
+| step | samples across | **pick-lowest-sample** | **parabolic vertex** | → n_e |
+|---:|---:|---:|---:|---:|
+| 400 kHz | 60 | −128.5 kHz | **−0.2 kHz** | 0.00 % |
+| 800 kHz | 30 | −128.5 kHz | **−1.1 kHz** | 0.01 % |
+| 1600 kHz | 16 | −128.5 kHz | **−4.6 kHz** | **0.05 %** |
+| 3200 kHz | 9 | +1471.5 kHz | +15.7 kHz | 0.16 % |
+
+🔑 **INTERPOLATION BEATS THE STEP BY 25–300×.** f₀ is locatable to **~5 kHz even
+at a 1.6 MHz step.** **So the diagnostic is NOT frequency-limited — the frequency
+term contributes 0.05 % against temperature's 0.6 % per K. Temperature dominates
+by more than 10×**, and the earlier "locate f₀ to 100–240 kHz" was pessimistic by
+two orders.
+
+🔴 **AND OUR OWN LADDER IS QUANTISED TO THE 200 kHz GRID.** `h3_driven` selects
+the lowest SAMPLE, so every reported f₀ is a grid multiple. Re-fitting with a
+parabolic vertex moves them by **−90 to +88 kHz**:
+
+| n_e | grid | interpolated | shift |
+|---|---:|---:|---:|
+| cold | 2.451500 | **2.451489** | −11.4 kHz |
+| 7.3e18 | 2.457800 | **2.457842** | +42.0 kHz |
+| **7.9e18** | 2.458600 | **2.458529** | **−71.5 kHz** |
+| 8.6e18 | 2.459400 | **2.459326** | −74.1 kHz |
+| 1e19 | 2.460800 | **2.460888** | +88.3 kHz |
+
+⚠️ **The anchor-band slope moves 1.231 → 1.141 MHz per 1e18 (−7.3 %)** — a real
+correction to a number this section depends on, obtained with **zero new solves**.
+🔑 **`h3_driven` should interpolate the dip.** Its f₀ is currently reported to a
+precision it does not have, and the fix costs three samples of arithmetic.
+
+### 🔴 BUT IT IS TEMPERATURE-LIMITED, NOT FREQUENCY-LIMITED
+
+**H3's HOT leg, measured: −57.1 kHz per K.** A 200 K cavity swing moves f₀ by
+**11.4 MHz — 7.1× the ENTIRE anchor band** (7.3→8.6e18 spans only 1.6 MHz).
+
+| cavity T known to | n_e to |
+|---:|---:|
+| ±1 K | **0.63 %** — and f₀ contributes only **0.055 %** |
+| ±4 K | 2.4 % |
+| ±10 K | 5.9 % |
+
+✅ **The sensor is already required** — user, earlier: *"The control loop needs a
+cavity temperature, but that's it."* **It now has a second job.**
+🔑 **±1 K buys ~0.6 % in n_e — an order better than the MICAP anchor this whole
+programme rests on** (7.3–8.6e18 is ±8 %). ⚠️ **Relative, not absolute:** it
+tracks n_e against the Saha calibration, it does not replace it.
+⚠️ And it inherits R1 — the f₀ ladder shifts with the sapphire ε, though the
+SLOPE (and so the diagnostic) largely does not.
+
+## 🔑🔑 IT IS CONJUGATE PAIRS ALL THE WAY DOWN — and that predicts our failures
+
+**User, 2026-08-25: *"I can't think of anything that doesn't land in either the
+time domain, or the frequency domain. It's pervasive, unless I'm wrong."***
+✅ **Broader than that, and it holds — the pattern is CONJUGATE PAIRS:**
+
+| domain | conjugate | our sampler | limit |
+|---|---|---|---|
+| φ azimuth | **m** | sector DFT, N=5 | **m ≤ N/4 = 1** |
+| z axial | **p** | mode enumeration | p ≤ 2 |
+| r radial | **n** | Bessel table | n ≤ 2 |
+| **t time** | **f frequency** | driven S11 sweep | samples across the linewidth |
+| x space | **k** | mesh size h | k ≲ π/h |
+
+🔑 **AND IT PREDICTS THE FAILURE MODE. Three of this week's findings are ONE
+failure: too few samples across the CONJUGATE extent.**
+
+| finding | domain | sampling | outcome |
+|---|---|---|---|
+| TE311 read as **m = 0** | φ | 5 sectors | 2m=6 → 6 mod 5 = 1, flat — **alias at max confidence** |
+| **cold Q_L 7 % low** | f | **14 points across a 0.35 MHz linewidth** | 7,004 vs eigen 7,538 |
+| **71 Hz mesh floor** | x | tets across the cavity | `e0e`, on an exact symmetry |
+
+⚠️ **A QUANTITATIVE HINT, TWO POINTS ONLY — NOT A LAW:**
+cold **14 samples → −7.1 %** in Q; 1e20 **80 samples → −3.3 %**.
+🔑 **Nothing in this programme specifies a sweep step for a target Q accuracy.**
+If the trend holds, that is exactly what it would give — and it is cheap to test
+on a mesh we already have.
+
+### ⚠️ WHERE THE FRAMING STOPS, AND THE BOUNDARY IS SHARP
+
+**Genuinely outside:** buildability (*"N ≥ 9 is unbuildable"*), detection limits,
+TDS tolerance — manufacturing and analytical chemistry.
+**Converts in:** Saha/LTE is a partition function, not a transform — but
+T_gas → n_e → ω_p → ε_r. **Thermal enters as geometry scaling and σ(T).**
+
+> 🔑 **Everything non-Fourier enters the cavity problem ONLY through the
+> CONSTITUTIVE RELATIONS ε(ω), σ(ω), μ(ω). Chemistry and thermodynamics set the
+> COEFFICIENTS; the field problem itself is pure conjugate pairs.**
+
+✅ **AND THE THREE PROGRAMMES ARE THE THREE DOMAINS** — which is why
+`../spectroscopy/` blocked `resonance`: it supplies a coefficient, not a result.
+
+| `resonance` | frequency / spatial-spectral | modes, Q, band margin |
+| `../control-loop/` | **TIME** | slew, acquisition, PID, ignition dynamics |
+| `../spectroscopy/` | **neither** | Saha, T_gas → supplies ε |
+
+🔴 **ONE REAL EXCEPTION INSIDE THE EM PROBLEM: numerical conditioning.** There
+are **two spectra** — the cavity's modes, and the eigenvalues of the DISCRETISED
+OPERATOR. **The ε-near-zero failure lives in the second**, and it is not
+conjugate to anything in the cavity. ⚠️ **Both are called "the spectrum", which
+is how a solver failure can read as a physics result.**
+
+### 🔑🔑 AND NOW WE KNOW *WHY* — THE CAVITY IS A FOURIER FILTER, AND OUR DFT IS UNDER-SAMPLED
+
+**User, 2026-08-25: *"I just noticed the cavity is a fourier filter."*** ✅ That
+names the mechanism, and it turns the TE311 row from an anecdote into arithmetic.
+
+- **Fields go as e^{imφ}, so the cavity is DIAGONAL in m.** m is an index the
+  geometry preserves, not a property that emerges. **The groove is a STOPBAND on
+  m ≠ 0**, and *"one resonance in the LDMOS band"* is a filter specification.
+- **Sector binning is the DFT of that domain**, and `SECTORS = N` is a sampling
+  rate — so the sampling theorem applies in full.
+
+⚠️ **THE SAMPLING ARITHMETIC BELOW IS NOT NEW — `INSTRUMENT.md` § THE
+IDENTIFICATION CHAIN HAS TWO COUPLED BLIND SPOTS has carried it since
+2026-08-23**, including the 2m argument verbatim. **I re-derived it (§7an,
+seventh occurrence).** What the Fourier framing adds is the *design* reading —
+groove as stopband, band occupancy as a filter spec — and what was genuinely
+missing was the **fix at the constant**: `INSTRUMENT.md` flagged the wrong
+comment and nobody had corrected `h3_loaded.py` (§7r).
+
+🔴 **WE SAMPLE ENERGY, WHICH DOUBLES THE HARMONIC.**
+|E|² ~ cos²(mφ) = (1 + cos 2mφ)/2 → the angular harmonic is **2m, not m**.
+N sectors resolve harmonics ≤ N/2, hence:
+
+> ## **m ≤ N/4**  ·  N=5 → **m ≤ 1**  ·  N=8 → m ≤ 2  ·  N=12 → m ≤ 3
+
+✅ **TE311 IS m=3: 2m = 6, and 6 mod 5 = 1 — flat.** It reported **m = 0 at the
+HIGHEST possible confidence.** Not a marginal call; **a textbook alias returned
+as certainty.**
+
+⚠️ **TWO FILES DISAGREED, AND THE CONSTANT WAS THE WRONG ONE.**
+`h3_loaded.py:129` read `SECTORS = 5  # m in {0,1,2} in this window`, while
+`azimuthal.order()` states *"At the standard N=5 that is m ≤ 1."* **Corrected at
+the constant**, where anyone choosing N will look.
+
+🔴 **THE CONSEQUENCE IS PERMANENT, NOT A SETTING.** m=2 needs N ≥ 8 and m=3 needs
+N ≥ 12, while `h3_loaded`'s own note records **N ≥ 9 is unbuildable** for this
+geometry. **So the azimuthal diagnostic can NEVER resolve the modes this cavity
+actually has.**
+🔑 **Which is the real reason purity P is load-bearing: it is a POINTWISE ratio,
+not a sampled transform, so it has no Nyquist limit.** "Aliasing-proof" was
+observed before; **this is why.**
+
+🔴 **AND THERE IS A SECOND BLIND SPOT, WHICH IS THE SAME BLIND SPOT.**
+`INSTRUMENT.md`: **`physics.spectrum` enumerates only m ≤ 2, n ≤ 2, p ≤ 2**, so
+**TE311 is not in the reference table at all** — 172 MHz above the design point,
+competing with every driven sweep, and invisible to the closed form that is
+supposed to anchor the identification.
+> *"a mode the table cannot list is also a mode the classifier cannot label, and
+> it is reported as m=0."*
+
+🔑 **So the Fourier framing explains BOTH halves at once:** the enumeration
+truncates m, and the DFT aliases m. **The cavity filters in m; our two
+independent checks are both blind in m; and they are blind in the same place.**
+
 ### 🔑 What it makes possible, and it is new
 
 **A CONTINUOUS measure of how far a mode has been perturbed from ideal TE011**,
@@ -592,6 +777,507 @@ harder. **HOT is a parameter to read, not a barrier.**
 σ, two or three temperatures to check the coefficients are linear. **Cheap, and
 it closes H3.**
 
+## 🔑 GROOVE × LOOP-GAP — NOT SEPARABLE OPTIMISATION PARAMETERS (2026-08-26)
+
+`h3-groove-gap-01`, stamp `2ec5f088`. Design cavity, barrel mount, 176 mm² loop.
+**User: *"At the very least, we should be able to classify it as 'curious' or
+'coincidence'."*** ✅ Classified.
+
+| groove | gap 0.75 | gap 2.25 | **ratio** |
+|---|---:|---:|---:|
+| **5 mm** (frozen design) | 681 | 308 | **2.2158** |
+| **8 mm** | 702 | 339 | **2.0733** |
+| | | | **−6.43 %** |
+
+**Against the rule fixed in `PLAN.md` BEFORE the data existed** (< 4 % =
+coincidence · 4–6 % = unresolved · > 6 % = curious): **🔑 CURIOUS.**
+
+⚠️ **BY 0.43 POINTS, ON A 6 % THRESHOLD WITH ~2 % UNCERTAINTY. That is
+MARGINAL** and must be quoted as such. Alone it would be "curious, weakly".
+
+✅ **WHAT LIFTS IT ABOVE THRESHOLD-NOISE: Q₀ AGREES INDEPENDENTLY.**
+
+| gap | Q₀ change, groove 5 → 8 mm |
+|---|---:|
+| 0.75 | **+0.40 %** |
+| 2.25 | **+6.92 %** |
+
+Q₀ is a **different quantity from a different solve** — the cavity's own loss,
+not its coupling — and shows the same pattern: **the groove matters ~17× more
+when the gap is wide.** Two independent quantities agreeing on direction is the
+evidence; the ratio alone would not be.
+
+### 🔑 WHAT IT ACTUALLY MEANS — user, 2026-08-26
+
+> ***"it mainly means that the groove and the loop are potentially not
+> independent optimization parameters, which means we need dependent priors"***
+
+🔑 **That is the precise consequence, and it is narrower and more useful than
+"the design decisions are coupled".** Nothing here says the groove is a good
+coupling knob or that it should be re-opened. It says that **any optimisation
+over (groove, loop-gap) cannot treat them as separable** — a search that tunes
+one with the other frozen may land somewhere a joint search would not.
+- ⚠️ **"Potentially"** is doing real work: ONE groove-width step, TWO gaps, a
+  marginal margin. The interaction is established in DIRECTION, not in FORM.
+- 🔑 **The practical upshot is priors, not a re-design.** H2's groove stays
+  frozen at 5 × 10; item 7's loop work stands. What changes is that a future
+  sweep over both must be **jointly modelled**, not run as two independent
+  1-D sweeps whose optima are then combined.
+
+### 🔴 AND MY MECHANISM WAS WRONG
+
+I predicted **no interaction**, from: TE011's wall current is azimuthal, the
+groove is an annular ring running PARALLEL to it and does not cut it, while the
+gap cuts the LOOP's own current — different conductors, different currents.
+**Recorded in the config before the run, and falsified.**
+
+🔑 **It fails in a way that STRENGTHENS the parked hypothesis it was arguing
+against.** If the wide-gap loop is becoming partly a **capacitive probe** rather
+than a current loop (`PLAN.md` § Parked), it would begin to care about slots cut
+in the cavity's surfaces in a way a pure current loop does not — which is
+exactly a **gap-dependent** sensitivity to groove width. The annular-current
+argument explains why the groove barely moves TE011's f₀ (measured: −0.043 MHz)
+and does NOT explain the coupling.
+
+✅ **A by-product worth keeping:** groove width 5 → 8 mm changes Q_ext by
+**+3.1 %** at gap 0.75 — above the ~1 % discretisation floor. **The groove is a
+weak coupling knob**, which the record previously asserted in neither direction.
+
+## ✅✅✅ THE TORCH RESTORATION — MEASURED. f₀ = 2.440236 GHz (2026-08-26)
+
+`h3-restore-04`, stamp `29cb5d35`. **The first numbers ever taken on the cavity
+actually being built**: full Fassel torch in sapphire (outer 20/1.5,
+intermediate 16/1.0, injector 5/2, ε = 9.39) **passing through BOTH end caps**,
+chimney 21×41, feed 21×41, groove 5×10.
+
+| mount | f₀ GHz | Q₀ | Q_ext | β | P_min | spread |
+|---|---:|---:|---:|---:|---:|---:|
+| **barrel** | **2.440236** | **43,259** | **8,808** | 4.911 | 0.9999 | 0.0001 |
+| cap | 2.440302 | 43,253 | 9,303 | 4.649 | 0.9998 | 0.0002 |
+
+✅ **Q₀ agrees between mounts to 0.015 %** — Q₀ is a property of the CAVITY, so
+this is the run's own validity check, on the most complex mesh in the programme.
+✅ **Purity is the best of any case in the record** (spread 0.0001).
+
+### 🔑 THE THREE THINGS IT SETTLES
+
+**1. f₀ falls 11.31 MHz, and the −10.4 MHz correction TRANSFERS.**
+`e3-torch-01` measured **−10.403 MHz** on a SINGLE-TUBE, SEALED cavity. The full
+Fassel torch plus both cap holes gives **−11.31 MHz** — the intermediate tube,
+the injector and both apertures together add only **+0.90 MHz**. 🔑 **The outer
+tube dominates**: the inner structure sits where E_φ is small, and the apertures
+are below cutoff.
+
+**2. Q_ext moves +1.06 %, so THE ENTIRE LOOP PROGRAMME TRANSFERS.** The
+prediction was recorded before the run — *"the torch sits at r < 10 mm and the
+loop at r = 77–90 mm; THAT IS AN ASSUMPTION AND THIS RUN TESTS IT"*.
+🔑 **The mount comparison, the series capacitor and every gap sweep — all
+measured on the torch-FREE cavity — carry a ~1 % correction, not a re-run.**
+The 27× lever (8,716 → 322) stands on the cavity being built.
+✅ **And the mount conclusion survives the torch:** barrel/cap ratio 0.947
+against 0.944 torch-free — barrel still better, by 5.3 % against 5.6 %.
+
+**3. 🔴 R5 IS FALSIFIED, AND THE REASON IS INSTRUCTIVE.** R5 recorded that the
+design-torch η reference would be **+1.46 % HIGHER** (44,160). **Measured, Q₀
+FALLS 0.47 %** against the torch-free cavity.
+⚠️ **44,160 is `e3` case B_sap, which is WALL LOSS ONLY.** Sapphire's
+tan δ = 3.5e-5 is a second channel that number excludes. **A partial-loss Q must
+never be compared against a total-loss Q** — same class as §7c's η-reference
+trap, where four numbers wore one name.
+
+✅ **AND E3'S CHANNELS RECOMBINE TO PREDICT THIS RUN:**
+
+    1/Q = 1/Q_wall + 1/Q_diel = 1/44,160 + 1/1,911,259  ->  43,163
+    measured                                             ->  43,259   (+0.22 %)
+
+🔑 **Two channels measured SEPARATELY, on a different rig, on a sealed
+single-tube cavity, recombine to the full design cavity's Q₀ within 0.22 %.**
+That is an independent cross-check of E3, of R5's components, and of the
+restoration at once — and it is the energy-balance closure PLAN's E3 asks for.
+
+🔴 **`eta.reference` must therefore FALL ~0.61 %** (43,523 → 43,259 barrel /
+43,253 cap), not rise. ⚠️ **Not promoted yet**: the stored 43,523 is a CAP-mount
+vacuum-torch value, and which mount the design uses is item 7's open question.
+
+### ⚠️ WHAT THE RESTORATION COST, AND WHY IT WAS WORTH IT
+
+**Four attempts. Each failure was a DIFFERENT real bug, and all were LATENT** —
+`GEO_DESIGN` carried `--no-torch`, so none was reachable:
+
+| | failure | cause |
+|---|---|---|
+| restore-01 | refused by the permittivity guard | `eigen_cfg` gave EVERY volume ε = 1.0 — sapphire would have solved as VACUUM (R101's exact failure, caught by the guard written for it) |
+| restore-02 | "nothing quotable" | resume treated a recorded ERROR as complete, so the fix was invisible |
+| restore-03 | "no modes" | **non-manifold mesh** — cap holes fused one full cylinder into EVERY wedge at `sectors=5` (CONVENTIONS §7bn) |
+| restore-04 | — | ✅ |
+
+🔑 **A disabled feature hides its own bugs, and enabling it years later looks
+like the ENABLING broke something.** Three independent defects surfaced the
+moment the torch came back. **Doing this before more sweeps was the right call**
+— every one of them would otherwise have corrupted a measurement silently.
+
+## 🔴🔴 CORRECTION — WE WERE OPTIMISING THE WRONG OBJECTIVE (2026-08-25)
+
+**User: *"Is it even worth getting VSWR to 1, given the difference between cold
+and loaded coupling?"*** 🔑 **No — and the question exposes that steps 2–2c were
+sliding along a TRADE, not climbing a gradient.**
+
+**Q_ext is ONE number serving TWO states whose Q₀ differ by ~265×.** Every step
+that improved the loaded match made the cold match worse by nearly the same
+factor:
+
+| design | Q_ext | β cold | **VSWR cold** | β loaded | **VSWR loaded** | worst | cold P_in @1 kW |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| no capacitor | 8,716 | 5.0 | **5.0** | 0.012 | 83.0 | 83 | **556 W** |
+| gap 0.75 | 720 | 52.1 | 52.1 | 0.146 | 6.9 | 52 | 74 W |
+| gap 2.25 | 322 | 86.5 | 86.5 | 0.326 | **3.1** | 87 | 45 W |
+| **β=1 loaded** | 105 | 265 | **265** | 1.000 | **1.0** | 265 | 🔴 **15 W** |
+
+🔴 **CHASING β = 1 LOADED COSTS 37× OF THE IGNITION POWER** — 556 W → 15 W.
+**You cannot run a plasma you never lit.** The loaded match is bought in a state
+reachable only *after* the state it destroys.
+
+### ✅ The minimax loop, for a FIXED coupler
+
+Balanced when VSWR_cold = VSWR_loaded, i.e. **Q_ext = √(Q₀cold · Q₀loaded)**:
+
+| | Q_ext\* | VSWR, BOTH states | cold P_in |
+|---|---:|---:|---:|
+| no capacitor | 2,136 | 20.3 | 232 W |
+| with capacitor (Q₀cold 27,863) | **1,710** | **16.3** | **218 W** |
+
+🔑 **THE BEST FIXED LOOP IS Q_ext ≈ 1,700–2,100, NOT 105 — AND THAT IS ROUGHLY
+WHERE THE GAP SWEEP STARTED.** 0.5 mm gave 1,143; flange 1.7 gave 1,957. **Steps
+2b and 2c swept past the optimum in the direction of a worse design**, because
+the objective was "minimise Q_ext" rather than "serve both states".
+
+### ✅ What the capacitor IS still worth
+
+It **shrinks the swing**, 414× → 265×, purely by lowering **cold** Q₀
+(43,463 → 27,863) while loaded Q₀ is plasma-dominated and unmoved. That is a
+direct reduction of the 400× swing `../control-loop/` records the tuner as
+having to absorb. **The lever is real; the target was wrong.**
+
+### 🔴 AND THE ANSWER TURNS ON A QUESTION NEVER ASKED: HOW IS THE PLASMA IGNITED?
+
+- **If ignition goes THROUGH the cavity** → cold coupling is a hard constraint,
+  the minimax loop is right, and steps 2b/2c pointed the wrong way.
+- **If a STRIKER lights it** (`geometry.py` has `--striker`) → cold coupling
+  stops constraining, and **β = 1 loaded becomes correct after all.**
+
+🔑 **The same measurement supports either target; only the CHOICE changes.**
+✅ **`../ignition-options/` opened 2026-08-25 to answer it.**
+
+### 🔑🔑 AND THERE IS A THIRD ANSWER: TWO LOOPS (user, 2026-08-25)
+
+**One sized for cold (Q_ext = 27,863), one for loaded (Q_ext = 105).**
+**β = 1 in BOTH states** — the bimodal constraint dissolves rather than being
+traded against. ✅ Sizing checks out against MEASURED area data: loop A wants
+~20–25 mm², **a small plain loop with no series gap and therefore no arcing
+risk**; loop B is the capacitor loop, 3.1× further than measured.
+🔴 **The idle port is the failure mode:** loop B left TERMINATED during ignition
+collapses cold Q₀ to 105 and gives VSWR 266 — worse than any single-loop design.
+Open or shorted it is benign. **So the switch is the component, not the loop.**
+🔴 **Not buildable today:** `geometry.py` has no second loop and `solveconf`
+writes one `LumpedPort`. New geometry + solver work.
+🔴 **Mode perturbation from a second loop is UNMEASURED** — purity survived every
+single-loop sweep, but two loops break the azimuthal symmetry one preserves.
+See `../ignition-options/` § OPTION 7.
+⚠️ Two mitigations are real either way: a **circulator** makes high cold VSWR a
+dump-load and tuner-current problem rather than damage, and a **tuner** can
+re-match between states.
+
+### 🔑 THE MEASUREMENT PHASE OF ITEM 7 IS DONE
+
+**User, 2026-08-25: *"We have enough information for optimization at this
+point."*** The mechanism is measured across 4 mounts/capacitor families and 9
+Q_ext values spanning 8,716 → 322. **What remains is a CHOICE under
+constraints** — ignition strategy, arcing margin, F2 purity — not another sweep.
+
+## ✅✅✅ ITEM 7 STEP 2c — Q_ext 8,716 → 322, A 27× LEVER. β = 1 IS BACK IN REACH (2026-08-25)
+
+`h3-loop-gap2-02`, stamp `bda90296`. Barrel mount, 176 mm² loop, no flange,
+series gap widened. **`gap2-01`'s 0.75 mm control reproduced exactly (720).**
+
+| gap mm | Q₀ | **Q_ext** | β | slope | lever | VSWR @ Q₀=105 | spread |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0.75 | 37,516 | 720 | 52.1 | — | 12.1× | 6.9 | 0.0010 |
+| 1.00 | 35,735 | 580 | 61.6 | −0.75 | 15.0× | 5.5 | 0.0015 |
+| 1.50 | 33,300 | 461 | 72.2 | −0.56 | 18.9× | 4.4 | 0.0022 |
+| **2.25** | **27,863** | **322** | **86.5** | **−0.89** | **27.0×** | **3.1** | 0.0046 |
+
+### 🔑 THE HEADLINE: "OUT OF REACH FOR A LOOP" NO LONGER HOLDS
+
+`../control-loop/` records that **β = 1 needs an 84× reduction in Q_ext** and
+calls it *"out of reach for a loop"*, leaving requirement 1 🔴 UNSOLVED.
+**Measured: 27.0×, still descending.** β = 1 at the design bore needs
+Q_ext = 105; we are at **322 — a further 3.1×** on a knob that has already
+delivered 27×.
+
+🔑 **A matched cavity would remove the magnitude tuner entirely**, not merely
+make it purchasable. That is a different design conclusion from "buy a 3-stub
+tuner", and it rests on a **copper gap in one loop leg.**
+
+### 🔴 THE OPTIMUM IS STILL NOT BRACKETED — THIRD GRID IN A ROW
+
+Q_ext falls at every point including the widest, and **the slope did not keep
+flattening**: −1.14, −0.75, −0.57, then **−0.89**. It re-steepened.
+⚠️ Three grids have now failed to contain this optimum (flange, gap-probe,
+gap-extension). **The lesson is not "use a wider grid" — it is that this
+programme keeps extrapolating before the curve has shown its shape.**
+
+### 🔴 AND THE TWO LIMITS CONVERGE — which is what actually ends this
+
+Everything that trades against coupling is degrading FASTER than Q_ext improves:
+
+| | 0.75 → 2.25 mm |
+|---|---|
+| Q_ext | 720 → 322 (**improves 2.2×**) |
+| mode purity `spread` | 0.0010 → **0.0046**, exponent 1.35 → **1.82** (accelerating) |
+| Q₀ | 37,516 → 27,863 (−26 %, and the per-step rate more than doubled) |
+| series-gap E-field | **unquantified**, and rises with BOTH I and X_C |
+
+**Extrapolating the late purity slope puts F2 (`spread > 0.02`) at gap ≈ 5 mm.**
+The Q_ext extrapolation reaches β = 1 in the same region. 🔑 **So the coupling
+optimum, the hybridisation limit and the arcing risk all arrive together** —
+which is not coincidence: the same in-band loop resonance drives all three.
+
+⚠️ **DO NOT read the F2 estimate as a number.** It is an extrapolation of a
+slope that has changed twice, made by the same reasoning that has now been
+wrong three times in one day. It says *"the limit is near"*, not *"the limit is
+5 mm"*.
+
+### The recommendation, and it changed when the last point landed
+
+**Before 2.25 mm I twice argued to stop the hunt** — the remaining VSWR gain
+looked small (4.4 → ~3.5) against three degrading constraints.
+🔑 **2.25 mm changed that: β = 1 is 3.1× away, not 20×.** A matched cavity is
+worth more than an incrementally better VSWR, because it deletes a component
+rather than easing its spec.
+
+✅ **But the next run must be CONSTRAINED, not another minimisation.** The
+correct question is no longer "how low can Q_ext go" but **"what is the lowest
+Q_ext with an acceptable arcing margin and `spread` under F2"** — a design
+problem with two constraints, one of which (`E` in the gap) is **still not
+measured**. That measurement — a field probe inside the series gap — is
+therefore a PRECONDITION for the next sweep, not a follow-up to it.
+
+## ✅✅✅ ITEM 7 STEP 2b — THE GAP IS THE KNOB, AND WIDER IS BETTER. Q_ext → 720 (2026-08-25)
+
+`h3-loop-gap2-01`, stamp `02a32c7f`. Barrel mount, 176 mm² loop, **no flange**,
+series gap swept. The flange sweep had shown the disc was the wrong knob; this
+asked only **which direction** the gap moves Q_ext.
+
+| gap2 mm | tets | Q₀ | **Q_ext** | β | VSWR @ Q₀=105 | P_min | spread | A2/A0 |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0.35 | 43,927 | 40,102 | 1,134 | 35.4 | 10.8 | 0.9993 | 0.0006 | 0.0181 |
+| 0.50 *(control)* | 44,049 | 40,147 | 1,143 | 35.1 | 10.9 | 0.9994 | 0.0005 | 0.0184 |
+| **0.75** | 44,197 | **37,516** | **720** | **52.1** | **6.9** | 0.9988 | 0.0010 | 0.0270 |
+
+✅ **Control reproduced `h3-loop-seriesc-01` exactly** (Q_ext 1,143, β 35.139),
+across a reclamation and a fourth machine.
+🔑 **Lever vs the plain loop: 8,716 → 720 = 12.1×**, up from 7.6×.
+🔑 **VSWR at the design bore: 83 → 6.9**, inside `../control-loop/`'s "3-stub
+tuner is comfortable" line of 20, and approaching the region where the
+magnitude tuner may not be needed at all.
+
+### ✅ THE MECHANISM IS NOW NAMED, AND IT PREDICTED THE RESULT BEFORE THE SOLVE
+
+Widening the gap LOWERS C, which RAISES the loop's own series resonance
+(f ∝ 1/√LC) **toward 2.45 GHz**. A loop resonant in-band couples hardest.
+🔑 **The `pec` solve showed it first:** at gap 0.75 every purity indicator moved
+together — Q₀ −6.5 %, spread ×2, P_min lowest, continuation largest — and
+**Q_ext was predicted to fall on that basis, then did (720).** That is a
+mechanism, not a fitted curve; contrast the series-LC fit in step 2, which was
+retracted for failing its own control.
+
+⚠️ **AND THE SAME MECHANISM SETS THE LIMIT.** In-band resonance is exactly the
+condition for **hybridising TE011**, so the best coupling and the worst mode
+purity arrive together. `A2/A0` is already climbing: 0.0184 → **0.0270**.
+**Watch it, not Q_ext, for when to stop.** F2 fires at spread > 0.02; we are at
+0.0010.
+
+### 🔴 A DIRECTION READ FROM A SUB-1 % STEP — my error, again
+
+0.35 vs 0.50 is **−0.8 %**, on meshes differing by 122 tets. I called that
+"narrower is marginally better" and reasoned about fringing to explain it.
+**0.75 vs 0.50 is −37 % and needed no interpretation.** The sub-1 % step was
+discretisation. ⚠️ **The tet count is in the result file and would have refused
+the reading immediately** — same class as §11 (two points are not a law) and as
+the step-2 model fit. **State the resolution floor before reading a difference.**
+
+🔴 **THE OPTIMUM IS STILL NOT BRACKETED** — it lies beyond 0.75, and no
+prediction is offered for where. Two attempts to place a grid ahead of the
+measurement failed today. `h3-loop-gap2-02` extends until Q_ext turns back up
+**or** purity crosses F2, whichever comes first.
+
+## ✅✅✅ ITEM 7 STEP 2 — THE SERIES CAPACITOR WORKS. Q_ext 8,716 → 1,143 (2026-08-25)
+
+`h3-loop-seriesc-01`, stamp `8e2dce21`. Eigen `port_bc` pairs, barrel mount,
+176 mm² loop, gap2 = 0.5 mm, flange radius swept. **Calculated since R62 and
+never simulated until now.**
+
+| capacitor | Q₀ | **Q_ext** | β | VSWR @ Q₀=105 | P_min | spread | A2/A0 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| none (control) | 43,463 | 8,716 | 4.99 | 83.0 | 0.9997 | 0.0003 | 0.0026 |
+| **bare wire, 0.5 mm** | **40,147** | **1,143** | **35.1** | **10.9** | 0.9994 | 0.0005 | 0.0184 |
+| flange 1.4 | 40,732 | 1,338 | 30.4 | 12.7 | 0.9996 | 0.0003 | 0.0159 |
+| flange 1.7 | 41,836 | 1,957 | 21.4 | 18.6 | 0.9998 | 0.0001 | 0.0112 |
+| flange 1.9 | 42,015 | 2,120 | 19.8 | 20.2 | 0.9998 | 0.0001 | 0.0104 |
+| flange 2.3 | 42,609 | 3,079 | 13.8 | 29.3 | 0.9999 | 0.0001 | 0.0071 |
+
+✅ **THE FALSIFIER IS DEAD.** NEXT.md: *"if step 2 does not move Q_ext by ≥4×,
+the loop family IS exhausted and `../control-loop/`'s requirement 1 is real."*
+**It moved 7.6×.** The loop family is **not** exhausted.
+
+✅ **The control reproduces step 1 EXACTLY** — Q_ext 8,716 both times, across a
+reclamation and three machines.
+
+✅ **THE MEASUREMENT IS WELL-CONDITIONED**, which matters because this exact
+extraction has been wrong before. At β = 35, Q₀ contributes only **2.8 %** of
+the `1/Q_L − 1/Q₀` difference — nothing like the β≪1 regime where the pair
+amplifies error 64× (§7bd).
+
+✅ **NO HYBRIDISATION. The method falsifier did not fire.** Worst purity across
+the whole sweep is `P_min = 0.9994`, `spread = 0.0005` — far under the ~0.02
+that would mean the eigen pair had stopped measuring TE011.
+🔑 **`A2/A0` IS THE LEADING INDICATOR, and it is doing exactly what theory says:**
+0.0026 → **0.0184**, a 7× rise, tracking coupling strength. Still small, but it
+is the number to watch when the gap sweep approaches the true optimum — at
+cancellation the loop is series-resonant *at 2.45 GHz*, which is where it is
+most able to hybridise TE011.
+
+### What it means for the tuner
+
+| bore | VSWR no cap | **with the capacitor** |
+|---|---:|---:|
+| **2–8.5 design (measured)** | 83 | **10.9** |
+| 2–6 (measured) | 24 | 3.2 |
+
+🔑 **`../control-loop/` requirement 1 — "a magnitude-matching approach that
+survives 39–42 A at 2.45 GHz", flagged 🔴 UNSOLVED, no verified option — is
+addressed by a COPPER GAP.** That programme calls a 3-stub tuner *comfortable*
+at VSWR 20, and the design bore now lands at **10.9 with no bore change**.
+🔑 **It also DECOUPLES the tuner question from the bore**, so
+`../torch-geometry/`'s flow/residency trade no longer has to carry the match.
+⚠️ **COLD numbers.** These are cold Q_ext values applied to a measured loaded
+Q₀. Q_ext is a geometric property of the loop, but the pairing has not been
+measured hot.
+
+### 🔴 THE OPTIMUM IS NOT IN THIS SWEEP — and that is my sweep-design error
+
+**Q_ext rises MONOTONICALLY with flange radius, 1.0 → 2.3.** The best point is
+the smallest, so **the optimum is at flange ≤ 1.0 and the disc is the wrong
+knob.** ⚠️ `geometry.py` adds the discs only `if fr > lrw`, and the wire radius
+**is** 1.0 — so the "flange 1.0" case added **no disc at all**. It is the bare
+wire, i.e. the geometry the R62 note calls the failed attempt.
+
+🔴 **I THEN FITTED A MODEL AND WAS WRONG TWICE.** A series-LC fit
+(`Q_ext ∝ R² + (X_L−X_C)²`) over the three flange points predicted an optimum
+gap — but (a) I printed "wider" over a number that meant narrower, and (b) three
+free parameters over three points fit *exactly by construction*. **Adding the
+control (no capacitor = a short = X_C = 0) as a fourth point broke it at 44 %
+residual.** A model that fits 3 points perfectly and fails the 4th is an
+interpolation, not a mechanism — and the control was on disk the whole time.
+✅ **So no direction is claimed.** `h3-loop-gap2-01` probes 0.35 and 0.75 mm
+either side of 0.5 and lets the measurement name it.
+
+### 🔴 THE R62 "FAILURE" WAS A β ↔ 1/β MISREAD
+
+The record says the one attempt *"failed … |Γ| 0.568 → 0.904 — worse"*. Those
+are **β ≈ 3.6 → ≈ 19.8 on the OVERCOUPLED branch**: coupling got ~5× STRONGER
+and overshot further past β = 1, which *raises* cold reflection. It was judged
+by **|Γ| alone, COLD** — the one regime where more coupling looks worse.
+🔑 **That is §7x exactly, the error this programme documented and then made.**
+The consequence was not just a wrong verdict: it sent the fix to a *flange*,
+which this sweep shows was never the knob.
+⚠️ **A near-exact coincidence, recorded and REFUSED:** flange 1.9 measures
+β = 19.816 → |Γ| = 0.9039 against the recorded 0.904, and R62's untested fix was
+*"r ≈ 1.9 mm"*. **But the other endpoint kills it** — |Γ| = 0.568 implies
+β = 3.63, while this cavity's barrel loop measures 4.99 and its cap loop 4.70.
+The 2026 pair is not this cavity, so the match is cross-era (§7aq). **The
+misread finding stands on the physics, not on the coincidence.**
+
+⚠️ **A verification bug of my own, caught in the same hour:** my first summary
+printed `purity 0.0000` for every case, because it read a key that does not
+exist and `.get(name, 0)` supplied the default. **A missing measurement rendered
+as a perfect score.** The real field is `te011_pec.spread`; the values above are
+it. §7d — a check that cannot fail.
+
+## ✅✅ ITEM 7 STEP 1 — THE BARREL MOUNT COUPLES *BETTER*, NOT WORSE (2026-08-25)
+
+`h3-loop-barrel-01`, stamp `7b831947`. Eigen `port_bc` pairs, same 176 mm²
+single-turn loop, **only the mount changes**, with the cap loop re-measured in
+the SAME run as the control rather than compared across eras (§7aq).
+
+| loop | mount | Q₀ | **Q_ext** | β | purity spread |
+|---|---|---:|---:|---:|---:|
+| 11×8 | **barrel** | 43,463 | **8,716** | 4.99 | 0.0000 |
+| 11×8 | cap (control) | 43,422 | 9,231 | 4.70 | 0.0000 |
+| none | — | 44,414 | — | — | — |
+
+🔴 **MY PREDICTION WAS FALSIFIED, AND IT WAS ON RECORD BEFORE THE SOLVE.**
+`geometry.py` states the cap loop's H_r is **1.39× the barrel's |H_z|**, i.e.
+**1.93× in coupled power**, so I predicted Q_ext_barrel ≈ 17,600.
+**Measured 8,716 — a ratio of 0.944×.** The barrel couples **5.6 % MORE
+strongly**, not 93 % less.
+
+✅ **THE MEASUREMENT'S OWN CHECK PASSED, WHICH IS WHY THE FALSIFICATION STANDS.**
+Q₀ is a property of the CAVITY, not the loop, and it moved by **0.096 %**
+(43,463 vs 43,422). A mount that shifted Q₀ would mean a geometry error rather
+than a coupling result. It did not.
+
+### What this changes
+
+- 🔑 **THE BARREL IS FREE.** It was queued first only because `geometry.py:427`
+  refuses `--loop-gap2` with `--loop-cap`, so the series capacitor cannot be
+  tested on the cap mount. I expected that access to cost ~1.9× in coupling.
+  **It costs nothing — it gains 5.6 %.**
+- 🔴 **THE 1.39× FIELD RATIO IN `geometry.py` IS A LEGACY-CAVITY NUMBER — and
+  that is now DERIVED, not guessed.** For TE011 the cap sees H_r and the barrel
+  sees H_z, and their ratio is `(β/k_c)·max J₁ / |J₀(x'₀₁)|` where β = π/L and
+  k_c = x'₀₁/a. **The Bessel part alone is 1.4447; the β/k_c factor is what
+  carries the cavity's SHAPE.**
+
+  | cavity | D/L | β/k_c | H_r(cap) / H_z(barrel) |
+  |---|---:|---:|---:|
+  | **H1's, the real one** | 1.525 | 0.6252 | **0.903** |
+  | legacy (rejected by H1) | 2.343 | 0.9604 | **1.387** ← the quoted 1.39 |
+
+  🔑 **So the claim that justified mounting the loop on the CAP was computed on
+  the cavity H1 REJECTED.** On the cavity being built the barrel is stronger,
+  and the eigen pair agrees: measured Q_ext ratio 0.944 against 0.816 predicted
+  from the point-field ratio (the loop is finite and samples a range of r and z,
+  so exact agreement is not expected — the SIGN and the order are the result).
+  ⚠️ **This is `../../CLAUDE.md`'s GEO bug surfacing as a PHYSICS claim**, not
+  just a default: a wrong cavity in one file became a design decision in
+  another. See NEXT.md § THE GEO RE-RUN LIST and CONVENTIONS §7bm.
+- ⚠️ **AND IT WEAKENS "three of the loop's five axes are already pinned at
+  maximum coupling"** (NEXT.md item 7). The cap radius was pinned to the J₁ peak
+  of H_r on that reasoning. The mount comparison says the reasoning does not
+  predict the outcome.
+- ⚠️ **Q_ext = 14,442, the barrel baseline in `geometry.py`'s capacitor
+  comment, is ALSO wrong** — it is an R-era number from a different cavity.
+  The measured barrel baseline is **8,716**.
+
+### What it does NOT change
+
+🔑 **The 45× capacitor figure does NOT rest on the falsified field ratio.** It
+comes from cancelling the loop's 332 Ω self-reactance with 0.196 pF — a circuit
+argument about the same loop, not a comparison between mounts. **My own
+falsifier was drawn too broadly when I wrote it**: it said a failed mount ratio
+would require re-deriving the 45×. On inspection the two are independent, so
+**step 2's premise survives** — but it is still CALCULATED and NEVER SIMULATED.
+
+🔑 **Rescaled to the measured baseline: 8,716 / 45 ≈ 194.** Against the design
+bore's measured Q₀ = 105 that would be **β = 0.54, VSWR ≈ 1.9** — essentially
+matched, with no change to the bore. ⚠️ **That is arithmetic on an unsimulated
+45×, not a result.** Step 2 is the test.
+
+⚠️ β does not cross 1 anywhere in the swept range (4.99 … 4.70): **critical
+coupling is outside it, cold.** These are COLD numbers; the loaded state is
+where β ≪ 1.
+
 ## 🔴 THE LOOP WAS FORCED, NOT DESIGNED — and the tuner conclusion rests on it
 
 **User, 2026-08-24: *"some kind of loop was forced so we could evaluate driven,
@@ -628,6 +1314,144 @@ design can deliver that has never been asked.**
 ⚠️ ❌ Aperture coupling stays closed (patented; and the cavity IS the waveguide,
 so there is no shared wall for an iris). **This is about the LOOP family, not a
 return to apertures.**
+
+## 🔑🔑 THE TORCH BORE IS A COUPLING LEVER — and possibly the dominant one
+
+**User, 2026-08-25: *"MP-AES uses a much narrower torch while MICAP uses
+Fassel."*** 🔑 **Two real nitrogen instruments at opposite ends of a trade this
+programme had treated as plumbing.**
+
+🔴 **TE011's E_φ is ZERO ON AXIS** and peaks at r = 0.4805a = 42.3 mm. The plasma
+sits at r = 2–8.5 mm — **2–10 % of the radius, deep in the weak-field region** —
+so **where the bore puts it dominates how strongly it loads the cavity:**
+
+| annulus | E_φ at outer r | energy fraction | **Q₀ (scaled)** | **β** | **VSWR** | I @1 kW |
+|---|---:|---:|---:|---:|---:|---:|
+| **MP-AES-like 1–4** | 14.9 % | 0.0048 % | **2,098** | **0.255** | **4** | **8.9 A** |
+| narrow 2–6 | 22.3 % | 0.0239 % | 422 | 0.051 | 20 | 19.8 A |
+| **AS MODELLED 2–8.5** | 31.3 % | **0.0959 %** | **105** | **0.0127** | **79** | **39.6 A** |
+| Fassel-ish 2–11 | 40.0 % | 0.2653 % | 38 | 0.0046 | 217 | 65.9 A |
+
+## ✅✅ MEASURED 2026-08-25 — `h3-bore-01`, stamp `98e6fe8f`
+
+**The forecast above was a SCALING, not a measurement.** Three driven sweeps at
+the anchored density (n_e = 7.9e18, vacuum torch, r_i fixed at 2.0 mm):
+
+| annulus | Q₀ | **β (fitted)** | VSWR | Q_ext implied | dip | tets |
+|---|---:|---:|---:|---:|---:|---:|
+| **2–4 mm** | **1,695** | **0.1829** | **5.5** | 9,262 | −3.21 dB | 50,768 |
+| 2–6 mm | 360 | 0.0394 | 25.4 | 9,138 | −2.04 dB | 58,854 |
+| **2–8.5 mm — CONTROL** | **105** | **0.0127** | **78.6** | 8,243 | −0.22 dB | 80,621 |
+
+✅ **THE CONTROL REPRODUCES `h3-driven-anchor-01` TO 0.27 %** — different run,
+different slug, different day, and the anchor side was itself RECONSTRUCTED from
+raw Palace CSVs after the §7ap clobber. f₀, β and |S11|min agree to **every
+digit**; the only mover is linewidth (23.7357 vs 23.800 MHz), which is the
+**interpolated 3 dB edge** replacing the grid-snapped one (§7bh). Mesh matched
+at 80,621 tets / sf 1.42.
+
+🔑 **THE LEVER IS 16.2×, NOT THE 20× FORECAST.** The first-order energy-fraction
+scaling **over-predicts the narrow bores**: 2,098 vs 1,695 measured (−19 %) and
+422 vs 360 (−15 %). Direction right, magnitude optimistic.
+
+🔴 **AND IT IS NOT A POWER LAW.** Absorbed power should go as ∫|E_φ|²dV ~
+(r_o⁴−r_i⁴) since E_φ is essentially linear this close to the axis. Fitting
+Q_plasma ~ S^−n on the first two points gives **n = 0.944**; extending to the
+third gives **n = 0.884**. Predicting the control from points 1–2 alone gave
+**89.1 (n=1)** and **96.3 (n=0.94)** against **105 measured — both LOW.**
+**Stated before the third point solved, and both were falsified.**
+✅ **The deviation has a mechanism:** skin depth is **6.89 mm** against annulus
+wall thicknesses of **2.0 / 4.0 / 6.5 mm**, so the widest bore's outer plasma is
+**screened** and absorbs less than its volume implies. Absorption **saturates**;
+it does not scale.
+
+🔑 **THE CONDITIONING IMPROVES AS THE BORE NARROWS — a second, free result.**
+`Q_ext implied` is what each fit reconstructs for a loop whose independent cold
+eigen value is **9,231**:
+
+| bore | dip | Q_ext implied | error vs 9,231 |
+|---|---:|---:|---:|
+| 2–4 | −3.21 dB | 9,262 | **+0.3 %** |
+| 2–6 | −2.04 dB | 9,138 | −1.0 % |
+| 2–8.5 | −0.22 dB | 8,243 | **−10.7 %** |
+
+**At β = 0.0127 the dip is 0.22 dB and the fit is ill-conditioned** — the rig
+says so itself. **At 2–4 mm the same method recovers the cold Q_ext to 0.3 %**,
+which is an independent check the design bore cannot supply. ⚠️ So the 8,243 is
+**a fit artefact, not the loop moving with the bore**; do not read it as physics.
+
+⚠️ **β and VSWR here are FITTED from dip depth, never Q₀/Q_ext.** Computing
+β = Q₀/9,231 gives 0.0114 against the fit's 0.0127 — **12 % apart, from the same
+solve** (§7d). The Q₀ *ratio* is safe; absolute β is not.
+
+⚠️ **Q_ext = 9,231 is the NO-TORCH value on a VACUUM-TORCH mesh** (+1.25 %; the
+mesh-matched number is 9,117). It divides every case equally, so **the 16.2×
+lever is unaffected**; only absolute VSWR carries it.
+
+🔴 **THIS CHANGES NO DESIGN DECISION — see the correction immediately below.**
+It prices the bore; it does not choose it.
+
+## 🔴 CORRECTION — I HAD THE HIERARCHY BACKWARDS. THE BORE IS NOT AN EM KNOB
+
+**User, 2026-08-25: *"the torch geometry matters more for slm than EM/RF"***, and
+***"slm → residency → LOD"***. ✅ **Right, and it demotes the finding below.**
+
+    LOD  →  required residence time  →  slm and bore area  →  EM must COPE
+    NOT:  EM coupling  →  pick a bore
+
+| annulus | area | velocity @20 slm | **residence time** |
+|---|---:|---:|---:|
+| 2–4 | 37.7 mm² | 8.84 m/s | **10.4 ms** |
+| 2–6 | 100.5 mm² | 3.32 m/s | 27.8 ms |
+| **2–8.5** | 214.4 mm² | 1.55 m/s | **59.4 ms** |
+
+🔴 **The narrow bore I called a coupling win cuts residence time 5.7×** — and
+residence time is what atomises and excites the analyte, so it goes **straight to
+LOD, which is what the instrument exists to deliver.** A coupling improvement
+bought with LOD is not an improvement.
+
+🔴 **AND THE TOP OF THE CHAIN IS UNSPECIFIED.** `../spectroscopy/` item 2:
+*"target elements + detection limits — NOT STATED ANYWHERE."* **So the bore
+cannot be CHOSEN yet, whatever the EM derivative says.**
+
+### ⚠️ AND MY SCALING RESTED ON TWO THINGS THAT ARE NOT TRUE
+
+1. **The energy fraction came from the EMPTY-cavity mode.** The plasma has
+   ε = −1.456 and **expels field**; at δ/shell = 1.06 it is not a small
+   perturbation. **The overlap I computed is not the overlap that exists.**
+2. **n_e was held fixed while the bore shrank.** Same 1 kW into 5.7× less volume
+   runs **hotter**, raising n_e and lowering Q₀ — **pushing back against the
+   effect I was claiming.** Bore and n_e are coupled through the power balance,
+   which is a **gas/thermal** calculation, not an EM one.
+
+✅ **WHAT `h3-bore-01` STILL MEASURES, AND IT IS WORTH HAVING:** the partial
+derivative **∂Q₀/∂(bore) at fixed n_e** — one real term in a coupled problem.
+⚠️ **It is NOT "what a narrower torch would do."**
+
+🔑 **A NARROWER BORE RAISES Q₀ → RAISES β → COLLAPSES VSWR.** MP-AES-like
+geometry would take **VSWR 79 → ~4** and the load current **40 A → 9 A** — which
+**is** the magnitude-tuning problem (`../control-loop/` requirement 1), solved by
+geometry rather than by a part that does not exist.
+
+⚠️ **FIRST-ORDER ONLY — Q₀ ∝ 1/overlap** ignores skin depth and σ(n_e), and the
+plasma need not fill the annulus uniformly. **Not a recommendation. A lever
+nobody had costed.**
+
+### 🔴 AND IT IS NOT FREE — it trades against gas velocity
+
+| annulus | area | velocity at 20 slm N₂ |
+|---|---:|---:|
+| 1–4 mm | 47 mm² | **7.09 m/s** |
+| 2–8.5 mm | 214 mm² | 1.56 m/s |
+
+**4.5× faster in the narrow bore.** 🔑 **This is exactly the chain
+`../spectroscopy/` already flagged as ASSUMED — *"slm → bore radius → coupling →
+input power"*.** The user's observation gives it two instrument anchors instead
+of one assumption.
+
+🔑 **AND IT RE-RANKS THE COUPLING WORK.** The loop's series capacitor is ~45× in
+Q_ext; the bore is ~20× in Q₀. **They are independent and they multiply.**
+**Item 7 is no longer the only lever, and it may not be the first one.**
 
 ## 🔴🔴 β WAS REPORTED AS AN OBSERVATION. IT IS A DESIGN OUTPUT.
 
@@ -906,6 +1730,109 @@ line is `A_all.f0 − E_vac_torch.f0` — **A − E**, the matched all-loss pair
 A has already timed out. **The torch shift is therefore NOT MEASURABLE by this
 rig until the preconditioner is fixed** — a harder blocker than "one case failed".
 
+## ✅✅ RESOLVED 2026-08-25 — ε_⊥c = 9.39, MEASURED. THE PROGRAMME USED THE WRONG AXIS
+
+**Krupka, Huang & Tung, *Meas. Sci. Technol.* 16 (2005) 1014–1020, figure 10:**
+
+> *"Dielectric loss tangents **perpendicular to the anisotropy axis** … The
+> measured permittivity was 4.43 ± 0.5 % for single-crystal quartz and
+> **9.39 ± 0.5 % for sapphire**."*
+
+🔑 **Measured with TE0np modes in a cylindrical dielectric sample — the same mode
+family as this cavity.** `refs/Complex_Permittivity_Measurements_of_Low-Loss_Micr.pdf`
+
+**TE011's E is azimuthal, so with the c-axis along the tube E_φ sees ε_⊥c.**
+**That is 9.39. `geometry.py` uses 11.6, which is ε_∥c.** The axes were inverted,
+exactly as suspected — and R32 could never have caught it, because its check
+(*"c-longitudinal reproduces isotropic 11.6"*) only confirmed that the
+simulation put 11.6 on the perpendicular axis, **which was the assumption under
+test.**
+
+### 🔴 AND THE TORCH SHIFT DOES *NOT* CANCEL — I PREDICTED WRONG BY 11 MHz
+
+**I claimed the shift would largely cancel**, using the R-era local slope of
+~6.56 MHz per unit ε to predict **+14.5 MHz** of correction. **Measured on THIS
+cavity (`e3-torch-01` B_sap, ε = 9.39):**
+
+| ε | f₀ | |
+|---:|---:|---|
+| 11.6 | 2.437762 | `e3-closure-00` case B |
+| **9.39** | **2.441087** | **`e3-torch-01` B_sap** |
+
+> **Δf = +3.325 MHz for Δε = −2.21 → the real slope is 1.50 MHz per unit ε.**
+> **The R-era number was 4.4× too large.** I predicted f₀ = 2.4522 and got
+> 2.4411 — **out by 11.1 MHz.**
+
+✅ **That is pre-registered outcome #2, verbatim** — *"the R-era slope does NOT
+transfer; R2 stays open, and the ε change matters LESS than predicted."* The map
+was written before the number and it named this case.
+
+🔑 **SO THE CORRECTED PICTURE:**
+- **The torch shift is ≈ −10.5 MHz at the measured ε, not −13.9 and not ~0.**
+  A **24 % reduction, not a cancellation.**
+- 🔴 **The torch restoration KEEPS its urgency.** *"Every eigen f₀ is ~14 MHz
+  high"* becomes *"~10.5 MHz high"* — still far larger than the 1.6 MHz the whole
+  anchor band spans.
+- ⚠️ **R5 is only partly relieved**: the η-reference correction shrinks with the
+  same ratio, it does not evaporate.
+### ✅✅ R2 CLOSED — THE TORCH SHIFT IS −10.40 MHz, MATCHED
+
+**`e3-torch-01`, both cases wall-loss only, one variable between them:**
+
+| case | ε | f₀ | Q |
+|---|---:|---:|---:|
+| **B_vac** | 1.00 | **2.451490** | 43,522.8 |
+| **B_sap** | **9.39** | **2.441087** | 44,160.1 |
+| | | **−10.403 MHz** | **×1.0146 (+1.46 %)** |
+
+**At the old ε = 11.6, against the same reference: −13.728 MHz.** So the axis
+correction is worth **+3.325 MHz — a 24 % reduction, not a cancellation.**
+
+⚠️ **THE −13.87 MHz IN THE RECORD WAS WRONG TWICE OVER:** the wrong permittivity
+**and** a cross-geometry reference (case B against `h3_loopq`'s **no-torch**
+2.451633, §7aq). Matched and at the measured ε it is **−10.40 MHz.**
+
+🔑 **CONSEQUENCES, FINAL:**
+- **Every eigen f₀ meshed without the design torch is ~10.4 MHz HIGH** — still
+  **6.5× the 1.6 MHz the whole anchor band spans.** 🔴 **The restoration keeps
+  its urgency.**
+- **The η reference correction is +1.46 %, not +2.0 %** — R5 shrinks, does not
+  vanish.
+- ✅ **Sensitivity, measured on THIS cavity: 1.50 MHz per unit ε.** The R-era
+  6.56 is **4.4× too large and must not be reused.**
+
+### ✅ AND B_vac REPRODUCES `h3-qext-01`'s COLD pec EXACTLY
+
+**f₀ = 2.451490, Q = 43,522.8** — from `e3_closure`, which **built** its mesh,
+against `h3_qext`, which **bound** `h3-driven-00_cold.msh`. **Third cross-rig
+reproduction today**, and it independently confirms **`eta.reference` = 43,523**
+— a constant §7c had caught wrong four times.
+
+🔴 **THE CONSTANT IS NOT FLIPPED YET.** Changing it moves every stored f₀, so it
+belongs to one deliberate re-mesh with the apertures. **`baselines.json` already
+carries 9.39 as definitive; `geometry.py` carries 11.6 with the citation beside
+it.** ⚠️ **Until the re-solve, treat BOTH the torch shift and its cancellation as
+unmeasured on this cavity.**
+
+🔴🔴 **AND THE TORCH ε ITSELF WAS IN QUESTION — the shift may largely cancel.**
+`geometry.py` uses **ε = 11.6**, commented *"sapphire eps_PERP_c — what E_φ sees
+(R32/R98)"*. Recovering R32 from git (`git show
+2db1d59^:experiments/waveguide/FINDINGS.md`) shows it is **real external work
+that carries forward — but it answers ORIENTATION, not the SCALAR:**
+- ✅ c-longitudinal vs c-transverse is **worth 1.1 MHz**, 0.11 % of a full m=2 —
+  so *"c-axis longitudinal"* is **preferred, not required.** That stands.
+- 🔴 **It TOOK ε = 11.6 as given.** Its own phrase *"a 23 % anisotropy"* is
+  exactly the **9.4 ↔ 11.6** gap, so both values were in play and one was
+  adopted without a citation.
+- 🔢 **The same file measures ε 3.78 → 11.6 as −33.9 MHz, nonlinear, local slope
+  −6.56 MHz per unit ε near 11.6.** So **11.6 → 9.4 is ≈ +14.4 MHz** — **larger
+  than the whole −13.87 MHz shift case B measured.**
+
+🔑 **If E_φ sees the ordinary axis (ε ≈ 9.4, the usual convention), the torch
+shift largely CANCELS** — and the *"every eigen f₀ is ~14 MHz high"* conclusion
+above goes with it. **`torch.sapphire.permittivity` is now marked TENTATIVE in
+`baselines.json`. Do not quote the torch shift until the scalar is re-derived.**
+
 ✅ **What B does establish, provisionally:**
 - **Magnitude and sign are as predicted.** −13.87 MHz sits between my Slater
   estimate (−11.24, outer wall only) and DISCARDED `h4_field` (−15.00, all tubes,
@@ -997,6 +1924,271 @@ result file is stale (it still carries the retracted Q = 12,368 / f₀ = 2.44000
 | **Q_L** | **7,538** | **7,004** | **−7.1 %** |
 | **β** | **4.7740** | **4.8041** | **+0.6 %** ✅ |
 | Q_ext | **9,117** | 8,462 | −7.2 % |
+
+## ✅✅ RESOLVED 2026-08-25 — THE 7.7 % GAP WAS THE FIT, NOT THE SOLVERS
+
+**Refitting the SAME cold sweep with interpolated 3 dB crossings:**
+
+| fit | Q_L | Q₀ | Q_ext | vs eigen |
+|---|---:|---:|---:|---:|
+| grid edges (as shipped) | 7,004 | 40,654 | 8,462 | **−7.18 %** |
+| **interpolated edges** | **7,487** | **43,455** | **9,045** | **−0.78 %** |
+| **EIGEN pair** | 7,538 | 43,523 | 9,117 | — |
+
+🔑 **Q₀ agrees to 0.16 %, Q_L to 0.67 %, Q_ext to 0.78 %.** The eigen↔driven
+disagreement **was the 3 dB edges snapping to the sample grid** — not the
+solvers, and **not the sample count either.** ⚠️ **My first explanation ("14
+samples") was also wrong:** 1e20 gives 0.0 % at TEN samples and cold gives −0.8 %
+at SIX, once the edges interpolate. **Sample count bounds the error at ~2/N; it
+does not determine it.**
+✅ **`cavity.Q_ext` = 9,117 stands, and now has an independent driven
+confirmation at 0.78 % instead of a 7.7 % contradiction.**
+
+🔑 **β AGREES TO 0.6 %. THE ENTIRE DISAGREEMENT IS Q_L** — and Q_L is the 3 dB
+LINEWIDTH: **0.35 MHz sampled at 25 kHz, ~14 points across.** `h3_driven`'s own
+docstring calls its cold case a **LOCATOR** for exactly this reason. **So this
+is not a solver disagreement; it is a resolution limit on one side**, and it
+lands on the quantity most sensitive to it.
+✅ **Cold Q_ext = 9,117 (eigen) is the better number.** The driven 8,462 inherits
+a 7 % linewidth error.
+
+### ✅ AND IT REPRODUCES `h3_step3`'s V1_ANCHOR TO FOUR FIGURES
+
+**recorded** Q₀ = 43,523 · Q_L = 7,538 · Q_ext = 9,117 · β = 4.774
+**measured** Q₀ = 43,523 · Q_L = 7,538 · Q_ext = 9,117 · β = 4.7740
+
+🔑 **This settles a question `baselines.json` recorded as unanswered:** which of
+`h3_step3`'s two mesh styles produced 9,117. **The vacuum-torch one.** The
+registry entry now carries the reproduction as its verification.
+⚠️ **And it confirms `h3_driven` imports the wrong one** — it hardcodes 9,231,
+the NO-TORCH value, while meshing vacuum torch. **+1.25 %.**
+
+### 🔑 THE ANCHOR CASE IS THE REAL TEST, AND IT IS RUNNING NOW
+
+**Prediction, before the data:** at 7.9e18 the linewidth is **23.8 MHz** — 68×
+wider than cold, ~119 samples across at the same step. **If the cold gap is
+resolution, eigen and driven should agree closely at the anchor.** If a 7 % gap
+survives there, it is a genuine method difference and the cold case was not the
+explanation.
+
+## ✅✅ `h3-qext-01` COMPLETE — and WHICH METHOD TO TRUST FLIPS WITH β
+
+| case | pec | lumped | Q_ext | vs driven dip |
+|---|---|---|---:|---:|
+| **cold** | Q₀ 43,523 | Q_L 7,538 | **9,117** | 9,045 → **−0.78 %** ✅ |
+| **anchor 7.9e18** | 🔴 0 iters | 🔴 0 iters | — | ε-near-zero, reproduced |
+| **1e20** | Q₀ 163.2 | Q_L 160.5 | 9,701 | 9,322 → +4.1 % |
+
+✅ **THE PRE-REGISTERED PREDICTION HELD.** Before the lumped solve I recorded
+that the driven-implied Q_ext = 9,322 requires **Q_L = 160.4**. **Measured:
+160.5 — 0.06 %.**
+
+🔴 **SO THE 4.1 % Q_ext GAP IS NOT A DISAGREEMENT, IT IS AMPLIFICATION.**
+Q₀ − Q_L = **2.7** on numbers of ~163, and the eigen pair **differences them**:
+
+| method | Q_L +0.1 % → Q_ext | amplification |
+|---|---:|---:|
+| **eigen pair** (differences Q₀ and Q_L) | **+6.4 %** | **64×** |
+| **driven dip** (β from the DEPTH, independent of the width) | +0.1 % | **1×** |
+
+🔑 **WHICH INSTRUMENT IS BETTER CONDITIONED FLIPS WITH β, AND IT FLIPS THE WAY
+YOU WOULD NOT GUESS:**
+- **COLD (β = 4.77):** Q₀/Q_L = 5.8, the eigen pair is well conditioned and the
+  driven fit needed edge interpolation to reach it (0.16 %).
+- **LOADED (β ≪ 1):** Q₀ ≈ Q_L, the eigen pair is **~60× worse**, and the
+  **DRIVEN DIP is the reliable one** because β comes from the dip DEPTH and never
+  differences two large numbers.
+
+✅ **So the Q_ext-vs-density table above — all driven — is the trustworthy one,
+and the eigen pair should be used COLD ONLY.** ⚠️ The rig still prints the eigen
+Q_ext at 1e20 as though it were comparable; it is not, and 9,701 should not be
+quoted.
+
+🔑 **TO GET A REAL Q_ext, RUN THE EIGEN PAIR ON THE DRIVEN MESH.** `pec` and
+`lumped` on **the same `h3_driven_n*.msh` files that are already built** — no
+new geometry, no re-meshing, and it lands Q_ext at every density including the
+anchor. **Until then, quote β from the DIP, which needs no Q_ext at all.**
+
+### 🔴 But the DESIGN torch is a real offset, and NO eigen anchor has ever used it
+
+- **Q₀: 43,523 (vacuum) → 44,387 (sapphire) = +2.0 %.** **`Q_REF`, the η
+  reference every driven point is normalised against, is ~2 % low**, and §7c has
+  already caught that constant being wrong four times.
+- **f₀: −13.87 MHz.** Every eigen f₀ in the record — the ladder, the margins,
+  H1's aspect work, H2's groove validation — is **high by about that**.
+- 🔑 **And so is everything I measured today.** The anchor run fixed the
+  DENSITY; it is still a vacuum-torch cavity. **f₀ = 2.4586 becomes ≈ 2.4447**,
+  and the 41.4 MHz band margin becomes ≈ 55 MHz — *better*, but not what is
+  written down.
+- ✅ **β and VSWR should barely move** — they are ratios, and the torch changes
+  Q₀ by 2 %.
+
+🔑 **THE FIX IS ONE LINE AND A RE-RUN, NOT AN INVESTIGATION:** `GEO_DESIGN` must
+drop `--no-torch` and carry `--torch-material 11.6,3.5e-05`. ⚠️ **Do not patch it
+silently** — it invalidates every stored f₀, so it belongs with the restoration
+(apertures, chimney) as one geometry change, measured once.
+
+## ✅✅ THE OPERATING POINT IS MEASURED — 2026-08-25, first time ever
+
+📎 **`baseline-h3-driven-anchor-01.json`** · results `h3-driven-anchor-01.result.json`
+*(the config records the question, the bindings, and three caveats — including
+that it binds `cavity.Q_ext` at `mesh=no_torch` while meshing `vacuum_torch`.
+`slug.py --check` verifies this citation resolves in both directions.)*
+
+**`h3_driven`, 9-point grid. The anchored band 7.3–8.6e18 was never on any grid
+before this run.** Centre point **n_e = 7.9e18, ε = −1.456**:
+
+| | **MEASURED** | previously in the record | |
+|---|---:|---:|---|
+| **f₀** | **2.4586** | 2.4824 (at 1e20) | |
+| **Q₀** | **104** | 109 *(interpolated)* | ✅ interpolation was sound |
+| **Q_L** | **103** | 155 (at 1e20) | |
+| **linewidth** | **23.8 MHz** | 16.0 MHz (at 1e20) | ✅ **1.5× WIDER** |
+| **η** | **0.9976** | — | flat 0.9864→0.9976, **does not discriminate** |
+
+### 🔑 THREE CORRECTIONS, ALL FAVOURABLE TO `../control-loop/`
+
+1. 🔑 **IGNITION SLEW IS 4.4× SMALLER.** Cold 2.4515 → lit **2.4586** is
+   **+7.1 MHz**, not the **+30.9 MHz** the source spec was built on (which
+   assumed 1e20). **The frequency loop has to chase a quarter of what was
+   specified.**
+2. ✅ **THE LOADED RESONANCE IS WIDER, NOT NARROWER** — 23.8 MHz against the
+   assumed 16.0, because Q_L is 103 not 155. **Easier to sit on.**
+3. ✅ **BAND MARGIN 41.4 MHz** to the 2.5 GHz edge, versus 17.6 MHz at 1e20.
+
+### ✅ THE FULL BAND — and the ANCHOR'S OWN UNCERTAINTY BARELY MATTERS
+
+**MICAP's 5220–5270 K maps to n_e 7.3–8.6e18. All three solved:**
+
+| n_e | ε_r | f₀ *(grid)* | **f₀ interpolated** | **slew** | width | Q_L | Q₀ | η |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 7.3e18 | −1.270 | 2.4578 | **2.457842** | **+6.35** | 23.0 | 108 | 108 | 0.9975 |
+| **7.9e18** | **−1.456** | 2.4586 | **2.458529** | **+7.04** | **23.8** | **104** | **105** | **0.9976** |
+| 8.6e18 | −1.674 | 2.4594 | **2.459326** | **+7.84** | 25.0 | 99 | 100 | 0.9977 |
+
+⚠️ **The `grid` column is what the rig emitted — quantised to its 200 kHz step
+(§7bh).** The interpolated column is the same data, refitted. **Band margin
+41.4 → 41.47 MHz and slew +7.1 → +7.04 MHz** — cosmetic. 🔑 **But the BAND
+SPREAD moves 1.6 → 1.484 MHz (−7.2 %), and that is the diagnostic's slope**, so
+n_e-from-f₀ inherits the correction: **1.141, not 1.231 MHz per 1e18.**
+
+🔑 **THE WHOLE 50 K SPREAD MOVES f₀ BY 1.6 MHz, SLEW BY 1.6 MHz, AND VSWR BY
+~9 %.** ✅ **This retires a worry `../spectroscopy/` raised explicitly** — that
+n_e moves *"two decades per ~1,500 K"* and *"a 500 K error is 5–10× in n_e"*.
+**True in general, and irrelevant here:** MICAP's quoted spread is 50 K, not
+500 K, and the design is flat across it. **The anchor does not need to be
+tighter than it already is.**
+⚠️ Unchanged: this is the LTE lower bound. Non-LTE puts n_e higher, and the
+trend above shows that direction costs VSWR (75 → 82 across the band).
+
+### ✅ VSWR IS NOW SETTLED — and it is BETTER than the record says
+
+**The two β estimates differed 13 %. Resolved by deriving Q_ext from the dip
+alone, with no imported constant:  Q_ext = Q_L(1+β_dip)/β_dip.**
+
+| n_e | Q_L | β_dip | **Q_ext implied** | vs cold 9,231 |
+|---|---:|---:|---:|---:|
+| 1e18 | 557 | 0.0704 | 8,478 | −8.2 % |
+| 3e18 | 208 | 0.0257 | 8,304 | −10.0 % |
+| **7.3e18** | 107 | 0.0133 | **8,150** | **−11.7 %** |
+| **7.9e18** | 103 | 0.0127 | **8,221** | **−10.9 %** |
+| **8.6e18** | 98 | 0.0122 | **8,162** | **−11.6 %** |
+| 1e19 | 92 | 0.0114 | 8,118 | −12.1 % |
+| 3e19 | 95 | 0.0112 | 8,625 | −6.6 % |
+| 1e20 | 155 | 0.0171 | **9,225** | **−0.1 %** |
+
+🔴 **THIS TABLE HAS NOW BEEN WRONG TWICE, AND THIS IS THE THIRD VERSION.**
+① first read as *"Q_ext falls ~11 % under load"* — wrong, the cold row was
+missing. ② then *"roughly flat, not a loading effect"* — **also wrong, because
+the cold row I added was the grid-snapped artefact (8,462).**
+✅ **Refitted 2026-08-25 with INTERPOLATED 3 dB edges (§7bh), and the cold value
+now agrees with the eigen pair to 0.78 %, which is what makes the rest
+trustworthy:**
+
+| n_e | **Q_ext (interpolated)** | was (grid-snapped) | |
+|---|---:|---:|---|
+| **cold** | **9,045** | 8,462 | ✅ **eigen pair: 9,117 → −0.78 %** |
+| 1e18 | 8,824 | 8,478 | |
+| 3e18 | 8,528 | 8,304 | |
+| **7.9e18** | **8,243** | 8,221 | **the operating point** |
+| **1e19** | **8,194** | 8,118 | **minimum** |
+| 3e19 | 8,650 | 8,625 | |
+| 1e20 | **9,322** | 9,221 | recovers above cold |
+
+🔑 **SO Q_ext DOES VARY WITH LOAD — a ~9 % dip from cold with a MINIMUM near
+1e19, recovering by 1e20.** That reinstates the reading I withdrew, but on a fit
+that is now **validated against an independent solver at the one density where
+both exist.**
+🔴 **`h3_loopq`'s docstring — *"Q_ext is set by loop geometry, not by the load"*
+— is FALSE by ~9 %**, and the flag already added there now has a number.
+✅ **β and VSWR are UNAFFECTED**: they come from the dip DEPTH, not the width.
+**VSWR 75–82 at the anchor stands.**
+
+### ⚠️ AND GEOMETRY-MATCHED IS NOT ENOUGH### ⚠️ AND GEOMETRY-MATCHED IS NOT ENOUGH — THE MESH MUST MATCH TOO
+
+`h3_step3` runs `cold` and `driven` styles to compare them, and meshes them at
+**different resolutions by design**: `size_factor` **1.5 vs 1.42**, giving
+**43,685 vs 80,621 tets**. **A comparison across those two carries a
+discretisation difference as well as a geometry one**, and neither is separable
+after the fact.
+
+### ✅ THE AUDIT — which comparisons in this record are actually matched
+
+| comparison | geometry | verdict |
+|---|---|---|
+| **E3 case E ↔ `h3_driven` @1e20** | both vacuum torch + plasma, 1e20 | ✅ **MATCHED** — the 70 kHz / 3.42 % agreement stands (⚠️ separately-built meshes) |
+| eigen Q_ext 9,231 ↔ driven ~8,400 | **no-torch vs vacuum-torch** | 🔴 **VOID** |
+| eigen cold Q₀ 43,422 ↔ driven re-fit 40,652 | **no-torch vs vacuum-torch** | 🔴 **VOID** — the "6.4 %" is not a method result |
+| `h3_loopq` 43,422 ↔ `h3_step3` 43,523 | both eigen, no-torch vs vacuum | ✅ a **geometry** delta within one solver |
+
+### ✅ MESH FINGERPRINTS — `h3_step3`'s "driven" style IS matched to `h3_driven`
+
+| | tets | size_factor | torch |
+|---|---:|---:|---|
+| `h3_driven_cold` / `_n18p90` / `_n20p00` | **80,621** | **1.42** | body, ε = 1 |
+| `h3_step3` **driven** style | **80,621** | **1.42** | body, ε = 1 |
+| `h3_step3` **cold** style | 43,685 | 1.50 | **none** |
+| `h3_loopq` | — | — | **none** (`GEO_DESIGN`) |
+
+🔑 **So the eigen number that is geometry- AND mesh-matched to every driven
+result is `h3_step3`'s driven-style pair — and `h3_loopq`'s `V1_ANCHOR` records
+it as Q_ext = 9,117**, not the 9,231 that `h3_driven` hardcodes.
+⚠️ **Which of `h3_step3`'s two styles produced 9,117 is NOT documented**, and its
+result file is stale (it still carries the retracted Q = 12,368 / f₀ = 2.440003).
+**Both eigen values, 9,117 and 9,231, sit ~8–9 % above the driven-implied 8,462**
+— so the gap does not hinge on which one, but it is still an inference.
+✅ **`h3_qext` measures it directly, on a mesh whose fingerprint is known.**
+
+## ✅✅ F1 ANSWERED — eigen and driven DO disagree, and the gap is in Q_L alone
+
+**`h3_qext`, 2026-08-25, cold, on the IDENTICAL mesh `h3_driven_cold.msh`
+(80,621 tets) — no geometry difference left to blame:**
+
+| | eigen pair | driven dip | gap |
+|---|---:|---:|---:|
+| Q₀ | 43,523 | 40,652 | −6.6 % |
+| **Q_L** | **7,538** | **7,004** | **−7.1 %** |
+| **β** | **4.7740** | **4.8041** | **+0.6 %** ✅ |
+| Q_ext | **9,117** | 8,462 | −7.2 % |
+
+## ✅✅ RESOLVED 2026-08-25 — THE 7.7 % GAP WAS THE FIT, NOT THE SOLVERS
+
+**Refitting the SAME cold sweep with interpolated 3 dB crossings:**
+
+| fit | Q_L | Q₀ | Q_ext | vs eigen |
+|---|---:|---:|---:|---:|
+| grid edges (as shipped) | 7,004 | 40,654 | 8,462 | **−7.18 %** |
+| **interpolated edges** | **7,487** | **43,455** | **9,045** | **−0.78 %** |
+| **EIGEN pair** | 7,538 | 43,523 | 9,117 | — |
+
+🔑 **Q₀ agrees to 0.16 %, Q_L to 0.67 %, Q_ext to 0.78 %.** The eigen↔driven
+disagreement **was the 3 dB edges snapping to the sample grid** — not the
+solvers, and **not the sample count either.** ⚠️ **My first explanation ("14
+samples") was also wrong:** 1e20 gives 0.0 % at TEN samples and cold gives −0.8 %
+at SIX, once the edges interpolate. **Sample count bounds the error at ~2/N; it
+does not determine it.**
+✅ **`cavity.Q_ext` = 9,117 stands, and now has an independent driven
+confirmation at 0.78 % instead of a 7.7 % contradiction.**
 
 🔑 **β AGREES TO 0.6 %. THE ENTIRE DISAGREEMENT IS Q_L** — and Q_L is the 3 dB
 LINEWIDTH: **0.35 MHz sampled at 25 kHz, ~14 points across.** `h3_driven`'s own
@@ -1392,8 +2584,36 @@ FURTHEST from the operating density.**
 - **If ε CONTRAST** (the live hypothesis) → the span narrows from +11.6/−30.09 to
   **+11.6/−1.46**, and E3 gets **EASIER** at the anchor.
 
-🔑 **These are opposite predictions, and E3-at-the-anchor is the test.** Do not
-plan the preconditioner work until E finishes and the mechanism is named.
+🔑 **These are opposite predictions, and E3-at-the-anchor is the test.**
+
+## ✅✅ THE TEST RAN — ε-NEAR-ZERO WINS, AND I HAD NAMED THE WRONG MECHANISM
+
+**`h3_qext`, anchor 7.9e18, `port_bc="pec"`, VACUUM torch, 2026-08-25:
+🔴 TIMED OUT after 2700 s at 0 NLEPS iterations, 159 PCG non-convergences.**
+
+| case | torch ε | plasma ε_r | result |
+|---|---:|---:|---|
+| `e3` B_wall | +11.6 | *none* | ✅ |
+| `h3_qext` cold | +1.0 | *none* | ✅ |
+| **`e3` E_vac_torch** | **+1.0** | **−30.09** | ✅ **converged** |
+| `e3` A_all / C_plasma | +11.6 | −30.09 | 🔴 111 / 173 |
+| **`h3_qext` anchor** | **+1.0** | **−1.456** | 🔴 **159** |
+
+🔴 **THE CONTRAST HYPOTHESIS IS REFUTED AS A COMPLETE EXPLANATION, AND I HAD
+DECLARED IT SETTLED.** Case E converges with a **vacuum** torch beside an ε =
+−30 plasma; the anchor **fails with the same vacuum torch** beside an ε = −1.46
+plasma. **Same torch, weaker plasma, worse conditioning** — that is not contrast.
+✅ **It is the ε-NEAR-ZERO prediction, recorded here before the run.**
+
+⚠️ **Both factors are real** — sapphire+plasma fails at ε = −30 where vacuum+
+plasma succeeds — **but ε near zero is sufficient on its own.**
+
+🔴 **CONSEQUENCE: E3 AT THE OPERATING POINT IS BLOCKED BY CONDITIONING, NOT BY
+THE TORCH.** The anchored density sits at ε ≈ −1.46, the worst point on the axis
+(§ the skin-depth table). **The preconditioner work is REQUIRED, not optional**,
+and re-running E3's failed cases at 1e20 would not have revealed this.
+🔑 **And it does not depend on R1**: whether sapphire is 11.6 or 9.4, the plasma
+ε at the operating point is unchanged.
 
 ⚠️ **§7ab again, inverted.** Not "a solvable value became the operating point" —
 this time *"the operating point was skipped because it was not solvable"*, and the

@@ -323,6 +323,109 @@ here.** Confirm against the intended sequencing before relying on it.
 This section exists so that is on the record as an open problem rather than an
 assumption that a part exists.
 
+## 🔑 RF PHASE DETECTOR — the component that resolves β from 1/β
+
+🔑 **User, 2026-08-25: *"We need an RF Phase Detector to distinguish Beta from
+1/Beta in the control loop."*** ✅ **And the requirement is far cheaper than it
+sounds, because at resonance the branch is a 180° flip.**
+
+**At f₀ the reflection coefficient is REAL:** Γ = (β−1)/(β+1). So β and 1/β give
+**identical |Γ| and opposite sign** — which is `resonance`'s §7x stated as
+hardware, and why a power meter cannot ever resolve it:
+
+| state | β | Γ | \|Γ\| | **arg Γ** | reflected of 1 kW |
+|---|---:|---:|---:|---:|---:|
+| **cold** (measured) | 4.774 | **+0.6536** | 0.654 | **0°** | 427 W |
+| **anchor 7.9e18** | 0.0127 | **−0.9749** | 0.975 | **180°** | 950 W |
+| 1e20 | 0.0171 | −0.9664 | 0.966 | 180° | 934 W |
+| β = 1/4.774 | 0.2095 | **−0.6536** | **0.654** | **180°** | 427 W |
+
+⚠️ **Note the last row: identical \|Γ\| to cold, opposite phase.** That is the
+ambiguity, and phase is the only thing that breaks it.
+
+### ⚠️ DOES THE DETECTOR RETIRE THE TUNER? Partly — and not on the part that killed it
+
+**User, 2026-08-25: *"if we have an RF phase detector, then the old PIN diode
+tuner becomes just a transistor."*** ⚠️ **Half right, and the half that is wrong
+is the binding half.**
+
+🔴 **SENSING IS NOT ACTUATING.** The detector says WHERE you are; something still
+has to MOVE the impedance, and **the current it carries is set by P and Z alone:
+I = √(P·VSWR/Z₀), independent of network topology.** A transistor carries the
+same amps and dissipates in the same way. **The rejection was THERMAL** —
+θ = 30 °C/W ⇒ 4.2 W ⇒ ~1.7 A from I²R_S in the ON state — **and a phase detector
+removes no current.**
+
+✅ **BUT IT DOES RELAX THE TUNER, GENUINELY — the CONTROL problem, not the POWER
+problem.** Without phase you must **hill-climb on |Γ|**: continuous fine steps,
+and it can **stall or reverse at the β ↔ 1/β ambiguity**. With complex Γ you
+**solve** for the transformation in one shot, so **a SWITCHED tuner with a few
+computed states replaces a continuously-variable one.** That is a real
+simplification, and it is the sense in which "just a transistor" is right.
+
+🔑 **AND THE LEVER THAT DOES ATTACK THE CURRENT IS THE COUPLER, because
+I ∝ √VSWR:**
+
+| VSWR | load current | vs GC4495 (~9 A) |
+|---:|---:|---:|
+| **79** (as built) | **39.7 A** | 4.4× short |
+| **20** (3-stub comfortable) | **20.0 A** | **2.2× short** |
+| 10 | 14.1 A | 1.6× short |
+| 5 | 10.0 A | **1.1× short** |
+
+**The loop redesign (`../resonance/NEXT.md` item 7) halves the current for a
+4× VSWR improvement**, and the series capacitor there was sized at **~45× in
+Q_ext**. **That is the only lever that touches the thermal wall.**
+
+⚠️ **Whether a GaN transistor beats a silicon PIN on R_on × C_off is a SEPARATE,
+UNVERIFIED question** — plausible, and exactly the kind of claim §4d already
+warns was "asserted once in conversation without a datasheet". **Do not adopt it
+without one.**
+
+🔑 **Ranking, then:** ① fix β in the coupler (removes current *and* may remove
+the tuner) → ② phase detector (removes the ambiguity, allows a discrete tuner)
+→ ③ find a part that survives the residual current. **The detector is ②, and ②
+does not substitute for ①.**
+
+### ✅ THE SPEC IS MODEST
+
+| | requirement | why |
+|---|---|---|
+| **phase resolution** | **±45° is ample** | it distinguishes 0° from 180°, not fractions of a degree |
+| frequency | 2.45 GHz, over the LDMOS band | |
+| \|Γ\| range | **0.65 → 0.98** | cold to loaded, i.e. 427–952 W reflected |
+| reference | the **forward** port | it is a phase COMPARISON; the dual directional coupler already supplies both |
+
+🔑 **Two usable methods, both needing phase and nothing else:**
+- **parked at f₀** — the *sign* of Γ (0° vs 180°);
+- **sweeping** — the *winding* of arg Γ (≈360° overcoupled vs returns-to-start
+  undercoupled). ✅ That is exactly `e0k2_anchor.branch_from_phase`, so the
+  hardware method and the solver method are the same method.
+
+### 🔴 THE BINDING SPEC IS COUPLER DIRECTIVITY — AND IT IS NOT TIGHT
+
+Forward power leaks into the reflected port at −D dB and **adds vectorially**, so
+it corrupts the phase once \|Γ\| approaches the leakage:
+
+| directivity | smallest \|Γ\| readable | β blinded |
+|---:|---:|---|
+| 20 dB | 0.100 | 0.82 < β < 1.22 |
+| 30 dB | 0.032 | 0.94 < β < 1.07 |
+| 40 dB | 0.010 | 0.98 < β < 1.02 |
+
+✅ **Our operating points clear even 20 dB by ~16–20 dB.** Directivity only
+matters near critical coupling.
+
+### 🔴 AND THERE THE PHASE DOES NOT EXIST — SO DO NOT MEASURE IT
+
+**At β = 1, Γ = 0: the reflected wave VANISHES. There is no phase.** The record
+puts the crossing at **n_e ≈ 5e16**, i.e. **transiently, during ignition**.
+🔑 **So the branch flip must be detected by the \|Γ\| MINIMUM and applied by a
+STATE MACHINE — not read from the detector.** Chasing the null with directivity
+is buying resolution in the one region where the quantity is undefined.
+⚠️ **This is the same shape as §7x itself**: the failure is not that the
+instrument is imprecise, it is that the quantity is not there.
+
 ### What has to be met
 
 Transform a **real** load of **VSWR up to ~90** at **2.45 GHz**, passing **1 kW**.

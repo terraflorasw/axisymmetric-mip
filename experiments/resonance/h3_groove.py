@@ -65,6 +65,7 @@ VERIFICATION
 ⚠️ SHARES h3_driven's analysis; duplicates only the driver (§7c).
 """
 import json
+import values
 import math
 import os
 import pathlib
@@ -86,7 +87,7 @@ TAG = "h3_groove"
 # whose own basis was SOLVER CONVERGENCE (PI_1 = 5.58), not physics.
 # ⚠️ Every result here is CONDITIONAL on an unanchored density.
 NE = 1.0e20
-GROOVE = (5.0, 10.0)            # H2's frozen design: width 5 mm, depth 10 mm
+GROOVE = tuple(values.get("cavity.groove.mm"))   # H2, frozen. BOUND (7f)
 BAND = (2.40, 2.50)             # the LDMOS band — what the tuner can reach
 # (loop_d, loop_hw, groove_on). Groove OFF first at each loop = the control.
 CASES = [(11.0, 8.0, False), (11.0, 8.0, True),

@@ -297,34 +297,58 @@ SH_GOOD = ('sudo blkid "$DEV" || sudo mkfs.ext4 "$DEV"\n'
 #   44,384 in EIGHT places under FIVE names — a RETRACTED eta.reference (7c)
 #   35,000,000 in THREE rigs — wall_sigma() exists precisely to bind this
 _HARDCODED_GRANDFATHERED = {
-    "dimensionless.py":        {"C_MM_GHZ", "EPS0", "F0"},
-    "e0k2_anchor.py":          {"BAND_HALFWIDTH_MHZ"},
-    "e0k2_sizeq.py":           {"BARE_Q"},
-    "e3_closure.py":           {"NE"},
-    "h1_aspect.py":            {"F0", "SIGMA"},
-    "h2_groove.py":            {"SIGMA", "WIDTH"},
-    "h2b_groovescale.py":      {"Q_TE011_BARE", "REFERENCE_GHZ", "SIGMA"},
-    "h3_annular.py":           {"NE", "Q_REF"},
-    "h3_cold.py":              {"NE_HOT", "Q_EMPTY_NO_LOOP"},
-    "h3_driven.py":            {"COARSE_MIN_DEPTH_DB", "COLD_TE011_GHZ", "Q0_COLD_EIGEN", "Q_EXT_MEASURED", "Q_REF"},
-    "h3_eigen.py":             {"Q_BARE"},
-    "h3_eigenprobe.py":        {"R_MM"},
-    "h3_groove.py":            {"NE"},
-    "h3_hot.py":               {"T_COLD_K"},
-    "h3_loaded.py":            {"Q_BARE_EMPTY", "Q_BARE_WITH_LOOP"},
-    "h3_loopq.py":             {"Q_NOLOOP_GROOVED"},
-    "h3_loopsize.py":          {"BETA_TARGET", "NE"},
-    "h3_margin.py":            {"COLD_F0_FALLBACK", "NE"},
-    "h3_qext.py":              {"LOOPQ_EIGEN_NO_TORCH"},
-    "h3_sapphire.py":          {"NE"},
-    "h3_step3.py":             {"ANCHOR_GROOVED_GHZ", "DRIVEN_DIP_GHZ", "H3COLD_PICK_GHZ"},
-    "h3_superpose.py":         {"NE", "Q_BARE"},
-    "h4_field.py":             {"Q_BARE"},
-    "h4_seed.py":              {"ETA_FLOOR", "ETA_SAT", "Q_BARE"},
-    "physics.py":              {"ETA0", "T_GAS_ANCHOR_K"},
-    "probecheck.py":           {"NE", "R_MM"},
-    "results.py":              {"EPS0"}
+    "dimensionless.py":          {"C_MM_GHZ", "EPS0", "F0"},
+    "e0k2_anchor.py":            {"BAND_HALFWIDTH_MHZ"},
+    "e0k2_sizeq.py":             {"BARE_Q"},
+    "e0l_scaling.py":            {"A_MM", "L_MM"},
+    "e3_closure.py":             {"NE"},
+    "facetcount.py":             {"A_MM", "L_MM"},
+    "geometry.py":               {"TAG_GROOVE"},
+    "h1_aspect.py":              {"F0", "SIGMA"},
+    "h2_groove.py":              {"SIGMA", "WIDTH"},
+    "h2b_groovescale.py":        {"Q_TE011_BARE", "REFERENCE_GHZ", "SIGMA"},
+    "h3_annular.py":             {"NE", "Q_REF"},
+    "h3_cold.py":                {"NE_HOT", "Q_EMPTY_NO_LOOP"},
+    "h3_driven.py":              {"COARSE_MIN_DEPTH_DB"},
+    "h3_eigen.py":               {"Q_BARE"},
+    "h3_eigenprobe.py":          {"R_MM"},
+    "h3_groove.py":              {"NE"},
+    "h3_hot.py":                 {"T_COLD_K"},
+    "h3_ladder.py":              {"LOOP_D", "LOOP_HW"},
+    "h3_loaded.py":              {"Q_BARE_EMPTY", "Q_BARE_WITH_LOOP", "Z_FRAC"},
+    "h3_loopq.py":               {"ANCHOR_LOOP", "F_NOLOOP_GROOVED", "Q_NOLOOP_GROOVED", "V1_TOL_FRAC"},
+    "h3_loopsize.py":            {"BETA_TARGET", "NE"},
+    "h3_margin.py":              {"COLD_F0_FALLBACK", "GROOVE_W", "NE"},
+    "h3_qext.py":                {"LOOPQ_EIGEN_NO_TORCH"},
+    "h3_sapphire.py":            {"NE"},
+    "h3_step3.py":               {"ANCHOR_GROOVED_GHZ", "DRIVEN_DIP_GHZ", "H3COLD_PICK_GHZ"},
+    "h3_superpose.py":           {"NE", "Q_BARE"},
+    "h4_field.py":               {"Q_BARE"},
+    "h4_seed.py":                {"ETA_FLOOR", "ETA_SAT", "Q_BARE"},
+    "physics.py":                {"ETA0", "T_GAS_ANCHOR_K"},
+    "probecheck.py":             {"NE", "R_MM"},
+    "resplit.py":                {"A_MM", "L_MM"},
+    "results.py":                {"EPS0"},
 }
+
+
+# 🔴 A DUPLICATE KEY IN THE DICT ABOVE SILENTLY DROPS THE FIRST ENTRY.
+# 2026-08-25: appending geometry residue re-used five file names that were
+# already keys, so h3_loaded's two RETRACTED Qs stopped being grandfathered and
+# the ratchet quietly changed shape. Python does not warn. This does.
+def _assert_no_dupe_keys():
+    import pathlib as _pl, re as _re, collections as _c
+    src = _pl.Path(__file__).read_text(encoding="utf-8")
+    body = _re.search(r"_HARDCODED_GRANDFATHERED = \{(.*?)\n\}", src, _re.S)
+    if not body:
+        return
+    keys = _re.findall(r'^\s*"([^"]+)":', body.group(1), _re.M)
+    dupes = [k for k, c in _c.Counter(keys).items() if c > 1]
+    if dupes:
+        raise SystemExit(f"preflight: duplicate grandfather keys {dupes} — the "
+                         f"later entry silently REPLACES the earlier one. Merge "
+                         f"them.")
+
 
 _MEASURED = [
     (re.compile(r"Q"), lambda v: abs(v) > 50, "a Q"),
@@ -333,6 +357,15 @@ _MEASURED = [
     (re.compile(r"NE|N_E|DENS"), lambda v: abs(v) > 1e14, "a density"),
     (re.compile(r"EPS|PERMIT|TAND"), lambda v: 0 < abs(v) < 100, "a material property"),
     (re.compile(r"TEMP|_K$|KELVIN"), lambda v: abs(v) > 100, "a temperature"),
+    # 🔴 ADDED 2026-08-25. The rule only ever looked at names matching the
+    # patterns above, so GEOMETRY was INVISIBLE to it: `DL = 1.525` lived in two
+    # files, the frozen groove `(5.0, 10.0)` in SEVEN, the design loop
+    # `11.0, 8.0` in NINE — and `A_MM, L_MM = 103.70, 88.53`, a cavity H1
+    # REJECTED, sat as GEO's default in a fourth. None of it was grandfathered;
+    # none of it was ever seen. A linter that cannot see a class of value
+    # reports a clean sweep over it.
+    (re.compile(r"GROOVE|LOOP|CAP_R|^A_MM|^L_MM|^DL$|D_OVER"),
+     lambda v: abs(v) > 0, "a geometry dimension"),
 ]
 _MACHINERY = re.compile(r"^(N_|MAX|MIN|TOL|STEP|TIMEOUT|SIZE_|SECTORS|ORDER|"
                         r"SAMPLES|SEED|DPI|VERBOSE|DEBUG|.*_S$|.*_DEG$|"
@@ -361,6 +394,25 @@ def r_hardcoded_value(src, tree, path=None):
             elif (isinstance(v, ast.UnaryOp) and isinstance(v.op, ast.USub)
                   and isinstance(v.operand, ast.Constant)):
                 val = -v.operand.value
+            elif isinstance(v, ast.Tuple) and v.elts:
+                # ⚠️ TUPLE ONLY, NEVER LIST. `(11.6, 3.5e-5)` is one compound
+                # VALUE — eps and tan-delta of a material. `[1e18, 1e19, 1e20]`
+                # is a SWEEP AXIS, the independent variable of an experiment,
+                # and flagging it is nonsense. Including lists made this rule
+                # fire on e0q's SIGMAS, h3_hot's T_WALL_K and h3_loaded's NE —
+                # three legitimate sweeps — which is how a ratchet bricks a
+                # corpus (CONVENTIONS 7aw).
+                # 🔴 A TUPLE HID ONE. e3_closure's
+                # `TORCH_SAPPHIRE = (11.6, 3.5e-5)` carried the sapphire
+                # permittivity — the value that turned out to be the WRONG AXIS
+                # — and this rule walked straight past it because it only
+                # looked at scalars. Take the first numeric element.
+                first = v.elts[0]
+                if isinstance(first, ast.Constant) and isinstance(
+                        first.value, (int, float)):
+                    val = first.value
+                else:
+                    continue
             else:
                 continue          # a call (values.get(...), wall_sigma()) is fine
             if isinstance(val, bool):
@@ -449,10 +501,93 @@ def r_output_not_slugged(src, tree, path=None):
     return out
 
 
-RULES = [r_timeout, r_pkill, r_main_guard, r_help_percent, r_ps_e_with_C,
+
+_MATERIAL_KW = re.compile(r"eps|tand|sigma|cond|permit|loss")
+
+
+def r_material_kwarg(src, tree, path=None):
+    """A material property as a keyword DEFAULT is still a constant in a script.
+
+    🔴 User, 2026-08-25: "there should be absolutely no constants in any
+    scripts." geometry.py held FIFTY-EIGHT keyword defaults, sixteen of them
+    physical — including `torch_eps=11.6`, which was the WRONG ANISOTROPY AXIS
+    for the entire programme. r_hardcoded_value could not see any of them: they
+    are lowercase kwargs inside a `dict(...)` call, not module-level UPPERCASE
+    assignments. The largest constant store in the corpus was unchecked.
+
+    ⚠️ Scoped to MATERIAL properties, not dimensions. Dimensions come from the
+    slug config for every real run (7ba) and their defaults are the burn-down
+    list; a material default is what silently persists.
+    """
+    if tree is None:
+        return []
+    skip = _fixture_lines(tree)
+    out = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or node.lineno in skip:
+            continue
+        for kw in node.keywords:
+            if not kw.arg or not _MATERIAL_KW.search(kw.arg):
+                continue
+            v = kw.value
+            if isinstance(v, ast.Constant) and isinstance(v.value, (int, float)) \
+                    and not isinstance(v.value, bool) and v.value not in (0, 1):
+                out.append((ERROR, node.lineno,
+                            f"{kw.arg}={v.value!r} is a MATERIAL property as a "
+                            f"keyword default — a constant in a script. Bind it: "
+                            f"values.get('<canonical.name>'). geometry.py's "
+                            f"torch_eps=11.6 was the wrong anisotropy axis and "
+                            f"nothing could see it."))
+    return out
+
+
+
+# ── the rename that broke two consumers, 2026-08-25 ──────────────────────────
+# `wall.conductivity` -> `wall.conductivity.s_per_m` was applied to the store and
+# to e0k2_anchor.wall_sigma(). solveconf.py and condcheck.py each did their OWN
+# json.loads(baselines.json)[literal key] and nothing knew they existed. A rig
+# failed 40 minutes in, from a guard whose entire purpose was to catch a missing
+# wall metal. r_hardcoded_value could not see it: the VALUE was not hardcoded,
+# the NAME was.
+# 🔑 A canonical name has consumers, and a store with no consumer index cannot
+# tell you what a rename breaks. Route every read through values.get().
+_BASELINE_ACCESSORS = {"values.py", "slug.py", "migrate_slugs.py", "preflight.py"}
+
+
+def r_direct_baseline_read(src, tree, path=None):
+    """A canonical name must be read through values.get(), not by literal key."""
+    if tree is None or path is None:
+        return []
+    import os
+    if os.path.basename(path) in _BASELINE_ACCESSORS:
+        return []
+    try:
+        import json as _j, pathlib as _p
+        names = set(_j.loads((_p.Path(__file__).with_name("baselines.json"))
+                             .read_text()).keys())
+    except Exception:
+        return []
+    out = []
+    for n in ast.walk(tree):
+        if not isinstance(n, ast.Subscript):
+            continue
+        k = n.slice
+        if isinstance(k, ast.Constant) and isinstance(k.value, str):
+            nm = k.value
+            if nm in names or (
+                    "." in nm and any(x.startswith(nm + ".") for x in names)):
+                out.append((ERROR, n.lineno,
+                            f"reads canonical name {nm!r} by literal key. "
+                            f"Renaming that name will break this silently and "
+                            f"the store cannot tell you it happened — this is "
+                            f"how h3-bore-01 died 40 min in. "
+                            f"Use values.get({nm!r})."))
+    return out
+
+RULES = [r_direct_baseline_read, r_timeout, r_pkill, r_main_guard, r_help_percent, r_ps_e_with_C,
          r_falsy_numeric_flag, r_bare_background, r_nearest_match,
          r_undefined_name, r_hardcoded_value,
-         r_output_not_slugged]
+         r_output_not_slugged, r_material_kwarg]
 
 BAD = {
     "r_timeout": "import subprocess\nsubprocess.run(['x'], timeout=5)\n",
@@ -469,6 +604,7 @@ BAD = {
     "r_hardcoded_value": "Q_BARE = 44384.0\n",
     # 🔴 a NEW rig naming its outputs after itself
     "r_output_not_slugged": 'TAG = "my_new_rig"\n',
+    "r_material_kwarg": "P = dict(torch_eps=11.6)\n",
     "r_nearest_match": "y = min(v, key=lambda x: abs(x - t))\n",
     # the real failure: an import dropped in a refactor, used in a function
     "r_undefined_name": "def f():\n    return eigen_cfg(1)\n"
@@ -477,6 +613,13 @@ BAD = {
 GOOD = ('import subprocess\n'
         'def f():\n    subprocess.Popen(["x"]).wait(timeout=5)\n'
         'if __name__ == "__main__":\n    f()\n')
+
+BAD["r_direct_baseline_read"] = (
+    # the literal line from solveconf.py that the 2026-08-25 rename orphaned
+    'import json, pathlib\n'
+    'b = json.loads(pathlib.Path("baselines.json").read_text())\n'
+    '_sig = b["wall.conductivity"]["value"]\n')
+
 
 
 def lint(path):
@@ -503,6 +646,7 @@ def lint(path):
 
 
 def self_test():
+    _assert_no_dupe_keys()
     ok = True
     for rule in SHELL_RULES:
         src = SH_BAD[rule.__name__]
@@ -514,8 +658,15 @@ def self_test():
               f"{not miss}")
     for rule in RULES:
         src = BAD[rule.__name__]
-        hit = rule(src, ast.parse(src))
-        miss = rule(GOOD, ast.parse(GOOD))
+        # 🔑 path-taking rules return [] when path is None, so calling them
+        # without one makes them PASS the self-test while being dead in the
+        # sweep — a check that cannot fail (7d). Thread the same opt-in
+        # keyword lint() uses, with a name that is not an accessor.
+        kw = ({"path": "rig_under_test.py"}
+              if "path" in rule.__code__.co_varnames[:rule.__code__.co_argcount]
+              else {})
+        hit = rule(src, ast.parse(src), **kw)
+        miss = rule(GOOD, ast.parse(GOOD), **kw)
         good = bool(hit) and not miss
         ok &= good
         print(f"  {'✅' if good else '🔴'} {rule.__name__:<22} "
@@ -528,6 +679,7 @@ def self_test():
 if __name__ == "__main__":
     if "--self-test" in sys.argv:
         sys.exit(self_test())
+    _assert_no_dupe_keys()
     files = [a for a in sys.argv[1:] if not a.startswith("-")]
     if not files:
         sys.exit("usage: preflight.py <file.py> ... | --self-test")

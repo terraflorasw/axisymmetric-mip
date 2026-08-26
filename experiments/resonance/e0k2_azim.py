@@ -39,6 +39,7 @@ FALSIFICATION
          identification does NOT work and eigen stays mandatory per evaluation.
 """
 import json
+import values
 import csv
 import pathlib
 import subprocess
@@ -56,7 +57,7 @@ from e0k2_anchor import (design_point, wall_sigma, CAP_R_FRAC, LOOP_PHI,
 
 TAG = "e0k2_azim"
 SECTORS = 5
-LOOP_LD, LOOP_LW = 11.0, 8.0      # the 176 mm^2 case: reads TE011, beta 0.560
+LOOP_LD, LOOP_LW = values.get("loop.size.mm")   # the 176 mm^2 case, beta 0.560
 
 
 def sector_bins(meta):

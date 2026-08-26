@@ -92,8 +92,19 @@ for f in "$PREFIX/env.sh" "$PREFIX/palace/bin/palace" "$PREFIX/envs/emsim/bin/py
   [ -x "$f" ] || [ -f "$f" ] && echo "  ✅ $f" || { echo "  🔴 MISSING $f"; ok=0; }
 done
 [ -d "$PREFIX/repo" ] && echo "  ✅ $PREFIX/repo" || echo "  ⚠️  $PREFIX/repo absent — rsync.sh will create it"
-n=$(ls -d "$PREFIX"/repo/experiments/resonance/postpro/h2b_* 2>/dev/null | wc -l)
-echo "  postpro/h2b_* cases on the volume: $n   (5 expected — H2B_ONLY skips these)"
+# 🔴 WAS a count of postpro/h2b_* against "5 expected". That prefix is from the
+# pre-slug era and no longer exists, so it printed "0 (5 expected)" on EVERY
+# mount — a check whose expectation is permanently wrong. A verify block that
+# always shows a discrepancy is one nobody reads, which is worse than no check.
+# ✅ Now it asks the only question that matters after a reclamation: does this
+# volume actually carry the work, or have we mounted an empty/wrong one?
+n=$(ls -d "$PREFIX"/repo/experiments/resonance/postpro/*/ 2>/dev/null | wc -l)
+if [ "$n" -eq 0 ]; then
+  echo "  🔴 postpro is EMPTY — this is not the working volume, or the repo"
+  echo "     copy is missing. STOP and check before running anything."
+else
+  echo "  ✅ postpro holds $n solved cases (newest: $(ls -t "$PREFIX"/repo/experiments/resonance/postpro 2>/dev/null | head -1))"
+fi
 df -h "$PREFIX" | tail -1 | awk '{print "  space: "$4" free ("$5" used)"}'
 # 🔴 pyflakes must live in the ENV ON THIS VOLUME. Installed to the root
 # filesystem it is lost by every reclamation AND it sits in an interpreter no

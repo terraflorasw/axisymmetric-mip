@@ -42,7 +42,13 @@ RANKS = [int(x) for x in os.environ.get("E0L_RANKS", "1,2,4,8,16,32").split(",")
 # measured 2026-08-21 at solver order 2 on this same CFG; merged into the output
 # so the curve is complete without re-running them. rc=0, TE011 identical.
 PRIOR = {1: 6385.9, 2: 3301.3}
-A_MM, L_MM = 103.70, 88.53
+# 🔴 LEGACY CAVITY, DELIBERATELY NOT BOUND. 103.70/88.53 is D/L = 2.343 —
+# candidate A, which H1 REJECTED. This script ANALYSES data meshed at those
+# dimensions, so the closed form here must use them or the comparison is
+# meaningless. Binding it to cavity.d_over_l would silently break that.
+# ⚠️ THEREFORE NOTHING HERE IS A DESIGN NUMBER. Re-run on H1's cavity is
+# queued in NEXT.md § THE GEO RE-RUN LIST (2026-08-25).
+A_MM, L_MM = 103.70, 88.53   # LEGACY — see above
 
 
 def main():

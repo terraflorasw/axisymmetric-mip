@@ -26,13 +26,14 @@ error might; blended fits might; both untested. **Do not record it as explained
 by the audit** — this rig measures Q0 per loop size a way that cannot have
 either defect, and the answer is whatever it is.
 
-⚠️⚠️ THE CLAIM BELOW -- "Q_ext is set by loop geometry, not by the load" -- IS
-NOT ESTABLISHED, and driven data questions it (2026-08-25). h3_driven's measured
+🔴🔴 THE CLAIM BELOW -- "Q_ext is set by loop geometry, not by the load" -- IS
+FALSE BY ~9%, established 2026-08-25. h3_driven's measured
 S11 dip implies Q_ext ~8,100-8,600 from cold through 3e19 and 9,221 at 1e20.
-🔴 THAT IS NOT A REFUTATION: those are VACUUM-TORCH meshes and this rig is
-NO-TORCH (GEO_DESIGN carries --no-torch), so it is a cross-geometry comparison
-and CONVENTIONS 7aq forbids reading it as a disagreement. It is flagged, not
-resolved. The eigen pair on h3_driven's OWN meshes settles it.
+✅ SETTLED. Refitting those sweeps with INTERPOLATED 3 dB edges (CONVENTIONS
+7bh) makes the COLD driven value agree with the eigen pair to 0.78% (9,045 vs
+9,117) -- which validates the fit -- and then Q_ext dips to 8,194 at ne=1e19 and
+recovers to 9,322 at 1e20. A ~9% LOAD DEPENDENCE, not a geometry artefact.
+⚠️ beta(ne) = Q0(ne)/Q_ext is therefore a ~9% approximation, not an identity.
 ⚠️ ALSO: this file's V1_ANCHOR says Q_ext = 9,117 (h3_step3) while the sweep at
 11x8 returns 9,231, and h3_driven hardcodes Q_EXT_MEASURED = 9,231. Two values,
 ~1.25% apart, and their mesh styles are NOT documented in either place.
@@ -88,39 +89,54 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import solveconf
 import eigmodes
-from e0_solver_vs_math import GEO, GEO_DESIGN, eigen_cfg, run
+from e0_solver_vs_math import GEO, GEO_DESIGN, GROOVE_DESIGN, eigen_cfg, run
 from e0k2_anchor import design_point, wall_sigma, LOOP_PHI, LOOP_RW, LOOP_GAP
 from h3_loaded import SECTORS, CAP_R_FRAC
 from azimuthal import order as az_order
 from e0k2_azim import sector_bins, read_sector_energy
 from h3_ladder import purity, PROBE_PHI_DEG, PROBE_R_FRAC
+import slug as S
+import values
 
-TAG = "h3_loopq"
+# 🔑 SLUG REGIME (7aw/7az). Every case, every eigen setting and the loop family
+# itself now come from baseline-<slug>.json. This rig previously hardcoded a
+# CAP-mounted loop, which is why item 7 step 1 -- the BARREL mount -- could not
+# be expressed at all without editing the script.
+SLUG = S.parse()
+CFG = S.config(SLUG)
+PRM = CFG["_run"]["parameters"]
+TAG = S.out(SLUG)
 
 # e0k2_sizeq's four loops. (ld, half-width) -> area = ld * 2 * lw
 LOOPS = [(5.0, 3.5), (7.5, 5.5), (11.0, 8.0), (16.0, 12.0)]
-ANCHOR_LOOP = (11.0, 8.0)          # the one h3_step3 already measured
+ANCHOR_LOOP = tuple(values.get("loop.size.mm"))   # the one h3_step3 measured
 
 # 🔑 h3_step3's validated settings. Target 2.38 with N=8 returned a clean
 # 4-mode window containing TE011 on this cavity; do not re-derive (PRIOR ART).
-N_MODES = 8
-EIGEN_TARGET = 2.38
-CASE_TIMEOUT_S = 2700.0
-WINDOW = (2.35, 2.65)
+N_MODES = int(PRM.get("n_modes", 8))
+EIGEN_TARGET = float(PRM.get("eigen_target", 2.38))
+CASE_TIMEOUT_S = float(PRM.get("case_timeout_s", 2700.0))
+WINDOW = tuple(PRM.get("window", (2.35, 2.65)))
 
 # external / prior anchors
 Q_NOLOOP_GROOVED = 44414.0         # h3_ladder step 2, anchored against H2
-F_NOLOOP_GROOVED = 2.450561        # same solve — the continuation seed
+F_NOLOOP_GROOVED = float(PRM.get("cont_seed_ghz", 2.450561))   # continuation seed
 V1_ANCHOR = {"Q0": 43523.0, "Q_L": 7538.0, "Q_ext": 9117.0, "beta": 4.774}
 V1_TOL_FRAC = 0.05
 DRIVEN_ANOMALY = {35: 20005, 82: 24920, 176: 28387, 384: 30112}
 
-CONT_MAX_MHZ = 25.0                # a loop must not move TE011 further than this
+# 🔴 CONFIGURABLE 2026-08-25, FOR THE RESTORATION. The seed below is the
+# TORCH-FREE grooved cavity, and continuation refused anything >25 MHz from it.
+# That is correct for a loop study on a fixed cavity and WRONG the moment the
+# cavity itself changes: restoring the torch moves TE011 by more than the guard
+# allows, so the guard would reject the very measurement it was asked for.
+# A search window is a property of the QUESTION, so it belongs in the config.
+CONT_MAX_MHZ = float(PRM.get("cont_max_mhz", 25.0))
 PURITY_SPREAD_WARN = 0.02          # F2
 
 
 def save(out):
-    p = pathlib.Path(f"{TAG}.result.json")
+    p = pathlib.Path(S.outfile(SLUG, "result.json"))
     t = p.with_suffix(p.suffix + f".tmp{os.getpid()}")
     t.write_text(json.dumps(out, indent=1) + "\n")
     os.replace(t, p)
@@ -128,11 +144,36 @@ def save(out):
 
 def build(tag, ld, lw, a, L, grooved, rec):
     base = list(GEO_DESIGN) if grooved else list(GEO)
+    # 🔑 PER-CASE GROOVE. The groove is normally the FROZEN design value and
+    # must not vary — but a case may deliberately sweep it (h3-groove-gap-01
+    # asks whether groove width shifts the loop's Q_ext curve). Overriding it
+    # here keeps the frozen default intact for every other case, and the rig
+    # still asserts the MESH matches whatever was requested.
+    if rec.get("groove_mm"):
+        gm = rec["groove_mm"]
+        i = base.index("--groove")
+        base[i + 1] = f"{float(gm[0]):g},{float(gm[1]):g}"
     args = (base + ["--radius", f"{a:.6f}", "--length", f"{L:.6f}",
                     "--sectors", str(SECTORS),
-                    "--loop", f"{ld},{lw},{LOOP_RW},{LOOP_GAP}",
-                    "--loop-cap", f"{CAP_R_FRAC * a:.4f}",
-                    "--loop-phi", LOOP_PHI])
+                    "--loop", f"{ld},{lw},{rec.get('rw', LOOP_RW)},"
+                              f"{rec.get('gap', LOOP_GAP)}",
+                    "--loop-phi", str(rec.get("phi", LOOP_PHI))])
+    # 🔑 MOUNT. "cap" links H_r (radius free, 1.93x the coupled power of the
+    # barrel); "barrel" is forced to r = a but is the ONLY mount that accepts
+    # the series capacitor -- geometry.py:427 refuses --loop-gap2 with
+    # --loop-cap. That refusal is what fixes item 7's step order.
+    mount = rec.get("mount", "cap")
+    if mount == "cap":
+        args += ["--loop-cap", f"{rec.get('cap_r_frac', CAP_R_FRAC) * a:.4f}"]
+    elif mount != "barrel":
+        raise SystemExit(f"unknown loop mount {mount!r}: want cap|barrel")
+    # the SERIES CAPACITOR (R62), barrel only
+    if rec.get("gap2"):
+        if mount != "barrel":
+            raise SystemExit("gap2 requires mount=barrel (geometry.py:427)")
+        args += ["--loop-gap2", f"{rec['gap2']:g}"]
+        if rec.get("flange"):
+            args += ["--loop-flange", f"{rec['flange']:g}"]
     for sf in ("1.5", "1.42", "1.58"):
         r = subprocess.run([sys.executable, "geometry.py", "--out", f"{tag}.msh",
                             "--size-factor", sf] + args,
@@ -214,6 +255,68 @@ def pick_te011(found, seed):
     return m, f"continuation {d:+.3f} MHz"
 
 
+def partial_set(slug, enabled=True):
+    """Per-BOUNDARY-CONDITION results already on disk for INCOMPLETE cases.
+
+    🔑 `save()` already runs after EVERY port_bc, so a case interrupted between
+    its `pec` and `lumped` solves has `modes_pec` on disk — the measurement is
+    checkpointed, resume just never read it back. Case-level resume therefore
+    re-solved a completed half.
+
+    🔴 MEASURED COST, 2026-08-26: h3-groove-gap-01's `gw5_g2-2.25` pec solve was
+    computed THREE times and lost twice — 12 minutes each, 36 minutes for one
+    12-minute result — across two reclamations. At ~7-26 min per solve on the
+    design cavity that is the largest remaining waste in the loop.
+    """
+    if not enabled:
+        return {}
+    prior = pathlib.Path(S.outfile(slug, "result.json"))
+    if not prior.exists():
+        return {}
+    try:
+        pj = json.loads(prior.read_text())
+    except Exception:
+        return {}
+    return {r["name"]: r for r in pj.get("points", [])
+            if r.get("name") and not r.get("Q_ext")
+            and any(k.startswith("modes_") for k in r)}
+
+
+def resume_set(slug, enabled=True):
+    """Cases already COMPLETE for this slug+stamp, as {name: record}.
+
+    🔑 Spot reclamation killed this rig twice on 2026-08-25, each time costing
+    the COMPLETED cases too because a relaunch started from zero. The rig
+    checkpoints per case; it just never read its own checkpoint back.
+
+    Safe because the filename carries the config's sha256 stamp: a result.json
+    under this name was produced by THIS config, so its finished cases answer
+    exactly the question being asked now. A changed config gets a different
+    stamp and therefore an empty resume set, automatically.
+
+    🔴 A CASE COUNTS AS DONE ONLY WITH A Q_ext. ERRORS ARE RETRIED.
+    The first version also skipped cases with a recorded `error`, reasoning
+    that a deterministic failure should not be re-attempted. That is exactly
+    backwards: you relaunch a failed run BECAUSE you fixed the cause, and
+    sticky failures make the fix invisible. Observed 2026-08-25 — the torch
+    restoration failed on a permittivity bug, I fixed it, and the relaunch
+    SKIPPED both cases and reported "nothing quotable". A resume that
+    remembers failures cannot be used to retry them.
+    ⚠️ A half-written record is re-run too, never trusted.
+    """
+    if not enabled:
+        return {}
+    prior = pathlib.Path(S.outfile(slug, "result.json"))
+    if not prior.exists():
+        return {}
+    try:
+        pj = json.loads(prior.read_text())
+    except Exception as e:
+        print(f"  ⚠️ prior result unreadable ({e}); starting clean", flush=True)
+        return {}
+    return {r["name"]: r for r in pj.get("points", [])
+            if r.get("name") and r.get("Q_ext")}
+
 def main():
     print(__doc__)
     print("=" * 78, flush=True)
@@ -223,23 +326,71 @@ def main():
           f"{F_NOLOOP_GROOVED:.6f} GHz, Q0={Q_NOLOOP_GROOVED:,.0f}")
     print(f"  eigen: target={EIGEN_TARGET}, N={N_MODES}, order 2 — "
           f"h3_step3's validated settings")
-    print(f"  {len(LOOPS)} loops x 2 port BCs + 1 no-groove control = "
-          f"{len(LOOPS)*2+2} solves\n", flush=True)
+    _n = len(PRM.get("cases") or LOOPS) + (0 if PRM.get("cases") else 1)
+    print(f"  {_n} case(s) x 2 port BCs = {_n*2} solves\n", flush=True)
 
     out = {"anchor_no_loop": {"f_ghz": F_NOLOOP_GROOVED,
                               "Q0": Q_NOLOOP_GROOVED},
            "v1_anchor": V1_ANCHOR, "driven_anomaly_Q0": DRIVEN_ANOMALY,
            "points": []}
 
-    cases = [(ld, lw, True) for ld, lw in LOOPS]
-    cases.append((ANCHOR_LOOP[0], ANCHOR_LOOP[1], False))   # F4 control
+    # 🔑 RESUME. Spot reclamation killed this rig TWICE on 2026-08-25 (three
+    # times in the session), each time costing every COMPLETED case as well as
+    # the one in flight, because a relaunch started from zero. The rig already
+    # checkpoints per case; it just never read its own checkpoint back.
+    #
+    # Safe because the output filename carries the config's sha256 stamp: a
+    # result.json under this name was produced by THIS config, so its finished
+    # cases answer exactly the question being asked now. A changed config gets
+    # a different stamp and therefore an empty resume set, automatically.
+    #
+    # Set "resume": false in the config to force a clean re-run.
+    done = resume_set(SLUG, PRM.get("resume", True))
+    half = partial_set(SLUG, PRM.get("resume", True))
+    if half:
+        for _n, _r in sorted(half.items()):
+            _bcs = sorted(k[len("modes_"):] for k in _r if k.startswith("modes_"))
+            print(f"  🔑 PARTIAL: {_n} already has {', '.join(_bcs)} on disk — "
+                  f"those solves will be REUSED, not repeated.", flush=True)
+    if done:
+        print(f"  🔑 RESUMING: {len(done)} case(s) already complete under "
+              f"stamp {S.stamp(SLUG)} — {', '.join(sorted(done))}", flush=True)
+        print("     re-running only what is missing. Set resume:false in the "
+              "config to force a clean run.", flush=True)
 
-    for ld, lw, grooved in cases:
+    # 🔑 THE CASE LIST IS THE EXPERIMENT, so it lives in the config, not here.
+    # Legacy default reproduces the 2026-08-24 area sweep exactly.
+    _cases = PRM.get("cases")
+    if not _cases:
+        _cases = [{"ld": ld, "lw": lw, "grooved": True} for ld, lw in LOOPS]
+        _cases.append({"ld": ANCHOR_LOOP[0], "lw": ANCHOR_LOOP[1],
+                       "grooved": False, "name_suffix": "_nogroove"})
+
+    for _c in _cases:
+        rec = dict(_c)
+        ld, lw = float(rec["ld"]), float(rec["lw"])
+        grooved = bool(rec.get("grooved", True))
         area = ld * 2 * lw
-        name = f"{ld:g}x{lw:g}" + ("" if grooved else "_nogroove")
-        rec = {"ld": ld, "lw": lw, "area_mm2": area, "grooved": grooved,
-               "name": name, "_a": a}
+        rec.setdefault("name", f"{ld:g}x{lw:g}"
+                       + f"_{rec['mount']}" * bool(rec.get("mount"))
+                       + (f"_g2-{rec['gap2']:g}" if rec.get("gap2") else "")
+                       + (f"_fl-{rec['flange']:g}" if rec.get("flange") else "")
+                       + rec.get("name_suffix", ""))
+        name = rec["name"]
+        rec.update({"ld": ld, "lw": lw, "area_mm2": area, "grooved": grooved,
+                    "_a": a})
+        if name in done:
+            out["points"].append(done[name])
+            _q = done[name].get("Q_ext")
+            print(f"  --- loop {name}: ✅ SKIPPED, already complete"
+                  + (f" (Q_ext={_q:,.0f})" if _q else " (recorded error)"),
+                  flush=True)
+            save(out)
+            continue
         print(f"  --- loop {ld:g}x{lw:g} = {area:.0f} mm^2"
+              f"  mount={rec.get('mount', 'cap')}"
+              + (f"  gap2={rec['gap2']:g} flange={rec.get('flange', 0):g}"
+                 if rec.get("gap2") else "")
               + ("" if grooved else "   🔑 NO-GROOVE CONTROL (F4)"), flush=True)
 
         # 🔑 APPEND FIRST. A record that is only appended on success cannot
@@ -254,15 +405,72 @@ def main():
                 print(f"    🔴 {rec['error']}", flush=True)
                 break
             rec.pop("_err", None)
+            # 🔴 ASSERT THE DIMENSIONS TOO, NOT JUST THE GROOVE (2026-08-25).
+            # Only the groove was ever checked against the sidecar. GEO carries
+            # A_MM/L_MM = 103.70/88.53 -> D/L 2.343, while H1's answer is
+            # DL = 1.525 -> a 88.0045, L 115.4158. Every H3 rig overrides with
+            # design_point(), so the record is consistent — but nothing CHECKED
+            # it, and baseline-h3-bore-01.json still records radius 103.7 in a
+            # geometry block the rig silently overrode. Verify with the
+            # consumer: the mesh is what you ordered, or it is an error.
+            _gm = meta.get("geometry_mm") or {}
+            for _k, _want in (("radius", a), ("length", L)):
+                _got = _gm.get(_k)
+                if _got is None or abs(float(_got) - _want) > 1e-3:
+                    rec["error"] = (f"MESH IS NOT WHAT WAS ORDERED: {_k} "
+                                    f"{_got}, wanted {_want:.6f}")
+                    print(f"    🔴 {rec['error']}", flush=True)
+                    break
+            # 🔑 AND THE LOOP ITSELF. The sidecar records loop_mount, gap2 and
+            # flange_r, so bind from it and assert it matches the REQUEST —
+            # the mount is the entire independent variable of step 1, and the
+            # flange is step 2's. A run that cannot prove which loop it built
+            # cannot report a coupling ratio.
+            _want_mount = rec.get("mount", "cap")
+            _got_mount = _gm.get("loop_mount")
+            if _got_mount != _want_mount:
+                rec["error"] = (f"MOUNT MISMATCH: meshed {_got_mount!r}, "
+                                f"requested {_want_mount!r}")
+                print(f"    🔴 {rec['error']}", flush=True)
+                break
+            rec["mesh_mount"] = _got_mount
+            rec["mesh_gap2_mm"] = _gm.get("loop_gap2")
+            rec["mesh_flange_r_mm"] = _gm.get("loop_flange_r")
+            for _k, _want in (("loop_gap2", float(rec.get("gap2") or 0.0)),
+                              ("loop_flange_r", float(rec.get("flange") or 0.0))):
+                _got = float(_gm.get(_k) or 0.0)
+                if abs(_got - _want) > 1e-6:
+                    rec["error"] = (f"{_k} MISMATCH: meshed {_got:g}, "
+                                    f"requested {_want:g}")
+                    print(f"    🔴 {rec['error']}", flush=True)
+                    break
+            if rec.get("error"):
+                break
             g = (meta.get("geometry_mm") or {}).get("groove") or [0, 0]
-            want = (5.0, 10.0) if grooved else (0.0, 0.0)
+            # 🔑 from the single source, never a literal. The groove omission
+            # (31 rigs on the wrong cavity) began as a frozen value that lived
+            # in one place and was retyped in another.
+            want = (tuple(float(x) for x in rec["groove_mm"])
+                    if rec.get("groove_mm")
+                    else (tuple(GROOVE_DESIGN) if grooved else (0.0, 0.0)))
             if tuple(map(float, g)) != want:
                 rec["error"] = f"V2 FIRES: groove {g}, wanted {want}"
                 print(f"    🔴 {rec['error']}", flush=True)
                 break
             rec["groove_meshed"] = list(map(float, g))
             rec["tets"] = meta["tets"]
-            found = solve_one(tag, meta, sigma_w, port_bc, rec)
+            # 🔑 REUSE a boundary condition already solved and checkpointed.
+            # The mesh is still rebuilt and every assert above still runs — only
+            # the SOLVE is skipped, so a reused result is still verified against
+            # the geometry it claims to describe.
+            _prior_modes = (half.get(name) or {}).get(f"modes_{port_bc}")
+            if _prior_modes:
+                print(f"    ♻️  {port_bc}: reusing {len(_prior_modes)} mode(s) "
+                      f"checkpointed before the interruption — not re-solving",
+                      flush=True)
+                found = _prior_modes
+            else:
+                found = solve_one(tag, meta, sigma_w, port_bc, rec)
             if not found:
                 rec["error"] = f"{port_bc}: no modes in {WINDOW}"
                 print(f"    🔴 {rec['error']}", flush=True)

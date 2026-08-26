@@ -57,8 +57,25 @@ def _load(store=None):
     return json.loads(pathlib.Path(store or STORE).read_text())
 
 
+# 🔴 RENAMING A CANONICAL NAME BROKE TWO CONSUMERS SILENTLY, 2026-08-25.
+# `wall.conductivity` -> `wall.conductivity.s_per_m` (the unit-suffix rule, 7be)
+# was applied to the store and to e0k2_anchor.wall_sigma(). It was NOT applied to
+# solveconf.py or condcheck.py, which each did their OWN json lookup with the key
+# hardcoded — and nothing knew they existed. A rig failed 40 minutes later with
+# "wall conductivity not declared", from a guard whose whole purpose was to stop
+# exactly that.
+# ✅ An alias makes a rename NON-BREAKING. The old name resolves, loudly enough
+# to find in a grep, and consumers migrate on their own schedule.
+ALIASES = {
+    "wall.conductivity": "wall.conductivity.s_per_m",
+    "cavity.f0.cold": "cavity.f0.cold.ghz",
+}
+
+
 def _rows(name, store=None):
     d = _load(store)
+    if name not in d and name in ALIASES:
+        name = ALIASES[name]
     if name not in d:
         known = sorted(k for k in d if not k.startswith("_"))
         raise Unknown(f"'{name}' is not a canonical name. Known: {known}")
@@ -134,9 +151,119 @@ def get(name, allow_tentative=False, store=None, **ctx):
     return hit[0]["value"]
 
 
+
+# ---------------------------------------------------------------------------
+# 🔑 User, 2026-08-25: *"we included units in the baselines schema, but that
+# might leave room for this sort of thing. If the name includes the units, it's
+# much harder to just read 'delta_f' and miss 'units: GHz'."*
+#
+# ✅ Right — and the case that prompted it proves NEITHER HALF IS SUFFICIENT
+# ALONE. `e0e.result.json` had `delta_mhz` holding GHz: the name DID carry a
+# unit, and the name was WRONG. A separate `unit:` field is missable; a unit in
+# the name is loud but unverified. **So the name carries it AND the declared
+# field checks it.**
+#
+#     cavity.f0.cold.ghz      unit "GHz"     ✅ agree
+#     cavity.f0.cold.mhz      unit "GHz"     🔴 caught
+#     cavity.f0.cold          unit "GHz"     🔴 caught — dimensional, unmarked
+#     cavity.Q_ext            unit "1"       ✅ dimensionless: no suffix
+UNIT_SUFFIX = {
+    "GHz": "ghz", "MHz": "mhz", "kHz": "khz", "Hz": "hz",
+    "S/m": "s_per_m", "K": "k", "W": "w", "A": "a", "V": "v",
+    "mm": "mm", "m": "m", "s": "s", "ohm": "ohm", "pF": "pf",
+    "deg": "deg",
+}
+
+
+def check_units(store=None):
+    """Every dimensional name must END with its unit. Findings as (lvl, msg)."""
+    d = _load(store)
+    out = []
+    for name, e in sorted(d.items()):
+        if name.startswith("_") or not isinstance(e, dict) or "unit" not in e:
+            continue
+        u = e["unit"]
+        want = UNIT_SUFFIX.get(u)
+        tail = name.rsplit(".", 1)[-1]
+        if u == "1":
+            if tail in UNIT_SUFFIX.values():
+                out.append(("ERROR", f"{name}: unit is '1' (dimensionless) but "
+                                     f"the name ends in {tail!r}, a unit."))
+            continue
+        if want is None:
+            out.append(("WARN", f"{name}: unit {u!r} has no registered suffix; "
+                                f"add it to values.UNIT_SUFFIX so the name can "
+                                f"be checked."))
+        elif tail != want:
+            out.append(("ERROR",
+                        f"{name}: declares unit {u!r} but the name ends "
+                        f"{tail!r}, not {want!r}. A name that carries the WRONG "
+                        f"unit is worse than one that carries none — "
+                        f"`delta_mhz` held GHz and read as a 1000x error."))
+    return out
+
+
+# ── who reads this name? (7bl) ────────────────────────────────────────────────
+# The rename that broke solveconf and condcheck was undetectable because the
+# store had no idea who read it. Now that every read goes through get(), the
+# consumers are findable by AST: a call to values.get() with a literal name.
+def consumers(name, root=None):
+    """Every (file, line) that reads `name` through get(). Resolves aliases."""
+    import ast as _ast, pathlib as _p
+    root = _p.Path(root) if root else _p.Path(__file__).parent
+    canon = ALIASES.get(name, name)
+    hits = []
+    for f in sorted(root.glob("*.py")):
+        try:
+            tree = _ast.parse(f.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        for n in _ast.walk(tree):
+            if not isinstance(n, _ast.Call) or not n.args:
+                continue
+            # 🔑 MUST be values.get()/_bind(), not any callable named `get`.
+            # The first version counted `base.get("wall.conductivity", ...)` —
+            # a plain dict lookup — and reported 4 consumers where there were 2.
+            # An index that over-reports is not much better than none (7bl).
+            fn = n.func
+            if isinstance(fn, _ast.Attribute):
+                ok = (isinstance(fn.value, _ast.Name)
+                      and fn.value.id == "values" and fn.attr in ("get", "_bind"))
+            else:
+                ok = getattr(fn, "id", None) in ("get", "_bind")
+            if not ok:
+                continue
+            a = n.args[0]
+            if isinstance(a, _ast.Constant) and isinstance(a.value, str):
+                if ALIASES.get(a.value, a.value) == canon:
+                    hits.append((f.name, n.lineno,
+                                 "alias" if a.value != canon else "canonical"))
+    return hits
+
 if __name__ == "__main__":
     import sys
     d = _load()
+    if "--check-units" in sys.argv:
+        fs = check_units()
+        for lvl, m in fs:
+            print(f"  {'🔴' if lvl == 'ERROR' else '⚠️ '} {m}")
+        print(f"  {'✅ every dimensional name carries its unit' if not fs else ''}")
+        sys.exit(1 if any(l == "ERROR" for l, _ in fs) else 0)
+    if "--consumers" in sys.argv:
+        i = sys.argv.index("--consumers")
+        if i + 1 >= len(sys.argv):
+            sys.exit("usage: values.py --consumers <canonical.name>")
+        nm = sys.argv[i + 1]
+        rows = consumers(nm)
+        print(f"{nm}: {len(rows)} consumer(s)")
+        for f, ln, how in rows:
+            print(f"  {f}:{ln}" + ("   ⚠️  via ALIAS — migrate before removing"
+                                   if how == "alias" else ""))
+        sys.exit(0)
     names = sys.argv[1:] or sorted(k for k in d if not k.startswith("_"))
     for n in names:
         print(describe(n));  print()
+
+
+
+

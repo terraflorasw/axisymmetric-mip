@@ -45,6 +45,7 @@ VERIFICATION / FALSIFICATION — declared as a 2x2, so no outcome is unfalsifiab
 mechanisms have already been adopted early in this programme and both were wrong.
 """
 import json
+import values
 import pathlib
 import subprocess
 import sys
@@ -62,7 +63,7 @@ from e0k2_anchor import (design_point, wall_sigma, shared_energy_list,
 from e0k2_azim import sector_bins, read_sector_energy
 
 TAG = "e0k2_betacause"
-LD, LW = 11.0, 8.0
+LD, LW = values.get("loop.size.mm")
 # (label, sectors, size_factor) — the reused point is stated so the comparison
 # is explicit rather than implied
 REUSED = {"label": "5sec@1.5", "sectors": 5, "sf": "1.5", "beta": 0.4081,

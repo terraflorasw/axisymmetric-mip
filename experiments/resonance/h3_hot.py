@@ -59,6 +59,7 @@ FALSIFICATION
          first order this should nearly cancel in beta. **Measured, not assumed.**
 """
 import json
+import values
 import math
 import os
 import pathlib
@@ -91,8 +92,8 @@ ALPHA_R_IMPLIED = 6.44e-3       # what GLOSSARY's 0.78 would require
 T_COLD_K = 293.15               # 20 C — ASSUMED, not sourced
 T_WALL_K = [293.15, 393.15, 493.15]   # absolute wall temperature
 DELTA_T = [t - T_COLD_K for t in T_WALL_K]
-GROOVE_W, GROOVE_D = 5.0, 10.0  # at dT=0; scaled with the cavity
-LOOP_LD, LOOP_LW = 11.0, 8.0
+GROOVE_W, GROOVE_D = values.get("cavity.groove.mm")  # at dT=0; scaled w/ cavity
+LOOP_LD, LOOP_LW = values.get("loop.size.mm")
 
 N_MODES = 8
 EIGEN_TARGET = 2.38

@@ -43,6 +43,23 @@ import gmsh
 # --------------------------------------------------------------------------
 # Parameters — all lengths in metres
 # --------------------------------------------------------------------------
+def _bind(name, allow_tentative=False):
+    """A material property, bound from baselines.json. REFUSES if undeclared.
+
+    🔑 Same contract as e0k2_anchor.wall_sigma(): bind the canonical name or
+    refuse. A default that silently falls back is a constant with extra steps.
+    """
+    import values
+    try:
+        return values.get(name, allow_tentative=allow_tentative)
+    except Exception as e:
+        raise RuntimeError(
+            f"geometry.py cannot bind {name!r} from baselines.json ({e}). "
+            f"Refusing to build: an undeclared material property is how "
+            f"eps=11.6 (the WRONG AXIS for sapphire) survived this whole "
+            f"programme.") from None
+
+
 P = dict(
     cav_r=94.3e-3,          # cavity radius   -> TE011 at 2.4506 GHz with L=100
     cav_len=100.0e-3,       # cavity length
@@ -78,8 +95,28 @@ P = dict(
     # because E0b showed the mesh inherits the cavity's azimuthal
     # symmetry only while those two axes coincide.
     rotate_axis=(0.0, 0.0, 1.0),
-    torch_eps=11.6,         # sapphire eps_PERP_c — what E_phi sees (R32/R98)
-    torch_tand=3.5e-5,      # sapphire; torch_v was 3.78 / 1.0e-4
+    # 🔑 BOUND, NOT LITERAL. User, 2026-08-25: "there should be absolutely no
+    # constants in any scripts." A material property in a script is a value with
+    # no provenance, no unit check and no retraction path — which is exactly how
+    # eps = 11.6 survived being the WRONG AXIS for the whole programme.
+    # ⚠️ The three material defaults below now come from baselines.json and
+    # REFUSE if undeclared (the wall_sigma() pattern). The DIMENSION defaults
+    # further up are still literals: they are overridden by the slug config for
+    # every real run (CONVENTIONS 7ba), and they are the burn-down list.
+    # 🔴🔴 THIS VALUE WAS WRONG BY THE AXIS. RESOLVED 2026-08-25.
+    # Krupka, Huang & Tung, Meas. Sci. Technol. 16 (2005) 1014, figure 10:
+    # "Dielectric loss tangents PERPENDICULAR TO THE ANISOTROPY AXIS ... the
+    # measured permittivity was ... 9.39 +-0.5% for sapphire." Measured with
+    # TE0np modes in a cylindrical sample — the SAME mode family as this cavity.
+    # TE011's E is azimuthal, so with the c-axis along the tube E_phi sees
+    # eps_PERP_c = 9.39, NOT 11.6. 11.6 is eps_PARALLEL_c.
+    # ⚠️ R98's comment at --torch-material asserts the reverse, and R32's check
+    # was CIRCULAR (see baselines.json torch.sapphire.permittivity).
+    # 🔴 NOT CHANGED HERE YET: flipping it moves every stored f0, so it belongs
+    # to one deliberate re-mesh with the apertures (NEXT.md restoration).
+    # The canonical value is already 9.39 in baselines.json.
+    torch_eps=_bind("torch.sapphire.permittivity"),
+    torch_tand=_bind("torch.sapphire.loss_tangent", allow_tentative=True),
     # Coupling loop for the DRIVEN model. Rectangular, in the z=0 plane, so
     # its normal is z-hat and it links H_z -> the TE011 operating mode.
     # A series gap at the far side carries the lumped port.
@@ -150,7 +187,7 @@ P = dict(
     # diameter disables. torch_ext extends the outer tube (and the gas inside
     # it) below z0 by that distance; it requires feed_d > 0, or the tube would
     # protrude into nothing and the topological rule would clad it in metal.
-    feed_d=0.0, feed_len=41.0e-3, torch_ext=0.0,
+    feed_d=0.0, feed_len=41.0e-3, torch_ext=0.0, torch_ext_top=0.0,
     # R54: GEOMETRIC MODE FILTER — a circumferential groove cut into each end
     # cap at the barrel corner, replacing the quartz annulus. It interrupts
     # TM111's RADIAL cap current while TE011's cap current, being purely
@@ -181,8 +218,12 @@ P = dict(
     # round, which is what a bored-and-clamped aluminium body actually does.
     ovality=0.0,
     filter_t=0.0,            # dielectric filter thickness per end cap (m)
-    filter_eps=3.78,         # fused quartz — R107 measured sapphire
-                         # 9.2% worse on Q; see --filter-eps
+    # 🔑 BOUND, not literal. Registered as torch.quartz.permittivity and marked
+    # TENTATIVE: 3.78 is a plausible handbook value for FUSED quartz but this
+    # programme has never cited one. ⚠️ Krupka et al. measure SINGLE-CRYSTAL
+    # quartz at 4.43 perpendicular to the c-axis — a different material; it does
+    # NOT transfer.
+    filter_eps=_bind("torch.quartz.permittivity", allow_tentative=True),
     bore_h=5.0e-3,          # bore mesh size — air, so wavelength-limited
     # R15: the R12 plasma sub-region got NO explicit size — it is carved out of
     # the bore before set_pts runs, so it inherited only the background field
@@ -588,15 +629,51 @@ def build(p: dict, out: str, msh_order: int) -> None:
     # rest of its footprint lands on the torch and bore end faces, which are
     # fragment TOOLS and so get split conformally. That 0.5 mm ring is finer
     # than MeshSizeMin, so watch the jacobian report on the first build.
-    if p["chim_d"] > 0 and p["chim_len"] > 0:
-        chim = occ.addCylinder(0, 0, z0 + L, 0, 0, p["chim_len"],
-                               p["chim_d"] / 2)
-        cutc = []
-        for wdg in wedges:
-            r_, _ = occ.fuse([wdg], [(3, chim)], removeObject=True,
-                             removeTool=(wdg is wedges[-1]))
-            cutc.extend(r_)
-        wedges = cutc
+    # --- cap holes: ONE feature, both ends -------------------------------
+    # 🔑 User, 2026-08-25: *"Isn't 'chimney' overwrought? It's just the hole in
+    # the end cap opposite the other torch-bottom hole."* Correct. R29
+    # ("chimney", +z) and R49 ("feed", -z) were written separately and are
+    # STRUCTURALLY IDENTICAL — same addCylinder, same fuse loop, differing only
+    # in z. Two names and two R-numbers for a clearance hole through an end cap.
+    # The names mislead: once the outer tube passes through BOTH caps, neither
+    # is exhaust — the gas is inside the tube at both ends.
+    #
+    # 🔴 AND THEY SHARED A BUG. Both fused ONE FULL CYLINDER into EVERY wedge.
+    # The groove's comment below already names this exact hazard: "Fusing one
+    # full ring into every wedge (the pattern the chimney uses, which is safe
+    # at ns=1) would overlap ns copies of the same solid once ns > 1." It was
+    # right, and nobody applied it to the chimney. MEASURED 2026-08-25, no
+    # torch involved: sectors=1 + chimney is fine; sectors=5 + chimney is
+    # NON-MANIFOLD; sectors=5 + feed is NON-MANIFOLD. gmsh accepts all of them;
+    # MFEM rejects at load (CONVENTIONS 7bn).
+    # ⚠️ Never seen because GEO ships `--chimney 0,41 --feed 0,41` — both OFF.
+    def cap_hole(wedges, z_start, length, diameter):
+        """Fuse a clearance hole through a cap into the wedges, PER SECTOR."""
+        if not (diameter > 0 and length > 0):
+            return wedges
+        out = []
+        for k, wdg in enumerate(wedges):
+            if ns > 1:
+                # an angular WEDGE of the hole, rotated onto this sector, so
+                # each wedge gets its own solid instead of ns copies of one.
+                piece = [(3, occ.addCylinder(0, 0, z_start, 0, 0, length,
+                                             diameter / 2,
+                                             angle=2 * math.pi / ns))]
+                if k:
+                    occ.rotate(piece, 0, 0, 0, 0, 0, 1, k * 2 * math.pi / ns)
+                r_, _ = occ.fuse([wdg], piece, removeObject=True,
+                                 removeTool=True)
+            else:
+                # ns == 1: the original full-cylinder path, kept EXACTLY so
+                # every existing single-sector mesh stays byte-identical.
+                cyl = [(3, occ.addCylinder(0, 0, z_start, 0, 0, length,
+                                           diameter / 2))]
+                r_, _ = occ.fuse([wdg], cyl, removeObject=True,
+                                 removeTool=True)
+            out.extend(r_)
+        return out
+
+    wedges = cap_hole(wedges, z0 + L, p["chim_len"], p["chim_d"])
 
     # --- R54 geometric mode filter: corner groove in both end caps ---------
     # Built PER SECTOR and fused into its own wedge. Fusing one full ring into
@@ -641,14 +718,8 @@ def build(p: dict, out: str, msh_order: int) -> None:
 
     # --- R49 gas-feed feedthrough on the -z end cap ------------------------
     if p["feed_d"] > 0 and p["feed_len"] > 0:
-        feed = occ.addCylinder(0, 0, z0 - p["feed_len"], 0, 0, p["feed_len"],
-                               p["feed_d"] / 2)
-        cutf = []
-        for wdg in wedges:
-            r_, _ = occ.fuse([wdg], [(3, feed)], removeObject=True,
-                             removeTool=(wdg is wedges[-1]))
-            cutf.extend(r_)
-        wedges = cutf
+        wedges = cap_hole(wedges, z0 - p["feed_len"], p["feed_len"],
+                          p["feed_d"])
     elif p["torch_ext"] > 0:
         sys.exit("ERROR: --torch-ext requires --feed; an unenclosed tube would "
                  "be tagged PEC by the exterior-face rule and simulated as a "
@@ -676,7 +747,22 @@ def build(p: dict, out: str, msh_order: int) -> None:
     # R49: the outer tube starts BELOW the -z cap when it is fed through one, so
     # the aperture is loaded by the tube wall rather than being an air hole.
     z_bot = z0 - p["torch_ext"]
-    torch_in = list(tube_of(t_ro, t_ri, z_bot, z0 + L))
+    # 🔴 THE OUTER TUBE PASSES THROUGH **BOTH** END CAPS (user, 2026-08-25):
+    # one end is the gas entry, the other "basically eliminates fouling" —
+    # a tube that stopped at the +z cap would dump exhaust onto the cap and
+    # chimney walls instead of carrying it out.
+    #
+    # It is also what makes the mesh VALID. The tube used to end exactly at
+    # z0+L while the chimney began exactly there, so the tube's top face
+    # (annulus 8.5..10) and the chimney's bottom face (disc 0..10.5) were
+    # COPLANAR AND OVERLAPPING — a face shared by three elements, which gmsh
+    # accepted and MFEM rejected at load (CONVENTIONS 7bn). The chimney is
+    # fused into the air at line ~623, LONG BEFORE the torch exists to be
+    # split against it, so the "fragment tools split it conformally" comment
+    # there does not apply. Running the tube through removes the shared face
+    # rather than trying to make it conformal.
+    z_top = z0 + L + p["torch_ext_top"]
+    torch_in = list(tube_of(t_ro, t_ri, z_bot, z_top))
     if p["inter_od"] > 0 and z_int > z0:
         torch_in += tube_of(p["inter_od"] / 2,
                              p["inter_od"] / 2 - p["inter_wall"], z0, z_int)
@@ -1155,6 +1241,7 @@ def build(p: dict, out: str, msh_order: int) -> None:
             "chimney": [p["chim_d"] * 1e3, p["chim_len"] * 1e3],
             "feed": [p["feed_d"] * 1e3, p["feed_len"] * 1e3],
             "torch_ext": p["torch_ext"] * 1e3,
+            "torch_ext_top": p["torch_ext_top"] * 1e3,
             "torch": [p["torch_od"] * 1e3, p["torch_wall"] * 1e3],
             "intermediate": [p["inter_od"] * 1e3, p["inter_wall"] * 1e3,
                              p["inter_end"] * 1e3],
@@ -1410,7 +1497,18 @@ if __name__ == "__main__":
                          "11.6 is eps_PERP_c — what "
                          "E_phi sees with the c-axis longitudinal (R32 "
                          "measured it reproduces isotropic 11.6 exactly). "
-                         "9.4 is eps_PARALLEL_c: 23%% low for our field.")
+                         "9.4 is eps_PARALLEL_c: 23%% low for our field. "
+                         "🔴 2026-08-25 RESOLVED: THIS AXIS ASSIGNMENT IS "
+                         "WRONG. Krupka et al., Meas. Sci. Technol. 16 (2005) "
+                         "1014, fig 10, measured eps PERPENDICULAR to the "
+                         "anisotropy axis = 9.39 +-0.5%% for single-crystal "
+                         "sapphire, by TE0np modes in a cylindrical sample. So "
+                         "eps_PERP_c = 9.39 and 11.6 is eps_PARALLEL_c. TE011's "
+                         "E_phi sees the PERPENDICULAR component, i.e. 9.39. "
+                         "R32 could not arbitrate: its 'c-longitudinal "
+                         "reproduces isotropic 11.6' only confirms the "
+                         "simulation used 11.6 perpendicular, the assumption "
+                         "under test. See baselines.json.")
     ap.add_argument("--plasma-sectors", dest="plasma_sectors",
                     action="store_true",
                     help="R83: split the plasma toroid into the same number of "
@@ -1446,6 +1544,10 @@ if __name__ == "__main__":
     ap.add_argument("--feed", type=str, default=None,
                     help="R49: d,len in mm — gas-feed feedthrough tube on the "
                          "-z end cap, below cutoff, terminated PEC")
+    ap.add_argument("--torch-ext-top", type=float, default=None,
+                    help="extend the outer tube ABOVE the +z cap by mm, so it "
+                         "passes through the chimney instead of butting against "
+                         "it. Required whenever --chimney is used with a torch.")
     ap.add_argument("--torch-ext", type=float, default=None,
                     help="R49: extend the outer tube below the -z cap by mm, "
                          "dielectrically loading the feed aperture")
@@ -1636,6 +1738,8 @@ if __name__ == "__main__":
     if a.feed:
         fd, fl = (float(v) for v in a.feed.split(","))
         P["feed_d"], P["feed_len"] = fd * 1e-3, fl * 1e-3
+    if a.torch_ext_top is not None:
+        P["torch_ext_top"] = a.torch_ext_top * 1e-3
     if a.torch_ext is not None:
         P["torch_ext"] = a.torch_ext * 1e-3
     if a.bore_h is not None:

@@ -29,18 +29,35 @@ import physics as ph
 import h4_field
 from e0k2_anchor import design_point
 
-src = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "h4_field.result.json")
-out = json.loads(src.read_text())
-a, L = design_point()
-exact = ph.spectrum(a, L, fmax=3.2)["TE011"]
+# 🔴 GUARDED 2026-08-24 — BUT ONLY HALFWAY, AND THE COMMENT SAID OTHERWISE.
+# The note below claimed this no longer ran on import. Only the final
+# `_report` call was ever moved behind the guard: the file READ, the
+# design_point() solve and three prints all still executed at import time, so
+# `import h4_reanalyse` still did work and still printed. Fixed properly
+# 2026-08-25 — a correction applied to one of two adjacent sites reads as done
+# (CONVENTIONS 7bl), and a comment asserting the fix makes it worse.
+#
+# The original hazard, unchanged: any module that did `import h4_reanalyse`
+# re-ran the whole analysis and REWROTE h4_field.result.json as a side effect.
+# A rig must not act when it is merely read.
+#
+# ⚠️ DEBT, not fixed here: this still takes a positional argv and defaults to
+# an UNSLUGGED "h4_field.result.json". H4 is PARKED (NEXT.md item 6), so it is
+# left alone rather than half-migrated; when H4 restarts it takes --slug like
+# every other rig.
+def main():
+    src = pathlib.Path(sys.argv[1] if len(sys.argv) > 1
+                       else "h4_field.result.json")
+    out = json.loads(src.read_text())
+    a, L = design_point()
+    exact = ph.spectrum(a, L, fmax=3.2)["TE011"]
 
-print(f"  re-scoring {src} with the 13:35 analysis layer")
-print(f"  cavity a={a:.4f} L={L:.4f}  analytic TE011 {exact:.6f} GHz")
-print(f"  RESOLVE_TOL = {h4_field.RESOLVE_TOL} "
-      f"(R_RESOLVED is now calibrated per-run from the no-torch rake)")
-# 🔴 GUARDED 2026-08-24. This ran on IMPORT: any module that did
-# `import h4_reanalyse` re-ran the whole analysis and REWROTE
-# h4_field.result.json as a side effect. A rig must not act when it
-# is merely read.
-if __name__ == "__main__":
+    print(f"  re-scoring {src} with the 13:35 analysis layer")
+    print(f"  cavity a={a:.4f} L={L:.4f}  analytic TE011 {exact:.6f} GHz")
+    print(f"  RESOLVE_TOL = {h4_field.RESOLVE_TOL} "
+          f"(R_RESOLVED is now calibrated per-run from the no-torch rake)")
     h4_field._report(out, exact)
+
+
+if __name__ == "__main__":
+    main()
