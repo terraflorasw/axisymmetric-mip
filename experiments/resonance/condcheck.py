@@ -18,12 +18,13 @@ import solveconf
 
 def main():
     base = json.loads(pathlib.Path("baselines.json").read_text())
-    want = base["wall.conductivity"]["value"]
+    import values
+    want = values.get("wall.conductivity.s_per_m")
     tmpl = json.loads(pathlib.Path(solveconf.TEMPLATE).read_text())
     tval = tmpl["Boundaries"]["Conductivity"][0]["Conductivity"]
     print(__doc__)
     print(f"  declared in baselines : {want:.4g} S/m "
-          f"({base['wall.conductivity']['material']})")
+          f"({base.get('wall.conductivity.s_per_m', base.get('wall.conductivity', {})).get('material','?')})")
     print(f"  template  {solveconf.TEMPLATE:<12}: {tval:.4g} S/m  <- must NOT win")
 
     # a DRIVEN config needs a coupling loop, so pick a mesh whose sidecar has a
@@ -55,7 +56,7 @@ def main():
     orig = bp.read_text()
     try:
         d = json.loads(orig)
-        d.pop("wall.conductivity")
+        d.pop("wall.conductivity.s_per_m", None) or d.pop("wall.conductivity", None)
         bp.write_text(json.dumps(d, indent=1) + "\n")
         try:
             solveconf.driven(m, "_condcheck2", (2.44, 2.45), step=1e-3, order=2)

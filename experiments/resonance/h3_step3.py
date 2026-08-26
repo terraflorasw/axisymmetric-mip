@@ -61,6 +61,7 @@ FALSIFICATION
          that produced the retracted -10.56 MHz story.
 """
 import json
+import values
 import math
 import os
 import pathlib
@@ -104,7 +105,7 @@ STEPS = [("cold",   "pec"),        # reproduce h3_cold exactly — the artifact
          ("driven", "pec"),        # same, on the torch/plasma mesh
          ("driven", "lumped")]     # 🔑 THE MACHINE
 
-LOOP_LD, LOOP_LW = 11.0, 8.0       # the DESIGN loop, 176 mm^2
+LOOP_LD, LOOP_LW = values.get("loop.size.mm")   # the DESIGN loop, 176 mm^2
 RI, RO = 2.00, 8.50                # h3_driven's plasma annulus
 WINDOW = (2.35, 2.65)
 
@@ -202,7 +203,7 @@ def main():
         rec["groove_meshed"] = list(map(float, g))
         rec["tets"] = meta["tets"]
         print(f"    groove in mesh: {g}   tets={meta['tets']:,}", flush=True)
-        if tuple(rec["groove_meshed"]) != (5.0, 10.0):
+        if tuple(rec["groove_meshed"]) != tuple(values.get("cavity.groove.mm")):
             rec["error"] = (f"V2 FIRES: groove {g} is not 5x10 — this is not "
                             f"the design cavity")
             print(f"    🔴 {rec['error']}", flush=True)

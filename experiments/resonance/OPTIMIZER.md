@@ -18,6 +18,23 @@ un-optimised one because it spends the budget and produces a number people trust
 
 ---
 
+## 🔑 THE CAVITY IS A FOURIER FILTER — the framing the surrogate should carry
+
+**User, 2026-08-25.** Fields go as e^{imφ}; the cavity is **diagonal in m**. So:
+
+- **The groove is a STOPBAND on m ≠ 0**, not a generic perturbation. Its job is
+  to move non-axisymmetric modes out of the LDMOS band while leaving TE011 (m=0)
+  alone — which is exactly what `h3_ladder` measured: groove-on-bare moves f₀ by
+  **+0.094 MHz** and purity by **+0.0012**, while the LOOP costs **−10.6 MHz**
+  and **−0.056** purity.
+- **"One resonance in band" is a filter specification**, so the objective is a
+  STOPBAND MARGIN, not a distance between two arbitrary modes.
+- ⚠️ **The DIAGNOSTIC is a DFT with a Nyquist limit.** Energy sampling gives
+  harmonic 2m, so N sectors resolve only **m ≤ N/4** — N=5 resolves m ≤ 1, and
+  **TE311 (m=3) aliased to m=0 at maximum confidence.** Any surrogate feature
+  built on binned m inherits that; **features built on purity P do not**, because
+  P is pointwise rather than sampled.
+
 ## The rule
 
 **Every entry carries a STATUS, the evidence, and the falsifier.** A prior with

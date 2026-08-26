@@ -15,7 +15,10 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import eigmodes
 import physics as ph
 
-A_MM, L_MM = 103.70, 88.53
+# 🔴 LEGACY CAVITY (D/L 2.343), which H1 REJECTED. Kept because this script
+# analyses data meshed at those dimensions. NOT a design number; re-run is
+# queued in NEXT.md § THE GEO RE-RUN LIST.
+A_MM, L_MM = 103.70, 88.53   # LEGACY
 EXACT = ph.spectrum(A_MM, L_MM)["TE011"]
 
 

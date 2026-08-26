@@ -66,12 +66,18 @@ tuner · circulator.
    cannot distinguish β from 1/β. Either side of the ignition crossing reads
    −13.98 vs −13.99 dB: identical reflected power, **opposite tuner directions.**
    Downconvert both coupler ports coherently and use complex Γ.
+   ✅ **NAMED 2026-08-25: an RF PHASE DETECTOR** (user). At f₀, Γ = (β−1)/(β+1)
+   is REAL, so β and 1/β differ by exactly **180°** — **±45° resolution is
+   ample**, and coupler directivity (even 20 dB) clears our operating points by
+   16–20 dB. 🔴 **But at β = 1 the reflected wave vanishes and there is no phase
+   to read**, so the crossing must be caught by the |Γ| minimum and applied by a
+   state machine. See `SOURCE.md` § RF PHASE DETECTOR.
 
 ## What's needed
 
 | | | status |
 |---|---|---|
-| **1** | **A magnitude-matching approach that survives 39–42 A at 2.45 GHz** | 🔴 **UNSOLVED.** No verified option. ⚠️ And see the loop question below — the requirement itself is not yet final. |
+| **1** | **A magnitude-matching approach that survives 39–42 A at 2.45 GHz** | ✅✅ **MATERIALLY CHANGED 2026-08-25 — see `../resonance/` § ITEM 7 STEP 2c.** A **series capacitor in one loop leg** drives Q_ext **8,716 → 322 (27×)**, measured. At the design bore that is **VSWR 83 → 3.1 loaded**, and tuner current goes as √VSWR, so **~40 A → ~8 A**. 🔴 **BUT THE TARGET IS NOW CONTESTED:** Q_ext serves cold AND loaded, whose Q₀ differ 265×, and optimising the loaded match takes cold ignition power from 556 W to 45 W. The minimax fixed loop is Q_ext ≈ 1,700 (VSWR ~16 both). **Which is right depends on `../ignition-options/`.** ⚠️ Original verdict retained: 🔴 UNSOLVED. No verified option. ⚠️ And see the loop question below — the requirement itself is not yet final. |
 | **2** | Frequency acquisition of a 350 kHz resonance in a 100 MHz band | not designed |
 | **3** | Complex-Γ sensing (vs magnitude-only) | argued, not designed |
 | **4** | Tuner SPEED requirement | 🔴 **NOT DERIVABLE** — set by ignition dynamics, which no programme here has measured. Everything in resonance is steady-state. |
@@ -93,7 +99,14 @@ there for cavity reasons anyway:**
   +30.9 (that came from assuming 1e20), and the loaded resonance is **1.5×
   WIDER** at 23.8 MHz.
   ✅ Band margin went the other way: **17.6 → 41 MHz.**
-- ⚠️ **Coupler — PARTLY closed, and I overstated it.** ❌ Aperture coupling is
+- ✅✅ **COUPLER — ANSWERED 2026-08-25, and the answer is LARGE.** The loop
+  was never designed; it has now been swept across mount, flange and series
+  gap. **Q_ext 8,716 → 322 measured, a 27× lever, on a copper gap.** The 4.2×
+  this document calls "an open question" is comfortably exceeded, and **β = 1
+  (84×) is no longer obviously out of reach** — it is 3.1× away. 🔴 **The
+  remaining question is not CAN it, but SHOULD it: see the cold/loaded trade
+  above and `../ignition-options/`.**
+- ⚠️ **Coupler — the ORIGINAL entry, retained:** ❌ Aperture coupling is
   out (patented; and this cavity IS the waveguide, so there is no shared wall to
   cut an iris in). 🔴 **But the LOOP was never designed** — it was forced into
   existence so driven solves would have a port, and only its AREA was ever swept,

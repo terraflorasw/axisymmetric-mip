@@ -1,0 +1,306 @@
+{
+ "_meta": {
+  "programme": "resonance",
+  "started": "2026-08-20",
+  "rule": "An entry requires BOTH a `verification` (what outside the instrument it agrees with) and a `falsification` (the measurement that would have shown it wrong, and its outcome). Inputs -- material properties, physical constants, requirements -- carry `source` instead, and are marked kind=input. Results carry kind=result. error:null means UNMEASURED, never zero.",
+  "entries": "starts EMPTY by design: nothing is inherited from ../waveguide without re-derivation",
+  "indirection": "A NAME ALONE MUST NOT RESOLVE. Entries with a `contexts` list hold several recorded values discriminated by context (solver, mesh, extraction, ne, ...). values.get(name, **context) returns one or REFUSES, printing the alternatives. Added 2026-08-25 after CONVENTIONS 7aq/7at: every serious error in that window was one name meaning different measured things in different contexts. Legacy single-value entries (no `contexts`) still resolve."
+ },
+ "cavity.Q_ext": {
+  "kind": "result",
+  "unit": "1",
+  "description": "External (port) Q of the 11x8 cap loop. NOT a constant: it depends on the mesh's torch state and on how it was extracted.",
+  "contexts": [
+   {
+    "value": 9231.0,
+    "context": {
+     "solver": "eigen_pair",
+     "mesh": "no_torch",
+     "loop_mm": [
+      11.0,
+      8.0
+     ],
+     "ne": 0.0
+    },
+    "rig": "h3_loopq",
+    "date": "2026-08-24",
+    "verification": "reproduces h3_step3's anchor to 1.25%",
+    "falsification": "F4 no-groove control gave 76,811 - the groove is what makes this number possible",
+    "note": "GEO_DESIGN as-is, which CARRIES --no-torch. A torchless cavity."
+   },
+   {
+    "value": 9117.0,
+    "context": {
+     "solver": "eigen_pair",
+     "mesh": "vacuum_torch",
+     "ne": 0.0,
+     "loop_mm": [
+      11.0,
+      8.0
+     ]
+    },
+    "rig": "h3-qext-01",
+    "date": "2026-08-25",
+    "status": "definitive",
+    "verification": "h3_qext reproduces h3_step3 V1_ANCHOR to 4 figures on a mesh of known fingerprint",
+    "falsification": "had the driven dip on the SAME mesh agreed, the 7.7% gap would be a method artefact",
+    "supersedes": 9117.0
+   },
+   {
+    "value": 8462.0,
+    "context": {
+     "solver": "driven_dip",
+     "mesh": "vacuum_torch",
+     "ne": 0.0,
+     "loop_mm": [
+      11.0,
+      8.0
+     ]
+    },
+    "rig": "h3-qext-01",
+    "date": "2026-08-25",
+    "status": "tentative",
+    "verification": null,
+    "falsification": "eigen on the identical mesh gives 9,117; the gap is entirely Q_L, and the cold linewidth is 0.35 MHz at a 25 kHz step (~14 samples)",
+    "note": "NOT wrong, UNDER-RESOLVED. Promote only if a finer cold sweep reproduces it.",
+    "supersedes": 8462.0
+   }
+  ]
+ },
+ "cavity.Q0.cold": {
+  "kind": "result",
+  "unit": "1",
+  "description": "Unloaded Q of the cold grooved cavity with the 11x8 loop. FOUR numbers have carried this name.",
+  "contexts": [
+   {
+    "value": 43422.0,
+    "context": {
+     "solver": "eigen",
+     "mesh": "no_torch",
+     "port_bc": "pec"
+    },
+    "rig": "h3_loopq",
+    "date": "2026-08-24",
+    "verification": "cross-checks h3_step3 to 0.23%",
+    "falsification": null
+   },
+   {
+    "value": 43523.0,
+    "context": {
+     "solver": "eigen",
+     "mesh": "vacuum_torch",
+     "port_bc": "pec"
+    },
+    "rig": "h3_step3",
+    "date": "2026-08-24",
+    "verification": "used as the eta reference Q_REF",
+    "falsification": null,
+    "note": "\u26a0\ufe0f THE ETA REFERENCE. Vacuum torch; the design sapphire torch is worth +2.0% (e3 case B)."
+   },
+   {
+    "value": 29037.0,
+    "context": {
+     "solver": "driven",
+     "mesh": "vacuum_torch",
+     "extraction": "branch_free"
+    },
+    "rig": "h3_driven",
+    "date": "2026-08-25",
+    "verification": null,
+    "falsification": "disagrees 40% with the overcoupled branch on the SAME solve - which is the signal that Q_ext=9,231 does not apply here",
+    "note": "1/(1/Q_L - 1/Q_ext) with Q_ext=9,231. error_amplification 4.15, Q0_ill_conditioned=true. NOT the rig's authoritative answer."
+   },
+   {
+    "value": 40645.0,
+    "context": {
+     "solver": "driven",
+     "mesh": "vacuum_torch",
+     "extraction": "overcoupled_branch"
+    },
+    "rig": "h3_driven",
+    "date": "2026-08-24",
+    "verification": "OPTIMIZER.md records this as the branch-corrected value; independent re-fit from raw S11 gave 40,652 (0.02%)",
+    "falsification": null,
+    "note": "Q_L(1+beta_overcoupled). 6.4% below the eigen value - but eigen is a DIFFERENT mesh, so that gap is NOT a method result (7aq)."
+   }
+  ]
+ },
+ "eta.reference": {
+  "kind": "result",
+  "unit": "1",
+  "description": "Q0 that eta = 1 - Q0/Q_ref is measured against. CONVENTIONS 7c has caught this ONE name four times.",
+  "contexts": [
+   {
+    "value": 43523.0,
+    "context": {
+     "status": "current",
+     "mesh": "vacuum_torch"
+    },
+    "rig": "h3_step3",
+    "date": "2026-08-24",
+    "verification": "guarded by h3_driven.Q_REF_CONFIG (groove 5x10, loop 11x8)",
+    "falsification": null,
+    "note": "\u26a0\ufe0f Vacuum torch. The design value is ~2% higher (e3 case B: 44,387 wall-only with sapphire)."
+   },
+   {
+    "value": 44384.0,
+    "context": {
+     "status": "retracted",
+     "mesh": "no_loop_no_groove"
+    },
+    "rig": "?",
+    "date": "2026-08-23",
+    "verification": null,
+    "falsification": "wrong cavity - no loop and no groove",
+    "retracted": true
+   },
+   {
+    "value": 29854.0,
+    "context": {
+     "status": "retracted",
+     "mesh": "loop_no_groove"
+    },
+    "rig": "?",
+    "date": "2026-08-23",
+    "verification": null,
+    "falsification": "a HYBRID's Q (7v)",
+    "retracted": true
+   },
+   {
+    "value": 12368.0,
+    "context": {
+     "status": "retracted",
+     "mesh": "other_rig"
+    },
+    "rig": "h3_cold",
+    "date": "2026-08-23",
+    "verification": null,
+    "falsification": "open-gap artifact; came with f0=2.440003, also retracted",
+    "retracted": true
+   }
+  ]
+ },
+ "torch.sapphire.permittivity": {
+  "kind": "input",
+  "value": 11.6,
+  "unit": "1",
+  "material": "single-crystal sapphire (Al2O3), eps PERPENDICULAR to the c-axis",
+  "source": "\u26a0\ufe0f RE-VERIFIED 2026-08-25 by recovering the original work from git: `git show 2db1d59^:experiments/waveguide/FINDINGS.md` line 4580, 'R32 \u2705 and R33 \u2705: sapphire is buildable'. R32 IS external empirical work and it DOES carry forward \u2014 but it answers ORIENTATION, not the SCALAR. It measured c-longitudinal vs c-transverse (f 2.4053 -> 2.4064, +1.1 MHz; CV shift 0.0006 against 0.535 for a full m=2 = 0.11% of it) and concluded 'c-axis longitudinal' is PREFERRED, NOT REQUIRED, because the torch holds too little field for a 23% anisotropy to matter. It TOOK eps = 11.6 as given.",
+  "adopted": "inherited, date unknown",
+  "note": "\ud83d\udd34 THE AXIS ASSIGNMENT IS EXPLICIT AND CONTRADICTS THE STANDARD CONVENTION. geometry.py:1416-1419 (from R98) states: 'eps_PERP_c = 11.6 \u2014 what E_phi sees with the c-axis longitudinal; 9.4 is eps_PARALLEL_c'. The standard microwave convention for uniaxial alpha-Al2O3 is the REVERSE: eps_PAR_c (extraordinary) ~11.5-11.6, eps_PERP_c (ordinary) ~9.3-9.4. \u26a0\ufe0f R32 CANNOT ARBITRATE \u2014 'c-longitudinal reproduces isotropic 11.6 exactly' confirms the simulation put 11.6 on the perpendicular axis, which is the assumption under test. CIRCULAR. \ud83d\udd22 IF THE STANDARD IS RIGHT: TE011's E_phi is azimuthal, so with c along the tube axis E_phi is PERPENDICULAR to c and sees 9.4, not 11.6. At the local slope of -6.56 MHz per unit eps that is +14.4 MHz against a measured total torch shift of -13.87 MHz \u2014 IT LARGELY CANCELS. \u2705 CLOSES WITH: one sapphire datasheet giving eps along and across c. No solve needed to decide it; a solve only confirms the consequence.",
+  "status": "tentative"
+ },
+ "torch.sapphire.loss_tangent": {
+  "kind": "input",
+  "value": 3.5e-05,
+  "unit": "1",
+  "material": "single-crystal sapphire",
+  "source": "geometry.py default, alongside the permittivity (R99). Same inheritance, same gap.",
+  "adopted": "inherited, date unknown",
+  "note": "Used by e3_closure case D -> Q_dielectric 1,911,259 and the F2 bound eta_diel <= 2.27%. The BOUND survives any plausible change here because it only needs plasma loss >= 0."
+ },
+ "cavity.f0.cold.ghz": {
+  "kind": "result",
+  "unit": "GHz",
+  "description": "TE011 of the cold grooved cavity with the 11x8 loop. Torch state moves this by ~14 MHz.",
+  "contexts": [
+   {
+    "value": 2.451633,
+    "context": {
+     "solver": "eigen",
+     "mesh": "no_torch",
+     "port_bc": "pec"
+    },
+    "rig": "h3_loopq",
+    "date": "2026-08-24",
+    "verification": "h3_ladder step 2 continuation",
+    "falsification": null
+   },
+   {
+    "value": 2.4515,
+    "context": {
+     "solver": "driven",
+     "mesh": "vacuum_torch",
+     "extraction": "s11_locator"
+    },
+    "rig": "h3_driven",
+    "date": "2026-08-25",
+    "verification": "agrees with eigen to 133 kHz = 0.38 linewidths",
+    "falsification": null
+   },
+   {
+    "value": 2.437762,
+    "context": {
+     "solver": "eigen",
+     "mesh": "sapphire_torch",
+     "port_bc": "pec"
+    },
+    "rig": "e3_closure",
+    "date": "2026-08-24",
+    "verification": "case B, wall loss only; -13.87 MHz vs no_torch, as predicted in sign and order",
+    "falsification": null,
+    "note": "\ud83d\udd11 THE ONLY ENTRY HERE ON THE CAVITY ACTUALLY BEING BUILT."
+   }
+  ]
+ },
+ "wall.conductivity.s_per_m": {
+  "kind": "input",
+  "value": 35000000.0,
+  "unit": "S/m",
+  "material": "bare electropolished aluminium 6061",
+  "source": "R58 adopted bare electropolished aluminium on OPTICAL grounds (no plating to degrade or flake into the optical path). The conductivity is the handbook value for 6061 at 20 C, not a measurement of our surface \u2014 a real electropolished wall will fall SHORT of it, so every Q computed from this is an UPPER bound.",
+  "adopted": "2026-08-20",
+  "note": "Declared here because this programme's baselines start empty by design and nothing is inherited without re-derivation. The MATERIAL CHOICE is inherited from R58 and still needs its own re-derivation (optical vs Q trade); the NUMBER is a handbook input, which is why kind=input and it carries source rather than verification/falsification."
+ },
+ "slug": "h3-step3-00",
+ "_run": {
+  "slug": "h3-step3-00",
+  "retrofit": true,
+  "derived_from": {
+   "file": "baselines.json",
+   "sha256_16": null,
+   "note": "\ud83d\udd34 UNRECOVERABLE. This run predates the copy-per-slug workflow, so the global it used was never snapshotted. The entries in this file are the CURRENT global, not what the run saw."
+  },
+  "provenance": {
+   "hypothesis": "H3 / instrument",
+   "document": "KNOWN.md \u00a7 F1 ANSWERED",
+   "question": "Source of eta.reference Q_REF=43,523 and of V1_ANCHOR Q_ext=9,117 on the VACUUM-TORCH mesh.",
+   "supersedes": null,
+   "date": "2026-08-25 (retrofit)",
+   "rig": "h3_step3.py"
+  },
+  "binds": {},
+  "parameters": {},
+  "artefacts": [
+   "h3-step3-00_cold",
+   "h3-step3-00_cold.json",
+   "h3-step3-00_cold.meta.json",
+   "h3-step3-00_cold.msh",
+   "h3-step3-00_cold_p.log",
+   "h3-step3-00_cold_pec",
+   "h3-step3-00_cold_pec.json",
+   "h3-step3-00_cold_pec.meta.json",
+   "h3-step3-00_cold_pec.msh",
+   "h3-step3-00_cold_pec_p.log",
+   "h3-step3-00_driven",
+   "h3-step3-00_driven.json",
+   "h3-step3-00_driven.meta.json",
+   "h3-step3-00_driven.msh",
+   "h3-step3-00_driven_lumped",
+   "h3-step3-00_driven_lumped.json",
+   "h3-step3-00_driven_lumped.meta.json",
+   "h3-step3-00_driven_lumped.msh",
+   "h3-step3-00_driven_lumped_p.log",
+   "h3-step3-00_driven_p.log",
+   "h3-step3-00_driven_pec",
+   "h3-step3-00_driven_pec.json",
+   "h3-step3-00_driven_pec.meta.json",
+   "h3-step3-00_driven_pec.msh",
+   "h3-step3-00_driven_pec_p.log",
+   "h3-step3-00_h3_step3.jsonl",
+   "h3-step3-00_h3_step3.log",
+   "h3-step3-00_h3_step3.result.json"
+  ],
+  "note": "\ud83d\udd34 RETROFIT, NOT A RECORD. Written after the fact to give an existing artefact set a name and a doc reference. It documents what these files are; it does NOT claim to reproduce them."
+ }
+}

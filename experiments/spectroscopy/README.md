@@ -109,15 +109,31 @@ has not been established here.
 flow, the torch and the gas choice arrived together from MP-AES/MICAP practice,
 and resonance has been building on all three.
 
+## 🔑 THE CAVITY MAY MEASURE n_e ITSELF — 2026-08-25
+
+**`../resonance/` § THE CAVITY IS ITS OWN PLASMA DIAGNOSTIC.** f₀ is
+**monotonic** in n_e (2.4515 → 2.4824 cold → 1e20), slope **1.141 MHz per 1e18** *(was 1.23 from grid-quantised f₀; §7bh)*
+near the anchor. The control loop **already tracks f₀**, so locating it to
+100 kHz gives **n_e to ~1 %**.
+🔴 **Temperature-limited:** the cavity pulls **−57.1 kHz/K**, so ±1 K → 0.6 % and
+±10 K → 5.9 %. The cavity temperature sensor is already required for the control
+loop; this gives it a second job.
+⚠️ **RELATIVE, not absolute.** It tracks n_e against the Saha/MICAP calibration
+rather than replacing it — but ±0.6 % tracking against a **±8 %** anchor means
+**drift and shot-to-shot variation become visible without any optical access.**
+🔑 **That is a question this programme owns:** is a relative n_e monitor useful
+for the analysis, or does the measurement need absolute density?
+
 ## What's needed
 
 | | | why it blocks |
 |---|---|---|
 | ~~1~~ | ~~The required gas temperature~~ | ✅ **ANSWERED** — 5220–5270 K, anchored to MICAP |
-| 2 | Target elements + detection limits | sets 1 |
+| 2 | **Target elements + detection limits** | 🔴 **NOW THE TOP OF A CHAIN, not just an input.** User 2026-08-25: **slm → residency → LOD**. Residence time in the ±0.4L hot zone is **59.4 ms** at 2–8.5 mm / 20 slm and **10.4 ms** at 2–4 mm. **LOD sets the required residency, which sets bore area and flow, and the EM must then cope** — `../resonance/` had this backwards and treated the bore as a coupling knob. **Until LOD is stated the bore cannot be chosen at all** |
+| **2b** | **T_gas as a function of GAS FLOW** | 🔴 **NEW 2026-08-25, and it gates a PRODUCT decision.** `../torch-geometry/` derives that dropping to a benchtop 10 slm — with the bore narrowed to hold residence — takes VSWR 88 → 28. **But only if n_e holds.** Less gas for the same kilowatt runs hotter, and **n_e ×3.1 (ΔT ≈ +368 K) cancels the entire gain.** The EM model cannot answer this: it takes n_e as an input |
 | **3** | **Whether LTE is fair** | 🔴 **now the top open item.** Non-LTE puts n_e ABOVE Saha — and since VSWR peaks near 1e19, that pushes the tuner requirement further toward the worst case |
 | 4 | High-TDS tolerance, quantified | sample introduction, and the torch bore |
-| 5 | Is 20 slm N₂ right, or inherited? | the whole flow → geometry → power chain |
+| 5 | Is 20 slm N₂ right, or inherited? | the whole flow → geometry → power chain. 🔑 **NOW ALSO A PRODUCT CONSTRAINT** — user 2026-08-25: 10–12 L/min runs off a quiet bench compressor, **20+ needs a loud one in a utility room**. The assumed 20 is on the wrong side of that line. See `../torch-geometry/` |
 | 6 | Is a Fassel torch right for N₂? | every torch dimension currently comes from an Argon design |
 
 ## Rules

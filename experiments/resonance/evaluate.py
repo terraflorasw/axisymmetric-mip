@@ -220,6 +220,11 @@ def r103(name="r103"):
     idx = json.loads(pathlib.Path(f"{name}.sweep.json").read_text())
     LA, LB = idx["extra"]["ladder_a"], idx["extra"]["ladder_b"]
     gate = idx["extra"]["linearity_gate_mhz"]
+    # 🔴 DEAD-ERA COMPARISON VALUES. R46/R99 predate the instrument and
+    # methodology characterisation, so they are not baselines this programme
+    # can be scored against. User 2026-08-25: "helpful along the way, but they
+    # can't carry forward." Left in place because r103() is itself a dead-era
+    # evaluator; do NOT reuse these numbers in a live rig.
     RECORD = -13.06          # R46, no viewport/trap
     PAIR = -10.4             # R99's two-point value
 

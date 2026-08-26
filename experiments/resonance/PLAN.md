@@ -99,6 +99,123 @@ E0j's recipe held on an empty cavity because it had no second scale. Loaded, sf
 
 ## Parked — surprises, NOT register items
 
+### 🔎 WHAT DOES THE SERIES GAP ACTUALLY DO? (parked 2026-08-26)
+
+**User: *"if 8mm is a meaningful capacitive gap, then the groove width probably
+also is"*** — and that reframing is right. The groove width (5 mm), the groove
+depth (10 mm) and the loop series gap (2.25 mm measured, ~8 mm extrapolated)
+are **the same class of feature at the same scale**: conductor gaps of
+λ/15 … λ/24, big enough to hold a real voltage, too small to radiate. Calling
+one "a capacitive gap" and the other "a slot dimension" was inconsistent.
+
+✅ **What that clarifies about the GROOVE.** TE011's wall current is AZIMUTHAL
+(K = n × H = −φ̂·H_z), and the groove is an ANNULAR ring — it runs *parallel*
+to that current and does not cut it. That is why TE011 survives while TM111,
+whose currents cross it, is pushed down. 🔑 **So the groove width IS
+capacitively meaningful — for the modes being REJECTED, not the one being
+kept.** That is a better description of the mode filter than "a groove that
+shifts TM111 down".
+
+🔴 **AND THE LOOP GAP IS NOT UNDERSTOOD.** A series-LC picture says widening
+the gap lowers C, raises X_C away from cancellation, and should WEAKEN
+coupling. Measured, Q_ext falls monotonically 1,143 → 322 all the way to
+2.25 mm. The LC fit was **retracted** after failing its own control at 44 %
+residual (KNOWN.md § STEP 2).
+
+**Untested hypothesis:** as the gap widens the loop stops being a current loop
+and becomes partly a **capacitive probe**, coupling to E_φ instead of linking
+H_z. E_φ at the gap radius (r ≈ 83.5 mm) is **13.9 % of peak** — small but not
+zero, and the gap voltage is large. Would explain both why widening keeps
+helping AND why purity degrades (an electric probe couples to a different mode
+set).
+
+⚠️ **PARKED, NOT QUEUED. User: *"It's a curiosity, but probably not something
+we can resolve without a lot of sweeps."*** Correct — and a cold eigen solve on
+the design cavity is now ~7 min at best, so a mechanism study is expensive.
+
+### ✅ QUEUED AS `h3-groove-gap-01` — and the BAR IS CLASSIFICATION, not mechanism
+
+**User, 2026-08-26: *"At the very least, we should be able to classify it as
+'curious' or 'coincidence'."*** 🔑 **That is a better framing than mine.** "What
+is the mechanism" is expensive and open-ended; "is there anything here at all"
+is decidable in 8 solves.
+
+**The measurement:** groove width 5 mm (frozen design, within-run control) and
+8 mm, each at series gaps 0.75 and 2.25 mm. Compare the RATIO
+`Q_ext(0.75)/Q_ext(2.25)` between groove widths — a shift in the ratio means
+the curve moved, not merely scaled.
+
+#### ✅ ANSWERED 2026-08-26 — 🔑 CURIOUS (marginal). See KNOWN.md § GROOVE × LOOP-GAP
+
+**Ratio moved −6.43 %** against a 6 % threshold — curious by the pre-fixed rule,
+**by 0.43 points**, corroborated independently by Q₀ (+0.40 % at gap 0.75 vs
++6.92 % at gap 2.25).
+🔴 **THE MECHANISM BELOW IS INCOMPLETE.** The annular-current argument explains
+why the groove barely moves TE011's **f₀** (−0.043 MHz measured) and does NOT
+explain the **coupling**, which does interact with the gap.
+🔑 **Consequence (user):** groove and loop gap are **potentially not independent
+optimisation parameters — we need dependent priors.** Not a re-design; a
+constraint on how any future joint sweep is modelled.
+
+#### ⏸️ ~~STATE: 3 OF 4 CASES DONE — the test reduces to ONE NUMBER (2026-08-26)~~
+
+**MEASURED so far, design cavity, barrel mount, 176 mm² loop:**
+
+| groove w | gap 0.75 | gap 2.25 | ratio |
+|---|---:|---:|---:|
+| **5 mm** (frozen design) | **681** | **308** | **2.211** |
+| **8 mm** | **702** | 🔴 **MISSING** | — |
+
+🔑 **The whole verdict is one solve pair away.** With `gw8`/0.75 = 702 measured,
+the outstanding `gw8`/2.25 value decides it outright:
+
+| Q_ext(gw8, 2.25) | verdict |
+|---|---|
+| **305 – 331** | ⚪ **COINCIDENCE** — the groove SCALES coupling but does not move the optimum |
+| < 300 or > 338 | 🔑 **CURIOUS** — the curve shifts; groove width and loop gap are coupled |
+
+⚠️ **317 is exact uniform scaling** — dead centre of the coincidence band, and
+what the annular-current prediction implies.
+
+✅ **A REAL BY-PRODUCT ALREADY, whatever the ratio does:** groove width 5 → 8 mm
+changes Q_ext by **+3.1 %** at gap 0.75 (681 → 702), which is above the ~1 %
+discretisation floor. **The groove is a weak coupling knob** — small, but not
+nothing, and not something the record previously claimed either way.
+
+🔴 **BLOCKED ONLY BY COMPUTE.** Eleven spot reclamations on 2026-08-26 (two
+confirmed by `/opt/amip/spot-interruptions.log`, which now records them). The
+run resumes with `ops/go ops/remote.sh h3_loopq.py 32 h3-groove-gap-01` and
+skips the three completed cases — **~25 minutes to finish.**
+
+#### 🔑 THE DECISION RULE, FIXED BEFORE THE DATA EXISTS
+
+Derived from the one measurement of the discretisation floor we have: gap
+0.35 → 0.50 mm gave **0.8 %** on meshes differing by 122 tets, and **I read
+that 0.8 % as a direction and was wrong.** Taking ~1 % per single Q_ext,
+√2 for a ratio, √2 again for comparing two ratios → ~2 %.
+
+| |Δ ratio| | verdict |
+|---|---|
+| **< 4 %** | ⚪ **COINCIDENCE** — no interaction above the floor. The mechanism story survives, WEAKLY |
+| **4 – 6 %** | ⚠️ **UNRESOLVED** — do not call it either way; needs a finer mesh, not more cases |
+| **> 6 %** | 🔑 **CURIOUS** — real interaction. Groove width is a coupling knob, and H2 / item 7 become COUPLED design problems |
+
+🔑 **THREE outcomes, not two.** "Unresolved" is a real possibility and
+collapsing it into either label is exactly how a 0.8 % step became a direction.
+⚠️ **The verdict lives HERE, not in the rig** — the driver emits Q_ext with
+provenance; the label is applied in a re-runnable layer, because the label is
+the part that keeps being wrong.
+⚠️ **Asymmetric evidence:** a POSITIVE result is informative. A NULL is weaker —
+consistent with the annular-groove mechanism, but also with Q_ext simply being
+insensitive to groove width for unrelated reasons.
+
+✅ **THE CHEAP VERSION, IF IT IS EVER WANTED:** it needs NO new solves. Every
+gap-sweep case already wrote per-region energy fractions (`domain-E.csv`) and
+`A2/A0`. A loop turning into an electric probe should show a rising energy
+fraction near the gap and a changing mode-content signature across the sweep
+that is already on disk.
+
+
 These are recorded so they are not lost. **They do not spawn runs.**
 
 - 🔑 **SALINE AS AN IGNITION BASELINE (user, 2026-08-23).** ⚠️ **Not a proposed device — a REFERENCE.** No beads, no inserted objects. Plain saline is the simplest thing that could work, so it is what every more viable igniter must be measured against. It probably fails on its own; the value is knowing by how much. Khattak, Bianucci

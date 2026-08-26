@@ -36,6 +36,7 @@ FALSIFICATION
          something that was right.
 """
 import json
+import values
 import pathlib
 import subprocess
 import sys
@@ -51,7 +52,7 @@ from e0k2_anchor import (design_point, wall_sigma, shared_energy_list,
                          FREQ_STEP, BAND_HALFWIDTH_MHZ)
 
 TAG = "e0k2_portfix"
-LD, LW = 11.0, 8.0
+LD, LW = values.get("loop.size.mm")
 BEFORE = {"s1": 0.5598, "s5": 0.3411}
 
 

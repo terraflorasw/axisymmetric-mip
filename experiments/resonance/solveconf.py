@@ -78,9 +78,12 @@ def driven(mesh, tag, band, step=2e-5, order=1, materials=None,
     # a decision recorded in one place and never bound to the thing that
     # consumes it. A baseline nobody reads is a claim, not a fact.
     try:
-        _b = json.loads(pathlib.Path(__file__).with_name("baselines.json")
-                        .read_text())
-        _sig = _b["wall.conductivity"]["value"]
+        # 🔑 ONE ACCESSOR. This did its OWN json read with the key hardcoded,
+        # so the 2026-08-25 rename to wall.conductivity.s_per_m broke it while
+        # e0k2_anchor.wall_sigma() kept working — two bindings, one updated.
+        # values.get() resolves aliases, so a rename is non-breaking here now.
+        import values
+        _sig = values.get("wall.conductivity.s_per_m")
     except Exception as e:
         # 🔴 WAS "never fail a solve over this", and printed a warning while
         # substituting the TEMPLATE — which is SILVER, 6.3e7. This programme's

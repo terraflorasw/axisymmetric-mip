@@ -95,12 +95,15 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import physics as ph
 import eigmodes
+import values
 import solveconf
 import journal
 from e0_solver_vs_math import GEO, eigen_cfg, run
 
 TAG = "e0k2"
-DL = 1.525                      # H1's answer. Not a hardcoded a/L pair.
+# 🔑 BOUND, NOT LITERAL (7bl). This same number lived here AND in h2_groove.py,
+# while e0_solver_vs_math carried a CONTRADICTORY a/L pair as GEO's default.
+DL = values.get("cavity.d_over_l")
 
 # 🔑 CAP loop, not barrel. Both are sane placements — the barrel loop sits at
 # TE011's H_z MAXIMUM, not a node (an earlier reading of this had sin and cos
@@ -108,9 +111,14 @@ DL = 1.525                      # H1's answer. Not a hardcoded a/L pair.
 # is a free continuous knob, and it links H_r at 1.39x the field the barrel sees.
 # Mounted at the H_r peak r = 0.4805a, which is also a stationary point and so
 # tolerance-insensitive — the same argument H1 used for D/L.
-CAP_R_FRAC = 0.4805             # J1 peak: 1.8412 / chi'_01
-LOOP_PHI = "36"
-LOOP_RW, LOOP_GAP = 1.0, 0.3    # gap must stay << wire radius
+CAP_R_FRAC = values.get("loop.cap_r_frac")             # J1 peak: 1.8412 / chi'_01
+LOOP_PHI = f'{values.get("loop.phi.deg"):g}'
+# ⚠️ BOTH ARE TENTATIVE AND SAID SO OUT LOUD. NEXT.md item 7 records that the
+# loop was forced into existence so driven solves would have a port, and that
+# wire radius and port gap were NEVER CHOSEN — only area was ever swept. The
+# tentative flag is the store refusing to let that pass as measured.
+LOOP_RW = values.get("loop.wire_r.mm", allow_tentative=True)
+LOOP_GAP = values.get("loop.gap.mm", allow_tentative=True)  # << wire radius
 
 # (depth_mm, half_width_mm). beta ~ area^2 for a small loop; extrapolating from
 # the barrel run's beta = 27.5 x 1.93 (the H_r/H_z power ratio) predicts
@@ -140,7 +148,7 @@ CANDIDATES = [(5.0, 3.5), (7.5, 5.5), (11.0, 8.0), (16.0, 12.0)]
 # two are: the groove is at the cap corner (r near a), the loop at r = 0.4805a,
 # and they barely interact physically — but the groove is what makes the loop's
 # reading interpretable.
-GROOVE_W, GROOVE_D = 5.0, 10.0      # H2's anchor, TM111 -64 MHz, TE011 Q -0.3%
+GROOVE_W, GROOVE_D = values.get("cavity.groove.mm")   # H2. BOUND, not copied
 
 BETA_LO, BETA_HI = 0.1, 1.0     # the window the anchor needs
 BAND_HALFWIDTH_MHZ = 40.0       # a strong loop shifts the resonance; leave room
@@ -160,18 +168,25 @@ AMBIGUOUS_DEG = 10.0    # a phase swing this close to 180 has not decided
 
 def design_point():
     """H1's cavity, DERIVED. physics.py owns the relation; nothing is copied."""
-    from scipy.optimize import brentq
-    L = brentq(lambda L: ph.f_mnp("TE", 0, 1, 1, DL * L / 2, L) - 2.45,
-               20.0, 400.0, xtol=1e-10)
-    return DL * L / 2, L
+    return ph.design_point(DL, values.get("source.f0.ghz"))
 
 
 def wall_sigma():
     """🔴 BOUND FROM baselines.json, AND IT REFUSES. Substituting the template's
     silver is exactly how every absolute Q in this record became 34% high."""
     b = json.loads(pathlib.Path(__file__).with_name("baselines.json").read_text())
+    # 🔑 CANONICAL NAME NOW CARRIES ITS UNIT: wall.conductivity.s_per_m.
+    # A separate `unit:` field is missable, and a unit in the NAME can be wrong
+    # (e0e's `delta_mhz` held GHz — a 1000x trap). values.check_units() now
+    # cross-checks the two. The old name is still accepted so an in-flight run
+    # cannot be broken by this rename, and it says so loudly.
+    key = ("wall.conductivity.s_per_m" if "wall.conductivity.s_per_m" in b
+           else "wall.conductivity")
+    if key == "wall.conductivity":
+        print("  ⚠️  baselines.json still uses the unit-less name "
+              "'wall.conductivity'; rename it to 'wall.conductivity.s_per_m'.")
     try:
-        return float(b["wall.conductivity"]["value"])
+        return float(b[key]["value"])
     except (KeyError, TypeError, ValueError) as e:
         raise RuntimeError(
             f"wall.conductivity not declared in baselines.json ({e}). "
@@ -271,13 +286,22 @@ def analyse_driven(tag):
     tgt = math.sqrt(max(0.0, 1 - amax / 2))
 
     def cross(rng):
-        prev = None
+        prev, pf = None, None
         for i in rng:
             v = 10 ** (d[i][1] / 20)
             if prev is not None and (prev - tgt) * (v - tgt) <= 0:
-                f1, f2 = d[i - 1 if i > 0 else 0][0], d[i][0]
-                return f1 + (tgt - prev) * (f2 - f1) / (v - prev) if v != prev else f2
-            prev = v
+                # 🔴 WAS `f1 = d[i-1][0]`, WHICH IS THE WRONG BRACKET ON THE
+                # DESCENDING WALK. `prev` is the value at the PREVIOUSLY VISITED
+                # index — i+1 when walking down, i-1 when walking up — so
+                # hardcoding i-1 straddles the wrong pair going down and places
+                # the lower edge a step out. Track the previous FREQUENCY instead
+                # and the bracket is right in both directions.
+                # ⚠️ Verified 2026-08-25 on a synthetic resonator with a KNOWN
+                # Q_L: tracking gives -0.35% at 13 samples across the width,
+                # where snapping to the grid gives -6.65%.
+                return (pf + (d[i][0] - pf) * ((tgt - prev) / (v - prev))
+                        if v != prev else d[i][0])
+            prev, pf = v, d[i][0]
         return None
 
     fl, fh = cross(range(i0, -1, -1)), cross(range(i0, len(d)))

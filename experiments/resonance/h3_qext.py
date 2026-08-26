@@ -57,6 +57,7 @@ import pathlib
 import sys
 
 import eigmodes
+import slug as S
 from e0_solver_vs_math import eigen_cfg, run
 from e0k2_anchor import wall_sigma
 from h3_ladder import purity, PROBE_PHI_DEG, PROBE_R_FRAC
@@ -65,33 +66,46 @@ from h3_loaded import drude   # 🔑 the SAME model h3_driven used to build thes
 # radius is already in the mesh sidecar. Reading it from `meta` also guarantees
 # the probes sit in the cavity actually being solved.
 
-TAG = "h3_qext"
+# 🔑 THE RUN NAMES ITSELF FROM ITS SLUG. `TAG = "h3_qext"` named the PROGRAM,
+# so every run of it wrote to the same files and overwrote the last
+# (CONVENTIONS 7ap). Now: --slug picks the config, the config supplies every
+# parameter, and the stamp (hash of that config) goes into every output name so
+# an edited config cannot silently reuse a filename (7bd).
+SLUG = S.parse()
+CFG = S.config(SLUG)
+P = CFG["_run"]["parameters"]
+TAG = S.out(SLUG)
 
 # 🔑 PRIOR ART, not re-derived: h3_step3's validated eigen settings, carried by
 # h3_loopq and e3_closure unchanged.
-N_MODES = 8
-EIGEN_TARGET = 2.38
-CASE_TIMEOUT_S = 2700.0
-WINDOW = (2.35, 2.65)
+_E = P["eigen"]
+N_MODES = _E["n_modes"]
+EIGEN_TARGET = _E["target"]
+CASE_TIMEOUT_S = float(_E["case_timeout_s"])
+WINDOW = tuple(_E["window"])
+CONT_MAX_MHZ = float(_E["continuation_max_mhz"])
 
 # (mesh tag written by h3_driven, n_e, label)   -- meshes ALREADY ON DISK
-# seed = the f0 h3_driven MEASURED on this very mesh, so mode selection is by
-# CONTINUATION from a measured value, never by depth or by lowest A2/A0 (§7u).
-CASES = [
-    ("h3_driven_cold",   0.0,     "cold",          2.45150),
-    ("h3_driven_n18p90", 7.9e18,  "anchor 7.9e18", 2.45860),
-    ("h3_driven_n20p00", 1.0e20,  "1e20",          2.48240),
-]
-CONT_MAX_MHZ = 25.0
+# 🔑 CASES COME FROM THE CONFIG, not a literal here. The mesh tags moved in the
+# 2026-08-25 migration (h3_driven_* -> h3-driven-00_*) and a hardcoded list would
+# now point at files that do not exist. The seeds are the f0 h3_driven MEASURED
+# on each of these very meshes, so selection is continuation from a measurement.
+CASES = [(c["mesh_tag"], float(c["ne"]), c["label"], float(c["seed_ghz"]))
+         for c in P["cases"]]
 
-# what h3_driven's own S11 dip implied, for the comparison this rig exists to make
-DRIVEN_IMPLIED = {0.0: 8462.0, 7.9e18: 8221.0, 1.0e20: 9221.0}
+# What h3_driven's own S11 dip implies, for the comparison this rig exists to
+# make. 🔴 UPDATED 2026-08-25: the previous values (8462 / 8221 / 9221) came from
+# a fit that SNAPPED the 3 dB edges to the sample grid. Refitting with
+# interpolated crossings (CONVENTIONS 7bh) moves them, and the COLD value then
+# agrees with this rig's own eigen pair to 0.78% (9,045 vs 9,117) — which is what
+# validates the driven fit at all. 8,462 is RETRACTED in baselines.json.
+DRIVEN_IMPLIED = {0.0: 9045.0, 7.9e18: 8243.0, 1.0e20: 9322.0}
 LOOPQ_EIGEN_NO_TORCH = 9231.0
 
 
 def solve_one(mesh_tag, meta, ne, port_bc, w, seed):
     """One eigen solve BOUND TO AN EXISTING MESH. Returns the picked mode."""
-    tag = f"{TAG}_{mesh_tag.replace('h3_driven_', '')}_{port_bc}"
+    tag = S.out(SLUG, mesh_tag.split("_", 1)[-1], port_bc)
     attrs = meta["attributes"]
     vols = sorted({v for k, v in attrs.items()
                    if isinstance(v, int) and k not in ("wall", "port")}
@@ -164,7 +178,7 @@ def main():
     print(f"  eigen: target={EIGEN_TARGET} N={N_MODES} order 2 — PRIOR ART "
           f"(h3_step3), not re-derived")
     print("  🔑 NO MESH IS BUILT. Every solve binds an existing h3_driven mesh.")
-    out = {"tag": TAG, "cases": [],
+    out = {"slug": SLUG, "stamp": S.stamp(SLUG), "tag": TAG, "cases": [],
            "driven_implied": {str(k): v for k, v in DRIVEN_IMPLIED.items()},
            "loopq_eigen_no_torch": LOOPQ_EIGEN_NO_TORCH}
     for mesh_tag, ne, label, seed in CASES:
@@ -192,12 +206,30 @@ def main():
                   f"({why}, {best['n_in_window']} in window)", flush=True)
         if "pec" in qs and "lumped" in qs:
             Q0, QL = qs["pec"]["Q"], qs["lumped"]["Q"]
+            # 🔴 CONDITIONING FLIPS WITH beta (CONVENTIONS 7at, measured
+            # 2026-08-25). Q_ext = 1/(1/Q_L - 1/Q0) DIFFERENCES two nearly-equal
+            # numbers whenever beta << 1: at 1e20, Q0-Q_L = 2.7 on ~163, so a
+            # 0.1% error in Q_L moves Q_ext by 6.4% — a 64x amplification. The
+            # DRIVEN dip does not difference anything (beta comes from the dip
+            # DEPTH), so at loaded densities the driven value is ~60x better
+            # conditioned. COLD is the reverse: beta=4.77, Q0/Q_L=5.8, and the
+            # eigen pair is the reliable one.
+            # ⚠️ Reported anyway, with the amplification alongside, so the number
+            # cannot be read as comparable when it is not.
             if QL < Q0:
                 qe = 1.0 / (1.0 / QL - 1.0 / Q0)
-                rec.update(Q0=Q0, Q_L=QL, Q_ext=qe, beta=Q0 / qe)
+                amp = Q0 / (Q0 - QL) if Q0 > QL else float("inf")
+                rec.update(Q0=Q0, Q_L=QL, Q_ext=qe, beta=Q0 / qe,
+                           q_ext_amplification=amp,
+                           q_ext_ill_conditioned=bool(amp > 10.0))
                 d = DRIVEN_IMPLIED.get(ne)
                 print(f"    ✅ Q0={Q0:,.0f}  Q_L={QL:,.0f}  "
                       f"Q_ext={qe:,.0f}  beta={Q0/qe:.4f}")
+                if amp > 10.0:
+                    print(f"    ⚠️  Q_ext AMPLIFIES Q_L error {amp:.0f}x "
+                          f"(Q0-Q_L={Q0-QL:.1f}). At beta<<1 the DRIVEN dip is "
+                          f"the better-conditioned instrument — do not read a "
+                          f"few % here as a disagreement.")
                 if d:
                     print(f"       driven dip implied {d:,.0f} on THIS mesh "
                           f"-> {100*(qe/d-1):+.1f}%")
@@ -208,9 +240,9 @@ def main():
                                 f"the lumped port is not loading the cavity")
                 print(f"    🔴 {rec['error']}")
         out["cases"].append(rec)
-        pathlib.Path(f"{TAG}.result.json").write_text(
+        pathlib.Path(S.outfile(SLUG, "result.json")).write_text(
             json.dumps(out, indent=1) + "\n")
-    print(f"\n  wrote {TAG}.result.json")
+    print(f"\n  wrote {S.outfile(SLUG, 'result.json')}")
     return 0
 
 

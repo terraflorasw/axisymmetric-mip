@@ -149,17 +149,192 @@ offset; Q₀, β and VSWR essentially do not.**
 🔑 **Step 3 is also the test of the contrast diagnosis** — it predicts sapphire
 + plasma converges at the anchor (span +11.6/−1.46). **One case answers both.**
 
+## 🔴 THE RE-DERIVE LIST — what is now known to be unsupported
+
+**Opened 2026-08-25.** Each of these was believed, is now marked TENTATIVE or
+open, and **must not be quoted until re-derived.**
+
+| # | what | why it is not supportable now | cost |
+|---|---|---|---|
+| ~~R1~~ | ✅ **RESOLVED 2026-08-25 — ε_⊥c = 9.39, MEASURED** | Krupka, Huang & Tung, *Meas. Sci. Technol.* **16** (2005) 1014, fig 10: *"perpendicular to the anisotropy axis … **9.39 ± 0.5 %** for sapphire"*, by **TE0np modes in a cylindrical sample — our own mode family**. So **11.6 is ε_∥c** and `geometry.py` had the axes inverted. Canonical value updated; **the constant is NOT flipped yet** — that moves every stored f₀ and belongs with the restoration | — |
+| ~~R2~~ | ✅ **CLOSED 2026-08-25 — torch shift = −10.40 MHz** | `e3-torch-01`, matched pair (B_sap ε=9.39 vs B_vac ε=1.0, wall-loss only). **Not the cancellation I predicted** — the R-era slope was 4.4× too large; the real sensitivity is **1.50 MHz per unit ε**. ⚠️ The old −13.87 was wrong twice: wrong ε *and* cross-geometry. 🔴 **~10.4 MHz is 6.5× the anchor band — the restoration KEEPS its urgency** | — |
+| ~~R3~~ | ✅ **RESOLVED 2026-08-25 — NO SOLVE NEEDED** | Decimating the anchor's own sweep gives Q_L error vs samples-across-linewidth: 30 → −0.8 %, **16 → −7.0 %**. The cold case had **14 samples** and read **−7.1 %** against eigen. **The driven/eigen "disagreement" was SAMPLING, quantitatively.** ✅ Cold Q_ext = **9,117** (eigen) stands; the driven 8,462 is the artefact | — |
+| **R4** | 🔴 **E3's closure (F1)** | ⚠️ **REDIAGNOSED 2026-08-25.** Not sapphire+plasma — `h3_qext`'s anchor case **timed out with a VACUUM torch** (159 PCG failures, 0 iterations) at ε = −1.46. **ε-near-zero conditioning, the prediction recorded before the run.** η_plasma stays unquotable | 🔴 **the PRECONDITIONER, and it does NOT depend on R1** |
+| ~~R5~~ | 🔴 **FALSIFIED 2026-08-26 — the correction goes the OTHER WAY.** The design cavity MEASURES Q₀ = **43,259** (barrel) / 43,253 (cap), i.e. **−0.61 %** against the stored 43,523, not +1.46 %. ⚠️ **44,160 was `e3` B_sap = WALL LOSS ONLY**, excluding sapphire's tan δ = 3.5e-5. A partial-loss Q compared against a total-loss Q — §7c's η trap again. ✅ E3's channels recombine (1/44,160 + 1/1,911,259 → 43,163) to within **0.22 %** of the measurement, so both are corroborated. **Not promoted**: the stored value is CAP-mount and the design mount is item 7's open question. See KNOWN.md § THE TORCH RESTORATION | ✅ **done** |
+| ~~R5-old~~ | ⚠️ ~~`eta.reference` = 43,523 — CONFIRMED, correction now sized~~ | ✅ Independently reproduced by `e3-torch-01` B_vac (43,522.8) from a rig that built its own mesh. 🔑 The design-torch value is **+1.46 %** higher (44,160.1), not the +2.0 % estimated at the wrong ε | re-measure with the restoration |
+
+✅ **R1 WAS THE ROOT OF FOUR OF THE FIVE, AND IT IS NOW CLOSED BY A CITATION.** R2 collapses to *"probably ~0, verify"*; R5's 2 % η correction largely evaporates with it; **R4 was never dependent on it** — that is ε-near-zero conditioning and still needs the preconditioner. 🔑 **The remaining physics is R4 plus item 7.**
+
+### ✅ ANSWERED 2026-08-25 — and my first answer was WRONG
+
+⚠️ **I first landed "≳30 samples across the 3 dB width for <1 % in Q_L", derived
+from ONE density. Testing it on three killed it:** 1e20 showed **0.0 % error at
+TEN samples** while cold showed **−12.5 % at eight.** Sample count does not
+determine the error.
+
+🔑 **THE ERROR IS EDGE QUANTISATION.** Q_L comes from the 3 dB width, and the
+edges were snapped to the nearest GRID POINT. Each edge can be off by up to one
+step, so the bound is **|ΔQ_L/Q_L| ≲ 2/N** — and where it lands inside that
+bound depends on whether the width happens to be commensurate with the step.
+**1e20's 16.00 MHz width is exactly 80 × 200 kHz, so decimation moved nothing.
+That is luck, not accuracy.**
+
+✅ **THE FIX IS INTERPOLATION, NOT MORE SAMPLES** — linearly interpolate the
+|S11| crossing, as for the vertex:
+
+| density | N | grid edges | **interpolated edges** |
+|---|---:|---:|---:|
+| cold | 13 | −6.4 % | **+0.0 %** |
+| cold | 6.5 | −18.1 % | **−0.8 %** |
+| anchor | 14.8 | −7.3 % | **−0.3 %** |
+| 1e20 | 9.9 | −1.1 % | **−0.1 %** |
+
+> ✅ **SPEC: interpolate both the vertex AND the 3 dB crossings. Then ~10 samples
+> across the width suffices for ≲1 %.** Without interpolation, no achievable
+> sample count is reliable — only commensurate ones are accurate, and you cannot
+> know in advance which those are.
+
+### ~~CHEAP AND UNCLAIMED: the sweep step a target Q accuracy requires~~
+
+**From the conjugate-pair framing (KNOWN.md).** Driven Q error tracks samples
+across the linewidth: **14 → −7.1 %**, **80 → −3.3 %**. Two points, not a law.
+**Nothing in this programme specifies a step for a target Q accuracy** — every
+`COARSE_STEP`/`FINE_STEP` was chosen by feel.
+✅ **One mesh we already have, three step sizes, Q vs samples.** It would size
+every future driven sweep and retire R3 (cold Q_ext, sidelined as
+under-resolved) at the same time.
+
+## 🔴 THE GEO RE-RUN LIST — opened 2026-08-25, after the GEO fix
+
+**User: *"We can't leave bugs in place just because they might invalidate
+results. We have to fix, and then add a new queue item to verify or re-run."***
+✅ The bugs are fixed. This is the verification debt they created.
+
+### What was wrong
+
+**`GEO` carried `A_MM, L_MM = 103.70, 88.53` — D/L = 2.343, the cavity H1
+REJECTED.** H1's answer is D/L = 1.525 (a 88.0045, L 115.4158), stated plainly
+in `KNOWN.md`. The literal sat as GEO's **default**, so any rig that did not
+append its own `--radius/--length` meshed a cavity nobody is building.
+
+✅ **The H3 design record is PROVEN unaffected — by artefact, not by argument
+(§7bm).** Every H3 mesh SIDECAR records `radius 88.004517 / length 115.41576`,
+which is H1's cavity. That is the consumer's own record of what it actually
+meshed, so it discharges the burden. `h3-bore-01`, `h3-loop-barrel-01` and the
+e3/h3_qext meshes all carry it. **Nothing measured this week moves.**
+
+### What was fixed
+
+| | |
+|---|---|
+| `cavity.d_over_l` = 1.525, `source.f0.ghz` = 2.45 | **declared** — the shape now has one home |
+| `physics.design_point(d_over_l, f_ghz)` | the ONE derivation. `A_MM/L_MM` now DERIVED, so GEO cannot disagree with H1 again |
+| `DL` in `e0k2_anchor` + `h2_groove` | were **two** copies of the same literal → bound |
+| the frozen groove `(5.0, 10.0)` | was in **SEVEN** files → `cavity.groove.mm`, 7 consumers |
+| the design loop `11.0, 8.0` | was in **NINE** files → `loop.size.mm`, 9 consumers |
+| `CAP_R_FRAC`, `LOOP_RW`, `LOOP_GAP`, `LOOP_PHI` | bound; the last two are **TENTATIVE** and now say so at the call site |
+| `e0q_wallloss` `AL = 3.5e7` | bound; `AG` = silver kept as an explicit COMPARATOR |
+| `preflight` geometry pattern | geometry was **invisible** to the linter — that is why none of the above was ever flagged |
+
+🔑 **Every bound site was asserted IDENTICAL to the literal it replaced before
+the edit was kept.** 16 duplicates collapsed to 2 canonical names, no number
+moved.
+
+### 🔴 THE DEBT — rigs that meshed the LEGACY cavity
+
+These used `GEO`/`GEO_DESIGN` **without** overriding, so they ran D/L = 2.343.
+🔴 **UNDER §7bm THEY ARE INVALID UNTIL A RE-RUN SAYS OTHERWISE.** I first wrote
+that their conclusions were "mostly self-consistent, because closed form was
+evaluated at the same a/L they meshed". **That is an argument, not a
+measurement, and it does not discharge the burden.** They are E0 instrument
+rigs rather than design rigs, which affects PRIORITY, not validity.
+
+⚠️ **Do not cite any number below until its rig is re-run.**
+
+| rig | what it claims | action |
+|---|---|---|
+| `e0b_offset` | mesh offset invariance | re-run on H1's cavity |
+| `e0f_geomorder` / `e0f2_geomorder` | geometric order | re-run |
+| `e0j_frontier` | cost frontier | re-run — **sizing advice descends from this** |
+| `e0kp_meshfloor` | mesh floor | re-run |
+| `e0k_driven_vs_eigen` | driven vs eigen | re-run |
+| `e0m_meshthreads` | thread scaling | re-run (cost only; low value) |
+| `azimuthal`, `meshdiff`, `meshstage`, `cachetest` | utilities | no claim — no re-run |
+
+⚠️ **`e0l_scaling`, `facetcount`, `resplit` keep the legacy literal ON PURPOSE**
+— they ANALYSE meshes built at those dimensions, so binding them to H1 would
+silently break the comparison. Each is now marked `# LEGACY` in place. **Nothing
+in them is a design number.**
+
+### 🔴 AND THE THIRD DEBT — 30 RESULT FILES CARRY NO STAMP
+
+**User, 2026-08-25: *"result.json is not a valid filename."*** Correct, and
+chasing it found a hole bigger than the name.
+
+🔴 **`slug.check_stamps()` was KNOWN-SLUG-DRIVEN, so it was nearly blind.** It
+only inspected slugs that already have a `baseline-*.json`. Every artefact whose
+slug never got a config was invisible: **30 of 32 `*.result.json` files carry no
+stamp and the check reported ONE.** ⚠️ *An audit that can only see what is
+already registered is not an audit* (§7d) — and this is the second instance
+today, after the linter that could not see geometry.
+
+✅ **Fixed both ways:**
+- `check_stamps()` now sweeps **what is on disk**, not what is registered.
+- `outfile()` **refuses** a suffix that is a path, a config name, or one already
+  carrying a stamp — so a double-stamped or unqualified artefact cannot be
+  produced by the normal route.
+- `slug.unstamped_artefacts()` makes the burn-down countable.
+
+**The 30, by family:**
+
+| family | files | status |
+|---|---:|---|
+| `e0b` `e0f` `e0f2` `e0j` `e0k` `e0kp` `e0m` | 7 | **already queued above** — same rigs, same re-run |
+| `e3` | 7 | E3 closure; F1 still open anyway |
+| `e0k2` | 6 | instrument anchors — several already superseded |
+| `e0v` | 3 | — |
+| `e0c` `e0d` `e0e` `e0q` `h1` `h3` `h4` | 7 | one each |
+
+🔴 **UNDER §7bm THESE ARE NOT CITABLE AS CURRENT RESULTS WITHOUT A RE-RUN.**
+Their inputs cannot be verified — that is precisely what the stamp exists to
+prove. ⚠️ **This does NOT mean they are wrong**; it means the record cannot show
+what produced them. The two that DO carry stamps (`h3-bore-01`,
+`h3-loop-barrel-01`) are the only fully provenanced results in the tree.
+
+🔑 **Priority: LOW, and deliberately so.** Most are E0 instrument rigs already
+queued for the GEO re-run, which will re-produce them stamped as a side effect.
+**Do not re-run them for the stamp alone** — re-run them when their claim is
+needed, and take the stamp then.
+
+### 🔴 THE OTHER DEBT — values still literal
+
+The widened linter surfaced residue that was invisible before. It is
+grandfathered so it cannot grow, and **the list may only shrink**:
+
+- `h3_loaded.Q_BARE_WITH_LOOP = 29,854` and `Q_BARE_EMPTY = 44,384` — **both are
+  RETRACTED η references** (§7c). These should be **DELETED, not bound.**
+- `h3_step3.H3COLD_PICK_GHZ = 2.440003` — from a retracted `h3_cold` result.
+- `h3_margin.NE = 1e20` — the superseded density (§7ab), in a rig still using it.
+- `h3_qext.LOOPQ_EIGEN_NO_TORCH = 9,231` — has a canonical home
+  (`cavity.Q_ext`, no_torch context); bind it.
+
+**Verification for the whole item:** re-running any one E0 rig on H1's cavity
+must reproduce its CONCLUSION (the instrument claim) while changing its
+NUMBERS. If a conclusion flips, that rig's claim depended on the cavity and was
+never an instrument result.
+
 ## THE QUEUE
 
 | # | item | status |
 |---|---|---|
 | 1 | Matching network required | ✅ answered — tuner spec in `../control-loop/` |
 | 2 | **Anchor n_e** | ✅ **7.3–8.6e18**, from MICAP's measured 5220–5270 K |
+| **7** | 🔴 **DESIGN the loop — barrel mount, then the SERIES CAPACITOR** | **THE BIGGEST LEVER LEFT.** ~45× in Q_ext is calculated and never simulated; and I ∝ √VSWR, so it is the only thing that touches the tuner's thermal wall |
 | 3 | Test the coupler class | 🔴 **REOPENED — and it is the biggest lever left.** ❌ Aperture is out (patented; the cavity IS the waveguide). 🔴 **But the LOOP was never designed** — forced into existence so driven solves would have a port; `h3_loopq` swept AREA only. **Q_ext = 9,231 floors ONE arbitrary family.** VSWR 85→20 needs 4.2×, β=1 needs 84×. See CONVENTIONS §7al |
 | 4 | **H3's HOT leg** | ✅ **DONE — H3 IS COMPLETE** |
 | **5** | **PLAN E3 — the energy-balance closure** | ⚠️ **RAN (EXIT=0), 3 of 5 landed.** ✅ **B, D, E.** ✅ **F2 resolved by a bound** (η_diel ≤ 2.27%; PLAN's ~2% CONFIRMED). ✅ **E gave an eigen↔driven cross-check — 70 kHz and 3.42% — which RESTORES V1's anchor.** 🔴 **A, C failed on the sapphire+plasma ε-contrast, already documented in `h3_driven` lines 10–11 BEFORE E3 was written** (§7an). 🔴 **F1 untested; η_plasma unquotable** |
 | 6 | H4 ignition | ⏸️ parked |
-| **8** | 🔴 **RE-RUN H3 AT THE ANCHORED DENSITY** | **PREPARED, NOT LAUNCHED — do this FIRST** |
+| ~~8~~ | ✅ **H3 AT THE ANCHORED DENSITY — DONE** | `h3-driven-anchor-01`, 9 points. **f₀ 2.458529, Q₀ 105, η 0.9976, VSWR 75–82, slew +7.04 MHz, margin 41.5 MHz.** ⚠️ vacuum torch (R1/R2) |
 
 ### 8. 🔴 H3 at the anchored density — the operating point was never solved
 
@@ -204,6 +379,115 @@ defect does not apply.** This is unblocked; E3 is not.
 correct — wait for E3 to finish rather than forcing `NOSYNC=1`.
 | **7** | 🔴 **DESIGN the loop — barrel mount, then the SERIES CAPACITOR** | **Buildable now.** 🔑 A **45×** mechanism (Q_ext → ~320) is already in `geometry.py`, calculated and never simulated. Turns is NOT buildable |
 
+### 7e. ✅ ITEM 7's MEASUREMENT PHASE IS CLOSED — and the objective changed
+
+**User, 2026-08-25: *"We have enough information for optimization at this
+point."*** ✅ Agreed. **9 Q_ext values across 4 design families**, spanning
+8,716 → 322, with every control reproducing exactly.
+
+| step | question | answer |
+|---|---|---|
+| 1 | barrel vs cap mount | ✅ barrel is **5.6 % better**, and free. My 1.93× prediction was falsified; the 1.39× field ratio behind it was a **legacy-cavity** number |
+| 2 | does a series capacitor work? | ✅ **7.6×** at the bare-wire gap. Falsifier needed ≥4× |
+| 2b | which way does the gap move it? | ✅ **wider** — 12.1× at 0.75 mm |
+| 2c | where is the optimum? | 🔴 **not bracketed** — 27.0× at 2.25 mm, still falling |
+| — | **is minimising Q_ext even right?** | 🔴 **NO** — see KNOWN.md § CORRECTION |
+
+🔴 **THE OBJECTIVE IS NO LONGER "MINIMISE Q_ext".** Q_ext serves cold AND
+loaded, whose Q₀ differ 265×, so the sweeps were sliding along a **trade**:
+loaded VSWR 83 → 3.1 bought cold ignition power 556 W → 45 W. **The minimax
+fixed loop is Q_ext ≈ 1,700 (VSWR ~16 in both states) — roughly where the gap
+sweep STARTED.**
+
+### What item 7 still owes, in order
+
+| | | blocked on |
+|---|---|---|
+| **1** | **Choose the target: minimax, β = 1 loaded, or TWO LOOPS** | 🔴 **`../ignition-options/`** — the choice is theirs, not this programme's. 🔑 **Two loops (user, 2026-08-25) gives β = 1 in BOTH states** and makes the choice moot; its cost is a second port in `geometry.py`, a switch, and an unmeasured mode perturbation |
+| 2 | **Series-gap E-field** — a probe coordinate, not new capability | nothing. **PRECONDITION for any further gap widening**, since the field rises with both I and X_C |
+| 3 | Port-gap sweep — `loop.gap.mm` = 0.3 is TENTATIVE and is the tighter feature | nothing |
+| 4 | Re-sweep AREA on the barrel — 176 mm² was a CAP result and does not transfer | nothing |
+| 5 | Feed transition, support, material, cooling (7d.B) | **hardware design, not EM sweeps** |
+
+⚠️ **Do not run another gap sweep before 1 and 2.** Widening further optimises
+an objective that may be wrong, along an axis whose failure mode is unmeasured.
+
+### 7d. 🔴 A BUILDABLE LOOP IS NOT THE SAME AS A LOW Q_ext — opened 2026-08-25
+
+**User: *"I think we have more design to do on a buildable loop, beyond the VSWR
+problem."*** ✅ Correct, and the gap is wider than it looks. Steps 1–2c have been
+optimising **one number**. The loop as a physical object is barely specified.
+
+#### A. Dimensions with NO provenance — and everything measured sits on them
+
+| | value | status |
+|---|---|---|
+| `loop.wire_r.mm` | 1.0 | 🔴 **TENTATIVE** — a `geometry.py` default, never chosen |
+| `loop.gap.mm` (PORT gap) | 0.3 | 🔴 **TENTATIVE** — same |
+| `loop.size.mm` | 11 × 8 = 176 mm² | ⚠️ swept on the **CAP** at N=1; item 7 already records that it **does not transfer** to the barrel |
+
+🔑 The store refuses these without `allow_tentative=True`, and `e0k2_anchor` has
+to say so at the call site — so the lack of provenance is visible, not hidden.
+**But Q_ext = 720 was measured on top of all three.**
+
+#### B. Not in the model at all
+
+- 🔴 **THE COAX TRANSITION DOES NOT EXIST.** `geometry.py` puts a **lumped port
+  on an internal face** — its own comment says *"no coax transition needed"*,
+  which is true of the SOLVER and false of the hardware. There is no connector,
+  no dielectric bead, no wall penetration. A real feed adds reactance and its
+  own discontinuity, and **Q_ext is measured at that face.**
+- 🔴 **MECHANICAL SUPPORT.** A 0.3 mm port gap and a 0.75 mm series gap must be
+  held rigid in a cantilevered 1 mm wire, 13 mm long. Nothing holds them. A
+  dielectric bead in either gap **changes its capacitance**, which is the whole
+  mechanism.
+- 🔴 **LOOP MATERIAL IS UNSTATED.** The walls are declared (aluminium 6061,
+  `wall.conductivity.s_per_m`). The loop is not — and at β = 52 it carries the
+  coupled current.
+
+#### C. Failure modes never checked
+
+- 🔴 **ARCING.** The series gap is a deliberate E-field concentrator at kW
+  levels, and the **PORT gap at 0.3 mm is the tighter feature**. Neither has
+  been checked against a breakdown limit. ✅ Answerable from solves already on
+  disk — peak |E| in each gap.
+- 🔴 **I²R heating** in a 1 mm conductor, and how it is removed.
+
+#### D. 🔴 THE CAVITY'S OWN GAS ENVIRONMENT IS NOWHERE IN THE RECORD
+
+Searched: no statement anywhere of whether the cavity volume is **air at
+atmosphere, N₂-purged, sealed, or evacuated.** ⚠️ **This single unstated fact
+DECIDES the arcing question** — Paschen breakdown over a sub-millimetre gap
+differs by orders of magnitude between atmospheric air and vacuum, and vacuum
+would raise multipactor instead. It is also the §7ab pattern again: a value
+nobody chose, now load-bearing.
+
+#### ✅ What is already answerable, and one answer
+
+**Machining tolerance, DERIVED from the measured gap sweep** (Q_ext ∝ gap^−1.14
+locally, 0.5 → 0.75 mm):
+
+| gap tolerance | Q_ext | VSWR band |
+|---|---:|---|
+| ±0.02 mm | ±3.0 % | 6.7 – 7.1 |
+| **±0.05 mm** | **±7.6 %** | **6.4 – 7.4** |
+| ±0.10 mm | ±15.2 % | 5.9 – 7.9 |
+
+✅ **The series gap is FORGIVING** — ±0.05 mm is routine machining and costs
+nothing at VSWR 6.9. ⚠️ **The port gap is 0.3 mm and has never been swept**, so
+its sensitivity is unknown and it is the tighter feature.
+
+#### Sequencing
+
+1. **Finish 2c** — bracket the Q_ext optimum (running).
+2. **Arcing check** — peak |E| in both gaps from existing solves. No new solve.
+   🔴 Blocked on D: state the cavity atmosphere first, or the limit is undefined.
+3. **Port-gap sweep** — the untested tentative value, and the tighter feature.
+4. **Step 3 (already queued)** — re-sweep AREA on the barrel; 176 mm² was a cap
+   result and does not transfer.
+5. Feed transition, support, material, cooling — **hardware design, not EM
+   sweeps**, and the point at which this stops being a `resonance` question.
+
 ### 7. 🔴 DESIGN the coupling loop — the question we never asked
 
 **β is a DESIGN OUTPUT, not an observation** (`CONVENTIONS.md` §7am). Asking
@@ -242,6 +526,12 @@ wrong twice.** (Checking buildability before writing the rig is what caught it.)
    at and around 1.9 mm. **This is the 45× test.**
 3. Only then re-sweep area around whatever wins — the 176 mm² optimum was found
    at N=1 **on the cap** and does not transfer.
+
+🔑 **AND IT IS THE ONLY LEVER ON THE TUNER'S THERMAL WALL.** Load current goes
+as **√VSWR**, so VSWR 79 → 20 takes **39.7 A → 20.0 A** — from 4.4× short of the
+best microwave PIN die to **2.2×**. A phase detector removes the β↔1/β ambiguity
+but **removes no current** (`../control-loop/SOURCE.md` § DOES THE DETECTOR
+RETIRE THE TUNER). **Item 7 is upstream of the whole magnitude-tuning problem.**
 
 ✅ **Falsifier, restated:** if step 2 does not move Q_ext by ≥4×, the loop family
 IS exhausted and `../control-loop/`'s requirement 1 is real. 🔑 **But it is no

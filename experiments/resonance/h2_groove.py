@@ -42,6 +42,7 @@ ratio across the sweep, not absolutely.
 """
 import json
 import pathlib
+import values
 import subprocess
 import sys
 
@@ -53,7 +54,7 @@ from e0_solver_vs_math import GEO, eigen_cfg, run
 from scipy.optimize import brentq
 
 TAG = "h2"
-DL = 1.525                       # H1's answer: a=88.00 L=115.42. The stub
+DL = values.get("cavity.d_over_l")   # H1. BOUND, not copied (7bl). The stub
                                  # resonance is set by lambda, not by cavity
                                  # dimensions, so the depth curve should transfer
                                  # across D/L — assumed, not yet checked.

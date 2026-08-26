@@ -40,12 +40,24 @@ import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import physics as ph
+import values
 import journal
 import solveconf
 import solvecost
 import solver
 
-A_MM, L_MM = 103.70, 88.53
+# 🔴🔴 WAS `A_MM, L_MM = 103.70, 88.53` — D/L = 2.343, WHICH IS NOT THIS
+# CAVITY. H1's answer is D/L = 1.525 (a 88.0045, L 115.4158), and KNOWN.md
+# states it plainly. The literal pair sat here as GEO's DEFAULT, so any rig
+# that used GEO/GEO_DESIGN without appending its own --radius/--length meshed
+# a cavity nobody is building. Every H3 rig DID override, via design_point(),
+# and the mesh sidecars confirm it — but the E0 instrument rigs and the mesh
+# utilities did not.
+# ✅ Now DERIVED from the declared shape, so GEO cannot disagree with H1 again.
+# ⚠️ This CHANGES the cavity those non-overriding rigs mesh. That is the point;
+#    the re-run is queued in NEXT.md rather than avoided by keeping the bug.
+A_MM, L_MM = ph.design_point(values.get("cavity.d_over_l"),
+                             values.get("source.f0.ghz"))
 # 🔴 THE GROOVE OMISSION (2026-08-23) — THE BASELINE OMITTED THE DESIGN'S MODE FILTER, AND 31
 # RIGS INHERITED IT SILENTLY.
 #
@@ -82,7 +94,7 @@ A_MM, L_MM = 103.70, 88.53
 # ✅ Any rig whose result is a DESIGN number must use GEO_DESIGN **and state its
 # torch state**. `run()` refuses a plasma solve on a groove-free mesh unless the
 # caller says `allow_no_groove=True`.
-GROOVE_DESIGN = (5.0, 10.0)     # H2, frozen: width 5 mm, depth 10 mm
+GROOVE_DESIGN = tuple(values.get("cavity.groove.mm"))   # H2, frozen. BOUND (7f)
 
 GEO = ["--radius", f"{A_MM}", "--length", f"{L_MM}", "--order", "2",
        "--sectors", "1", "--no-torch", "--no-inner", "--mode-filter", "0",
@@ -90,8 +102,53 @@ GEO = ["--radius", f"{A_MM}", "--length", f"{L_MM}", "--order", "2",
        "--viewport", "0", "--trap", "0,0,0", "--chimney", "0,41",
        "--feed", "0,41"]
 
-GEO_DESIGN = [x if x != "0,0" or GEO[GEO.index(x) - 1] != "--groove"
-              else f"{GROOVE_DESIGN[0]:g},{GROOVE_DESIGN[1]:g}" for x in GEO]
+# 🔴🔴 THE RESTORATION, 2026-08-25. GEO_DESIGN WAS BUILT FROM GEO BY CHANGING
+# ONLY THE GROOVE — so `--no-torch` survived into it, and CLAUDE.md's
+# "GEO_DESIGN is the cavity being built" was true of the groove and FALSE of
+# the torch. Every eigen f0 in the record is for a TORCH-FREE, SEALED cavity
+# and is therefore ~10.4 MHz high (e3-torch-01 measured the shift) — 6.5x the
+# whole anchor band.
+#
+# GEO_DESIGN is now built EXPLICITLY, not by patching GEO, so a future flag
+# cannot leak in the same way. GEO stays the BARE cavity: instrument rigs
+# compare it against closed form and a plain cylinder is the point there.
+#
+# The apertures (user, 2026-08-25: "shouldn't the outer tube extend out
+# through the opposite end cap?"):
+#   chimney 21 mm  — clears the 20 mm torch OD by 0.5 mm on radius
+#   feed    21 mm  — same, so the outer tube can PASS THROUGH the -z cap
+#   torch_ext 41   — the tube runs the full feed tube, which is what the gas
+#                    plumbing requires
+# ⚠️ torch_ext IS NOT FREE: running sapphire through the feed drops that
+# aperture's TE11 cutoff from 8.37 GHz (3.41x f0) to ~4.74 GHz (1.94x), i.e.
+# ~60 dB -> ~30 dB of evanescent isolation over 41 mm. Still firmly below
+# cutoff and PEC-terminated in the model; it is a plumbing/compliance note,
+# not an EM blocker.
+_APERTURE_D = 21.0          # mm, both apertures
+_APERTURE_L = 41.0          # mm, axial length beyond the cap
+# 🔴 `--no-inner` REMOVED 2026-08-25. User: *"Just use Fassel, so we have a
+# baseline."* It left a SINGLE-TUBE torch — outer tube only, no intermediate,
+# no injector — which is not a Fassel torch and not a baseline of anything.
+# I had called the inner tubes "out of scope"; that boundary was mine, not the
+# record's, and the standing instruction was to build a REALISTIC torch.
+# geometry.py's defaults are the Fassel dimensions: outer 20.0/1.5,
+# intermediate 16.0/1.0, injector 5.0 OD / 2.0 ID.
+GEO_DESIGN = ["--radius", f"{A_MM}", "--length", f"{L_MM}", "--order", "2",
+              "--sectors", "1", "--mode-filter", "0",
+              "--groove", f"{GROOVE_DESIGN[0]:g},{GROOVE_DESIGN[1]:g}",
+              "--viewport", "0", "--trap", "0,0,0",
+              "--chimney", f"{_APERTURE_D:g},{_APERTURE_L:g}",
+              "--feed", f"{_APERTURE_D:g},{_APERTURE_L:g}",
+              # 🔑 THE OUTER TUBE PASSES THROUGH BOTH CAPS (user, 2026-08-25):
+              # one end is the gas entry, the other "basically eliminates
+              # fouling" — a tube stopping at the cap would deposit exhaust on
+              # the cap and aperture walls instead of carrying it out.
+              "--torch-ext", f"{_APERTURE_L:g}",
+              "--torch-ext-top", f"{_APERTURE_L:g}"]
+# 🔑 NOTE WHAT IS ABSENT: no --no-torch, and no --torch-material. The torch
+# body is now present and its permittivity comes from geometry.py's default,
+# which is BOUND to torch.sapphire.permittivity (9.39, Krupka 2005). The
+# design cavity therefore carries the DESIGN torch without restating it.
 FACTORS = ["0.96", "1.06", "1.00", "1.20", "0.90"]
 PALACE = solver.PALACE          # E1e: single source, env-driven
 # 🔴 E1d CORRECTED. I raised this to 8 saying "every run so far used 4 of the 8
@@ -130,6 +187,35 @@ def build(tag, extra=()):
           f"volumes {sorted(k for k, v in m['attributes'].items() if isinstance(v, int))}",
           flush=True)
     return m, fac
+
+
+def _materials(a, meta, vols):
+    """Volume materials for the eigen config, with the TORCH bound from the mesh.
+
+    🔴 THE RESTORATION FOUND THIS, 2026-08-25. Every volume was given ONE
+    material at Permittivity 1.0 — so a sapphire torch in the mesh SOLVED AS
+    VACUUM. It never showed up because `GEO_DESIGN` carried `--no-torch`: there
+    was no torch volume to get it wrong. Restore the torch and the bug becomes
+    reachable, which is exactly what `_assert_torch_bound` caught on the first
+    run (config eps=1.0 vs sidecar eps=9.39).
+
+    🔑 R101's rule: THE MESH IS THE SOURCE OF TRUTH. The permittivity is read
+    from the sidecar, never typed here.
+    """
+    tv = (a or {}).get("torch")
+    tm = ((meta.get("geometry_mm") or {}).get("torch_material")) if meta else None
+    if tv is None or tv not in vols or not tm:
+        return [{"Attributes": vols, "Permittivity": 1.0, "Permeability": 1.0}]
+    rest = [v for v in vols if v != tv]
+    mats = []
+    if rest:
+        mats.append({"Attributes": rest, "Permittivity": 1.0, "Permeability": 1.0})
+    torch = {"Attributes": [tv], "Permittivity": float(tm[0]),
+             "Permeability": 1.0}
+    if len(tm) > 1 and float(tm[1]) > 0:
+        torch["LossTan"] = float(tm[1])
+    mats.append(torch)
+    return mats
 
 
 def eigen_cfg(tag, meta, mesh=None, sigma=None, n=22, target=1.05, order=2,
@@ -180,8 +266,7 @@ def eigen_cfg(tag, meta, mesh=None, sigma=None, n=22, target=1.05, order=2,
                      "Output": f"postpro/{tag}"},
          "Model": {"Mesh": mesh or f"{tag}.msh", "L0": 1.0,
                    "Refinement": {"UniformLevels": 0}},
-         "Domains": {"Materials": [{"Attributes": vols, "Permittivity": 1.0,
-                                    "Permeability": 1.0}],
+         "Domains": {"Materials": _materials(a, meta, vols),
                      # 🔑 ONE ENERGY INDEX PER REGION, not just the bore.
                      # Without this a mode carries no SIGNATURE and can only be
                      # identified by WHERE IT IS — which fails as soon as the
@@ -651,7 +736,12 @@ def main():
     print("\nEIGENMODE, finite-conductivity wall — same mesh, only the BC changes.\n"
           "  This is the like-for-like partner for a driven solve (old R37).",
           flush=True)
-    run("e0cond", eigen_cfg("e0cond", mF, mesh="e0fine.msh", sigma=3.5e7))
+    # 🔴 WAS sigma=3.5e7 — a FOURTH hardcoded copy of the wall conductivity,
+    # after the three r_hardcoded_value already found. wall_sigma() exists to
+    # bind it from baselines.json and REFUSE without it; typing the number
+    # bypasses the guard silently.
+    from e0k2_anchor import wall_sigma as _ws
+    run("e0cond", eigen_cfg("e0cond", mF, mesh="e0fine.msh", sigma=_ws()))
 
     out = {"exact": EX, "fine": eig("e0fine"), "coarse": eig("e0coarse"),
            "cond": eig("e0cond"), "tets_fine": mF["tets"], "tets_coarse": mC["tets"],

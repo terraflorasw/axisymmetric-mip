@@ -66,6 +66,15 @@ FALSIFICATION
          thing being tested, so a failure is INFORMATIVE, not an error.
   🔴 F2  if eta_dielectric exceeds ~5%, the sapphire torch is a real loss term
          and PLAN's "dielectric is only ~2% of the loss budget" is wrong.
+  ⚠️ F3 IS STALE AS OF 2026-08-25 AND WILL PROBABLY FIRE — CORRECTLY.
+         Its -10 MHz expectation was set when eps was believed to be 11.6.
+         Krupka et al. (Meas. Sci. Technol. 16 (2005) 1014, fig 10) measure
+         eps PERPENDICULAR to the anisotropy axis at 9.39, and TE011's E_phi
+         sees the perpendicular component. At 9.39 the shift is predicted to
+         be NEAR ZERO. So F3 firing is the EXPECTED result, not a defect —
+         CONVENTIONS 7w: a falsifier can fire for a reason its author never
+         enumerated. Read a small shift as CONFIRMING R1, and re-state F3
+         against the measured value rather than "fixing" the number.
   🔴 F3  if f0(sapphire) - f0(vacuum) is not of order -10 MHz, then either the
          torch binding is not reaching the solve or h4_field's -15.00 MHz does
          not transfer to a grooved cavity. **Both are findings; neither is noise.**
@@ -81,6 +90,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import physics as ph
 import solveconf
 import eigmodes
+import values
 from e0_solver_vs_math import GEO, eigen_cfg, run
 from e0k2_anchor import design_point, wall_sigma, LOOP_PHI, LOOP_RW, LOOP_GAP
 from h3_loaded import drude, Z_FRAC, SECTORS, CAP_R_FRAC
@@ -88,14 +98,29 @@ from azimuthal import order as az_order
 from e0k2_azim import sector_bins, read_sector_energy
 from h3_ladder import purity, PROBE_PHI_DEG, PROBE_R_FRAC
 
-TAG = "e3_closure"
+# 🔑 THE RUN NAMES ITSELF FROM ITS SLUG (CONVENTIONS 7aw/7bd). Outputs carry
+# slug + the hash of the config that produced them, so an edited config cannot
+# silently reuse a filename.
+import slug as S
+SLUG = S.parse()
+CFG = S.config(SLUG)
+PRM = CFG["_run"]["parameters"]
+TAG = S.out(SLUG)
 
-NE = 1.0e20                      # the STRONGEST test, and the only convergent one
-TORCH_SAPPHIRE = (11.6, 3.5e-5)  # geometry.py's DEFAULT — the design consumable
+# 🔑 FROM THE CONFIG, not a literal. 1e20 was never the operating point — it is
+# 13x the anchored density, and a DIFFERENT regime (delta/shell 0.30 vs 1.06).
+NE = float(PRM["ne"])
+# 🔑 BOUND, NOT LITERAL (user, 2026-08-25: "no constants in any scripts").
+# 🔴 AND THE VALUE CHANGED: eps was 11.6, which is eps_PARALLEL_c. TE011's E_phi
+# sees eps_PERP_c = 9.39 (Krupka et al., Meas. Sci. Technol. 16 (2005) 1014,
+# fig 10). This rig's case B measured the torch shift at 11.6, so THAT RESULT IS
+# AT THE WRONG PERMITTIVITY and must be re-run before the shift is quoted.
+TORCH_SAPPHIRE = (values.get("torch.sapphire.permittivity"),
+                  values.get("torch.sapphire.loss_tangent", allow_tentative=True))
 TORCH_VACUUM = (1.0, 3.5e-5)     # what five rigs have been meshing
 RI, RO = 2.00, 8.50
-LOOP_LD, LOOP_LW = 11.0, 8.0
-GROOVE = (5.0, 10.0)
+LOOP_LD, LOOP_LW = values.get("loop.size.mm")
+GROOVE = tuple(values.get("cavity.groove.mm"))
 
 N_MODES = 8
 EIGEN_TARGET = 2.38
@@ -107,17 +132,16 @@ SEED_GHZ = 2.4824                # h3_driven's loaded f0 (VACUUM torch) — a
                                  # starting point only; sapphire pulls it DOWN
 
 # (label, wall_on, plasma_on, diel_on, torch)
-CASES = [
-    ("A_all",       True,  True,  True,  TORCH_SAPPHIRE),
-    ("B_wall",      True,  False, False, TORCH_SAPPHIRE),
-    ("C_plasma",    False, True,  False, TORCH_SAPPHIRE),
-    ("D_dielectric", False, False, True,  TORCH_SAPPHIRE),
-    ("E_vac_torch", True,  True,  True,  TORCH_VACUUM),
-]
+# 🔑 CASES COME FROM THE CONFIG. Running all five costs two guaranteed 2700 s
+# timeouts (A_all and C_plasma are sapphire+plasma, and the anchor is
+# eps-near-zero), so which cases run is a per-question decision, not a constant.
+_TORCH = {"sapphire": TORCH_SAPPHIRE, "vacuum": TORCH_VACUUM}
+CASES = [(c["label"], bool(c["wall"]), bool(c["plasma"]), bool(c["dielectric"]),
+          _TORCH[c["torch"]]) for c in PRM["cases"]]
 
 
 def save(out):
-    p = pathlib.Path(f"{TAG}.result.json")
+    p = pathlib.Path(S.outfile(SLUG, "result.json"))
     t = p.with_suffix(p.suffix + f".tmp{os.getpid()}")
     t.write_text(json.dumps(out, indent=1) + "\n")
     os.replace(t, p)
@@ -332,7 +356,7 @@ def main():
                   "torch as VACUUM — their f0 is high by this\n     amount, and "
                   "every band margin derived from them is CONSERVATIVE by it.**")
     save(out)
-    print(f"\n  result -> {TAG}.result.json", flush=True)
+    print(f"\n  result -> {S.outfile(SLUG, 'result.json')}", flush=True)
 
 
 if __name__ == "__main__":

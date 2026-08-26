@@ -108,6 +108,7 @@ FALSIFICATION
          — a torch-proof negative for the TE-only architecture.
 """
 import json
+import values
 import math
 import pathlib
 import subprocess
@@ -126,7 +127,18 @@ from e0k2_anchor import (design_point, wall_sigma, CAP_R_FRAC,
 from e0k2_azim import sector_bins, read_sector_energy
 
 TAG = "h3_loaded"
-SECTORS = 5                 # m in {0,1,2} in this window; N>=9 is unbuildable
+# 🔴 THE COMMENT HERE SAID "m in {0,1,2}". IT IS WRONG, and azimuthal.order()
+# says so in terms: "At the standard N=5 that is m <= 1."
+# 🔑 The cavity is a FOURIER FILTER in phi (user, 2026-08-25): fields go as
+# e^{i m phi} and the groove is a stopband on m != 0. Sector binning is the DFT
+# of that domain — but we sample ENERGY, and |E|^2 ~ cos^2(m phi) carries the
+# angular harmonic 2m, NOT m. So N sectors resolve 2m <= N/2, i.e. m <= N/4:
+#     N=5 -> m<=1     N=8 -> m<=2     N=12 -> m<=3
+# m=2 needs N>=8 and m=3 (TE311) needs N>=12, while N>=9 is unbuildable here.
+# ⚠️ THIS IS NOT ACADEMIC: TE311 (m=3) returned m=0 at the HIGHEST confidence
+# because 2m=6 folds to 6 mod 5 = 1, i.e. flat. Never identify TE011 by m=0
+# alone — pair it with purity P, which is aliasing-proof.
+SECTORS = 5                 # resolves m <= 1 ONLY; N>=9 is unbuildable
 # 🔴 the reference is the bare cavity WITH THE LOOP, because the driven solve
 # has the loop in it. The 44,384 empty figure would overstate eta by the loop's
 # own 32% Q cost.
@@ -151,7 +163,7 @@ NE = [1.0e18, 1.0e19, 1.0e20, 1.0e21]
 # grid on evidence rather than assertion.
 OVERLAP = (2.0, 1.0e20)
 # ⚠️ FIXED, NOT SWEPT — declared so it is not mistaken for a result:
-LOOP_LD, LOOP_LW = 11.0, 8.0   # cap loop, DRIVEN band only
+LOOP_LD, LOOP_LW = values.get("loop.size.mm")   # cap loop, DRIVEN band only
 BAND_MHZ = 60.0
 INNER_R = 0.0               # 0 = solid column. >0 would make it annular.
 

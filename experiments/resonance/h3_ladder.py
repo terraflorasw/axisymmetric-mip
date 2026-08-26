@@ -51,6 +51,7 @@ FALSIFICATION
          Report; do not follow the nearest dip.
 """
 import json
+import values
 import math
 import os
 import pathlib
@@ -119,7 +120,7 @@ CASE_TIMEOUT_S = 5400.0     # 90 min: target=1.05 cost H2 "over an hour per poin
 import solvecost as _sc
 _sc.NLEPS_BUDGET = 1400
 SIZE_FACTORS = ["1.5", "1.42", "1.58"]
-LOOP_D, LOOP_HW = 11.0, 8.0        # 176 mm^2 — GLOSSARY: w is a HALF-width
+LOOP_D, LOOP_HW = values.get("loop.size.mm")   # GLOSSARY: w is a HALF-width
 JUMP_MAX_MHZ = 40.0
 # 🔑 FIELD-STRUCTURE PROBES — identify TE011 without azimuthal decomposition.
 # TE011 is TE_0np: E_z = 0 (TE) and E_r = 0 (m=0), so E is purely AZIMUTHAL and

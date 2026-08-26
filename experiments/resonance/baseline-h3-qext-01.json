@@ -6,14 +6,6 @@
   "entries": "starts EMPTY by design: nothing is inherited from ../waveguide without re-derivation",
   "indirection": "A NAME ALONE MUST NOT RESOLVE. Entries with a `contexts` list hold several recorded values discriminated by context (solver, mesh, extraction, ne, ...). values.get(name, **context) returns one or REFUSES, printing the alternatives. Added 2026-08-25 after CONVENTIONS 7aq/7at: every serious error in that window was one name meaning different measured things in different contexts. Legacy single-value entries (no `contexts`) still resolve."
  },
- "wall.conductivity": {
-  "kind": "input",
-  "value": 35000000.0,
-  "unit": "S/m",
-  "material": "bare electropolished aluminium 6061",
-  "source": "R58 adopted bare electropolished aluminium on OPTICAL grounds (no plating to degrade or flake into the optical path). The conductivity is the handbook value for 6061 at 20 C, not a measurement of our surface \u2014 a real electropolished wall will fall SHORT of it, so every Q computed from this is an UPPER bound.",
-  "adopted": "2026-08-20"
- },
  "cavity.Q_ext": {
   "kind": "result",
   "unit": "1",
@@ -130,50 +122,6 @@
    }
   ]
  },
- "cavity.f0.cold": {
-  "kind": "result",
-  "unit": "GHz",
-  "description": "TE011 of the cold grooved cavity with the 11x8 loop. Torch state moves this by ~14 MHz.",
-  "contexts": [
-   {
-    "value": 2.451633,
-    "context": {
-     "solver": "eigen",
-     "mesh": "no_torch",
-     "port_bc": "pec"
-    },
-    "rig": "h3_loopq",
-    "date": "2026-08-24",
-    "verification": "h3_ladder step 2 continuation",
-    "falsification": null
-   },
-   {
-    "value": 2.4515,
-    "context": {
-     "solver": "driven",
-     "mesh": "vacuum_torch",
-     "extraction": "s11_locator"
-    },
-    "rig": "h3_driven",
-    "date": "2026-08-25",
-    "verification": "agrees with eigen to 133 kHz = 0.38 linewidths",
-    "falsification": null
-   },
-   {
-    "value": 2.437762,
-    "context": {
-     "solver": "eigen",
-     "mesh": "sapphire_torch",
-     "port_bc": "pec"
-    },
-    "rig": "e3_closure",
-    "date": "2026-08-24",
-    "verification": "case B, wall loss only; -13.87 MHz vs no_torch, as predicted in sign and order",
-    "falsification": null,
-    "note": "\ud83d\udd11 THE ONLY ENTRY HERE ON THE CAVITY ACTUALLY BEING BUILT."
-   }
-  ]
- },
  "eta.reference": {
   "kind": "result",
   "unit": "1",
@@ -239,7 +187,7 @@
    "hypothesis": "H3 / NEXT.md item 8 follow-up",
    "document": "KNOWN.md \u00a7 F1 ANSWERED \u2014 eigen and driven DO disagree, and the gap is in Q_L alone",
    "question": "Does the eigen pair on h3_driven's OWN meshes agree with the driven dip on Q_ext?",
-   "supersedes": null,
+   "supersedes": "the un-slugged h3_qext run of 2026-08-25, killed mid-1e20 (EXIT=143). Its cold pair landed (Q0=43,523 Q_L=7,538 Q_ext=9,117 beta=4.774) and its anchor pec TIMED OUT at 0 NLEPS iterations with 159 PCG failures \u2014 the eps-near-zero result. Those artefacts are now h3-qext-00_*.",
    "date": "2026-08-25",
    "rig": "h3_qext.py"
   },
@@ -256,18 +204,115 @@
   },
   "parameters": {
    "cases": [
-    "cold",
-    "n18p90",
-    "n20p00"
+    {
+     "mesh_tag": "h3-driven-00_cold",
+     "ne": 0.0,
+     "label": "cold",
+     "seed_ghz": 2.4515
+    },
+    {
+     "mesh_tag": "h3-driven-00_n18p90",
+     "ne": 7.9e+18,
+     "label": "anchor 7.9e18",
+     "seed_ghz": 2.4586
+    },
+    {
+     "mesh_tag": "h3-driven-00_n20p00",
+     "ne": 1e+20,
+     "label": "1e20",
+     "seed_ghz": 2.4824
+    }
    ],
    "port_bc": [
     "pec",
     "lumped"
    ],
    "ranks": 32,
-   "wall_conductivity_note": "unmodified from the global: h3_qext binds wall_sigma() at 3.5e7"
+   "wall_conductivity_note": "unmodified from the global: h3_qext binds wall_sigma() at 3.5e7",
+   "geometry": {
+    "radius": 103.7,
+    "length": 88.53,
+    "order": 2,
+    "sectors": 1,
+    "no-inner": true,
+    "mode-filter": 0,
+    "groove": "5,10",
+    "viewport": 0,
+    "trap": "0,0,0",
+    "chimney": "0,41",
+    "feed": "0,41",
+    "torch-material": "1.0,3.5e-05"
+   },
+   "geometry_note": "binds the h3_driven meshes, so identical geometry by construction \u2014 which is the whole point of the rig (CONVENTIONS 7aq).",
+   "threads": 1,
+   "threads_note": "gmsh General.NumThreads. geometry.py defaults to 1 'so meshes stay byte-reproducible; >1 is only safe once ops/gmshcaps.sh --determinism has confirmed it'. Recorded here because a mesh that is not byte-reproducible makes the whole run non-idempotent, and this was the one determinism knob living outside the config.",
+   "order": 2,
+   "eigen": {
+    "n_modes": 8,
+    "target": 2.38,
+    "window": [
+     2.35,
+     2.65
+    ],
+    "case_timeout_s": 2700,
+    "continuation_max_mhz": 25.0
+   },
+   "cases_note": "mesh_tag values are POST-MIGRATION (h3_driven_* -> h3-driven-00_*, 2026-08-25). The seeds are the f0 h3_driven MEASURED on each of these meshes, so mode selection is continuation from a measured value (CONVENTIONS 7u)."
   },
-  "note": "Copied from the global store, then mutated for this run. Edit THIS file, never the global, to change an input for one question. Land results back with slug.promote()."
+  "note": "Copied from the global store, then mutated for this run. Edit THIS file, never the global, to change an input for one question. Land results back with slug.promote().",
+  "frozen_names_note": "\ud83d\udd34 This copy deliberately keeps the UNIT-LESS names it was frozen with. The global renamed them to carry units (2026-08-25); a frozen run config must NOT follow, because it describes the inputs the run actually used. I renamed them here by mistake and reverted \u2014 which is exactly the drift the output stamp exists to detect."
  },
- "slug": "h3-qext-01"
+ "slug": "h3-qext-01",
+ "cavity.f0.cold": {
+  "kind": "result",
+  "unit": "GHz",
+  "description": "TE011 of the cold grooved cavity with the 11x8 loop. Torch state moves this by ~14 MHz.",
+  "contexts": [
+   {
+    "value": 2.451633,
+    "context": {
+     "solver": "eigen",
+     "mesh": "no_torch",
+     "port_bc": "pec"
+    },
+    "rig": "h3_loopq",
+    "date": "2026-08-24",
+    "verification": "h3_ladder step 2 continuation",
+    "falsification": null
+   },
+   {
+    "value": 2.4515,
+    "context": {
+     "solver": "driven",
+     "mesh": "vacuum_torch",
+     "extraction": "s11_locator"
+    },
+    "rig": "h3_driven",
+    "date": "2026-08-25",
+    "verification": "agrees with eigen to 133 kHz = 0.38 linewidths",
+    "falsification": null
+   },
+   {
+    "value": 2.437762,
+    "context": {
+     "solver": "eigen",
+     "mesh": "sapphire_torch",
+     "port_bc": "pec"
+    },
+    "rig": "e3_closure",
+    "date": "2026-08-24",
+    "verification": "case B, wall loss only; -13.87 MHz vs no_torch, as predicted in sign and order",
+    "falsification": null,
+    "note": "\ud83d\udd11 THE ONLY ENTRY HERE ON THE CAVITY ACTUALLY BEING BUILT."
+   }
+  ]
+ },
+ "wall.conductivity": {
+  "kind": "input",
+  "value": 35000000.0,
+  "unit": "S/m",
+  "material": "bare electropolished aluminium 6061",
+  "source": "R58 adopted bare electropolished aluminium on OPTICAL grounds (no plating to degrade or flake into the optical path). The conductivity is the handbook value for 6061 at 20 C, not a measurement of our surface \u2014 a real electropolished wall will fall SHORT of it, so every Q computed from this is an UPPER bound.",
+  "adopted": "2026-08-20"
+ }
 }

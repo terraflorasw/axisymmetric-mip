@@ -1984,14 +1984,30 @@ and the inventory says it is bigger than it looks.
 | class | count | what happens |
 |---|---:|---|
 | ✅ prefix maps to a rig | **25 prefixes** | retro slug `<rig>-00` |
-| 🔴 **NO OWNING RIG** | **9 prefixes, 37 files** | `e1b` `e1c` `e1cc` `scale` `e0fine` `e0coarse` `e0cond` `sfprobe` — **cannot be migrated** |
+| ⚠️ **prefix has no TAG** | **4 prefixes** | `e0fine` `e0coarse` `e0cond` `scale` — **NOT orphaned, MIS-PREFIXED** |
+| 🔴 **genuinely ORPHANED** | **4 prefixes, ~73 files** | `e1b` `e1c` `e1cc` `sfprobe` |
 | ✅ already slugged | 1 | `h3-driven-anchor-01` |
 
-🔴 **THE ORPHANS ARE THE INTERESTING PART. A slug must reference a doc section;
-these can reference nothing** — their producing code is gone (the deleted
-`waveguide`/`ignition` programmes, or earlier eras). **They are artefacts with
-no provenance and no way to acquire any.** Quarantine or delete is a user call,
-not a rename.
+🔴 **I FIRST WROTE THAT ALL NINE HAD "producing code gone (the deleted
+waveguide/ignition programmes)". HALF OF THAT IS FALSE**, and checking the code
+rather than asserting it is what found the error:
+- **`e0fine` `e0coarse` `e0cond`** are written by **`e0_solver_vs_math.py`
+  lines 622–657** — the module every rig imports `eigen_cfg` and `run` from.
+  **Central and alive.**
+- **`scale_*.log`** is written by **`e0l_scaling.py:70`**, `f"scale_{n}.log"`.
+**These are not orphans. They are the "49 f-strings with no tag" leak (§7ay) —
+hardcoded prefixes inside functions rather than a module `TAG`.** They need the
+SCRIPT fixed, after which they slug normally.
+
+🔴 **ONLY FOUR ARE GENUINELY ORPHANED: `e1b` `e1c` `e1cc` `sfprobe`.** No
+producing code (`e1b` survives only as a docstring EXAMPLE in `journal.py`), and
+**no doc defines any of them** — the sole mention was this very table, which is
+circular.
+✅ **User, 2026-08-25: *"if their provenance can't be derived from the docs,
+they really are orphaned. If we want them back, we have to re-derive them."***
+That matches `baselines.json`'s own `_meta`: *"nothing is inherited from
+../waveguide without re-derivation."* **Quarantined, not deleted** — ~1 MB, and
+a quarantine is recoverable while a delete of a gitignored mesh is not.
 
 ⚠️ **`00` IS A WEAK CLAIM.** These are the residue of an era where a re-run
 overwrote its predecessor in place (§7ap), so "run 00" may be the third run with
@@ -2018,6 +2034,709 @@ from their sidecars.**
 ✅ **`migrate_slugs.py` plans and refuses.** `--apply` is deliberately
 unimplemented until both clear. **The plan file is the deliverable; the rename
 is not, yet.**
+
+## 7ba. ⏳ GEOMETRY COMES FROM THE CONFIG, NOT A COMMAND LINE
+
+🔑 **User, 2026-08-25: *"We can also get rid of all the command line arguments,
+so that they're forced to come through a file. So everything can be tracked by
+git, and via the slug, everything maps back to the docs."***
+
+**The surface: `geometry.py` exposes 45 flags, and 55 files hand-build argv for
+it — 375 literal flag occurrences.** 🔑 **That is precisely why `GEO_DESIGN`
+could carry `--no-torch` for the whole programme unnoticed (§7aq): a flag list is
+an untyped string blob and nothing can validate it.**
+
+✅ **`geomcfg.py`** — `parameters.geometry` in the slug config becomes argv:
+
+    geometry: {radius: 103.7, groove: "5,10", "no-torch": true, ...}
+
+⚠️ **IT GOES config → argv, NOT config → params, ON PURPOSE.** `geometry.py`'s
+`main()` does the **unit conversion inline** — `a.radius * 1e-3`,
+`math.radians(a.loop_tilt)`, ~45 of them, several carrying hard-won guards
+(`is not None`, because `0` is falsy and `--viewport 0` was once silently
+ignored — which benchmarked a cavity with a 10 mm stub against a closed form for
+a plain cylinder). **Re-implementing that overlay would duplicate the
+conversions, and a duplicated conversion drifts.** So the config is
+authoritative, argv is an internal detail, **one conversion path**, and the
+parser can be deleted later without the schema moving.
+
+✅ **VERIFIED, not asserted**: the config block reproduces `GEO_DESIGN` with
+**identical semantics** (same flag→value mapping, checked pairwise).
+🔑 **And the bug becomes visible:** `"no-torch": true` is a **typed field in a
+diff**. In `GEO_DESIGN` it was the string `"--no-torch"` inside a 15-element
+list — which is how it survived being called *"the cavity being built."*
+
+⚠️ **NOT DONE:** 55 files still hand-build argv. The two live slug configs carry
+geometry blocks; the rest is a migration, and it is listed as such rather than
+claimed.
+
+## 7bb. ✅ SLUGS MUST BE UNIQUE — and "the config doesn't exist yet" is not that
+
+🔑 **User, 2026-08-25: *"all slugs must be unique. No collisions."***
+
+`derive()` previously refused only when `baseline-<slug>.json` already existed.
+**That leaves four ways two runs still collide**, each of which defeats the point
+of the regime:
+
+| # | mode | why it collides |
+|---|---|---|
+| 1 | **exact** | the config exists |
+| 2 | **CASE** | `H3-Qext-01` and `h3-qext-01` are different slugs and **the same file** on a case-insensitive filesystem. Case is preserved deliberately (doc identifiers bear it), so it must be checked, not folded |
+| 3 | **PREFIX** | `h3-qext-01` and `h3-qext-01b` never collide *exactly* — but **every glob in `ops/` is `<slug>*`**, so fetch, cleanup and status sweep both. **A collision in every tool that matters** |
+| 4 | **REUSE AFTER DELETION** | deleting a config does **not** delete its artefacts, so the name is not free again — **it is RETIRED** |
+
+✅ **`slug.check_unique()` enforces all four and `derive()` calls it as a
+precondition.** `slug.py --check` additionally validates every existing pair, so
+a collision introduced by hand is caught too.
+✅ **Verified by exercising each mode**, including the other direction of the
+prefix case and a stray artefact with no config — and confirming a genuinely
+free name is still accepted.
+
+🔑 **№3 is the one that would have been missed.** Exact-match uniqueness feels
+sufficient right up until someone runs `rm <slug>*` or `ops/fetch.sh <slug>` and
+takes a second run's meshes with it.
+
+## 7bc. ⏳ IDEMPOTENCE — what the slug regime actually buys, and what it does not
+
+🔑 **User, 2026-08-25: *"Hopefully, this should make all runs idempotent. Or
+that's the aim, at least."*** ✅ It is the right aim. **Stating honestly where it
+holds, because "aim" is not "achieved":**
+
+### ✅ What IS now pinned
+- **Inputs are frozen and hashed** — `baseline-<slug>.json` is a full copy of the
+  global with `derived_from.sha256_16`, so the global can move without moving the
+  run (§7ax).
+- **Geometry is a typed block**, not a hand-built argv list (§7ba).
+- **Outputs are namespaced** and slugs are unique across four collision modes
+  (§7aw, §7bb).
+- **✅ FIXED TODAY: `ranks` was in the config AND on the command line, with
+  nothing reconciling them.** The config could record 32 while the run used 4 —
+  and the config is what a later reader trusts. `ops/remote.sh` now takes ranks
+  **from the config**, warns on disagreement, and warns when it is absent.
+  **Two sources of truth for a run parameter is not idempotence, it is a coin
+  toss you cannot see.**
+- **✅ `threads` recorded.** `geometry.py` itself flags it as the byte-
+  reproducibility knob (*"1 so meshes stay byte-reproducible; >1 is only safe
+  once `ops/gmshcaps.sh --determinism` has confirmed it"*) — **and it was the one
+  determinism control living outside the config.**
+
+### ⏳ What is NOT idempotent yet, stated plainly
+- ✅ **RE-RUNNING IS NOW DEMONSTRATED IDEMPOTENT for mesh-binding rigs** —
+  `h3-qext-01` reproduced the killed run **bit-identically** across a mesh
+  rename (§7bd). ⏳ **Rigs that REBUILD their mesh are still untested**, and they
+  inherit the ≤71 Hz realisation floor by construction.
+- ⚠️ **Mesh byte-reproducibility is asserted, not verified** for these
+  geometries. The gate exists (`ops/gmshcaps.sh --determinism`); the record does
+  not show it run for the design cavity.
+- ⚠️ **Rank-count independence of RESULTS is unmeasured.** The record shows ranks
+  changing solve **cost** 95× (4 on the laptop vs 32 on the instance); it does
+  **not** establish that results are rank-invariant.
+- 🔴 **55 rigs still hand-build argv** (§7ba) and **195 artefacts still carry
+  pre-slug names** (§7az). Until both land, most runs are outside the regime
+  entirely.
+
+🔑 **The honest summary: inputs are now reproducible; OUTPUT reproducibility is
+untested.** Those are different claims, and only the first is earned.
+
+## 7bd. ✅ OUTPUTS CARRY THE HASH OF THEIR INPUTS — config drift becomes a listing
+
+🔑 **User, 2026-08-25: *"intermediate files and outputs include the hash of their
+input baselines, up to 8 characters, say. So if the input file changes without
+the slug changing, we can see if they differ."***
+
+    h3-qext-01.23646653.result.json
+    h3-qext-01.23646653_n18p90.msh
+    ^--------^ ^------^
+     WHICH      WHICH INPUTS answered it — sha256(baseline-h3-qext-01.json)[:8]
+     question
+
+🔴 **WHAT THE SLUG ALONE CANNOT CATCH:** a config edited between two runs of the
+same slug. Without the stamp the second run **overwrites the first and the
+difference is invisible** — §7ap with extra steps. With it, the two land at
+**different names** and the divergence is a directory listing.
+
+⚠️ **I FIRST WROTE "same slug + same stamp must produce the SAME OUTPUT". THAT
+IS WRONG, and the user corrected it: *"we already know that different order-2
+meshes (and solves) produce different results. The hash should be only on the
+input baseline."*** ✅ The stamp **is** baseline-only. But it cannot promise
+identical outputs, because the mesh generator is not deterministic under exact
+symmetries.
+
+🔢 **THE FLOOR IS MEASURED, and it is small: `e0e` node-shift, 27 modes, on a
+RIGID TRANSLATION where the true answer is exactly ZERO — max 71 Hz, mean 5.5 Hz
+(2.9 × 10⁻⁸ relative).** So the honest claim is:
+
+> **same slug + same stamp ⟹ same output TO WITHIN ~71 Hz**, the mesh-realisation
+> floor. A larger divergence is a real finding about the solver; a smaller one is
+> noise and must not be reported as a result.
+
+### ✅✅ AND IT IS BETTER THAN THAT — MEASURED 2026-08-25, FIRST TIME
+
+**`h3-qext-01`'s cold `pec` case reproduced the killed run BYTE-IDENTICALLY:**
+
+    pec  f0=2.451490  Q=43,522.8  P_min=0.9997995696292108  (continuation -0.010 MHz, 4 in window)
+
+**Every digit, including `P_min`'s full 16** — and *between the two runs the mesh
+was RENAMED* (`h3_driven_cold.msh` → `h3-driven-00_cold.msh`, sidecar rewritten).
+
+🔑 **SO THE DISTINCTION IS SHARPER THAN I HAD IT:**
+
+| condition | reproducibility |
+|---|---|
+| **same MESH + same config** | ✅ **BIT-IDENTICAL** |
+| new mesh **REALISATION** of the same geometry | ≤ 71 Hz (`e0e` node-shift) |
+
+**The 71 Hz floor is about REGENERATING a mesh, not re-running one.** A rig that
+BINDS an existing mesh — as `h3_qext` does — is fully idempotent; only rigs that
+rebuild inherit the realisation spread. **Those are different claims and the
+record now separates them.**
+✅ It also independently confirms the migration perturbed nothing.
+
+🔴 **AND THE DOCSTRINGS STILL SAY "up to 4 MHz"** (`e0b`/`e0c`) — the
+**superseded order-1 number**, ~56,000× larger than the order-2 floor. Anyone
+sizing a tolerance from those comments would be wrong by five orders.
+
+🔴 **FOUND WHILE CHECKING THIS: `e0e.result.json`'s field `delta_mhz` HOLDS GHz.**
+`origin`/`shifted` are GHz and the delta is their difference in the same units,
+so the 71 Hz floor reads as 71 kHz to anyone trusting the name — **a 1000× trap
+in a result file.** Renamed to `delta_ghz` at the source; emitting both would
+have kept the wrong one alive.
+
+✅ **`slug.py --check` detects the drift**, and I verified it fires rather than
+assuming: stamped an artefact, changed `ranks` 32→16 in the config, and the check
+reported *"artefacts carry stamp 23646653 but the config now hashes to 8b2fc33f —
+THE CONFIG WAS EDITED AFTER THE RUN."* Restoring the config cleared it.
+
+⚠️ **Pre-stamp artefacts are reported as WARN, not silently accepted.**
+`h3-driven-anchor-01.result.json` carries no stamp, so the check says its inputs
+**cannot be verified — treat the config as a retrofit, not a record.** That is
+the truthful status: the run predates both the workflow and the stamp.
+
+⚠️ **The config itself is not stamped** — it cannot contain its own hash. Only
+what it produces carries it.
+
+## 7be. ✅ THE NAME CARRIES THE UNIT — *and* the declared unit checks the name
+
+🔑 **User, 2026-08-25: *"we included units in the baselines schema, but that
+might leave room for this sort of thing. If the name includes the units, it's
+much harder to just read 'delta_f' and miss 'units: GHz'."***
+
+✅ Right — **and the case that prompted it proves neither half is sufficient
+alone.** `e0e.result.json` carried **`delta_mhz` holding GHz**: the name *did*
+carry a unit, and the name was **wrong**, so it read as a 1000× error. A separate
+`unit:` field is missable; a unit in the name is loud but unverified.
+
+> **So the name carries it AND the declared field checks it.**
+
+    cavity.f0.cold.ghz          unit "GHz"    ✅
+    cavity.f0.cold.mhz          unit "GHz"    🔴 caught
+    cavity.f0.cold              unit "GHz"    🔴 caught — dimensional, unmarked
+    cavity.Q_ext                unit "1"      ✅ dimensionless: no suffix
+
+✅ **`values.py --check-units`.** Its first run caught **both** dimensional names
+in the registry: `cavity.f0.cold` (GHz) and `wall.conductivity` (S/m). Renamed to
+`cavity.f0.cold.ghz` and `wall.conductivity.s_per_m`; `wall_sigma()` reads the
+new name and **still accepts the old one loudly**, so an in-flight run cannot be
+broken by a rename.
+
+### 🔴 AND I BROKE IMMUTABILITY WHILE FIXING IT
+
+The rename script rewrote the keys **inside both frozen run configs** — including
+`baseline-h3-qext-01.json`, whose run was **executing at the time.** A frozen
+copy describes **the inputs the run actually used**; it must not follow the
+global. **Reverted, and the revert is recorded in the file itself.**
+
+🔑 **This is precisely the drift §7bd's output stamp exists to detect** — and it
+was introduced by a bulk edit that "obviously" applied everywhere. **A migration
+that walks every file will walk the frozen ones too.** Frozen means frozen: the
+global evolves, snapshots do not.
+
+## 7bf. ✅ THE MIGRATION RAN — and every bug in it was caught by a REFUSAL
+
+**2026-08-25. 1,155 renames on the instance + 384 locally, 0 collisions, 181
+sidecars rewritten, linkage verified.** Every pre-slug artefact now carries a
+retro slug `<rig>-00`.
+
+🔴 **IT TOOK FIVE ITERATIONS, AND NOT ONE WAS CAUGHT BY READING THE PLAN:**
+
+| # | the bug | what it would have done |
+|---|---|---|
+| 1 | keyed on `TAG` | 195 renames, **missed every mesh** — only 32 of 87 rigs declare one |
+| 2 | `slug + rest` dropped the head | `e0fine`/`e0coarse`/`e0cond` **collapsed onto one filename** |
+| 3 | a *mention* counted as a write | `e0.result.json` filed under **`e0v_reverify`**, which only names `"e0"` in a cross-reference table describing what another rig writes |
+| 4 | **shortest head first** | once `h3` resolved, **18 rigs' artefacts collapsed into one slug** |
+| 5 | reference ranked above production | `build("e0fine")` tied with `CFG = "e0fine.json"` |
+
+🔴 **AND IT PLANNED TO RENAME `baselines.json` ITSELF.** It matched `*.json` and
+was not excluded — **the global store, about to be filed as an artefact.**
+
+✅ **OWNERSHIP IS NOW A HIERARCHY OF EVIDENCE**, and ties are fatal:
+
+    declares it   TAG = "<h>"
+    IS it         <h>.py
+    writes it     open("<h>.…", "w") · Path("<h>.…").write_text
+    produces it   build("<h>") · run("<h>") · eigen_cfg("<h>")
+    mentions it   "<h>.…"                    ← weakest, never decisive alone
+
+**Any tier yielding more than one rig is AMBIGUOUS and the tool REFUSES.** That
+refusal caught 3, 4 and 5. **A migration that guesses is worse than one that
+stops**: a misfiled artefact reads as authoritative provenance forever.
+
+🔑 **THE SIDECAR IS THE PART THAT BREAKS SILENTLY.** `.meta.json` carries `mesh`,
+which GATE 5 compares against what a solve is told to read — and it is
+**gitignored**, so there is no restore. The tool rewrites it and then verifies
+every sidecar names an existing mesh that matches its own filename.
+✅ **Confirmed by the consumer, not the tool**: `h3-qext-01` launched against
+`h3-driven-00_cold.msh` and GATE 5 passed at 80,621 tets.
+
+⚠️ **The instance now holds duplicates** — rsync does not delete, so the old
+names persist alongside the new. Not corruption; sweep with `ops/cleanremote.sh`
+once the run finishes.
+
+## 7bg. 🔑 THE CAVITY IS A FOURIER FILTER — and our DFT is under-sampled
+
+🔑 **User, 2026-08-25: *"I just noticed the cavity is a fourier filter."*** ✅ And
+naming it that way makes an existing failure legible instead of anecdotal.
+
+- **Fields go as e^{imφ}.** The cavity is diagonal in m — m is a good index,
+  not an emergent property. **The groove is a STOPBAND on m ≠ 0**, and "one
+  resonance in the tuning band" is a filter specification.
+- **Sector binning is the DFT of that domain.** `SECTORS = N` is a sampling
+  rate, and everything the sampling theorem says applies.
+
+🔴 **AND WE SAMPLE ENERGY, WHICH DOUBLES THE HARMONIC.**
+|E|² ~ cos²(mφ) = (1 + cos 2mφ)/2, so the angular harmonic is **2m, not m**.
+N sectors resolve harmonics ≤ N/2, therefore:
+
+> **m ≤ N/4** — N=5 → **m ≤ 1** · N=8 → m ≤ 2 · N=12 → m ≤ 3
+
+⚠️ **TWO FILES DISAGREED ABOUT THIS.** `h3_loaded.py:129` said
+`SECTORS = 5  # m in {0,1,2} in this window`, while `azimuthal.order()` says
+*"At the standard N=5 that is m ≤ 1."* **The constant's comment was wrong** and
+has been corrected at the constant — the place a reader picking N would look.
+
+✅ **This is exactly how TE311 was mis-identified**: m=3 gives 2m=6, which folds
+to 6 mod 5 = 1 — flat. **It returned m = 0 at the HIGHEST possible confidence.**
+Not a marginal call; a textbook alias reported as certainty.
+
+⚠️ **AND I RE-DERIVED THE ARITHMETIC — `INSTRUMENT.md` HAS HELD IT SINCE
+2026-08-23**, 2m argument and all (§7an, **seventh** occurrence). **What was
+actually missing was the FIX**: that document flagged `SECTORS`' comment as wrong
+and the comment stayed wrong in the code for two days (§7r). 🔑 **A document that
+records a defect is not a defect that is fixed** — and this pair, §7an and §7r,
+keeps recurring together: the knowledge is in the record, and the record is not
+in the code.
+
+🔑 **THE PRACTICAL CONSEQUENCE:** m=2 needs N ≥ 8 and m=3 needs N ≥ 12, while
+`h3_loaded`'s own note says **N ≥ 9 is unbuildable**. **So the azimuthal
+diagnostic can never resolve the modes this cavity actually has**, and that is a
+permanent property of the geometry, not a settings choice. **Purity P is the
+answer precisely because it is a POINTWISE ratio, not a sampled transform — it
+has no Nyquist limit.** That is why every eigen rig must emit it.
+
+## 7bh. 🔴 A SAMPLE-COUNT RULE IS NOT A RESOLUTION RULE — interpolate the edges
+
+🔴 **2026-08-25. I gave three explanations for one 7.7 % discrepancy and only the
+third survived** — each of the first two looked convincing on a single case.
+
+| # | explanation | died because |
+|---|---|---|
+| 1 | eigen and driven genuinely disagree | the meshes differed (§7aq) |
+| 2 | the cold sweep had too few samples (14) | **1e20 gives 0.0 % at TEN samples** |
+| 3 | ✅ **the 3 dB edges snapped to the grid** | survives three densities |
+
+🔑 **WHY №2 WAS SEDUCTIVE AND WRONG.** Q_L is f₀ / width, and the width came from
+the nearest GRID POINT on each flank. Each edge can be off by a step, so the
+error is **bounded by ~2/N — but where it lands inside that bound depends on
+COMMENSURABILITY.** 1e20's 16.00 MHz width is exactly 80 × 200 kHz, so decimating
+to ten samples moved **nothing**. ⚠️ **A commensurate grid looks like an accurate
+method.** Validating a fit on one resonance can therefore certify a bug.
+
+✅ **THE FIX IS INTERPOLATION, AND IT IS THE SAME FIX TWICE** — the dip vertex
+AND the 3 dB crossings. Tested by decimating the rig's own sweeps:
+
+| | grid edges | **interpolated** |
+|---|---:|---:|
+| cold, 13 samples | −6.4 % | **+0.0 %** |
+| cold, 6.5 samples | −18.1 % | **−0.8 %** |
+| anchor, 14.8 | −7.3 % | **−0.3 %** |
+| 1e20, 9.9 | −1.1 % | **−0.1 %** |
+
+✅ **AND IT CLOSES THE ORIGINAL GAP:** cold Q₀ **40,654 → 43,455** against eigen's
+**43,523 — 7.2 % → 0.16 %.** Verified by calling the patched `fit_dip` on the
+stored sweeps, not by reading the diff.
+
+### 🔴 AND THE PRIOR ART HAD IT RIGHT — `h3_driven` REIMPLEMENTED IT AND DROPPED IT
+
+`KNOWN.md`'s PRIOR ART table names **`e0k2_anchor.analyse_driven`** as *"driven
+Q₀ extraction — 3 dB width of ABSORBED power + dip depth"*. **That code, and
+`qfit.py`'s copy of it, ALREADY interpolated the crossing.** `h3_driven.fit_dip`
+reimplemented the same method and **returned the grid point.** §7an, eighth
+occurrence — **and this time the correct implementation was in the file the
+index points at.**
+
+⚠️ **BUT THE PRIOR ART WAS NOT QUITE RIGHT EITHER.** It hardcoded the bracket as
+`d[i-1] … d[i]`, which is correct walking UP and **wrong walking DOWN**, because
+`prev` is then the value at `i+1`. **Tracking the previous FREQUENCY fixes both
+directions.** Cold: 7,470.9 → **7,487.0**.
+
+✅ **SETTLED ON A SYNTHETIC RESONATOR WITH A KNOWN Q_L**, because three
+implementations disagreeing needed an external referee, not another opinion:
+
+| step | samples across | grid | **tracked** |
+|---:|---:|---:|---:|
+| 25 kHz | 13.1 | −6.65 % | **−0.35 %** |
+| 50 kHz | 6.5 | −18.3 % | **−1.14 %** |
+
+⚠️ **My first synthetic said all three methods were 20–39 % wrong.** That was the
+MODEL, not the code: I parameterised Γ with Q_L where the response uses Q₀, so
+the "true" answer was off by (1+β). **A test harness is an instrument too**, and
+it read as a spectacular finding for several minutes.
+
+✅ **All three fitters now agree with each other AND with the eigen pair
+(−0.67 %).**
+
+✅ **Rules:**
+- **Interpolate every quantity read off a sampled curve** — the minimum, the
+  crossings, all of it. **Sample count then buys robustness, not accuracy.**
+- 🔑 **When N implementations of one method disagree, do not argue — build a
+  case with a KNOWN answer.** Real data cannot referee, because it has no truth
+  column.
+- ⚠️ **Never validate a fitting method on ONE resonance.** Commensurability makes
+  a broken method look exact, and you cannot tell from inside the case.
+- 🔑 **"Bounded by" is not "equal to".** ~2/N was the right BOUND and a useless
+  PREDICTOR — I quoted it as a spec and it was wrong at both ends.
+
+## 7bi. 🔴 NO CONSTANTS IN SCRIPTS — and the linter could not see the biggest store
+
+🔑 **User, 2026-08-25: *"there should be absolutely no constants in any
+scripts."*** ✅ And my own sentence — *"geometry.py uses 11.6"* — was the tell.
+**It should never have been able to.**
+
+🔴 **`geometry.py` held 58 keyword defaults, 16 of them physical**, including
+`torch_eps=11.6` — **the wrong anisotropy axis for the whole programme.**
+`r_hardcoded_value` saw **none** of them: they are lowercase kwargs inside a
+`dict(...)` call, not module-level UPPERCASE. **The largest constant store in the
+corpus was unchecked.**
+
+✅ **BOUND NOW** (`_bind()`, the `wall_sigma()` contract — bind or refuse):
+`torch_eps` → **9.39**, `torch_tand`, `filter_eps`. Plus `e3_closure`'s
+`TORCH_SAPPHIRE = (11.6, 3.5e-5)` → bound, **and a fourth hardcoded copy of the
+wall conductivity** found at `e0_solver_vs_math:654` (`sigma=3.5e7`), after the
+three `r_hardcoded_value` already had.
+
+✅ **TWO NEW BLIND SPOTS CLOSED**: `r_material_kwarg` (material properties as
+keyword defaults) and tuple constants — `(11.6, 3.5e-5)` was invisible because
+the rule only inspected scalars.
+
+⚠️ **BUT TUPLES ONLY, NEVER LISTS.** Including lists fired on `e0q`'s `SIGMAS`,
+`h3_hot`'s `T_WALL_K` and `h3_loaded`'s `NE` — **three legitimate SWEEP AXES.**
+🔑 **A list of values is an independent variable, not a constant.** The
+distinction is idiomatic and worth keeping: `(a, b)` is one compound value,
+`[a, b, c]` is an experiment.
+
+### 🔴 AND A SILENT `.replace()` COST ME THE SAME FIX TWICE
+
+My first attempt at `filter_eps` used a bare `str.replace()` whose pattern was
+**one space off**. It matched nothing, changed nothing, and **reported success** —
+so I believed it was bound while the literal sat there. It only surfaced because
+the new linter rule flagged the line I thought I had already fixed.
+✅ **Every scripted edit asserts its pattern first** (`assert old in s`). I do
+this for most and skipped it for one. **The one is the one that failed.**
+
+## 7bj. 🔴 WHEN YOU CHANGE THE SWEEP AXIS, THE TAG MUST CHANGE WITH IT
+
+🔴 **2026-08-25.** `h3_driven`'s case tag was `f"{TAG}_n{log10(ne)}"` — correct
+for its whole life, because **density was the only axis.** Repointing it to sweep
+the plasma ANNULUS at fixed density collapsed **all four cases onto one tag**:
+same mesh file, same postpro dir. **And `build_mesh` reuses an existing
+`{tag}.msh`** — so cases 2–4 would have solved **case 1's geometry** and the
+sweep would have reported *"bore radius doesn't matter."*
+
+🔑 **THE FAILURE WOULD HAVE LOOKED LIKE A RESULT.** A flat line across four
+annuli is exactly what a null result looks like, and nothing in the output would
+have contradicted it. **Caught from the log banner, before the second case.**
+
+✅ **Rules:**
+- **A case tag must name every SWEPT variable, not the one that happened to vary
+  when it was written.** §7ap at the case level.
+- 🔑 **A cache keyed on an incomplete name is worse than no cache** — it turns a
+  naming bug into silently wrong physics.
+- ⚠️ **Print the AXIS in the run banner.** This one printed
+  `plasma r={RI}-{RO}` from the module constants regardless of what was being
+  swept — a header that contradicted the run.
+
+### 🔴 AND TWO MORE, FOUND IN THE SAME MINUTE
+
+**The tag mangled its own stamp.** `.replace(".", "p")` was applied to the whole
+f-string including `TAG`, turning `h3-bore-01.0d940098` into
+`h3-bore-01p0d940098` — **destroying the dot the stamp convention depends on**
+(§7bd). Scope such replaces to the numeric fields.
+
+**`ops/stoprig.sh` does not kill the mesher.** It kills the rig and the palace
+tree; **gmsh is a child process, not in that tree.** A stopped rig left
+`geometry.py` meshing for minutes, and the next launch was refused by `ops/go`'s
+BUSY guard **with no obvious cause.** 🔑 `ops/go`'s own comment says a rig
+*"spends a large fraction of its life meshing"* — **which makes the mesher the
+most likely thing to be alive when you stop one, and it was the one thing not
+being killed.** Fixed.
+
+### 7bj-bis. The TAG was not enough — the REPORT follows the axis too
+
+**2026-08-25, `h3-bore-01`.** §7bj fixed the output TAG when the sweep axis
+changed from density to bore. **The summary was never fixed**, and it failed in
+three separate ways on a run whose `result.json` was complete:
+
+- `P = {p["ne"]: p for p in points}` — a bore sweep holds n_e FIXED, so three
+  results **collapsed onto one dict entry**. Silent.
+- the table skipped any point with `eta is None`. eta is None for every
+  reference case, and in a fixed-density sweep that is **every point**, so it
+  printed `🔴 no result` **three times over three good fits**.
+- `f"eta={a['eta']:.4f}"` then raised `TypeError` on None and the rig **exited 1
+  after all the physics had succeeded**.
+
+🔴 **The most dangerous line was `"Nothing here is quotable"`** — a
+density-sweep message emitted because a bore sweep has no cold case. **A false
+alarm that discards a good result is worse than a crash**, which at least is
+obviously a crash.
+
+🔑 **The fix is one field: `out["sweep_axis"]`.** The table header, the row key,
+the anchor lookup and the closing verdicts all read it. There is now also a
+collision guard: if two points share a key, the summary says so instead of
+reporting one of them.
+
+⚠️ **The comment that prescribed the fix was ALREADY IN THE FILE**, sitting
+directly under the broken line — "KEY ON A SUCCESSFUL FIT, NOT ON eta" — and
+only the `P =` line below it had ever been changed. **A correction applied to
+one of two adjacent sites reads as done.**
+
+## 7bk. 🔴 A SWEEP MUST BE LEGAL IN THE GEOMETRY, NOT JUST IN THE PHYSICS
+
+🔴 **2026-08-25.** I designed a plasma-annulus sweep from the **field profile**
+— where TE011's E_φ is strong — and never checked it against the **torch**. Two
+of four cases were invalid:
+
+| case | fault |
+|---|---|
+| **1–4 mm** | RI = 1.0 is **exactly the injector ID radius**. A coincident surface — gmsh hung on the boolean for **27 minutes**, no error, no ranks, no output |
+| **2–11 mm** | RO = 11.0 is **outside the torch** (outer tube ID → r = 8.50). Plasma in the cavity, not in a tube |
+
+🔑 **THE HANG HAD NO SIGNATURE.** No exception, no timeout, no partial mesh —
+just a `python3` that had been alive 27 minutes. It was noticed because someone
+looked at the process list, **not because anything reported a problem.**
+⚠️ **Coincident surfaces are the classic gmsh boolean failure**, and a sweep is
+exactly where you generate one by accident: you vary a radius until it lands on
+a feature you were not thinking about.
+
+✅ **AND THE INVALID CASE WAS A REAL CONSTRAINT IN DISGUISE.** RO ≤ 8.5 is not a
+meshing detail — **the plasma cannot exceed the outer tube's bore.** So the
+modelled 2–8.5 is **already the widest this torch allows**, and the only
+available direction is NARROWER. **Checking the sweep against the geometry
+turned a bad case into a design fact.**
+
+✅ **Rules:**
+- **List the geometry's feature surfaces before choosing sweep values**, and
+  keep every swept value off them. Here: r = 1.00, 2.50, 7.00, 8.00, 8.50,
+  10.00 mm.
+- **Vary ONE end of a range, not both.** RI fixed at 2.0 also guarantees the
+  inner surface never moves onto a feature.
+- ⚠️ **A mesher that hangs is not a mesher that failed.** Nothing in the rig,
+  the log or the gates catches it — only the process list. **Check elapsed time
+  when a run seems quiet.**
+
+## 7bl. 🔴 A CANONICAL NAME HAS CONSUMERS, AND THE STORE CANNOT NAME THEM
+
+**2026-08-25.** §7be added the unit-suffix rule, so `wall.conductivity` became
+`wall.conductivity.s_per_m`. I renamed it in `baselines.json` and in
+`e0k2_anchor.wall_sigma()`, checked that `wall_sigma()` returned 3.5e7, and
+launched. **`h3-bore-01` failed 40 minutes later, on all three cases:**
+
+    🔴 wide sweep failed: wall conductivity not declared in baselines.json
+       ('wall.conductivity'). Refusing to fall back to the template's
+       6.3e+07 S/m — that is silver
+
+**That guard is one I wrote**, for exactly this failure, after silver walls made
+every Q in the record ~34% high. It worked. What it caught was **my own rename.**
+
+🔑 **There were THREE readers of that name, not one.** `solveconf.py` and
+`condcheck.py` each did their own `json.loads(baselines.json)[literal key]`.
+Nothing connected them to the store, so nothing could report what the rename
+would break — and `wall_sigma()` returning the right number proved only that
+**the one binding I already knew about** was fine.
+
+⚠️ **`r_hardcoded_value` could not see this.** It looks for a hardcoded VALUE.
+Here the value was correctly externalised; **the NAME was hardcoded.** A rule
+that checks one half of a binding passes the broken half in silence.
+
+### What was done
+- **`values.ALIASES`** — the old name resolves to the new one. A rename is now
+  **non-breaking** and the alias is greppable, so consumers migrate on a
+  schedule instead of at launch time.
+- **One accessor.** `solveconf.py` and `condcheck.py` now go through
+  `values.get()`. Two bindings became one.
+- **`preflight.r_direct_baseline_read`** — reading a canonical name by literal
+  key is an ERROR outside the four accessor modules.
+
+### Three ways the fix itself went wrong, all worth keeping
+1. `s.replace("RULES = [", ...)` **matched `SHELL_RULES = [`** — the new rule
+   was registered as a shell rule and died on a NameError. **A substring match
+   on a symbol name matches the symbol that CONTAINS it.**
+2. The finding tuple was `(lineno, "error", msg)`; the codebase's order is
+   `(ERROR, lineno, msg)`. It printed `line error:` and counted as a warning —
+   **the rule fired and was invisible.**
+3. `self_test()` called rules as `rule(src, tree)` with no `path`. My rule
+   returns `[]` without one, so **it would have passed the self-test while dead
+   in the sweep** — §7d exactly. `self_test` now threads `path` the same way
+   `lint()` does.
+
+🔑 **The self-test is what caught 1 and 3, by refusing a rule with no known-bad
+case.** A linter that lints itself is worth the twenty lines.
+
+✅ **CLOSED the same day: `values.py --consumers <name>`.** Once every read goes
+through one accessor, the consumers are an AST walk — calls to `values.get()`
+or `_bind()` with a literal name. It resolves aliases, so asking for the OLD
+name lists who would break, and flags anyone still reading via the alias:
+
+    $ python3 values.py --consumers wall.conductivity
+    wall.conductivity: 2 consumer(s)
+      condcheck.py:22
+      solveconf.py:86
+
+🔑 **Check this BEFORE a rename, not after a failed launch.**
+⚠️ **Its first version reported 4, counting `base.get("wall.conductivity", …)` —
+a plain dict lookup.** It now requires `values.get`/`_bind` specifically. **An
+index that over-reports gets ignored, which leaves you where you started.**
+
+## 7bm. 🔴🔴 A BUG FIX THAT COULD INVALIDATE A RESULT MEANS THAT RESULT IS INVALID UNTIL PROVEN OTHERWISE
+
+**User, 2026-08-25.** The burden of proof sits on the RESULT, not on the doubt.
+
+🔑 **AND THE COROLLARY, WHICH IS THE WHOLE POINT:** *"We can't leave bugs in
+place just because they might invalidate results. We have to fix, and then add a
+new queue item to verify or re-run."* **The fix is never negotiable. The
+verification is a debt you record, not a reason to hesitate.**
+
+### The failure mode this closes
+
+Finding a bug creates an incentive to keep it. The affected results are already
+written down, already cited, already load-bearing — and fixing the bug makes
+them questionable. **So the fix gets softened into a flag, a comment, or a
+"deliberately not bound" exception, and the wrong number stays live.**
+
+That is exactly what happened on 2026-08-25. `GEO` carried
+`A_MM, L_MM = 103.70, 88.53` — D/L 2.343, **a cavity H1 REJECTED** — as its
+DEFAULT. My first instinct was to check whether fixing it would invalidate
+stored results. **That is the wrong first question.**
+
+### What the rule requires
+
+| ❌ not this | ✅ this |
+|---|---|
+| "the conclusions are probably still fine" | the result is **INVALID** until a re-run says otherwise |
+| "it only affects rigs that don't override" | name them, list them, queue them |
+| leave the literal, add a warning comment | **fix it**, then record the debt |
+| "re-deriving would move every stored number" | moving them is the *point* if they are wrong |
+
+⚠️ **"Self-consistent" is not proof.** I wrote that the affected E0 rigs were
+"mostly self-consistent, because closed form was evaluated at the same a/L they
+meshed". **That is an argument, not a measurement**, and under this rule it does
+not license calling them valid. They are invalid until re-run.
+
+### What DOES discharge the burden
+
+**Evidence that the artefact itself was unaffected — not reasoning that it
+probably was.** The H3 record survived this fix for a specific, checkable
+reason: **every H3 mesh SIDECAR records `radius 88.004517 / length 115.41576`**,
+so those rigs demonstrably meshed H1's cavity. That is the consumer's own
+record (§7d, [[mesh-is-what-you-ordered]]), not an inference from the code.
+
+🔑 **The test: can you point at a stored artefact that proves it?** If the only
+answer is "the code path looks like it was fine", the result is invalid.
+
+## 7bn. 🔴 A MESH THAT GMSH ACCEPTS CAN STILL BE TOPOLOGICALLY INVALID
+
+**2026-08-25, the torch restoration.** `geometry.py` built the restored design
+cavity and reported everything green:
+
+    mesh: 61087 tets, 86901 nodes, order 2
+    No ill-shaped tets in the mesh :-)
+    jacobian check: OK
+
+**Palace refused to load it:**
+
+    Verification failed: (faces_info[gf].Elem2No < 0) is false
+     --> Invalid mesh topology. Interior triangular face found
+         connecting elements 21700, 21701 and 21702.
+
+A face shared by THREE elements is **non-manifold** — two volumes overlapping,
+or a surface embedded inside a solid. 🔑 **gmsh does not check this. MFEM does,
+at load.** Element quality (`minSICN`, ill-shaped tets, the jacobian check) says
+nothing about topology; a mesh can be beautifully shaped and still not describe
+a valid domain.
+
+⚠️ **EVERY MESH CHECK IN THIS PROGRAMME UNTIL NOW WAS A GMSH-SIDE CHECK** — tet
+counts, sidecar dimensions, groove/mount asserts. All of them pass on a mesh
+Palace will reject. **"It meshed" is not "it will solve".**
+
+✅ **THE CHECK IS CHEAP AND SHOULD BE ROUTINE:** Palace aborts at mesh load, in
+seconds, before any assembly. A 2-mode config at 4 ranks is a topology test that
+costs less than the gmsh run did. **Add it to the pre-flight for any geometry
+CHANGE, not just for a new sweep.**
+
+🔴 **AND IT IS A CLASS THIS PROGRAMME HAS SEEN BEFORE.** The 27-minute gmsh hang
+came from `RI = 1.0` sitting exactly on the injector ID — a coincident surface.
+Coincident and overlapping surfaces are the recurring hazard when a new part is
+added to the assembly, and **gmsh's response to them ranges from a silent hang
+to a silently invalid mesh.**
+
+### ✅ THE ROOT CAUSE — and it was written in the file, next to the wrong feature
+
+**`ns > 1` fused ONE FULL CYLINDER into EVERY wedge.** The chimney and the feed
+each did `for wdg in wedges: fuse(wdg, cylinder)` — so at `--sectors 5` the mesh
+contained **five overlapping copies of the same solid.**
+
+**MEASURED, with NO TORCH ANYWHERE:**
+
+| sectors | chimney | feed | topology |
+|---:|---|---|---|
+| 1 | 21 | off | ✅ OK |
+| **5** | **21** | off | 🔴 **NON-MANIFOLD** |
+| **5** | off | **21** | 🔴 **NON-MANIFOLD** |
+
+🔴 **THE GROOVE'S OWN COMMENT NAMES THIS HAZARD, ABOUT THE CHIMNEY, BY NAME:**
+*"Built PER SECTOR and fused into its own wedge. Fusing one full ring into every
+wedge (**the pattern the chimney uses, which is safe at ns=1**) would overlap ns
+copies of the same solid once ns > 1."* **The knowledge existed, attached to the
+sibling feature, in a file already read twice that day.** PRIOR ART in the
+literal sense — and it was found by bisection, not by the search that should
+have found it.
+
+⚠️ **Never seen because `GEO` ships `--chimney 0,41 --feed 0,41` — both OFF.**
+Same latent-bug shape as the torch permittivity: **a disabled feature hides its
+own bug, and enabling it years later looks like the ENABLING broke something.**
+
+✅ **FIXED as one feature.** User: *"Isn't 'chimney' overwrought? It's just the
+hole in the end cap opposite the other torch-bottom hole."* R29 ("chimney") and
+R49 ("feed") were structurally identical — two names, two R-numbers, one
+clearance hole through an end cap. Now a single `cap_hole()` built per sector,
+with the `ns == 1` path kept EXACTLY so existing meshes stay byte-identical
+(verified: 33,600 tets before and after).
+
+⚠️ **TWO WRONG HYPOTHESES FIRST, both plausible, both acted on:** that
+`torch_ext = 41` met `feed_len = 41`; then that the torch's top face met the
+chimney's bottom face. **Neither was the cause** — the second was disproved by
+fixing it and watching all four variants still fail. What worked was bisecting
+ONE FLAG AT A TIME while removing the variable I had assumed was involved (the
+torch) precisely BECAUSE it was the thing I had been changing.
+
+🔑 **THE FALSE HYPOTHESIS STILL PAID.** Asking "what SHOULD be at that junction
+physically?" produced the answer that the outer tube must pass through BOTH end
+caps — one end for gas entry, the other to eliminate fouling (user). That is a
+real design improvement, kept (`--torch-ext-top`) even though it fixed no bug.
+**A CSG kernel cannot distinguish "you drew two things in the same place" from
+"your design has a degenerate junction."** Usually it is the former and nudging
+a dimension is right; it is worth ONE question first, because occasionally it is
+the latter and nudging hides it.
 
 ## 8. Land results in files, immediately
 
