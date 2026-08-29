@@ -107,6 +107,34 @@ def driven(mesh, tag, band, step=2e-5, order=1, materials=None,
             print(f"    wall: {_sig:.3g} S/m from baselines "
                   f"(template said {_was:.3g})", flush=True)
 
+    # 🔴 THE LOOP IS A DIFFERENT METAL AND, UNTIL 2026-08-27, WAS NOT ONE.
+    # geometry.py tagged the wire's surface into TAG_WALL (it is an exterior
+    # face like any other), so the coupler solved as ALUMINIUM and its loss was
+    # indistinguishable from the cavity's. It now has attribute 92.
+    #
+    # 🔴🔴 FAIL CLOSED. A mesh that DECLARES a loop attribute and gets no
+    # Conductivity entry for it is WORSE than before the split: Palace applies
+    # its default PEC to any unlisted boundary, so the coupler would become
+    # LOSSLESS — and a lossless resonant element at λ/4 is exactly the thing
+    # whose loss we are trying to measure. So this refuses rather than warns.
+    _loop_attr = attrs.get("loop")
+    if _loop_attr is not None:
+        try:
+            _lsig = values.get("loop.conductivity.s_per_m")
+        except Exception as e:
+            raise RuntimeError(
+                f"the mesh declares a loop surface (attribute {_loop_attr}) but "
+                f"loop.conductivity.s_per_m is not usable ({e}). REFUSING: an "
+                f"unlisted boundary attribute is PEC in Palace, so solving now "
+                f"would model the coupler as LOSSLESS — worse than the "
+                f"aluminium it had before it was split out. Declare the loop "
+                f"metal, or mesh without the split.")
+        c["Boundaries"]["Conductivity"].append(
+            {"Attributes": [_loop_attr], "Conductivity": _lsig,
+             "Permeability": 1.0, "Thickness": 0.0, "External": False})
+        print(f"    loop: {_lsig:.3g} S/m on attribute {_loop_attr} "
+              f"(wall is {_sig:.3g})", flush=True)
+
     # Air sectors: one material over every air attribute the mesh actually has.
     air = attrs["air"]
     mats, dropped = [], []

@@ -121,6 +121,12 @@ P = dict(
     # its normal is z-hat and it links H_z -> the TE011 operating mode.
     # A series gap at the far side carries the lumped port.
     loop_d=0.0,             # radial depth (m); 0 disables the loop
+    loop_strip=None,        # (axial, radial) m: rectangular conductor. The
+                            # AXIAL dimension is the wide one, so the broad face
+                            # is parallel to the wall. None = round wire.
+    loop_azim=None,         # (h, arc LENGTH) m: AZIMUTHAL loop — an arc at
+                            # r = a - h in the z=0 plane, closed to the wall by
+                            # two radial legs. None = the radial loop.
     loop_w=8.5e-3,          # half-width; loop area ~ 2*w*d
     # R69: mount the loop on the -z END CAP at this radius instead of on the
     # barrel wall. 0 keeps the barrel loop, which is what every run before R69
@@ -256,6 +262,13 @@ TAG_PLASMA0 = 20        # R83: plasma split into ns AZIMUTHAL sectors, 20..20+ns
                         # whole-cavity, cold, stored-energy proxy for this.
                         # Only with --plasma-sectors; otherwise the plasma stays
                         # one volume on TAG_PLASMA and nothing existing moves.
+TAG_GAP = 14            # 🔑 2026-08-26: the SERIES-GAP region as its own
+                        # volume, so domain-E reports the energy stored IN the
+                        # gap. The 27x coupling lever is not understood -- R62's
+                        # series-LC model predicted the OPPOSITE sign and a
+                        # refit was retracted at 44% residual -- and "electric
+                        # or magnetic coupling" is a statement about an ENERGY
+                        # SPLIT that nothing currently measures.
 TAG_GROOVE = 13         # R81: the corner groove as its OWN volume, so the
                         # fraction of a mode's energy INSIDE the slot can be
                         # measured instead of inferred. Only with --tag-groove;
@@ -268,6 +281,13 @@ TAG_GROOVE = 13         # R81: the corner groove as its OWN volume, so the
 # baselines (`wall.conductivity`, aluminium 3.5e7), not from the config template.
 TAG_WALL = 90
 TAG_PORT = 91          # lumped-port face in the loop gap (internal)
+TAG_LOOP = 92          # the coupling loop's own surface — COPPER, not the
+#                        wall's aluminium, and its own attribute so its loss can
+#                        be separated. Before 2026-08-27 the wire's surface was
+#                        swept into TAG_WALL by the topological rule below (it is
+#                        an exterior face like any other), so the coupler was
+#                        modelled as ALUMINIUM and its dissipation was
+#                        indistinguishable from the cavity's.
 
 
 def mesh_size(eps_r: float, f: float, n: float) -> float:
@@ -408,7 +428,129 @@ def build(p: dict, out: str, msh_order: int) -> None:
     port_face = None
     gap2_centre = None
     port_centre = None
-    if ld > 0 and lcr > 0:
+    _azim = p.get("loop_azim")
+    if _azim:
+        # --- AZIMUTHAL loop, 2026-08-29 ------------------------------------
+        # An ARC at r = a - h in the z = 0 plane, spanning `arc` radians about
+        # loop_phi, closed to the wall by two RADIAL legs. The port gap sits at
+        # the arc's mid-span.
+        #
+        # 🔑 WHY IT IS NOT JUST ANOTHER SHAPE. For TE011 a magnetic coupler must
+        # link H_z, so its area lies in the r-phi plane either way — but the
+        # radial loop spans a range of r at fixed phi, sampling H_z across the
+        # J0 profile and running its LEGS ACROSS the wall current
+        # (K = n x H = H_z phi-hat). This one spans a range of PHI at fixed r,
+        # and TE011 is m = 0, so its whole area sits at ONE value of H_z, the
+        # near-maximum next to the wall, with its conductor running ALONG the
+        # wall current the way the annular groove does.
+        # ⚠️ It also sits hard against a conducting boundary, so its own
+        # self-inductance is image-loaded — and Q_ext goes as the coupling
+        # coefficient M/sqrt(L1*L2), not as M alone. Nothing measured so far
+        # prices that, which is exactly why h is the axis to sweep.
+        #
+        # 🔴 NO SERIES CAPACITOR HERE (user, 2026-08-29). The conductor-to-wall
+        # gap IS a capacitance that varies with h, so adding a lumped series gap
+        # would confound the axis being swept. That same gap is also the ARC
+        # RISK: it narrows as h does, and h - lrw is the clearance to probe.
+        _h, _arclen = float(_azim[0]), float(_azim[1])
+        _strip = p.get("loop_strip")          # (axial, radial) or None
+        if lcr > 0:
+            sys.exit("ERROR: --loop-azim and --loop-cap are different mounts")
+        if p["loop_gap2"] > 0:
+            sys.exit("ERROR: --loop-gap2 with --loop-azim — the wall gap is "
+                     "already a capacitance that varies with h; a second one "
+                     "confounds the axis being swept")
+        _R = a - _h
+        if _R <= lrw or _h <= lrw:
+            sys.exit(f"ERROR: --loop-azim h={_h*1e3:.2f} mm leaves no clearance "
+                     f"for a wire of radius {lrw*1e3:.2f} mm")
+        # 🔑 ARC LENGTH -> ANGLE HERE, not in the caller. The angle depends on
+        # R = a - h, so specifying an ANGLE would couple h and L; specifying a
+        # LENGTH keeps them independent, which is the point of the sweep.
+        _psi = lg / (2.0 * _R)              # half-angle of the port gap
+        _th = _arclen / (2.0 * _R)          # half-angle of the whole arc
+        if _th <= _psi:
+            sys.exit(f"ERROR: --loop-azim arc {_arclen*1e3:.2f} mm is not "
+                     f"longer than its own port gap {lg*1e3:.2f} mm")
+        if _strip and _arclen < _strip[0]:
+            sys.exit(f"ERROR: arc {_arclen*1e3:.2f} mm is SHORTER than the "
+                     f"strip is wide ({_strip[0]*1e3:.2f} mm) — that is not an "
+                     f"arc, it is a stub, and the two are not comparable")
+        segs = []
+        _out = _h + 2.0e-3          # legs reach outside; the cut trims them
+
+        def _arc_seg(angle):
+            """One arc segment spanning [0, angle], round wire or strip."""
+            if not _strip:
+                return (3, occ.addTorus(0.0, 0.0, 0.0, _R, lrw, -1, angle))
+            _w, _t = _strip                    # axial (wide), radial (thin)
+            # a rectangle in the r-z plane at phi = 0, then swept about z.
+            # ⚠️ AXIAL IS THE WIDE ONE so the broad face lies parallel to the
+            # wall — that is the whole point of the strip, and swapping them
+            # would face the thin edge at the wall instead.
+            _r = occ.addRectangle(_R - _t / 2.0, -_w / 2.0, 0.0, _t, _w)
+            occ.rotate([(2, _r)], 0, 0, 0, 1, 0, 0, math.pi / 2.0)
+            _rev = occ.revolve([(2, _r)], 0, 0, 0, 0, 0, 1, angle)
+            return next((d, t) for d, t in _rev if d == 3)
+
+        def _leg(ang):
+            """One radial leg at azimuth `ang`, round wire or strip."""
+            if not _strip:
+                return (3, occ.addCylinder(
+                    _R * math.cos(ang), _R * math.sin(ang), 0.0,
+                    _out * math.cos(ang), _out * math.sin(ang), 0.0, lrw))
+            _w, _t = _strip
+            _b = occ.addBox(_R, -_t / 2.0, -_w / 2.0, _out, _t, _w)
+            occ.rotate([(3, _b)], 0, 0, 0, 0, 0, 1, ang)
+            return (3, _b)
+
+        # two arc segments, leaving the port gap centred at phi = 0
+        for _sgn in (+1.0, -1.0):
+            _seg = _arc_seg(_th - _psi)
+            occ.rotate([_seg], 0, 0, 0, 0, 0, 1, _psi if _sgn > 0 else -_th)
+            segs.append(_seg)
+        for _sgn in (+1.0, -1.0):
+            segs.append(_leg(_sgn * _th))
+        wire = occ.fuse([segs[0]], segs[1:])[0]
+        if p["loop_phi"]:
+            occ.rotate(wire, 0, 0, 0, 0, 0, 1, p["loop_phi"])
+        cut_w = []
+        for wdg in wedges:
+            res, _ = occ.cut([wdg], wire, removeObject=True, removeTool=False)
+            cut_w.extend(res)
+        wedges = cut_w
+        occ.remove(wire, recursive=True)
+        # 🔑 THE PORT FACE IS THE BARREL'S, WITH xi -> R. At phi = 0 the arc's
+        # wire runs along y exactly as the barrel crossbar does, so the same
+        # rectangle and the same "+Y" Direction apply — and the sidecar's
+        # port_direction = Rz(phi).(0, cos tilt, sin tilt) is phi-hat, which is
+        # along this conductor at the gap. Nothing about the port changes.
+        # 🔴 THE PORT FACE MUST BE AN ANNULAR SECTOR, NOT A RECTANGLE.
+        # First attempt reused the barrel's flat rectangle with xi -> R. The
+        # barrel's gap is a STRAIGHT segment, so a rectangle spans it exactly;
+        # this gap is an ARC, whose end caps are planes normal to phi-hat at
+        # +-psi. A flat rectangle's edges cut through those caps — tilted only
+        # ~0.1 deg, but enough to fragment the face into FOUR slivers and hand
+        # tetgen a self-intersecting complex:
+        #     port face(s) [338, 339, 496, 497]   (should be ONE)
+        #     Error: PLC Error: A segment and a facet intersect at point
+        # It failed at h = 12, 8, 5 and 2 mm and survived at 3 mm, which was
+        # luck on marginal geometry, not correctness.
+        # ✅ Sweep a RADIAL SEGMENT through the gap angle instead, so the face
+        # is the gap, exactly, by construction.
+        _pw = (0.9 * _strip[1]) if _strip else (0.9 * lrw)
+        _ln = occ.addLine(occ.addPoint(_R - _pw, 0.0, 0.0),
+                          occ.addPoint(_R + _pw, 0.0, 0.0))
+        occ.rotate([(1, _ln)], 0, 0, 0, 0, 0, 1, -_psi)
+        pf = next(t for d, t in
+                  occ.revolve([(1, _ln)], 0, 0, 0, 0, 0, 1, 2.0 * _psi)
+                  if d == 2)
+        if p["loop_phi"]:
+            occ.rotate([(2, pf)], 0, 0, 0, 0, 0, 1, p["loop_phi"])
+        port_face = pf
+        _c, _s = math.cos(p["loop_phi"]), math.sin(p["loop_phi"])
+        port_centre = (_R * _c, _R * _s, 0.0)
+    elif ld > 0 and lcr > 0:
         # --- R69: CAP-MOUNTED loop -----------------------------------------
         # The same U, rotated so its normal is RADIAL: two AXIAL legs at
         # (x = lcr, y = +/-lw) rising from just outside the -z cap to a depth
@@ -814,6 +956,19 @@ def build(p: dict, out: str, msh_order: int) -> None:
             if k:
                 occ.rotate(piece, 0, 0, 0, 0, 0, 1, k * 2 * math.pi / nps)
             pl_sub += piece
+    # 🔑 GAP SUB-VOLUME. A sphere centred on the series gap, big enough to
+    # contain the gap AND its near fringing field, which is where the stored
+    # energy actually sits. Sized from the electrode, not the gap: at wide gaps
+    # the fringing extends ~the electrode radius beyond the faces.
+    # ⚠️ APPENDED LAST, like pl_sub and groove_tool, for the same reason —
+    # appending cannot shift a provenance index that already exists.
+    gap_sub = []
+    if gap2_centre is not None:
+        _fr = max(p["loop_flange_r"], p["loop_rw"])
+        _rad = max(p["loop_gap2"] / 2.0 + _fr, 2.0 * _fr)
+        gap_sub = [(3, occ.addSphere(gap2_centre[0], gap2_centre[1],
+                                     gap2_centre[2], _rad))]
+
     # ⚠️ groove_tool goes after pl_sub for the same reason pl_sub goes after
     # everything else: appending cannot shift a provenance index that already
     # exists. Inserting it anywhere earlier would silently re-tag the bore.
@@ -850,7 +1005,7 @@ def build(p: dict, out: str, msh_order: int) -> None:
 
     _, out_map = occ.fragment(wedges + filters,
                               tube + plasma + upstream + pf_tool + pl_sub
-                              + groove_tool)
+                              + groove_tool + gap_sub)
     occ.synchronize()
 
     def tags_of(i):
@@ -876,7 +1031,21 @@ def build(p: dict, out: str, msh_order: int) -> None:
             sys.exit("ERROR: --tag-groove produced no groove volumes. The slot "
                      "was requested as a separate region and did not survive the "
                      "fragment — do NOT read a result from this mesh.")
-    air_sectors = [sorted(tags_of(k) - filter_v - torch_v - bore_v - up_v - groove_v)
+    # 🔑 THE GAP REGION, resolved from provenance like every other sub-volume.
+    gap_v = set()
+    if gap_sub:
+        _gb = (ns + nb + nq + npl + nu + len(pf_tool) + len(pl_sub)
+               + len(groove_tool))
+        gap_v = set().union(*(tags_of(_gb + j) for j in range(len(gap_sub))))
+        # the sphere straddles conductor and air; keep only what is NOT metal.
+        gap_v = gap_v - torch_v - bore_v - up_v - groove_v - filter_v
+        if not gap_v:
+            sys.exit("ERROR: the series-gap sub-volume produced no air volume. "
+                     "It was requested as a separate region and did not survive "
+                     "the fragment — do NOT read an energy split from this mesh.")
+
+    air_sectors = [sorted(tags_of(k) - filter_v - torch_v - bore_v - up_v
+                          - groove_v - gap_v)
                    for k in range(ns)]
 
     if not torch_v or not bore_v or any(not s for s in air_sectors):
@@ -932,6 +1101,11 @@ def build(p: dict, out: str, msh_order: int) -> None:
                                     name="groove")
         print(f"  groove tagged separately: {len(groove_v)} vols -> attribute "
               f"{TAG_GROOVE}")
+    if gap_v:
+        gmsh.model.addPhysicalGroup(3, sorted(gap_v), tag=TAG_GAP,
+                                    name="series_gap")
+        print(f"  series gap tagged separately: {len(gap_v)} vols -> attribute "
+              f"{TAG_GAP}  (energy split measurable)")
 
     # The striker solid is DELETED, leaving a void. Its surface then has a
     # single adjacent volume, so the topological rule below tags it PEC
@@ -952,7 +1126,88 @@ def build(p: dict, out: str, msh_order: int) -> None:
            if len(gmsh.model.getAdjacencies(2, tag)[0]) == 1]
     if not pec:
         sys.exit("ERROR: no exterior surfaces found — cannot apply PEC")
-    gmsh.model.addPhysicalGroup(2, pec, tag=TAG_WALL, name="wall")
+    # 🔎 DIAGNOSTIC ONLY, ADDITIVE, CHANGES NOTHING. Dumps the exterior-face
+    # inventory so the rule that separates the LOOP from the WALL can be chosen
+    # from MEASUREMENT rather than derived. This file already records that the
+    # first coordinate rule for the wall was wrong, and the wire reaches r = a
+    # at its entry, so a radius test cannot separate them either.
+    if p.get("dump_faces"):
+        print("  --- exterior face inventory (dim=2) ---")
+        for t in sorted(pec):
+            try:
+                area = gmsh.model.occ.getMass(2, t)
+                com = gmsh.model.occ.getCenterOfMass(2, t)
+                bb = gmsh.model.getBoundingBox(2, t)
+                ext = (bb[3] - bb[0], bb[4] - bb[1], bb[5] - bb[2])
+            except Exception as e:
+                print(f"    face {t}: <query failed: {e}>")
+                continue
+            print(f"    face {t:>5}  type={gmsh.model.getType(2, t):<12}"
+                  f" area={area*1e6:>12.3f} mm^2"
+                  f"  com=({com[0]*1e3:8.3f},{com[1]*1e3:8.3f},{com[2]*1e3:8.3f})"
+                  f"  extent=({ext[0]*1e3:7.3f},{ext[1]*1e3:7.3f},"
+                  f"{ext[2]*1e3:7.3f})")
+        print("  --- end inventory ---")
+    # 🔑 SPLIT THE LOOP OUT OF THE WALL. Both are exterior faces — the wire is
+    # CUT OUT of the vacuum, so its surface has a single adjacent volume exactly
+    # like the barrel — which is why one attribute held both.
+    #
+    # 🔴 THE RULE WAS CHOSEN FROM A MEASUREMENT, NOT DERIVED. `--dump-faces` on
+    # the design cavity shows every wire face has z-extent EXACTLY 2*lrw with
+    # its centroid at z = 0, while the caps have z-extent 0, the groove 10, the
+    # chimney 41 and the barrel 135.4. A RADIUS test cannot work: the leg
+    # reaches r = a where it enters the barrel.
+    # ⚠️ This holds for the BARREL mount, where the whole loop lies in the z = 0
+    # plane. The CAP loop's legs are AXIAL, so its z-extent is ld, not 2*lrw,
+    # and the rule does not transfer — that case keeps the old behaviour and
+    # SAYS SO rather than silently mis-tagging.
+    loop_faces = []
+    # 🔴 THE RULE KEYS ON THE CONDUCTOR'S AXIAL HEIGHT, WHICH IS NOT ALWAYS
+    # 2*lrw. A 5x1 mm strip lying broad-face-to-the-wall is 5 mm tall in z, so
+    # the round-wire assumption would MISS its faces, drop them back into the
+    # wall attribute, and model the coupler as aluminium again — silently
+    # undoing the 2026-08-27 split for the one topology it was extended for.
+    _rw = ((p["loop_strip"][0] / 2.0) if p.get("loop_strip")
+           else p["loop_rw"])
+    # ⚠️ AZIMUTHAL LOOPS HAVE ld = 0. The z-extent rule still holds — the arc
+    # lies in the z = 0 plane with a circular cross-section, so its faces are
+    # 2*lrw tall with centroid at z = 0, exactly like the barrel's. But the
+    # GUARD said `ld > 0`, which would have silently sent the arc back into the
+    # wall attribute and modelled it as aluminium again.
+    if (ld > 0 or p.get("loop_azim")) and lcr <= 0:
+        _tol = 0.05 * _rw
+        for t in pec:
+            bb = gmsh.model.getBoundingBox(2, t)
+            if (abs((bb[5] - bb[2]) - 2.0 * _rw) <= _tol
+                    and abs(0.5 * (bb[5] + bb[2])) <= _rw):
+                loop_faces.append(t)
+        if not loop_faces:
+            sys.exit("ERROR: the loop-surface split found NO faces. The wire is "
+                     "meshed but its surface was not identified, so it would be "
+                     "tagged as cavity wall and modelled as aluminium. Re-run "
+                     "with --dump-faces and check the z-extent rule.")
+    elif ld > 0:
+        print("  ⚠️ CAP loop: surface NOT split out — the z-extent rule is for "
+              "the barrel mount only.\n"
+              "     The loop is tagged as WALL and will be modelled as "
+              "ALUMINIUM, not copper.")
+    wall_faces = [t for t in pec if t not in set(loop_faces)]
+    gmsh.model.addPhysicalGroup(2, wall_faces, tag=TAG_WALL, name="wall")
+    if loop_faces:
+        gmsh.model.addPhysicalGroup(2, sorted(loop_faces), tag=TAG_LOOP,
+                                    name="loop")
+        _la = sum(gmsh.model.occ.getMass(2, t) for t in loop_faces) * 1e6
+        _wa = sum(gmsh.model.occ.getMass(2, t) for t in wall_faces) * 1e6
+        _pa = sum(gmsh.model.occ.getMass(2, t) for t in pec) * 1e6
+        # 🔴 THE PARTITION MUST BE EXACT. If wall + loop != the original
+        # exterior area, a face was dropped or double-counted and some of the
+        # cavity is now unbounded — Palace would apply its natural BC there and
+        # produce the localised junk this file already records at Q ~ 3e8.
+        if abs(_wa + _la - _pa) > 1e-6 * max(_pa, 1.0):
+            sys.exit(f"ERROR: wall+loop area {_wa + _la:.6f} != exterior "
+                     f"{_pa:.6f} mm^2 — the split is not a partition.")
+        print(f"  loop: {len(loop_faces)} face(s) -> attribute {TAG_LOOP}, "
+              f"{_la:.1f} mm^2 (wall keeps {len(wall_faces)}, {_wa:.1f} mm^2)")
     if port_v:
         gmsh.model.addPhysicalGroup(2, sorted(port_v), tag=TAG_PORT, name="port")
         print(f"  port face(s) {sorted(port_v)} -> attribute {TAG_PORT}")
@@ -1210,6 +1465,15 @@ def build(p: dict, out: str, msh_order: int) -> None:
     lt, lp = p["loop_tilt"], p["loop_phi"]
     meta = {
         "mesh": pathlib.Path(out).name,
+        # 🔴 WHICH ATTRIBUTES ARE SURFACES, SAID STRUCTURALLY.
+        # Consumers used to tell surfaces from volumes with a hardcoded
+        # `k not in ("wall", "port")`, in THREE places. Adding `loop` on
+        # 2026-08-27 therefore made a SURFACE be classified as a volume and
+        # handed a vacuum material — and GATE 4, whose whole job is "no surface
+        # reaches the solver by default", enumerated surfaces with the same
+        # tuple and so was blind to exactly the attribute it needed to catch.
+        # A list that must be remembered is not a mechanism. This is.
+        "surface_attributes": ["wall", "port", "loop"],
         "threads": max(1, int(p.get("threads", 1))),
         "port_direction": [-math.sin(lp) * math.cos(lt),
                            math.cos(lp) * math.cos(lt),
@@ -1226,7 +1490,12 @@ def build(p: dict, out: str, msh_order: int) -> None:
                        (TAG_PLASMA if plasma_v else None)),
             "plasma_sectors": plasma_sec or None,
             "groove": TAG_GROOVE if groove_v else None,
+            "series_gap": TAG_GAP if gap_v else None,
             "wall": TAG_WALL, "port": TAG_PORT if port_v else None,
+            # None when the loop was not split out (no loop, or a CAP loop,
+            # where the z-extent rule does not hold). A consumer that binds
+            # copper MUST check this rather than assume the attribute exists.
+            "loop": TAG_LOOP if loop_faces else None,
         },
         # R62: a conductor-breaking flag MUST create new faces. A gap that
         # overlapped instead of separating left this at 23 both with and without
@@ -1257,6 +1526,39 @@ def build(p: dict, out: str, msh_order: int) -> None:
             "trap": [p["trap_d"] * 1e3, p["trap_len"] * 1e3,
                      math.degrees(p["trap_phi"])],
             "groove": [p["groove_w"] * 1e3, p["groove_d"] * 1e3],
+            # 🔴 THE LOOP'S SIZE WAS NEVER IN THE SIDECAR. `loop_mount`,
+            # `loop_gap2`, `loop_cap_r`, `loop_flange_r`, `loop_phi_deg` and
+            # `loop_tilt_deg` were all recorded — but not [ld, lw], the two
+            # numbers that define the coupler. So when h3_driven's tags
+            # collided on 2026-08-27 there was NOTHING in the artefact to bind
+            # a point to its ld, and it took a re-mesh to do by measurement
+            # what the sidecar should have carried. NEXT.md's fourth debt.
+            "loop": [p["loop_d"] * 1e3, p["loop_w"] * 1e3,
+                     p["loop_rw"] * 1e3, p["loop_gap"] * 1e3],
+            # 🔑 [h_mm, arc_deg, unwound conductor mm, wall clearance mm].
+            # The conductor length is DERIVED here, in the thing that built the
+            # geometry, so no consumer has to re-derive it: two legs of h plus
+            # the arc, less the port gap. The clearance h - lrw is the
+            # conductor-to-wall gap — the capacitance that varies with h, and
+            # the arc risk.
+            # [h_mm, arc_mm, arc_deg, unwound_mm, wall clearance_mm].
+            # 🔑 UNWOUND IS DERIVED HERE, in the thing that built the geometry:
+            # the arc less its port gap, plus two legs of h. No consumer should
+            # have to re-derive it — that omission is what forced a re-mesh to
+            # bind ld back to its points on 2026-08-27.
+            "loop_azim": ([p["loop_azim"][0] * 1e3,
+                           p["loop_azim"][1] * 1e3,
+                           math.degrees(p["loop_azim"][1]
+                                        / (a - p["loop_azim"][0])),
+                           (p["loop_azim"][1] - p["loop_gap"]
+                            + 2 * p["loop_azim"][0]) * 1e3,
+                           (p["loop_azim"][0]
+                            - ((p["loop_strip"][1] / 2.0) if p.get("loop_strip")
+                               else p["loop_rw"])) * 1e3]
+                          if p.get("loop_azim") else None),
+            # [axial_mm, radial_mm] or None for a round wire
+            "loop_strip": ([p["loop_strip"][0] * 1e3, p["loop_strip"][1] * 1e3]
+                           if p.get("loop_strip") else None),
             "plasma_h": p["plasma_h"] * 1e3,
             "loop_cap_r": p["loop_cap_r"] * 1e3,
             "loop_mount": "cap" if p["loop_cap_r"] > 0 else "barrel",
@@ -1524,6 +1826,23 @@ if __name__ == "__main__":
     ap.add_argument("--groove", type=str, default=None,
                     help="R54: w,depth in mm — circumferential mode-filter "
                          "groove at the cap/barrel corner, both end caps")
+    ap.add_argument("--loop-azim", default=None, metavar="h_mm,arc_mm",
+                    help="AZIMUTHAL loop: an arc of length arc_mm at "
+                         "r = a - h_mm, closed to the wall by two radial legs. "
+                         "🔑 ARC LENGTH, not angle — that is what makes h and L "
+                         "INDEPENDENT, since a fixed angle at different h is a "
+                         "different length. Unwound conductor = arc + 2h. "
+                         "Mutually exclusive with --loop-cap; refuses "
+                         "--loop-gap2.")
+    ap.add_argument("--loop-strip", default=None, metavar="axial_mm,radial_mm",
+                    help="Rectangular conductor instead of round wire, e.g. "
+                         "5,1 for a 5x1 mm strip. The AXIAL dimension is the "
+                         "wide one, so the broad face lies parallel to the "
+                         "wall. Default: round wire of radius --loop rw.")
+    ap.add_argument("--dump-faces", action="store_true",
+                    help="DIAGNOSTIC: print the exterior CAD-face inventory "
+                         "(tag, type, area, centroid, extent) and continue. "
+                         "Changes no geometry.")
     ap.add_argument("--loop-gap2", type=float, default=None,
                     help="R62: second gap in a loop leg, mm — the SERIES "
                          "capacitor that tunes out loop self-reactance")
@@ -1618,6 +1937,19 @@ if __name__ == "__main__":
               + " (R50); both work")
 
     P["threads"] = a.threads
+    # 🔴 P IS BUILT BY EXPLICIT ASSIGNMENT, NOT vars(a). A new flag that is not
+    # copied here reaches build() as a MISSING KEY and its feature silently
+    # never runs — the same "declared with no consumer" shape as
+    # loop.conductivity.s_per_m. Adding the argparse entry is half the change.
+    P["dump_faces"] = a.dump_faces
+    if a.loop_azim:
+        _hh, _aa = (float(x) for x in a.loop_azim.split(","))
+        # (h, ARC LENGTH) — both metres. Independent by construction.
+        P["loop_azim"] = (_hh * 1e-3, _aa * 1e-3)
+        # the arc IS the loop, so a radial depth would be a second one
+        P["loop_d"] = 0.0
+    P["loop_strip"] = (tuple(float(x) * 1e-3 for x in a.loop_strip.split(","))
+                       if a.loop_strip else None)
     P["ho_optimize"] = a.ho_optimize
     if a.radius is not None:
         P["cav_r"] = a.radius * 1e-3

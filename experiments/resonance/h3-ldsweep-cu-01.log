@@ -1,0 +1,183 @@
+H3 loop-size sweep — Q0, Q_ext and beta per loop, by EIGEN PAIRS. No fitting.
+
+🔑 WHAT THIS MEASURES, AND WHY IT NEEDS TWO SOLVES PER LOOP.
+For each loop size, solve the SAME mesh twice and take the difference:
+
+    Q0  = eigen, port_bc="pec"      gap shorted -> no port loss -> UNLOADED Q
+    Q_L = eigen, port_bc="lumped"   real 50 ohm load           -> LOADED Q
+    1/Q_ext = 1/Q_L - 1/Q0     ->     beta = Q0 / Q_ext
+
+**No |S11|, no dip depth, no Lorentzian, no phase, no branch decision.** That is
+the whole point: every previous attempt at beta in this programme went through
+the |S11| depth, which is identical for beta and 1/beta (§7x), and the branch
+FLIPS with loading so no single choice is safe.
+
+🔴 THE DECLARED OPEN QUESTION THIS EXISTS TO SETTLE. `e0k2_sizeq` was built to
+explain a DRIVEN anomaly and its own eigen half is now void (open loop gap,
+§7v). The anomaly itself is still unexplained:
+
+    driven Q0 = 20,005 / 24,920 / 28,387 / 30,112
+    for areas =     35 /     82 /    176 /    384 mm^2
+
+**Smaller loops apparently costing MORE Q, monotonically, against a bare-cavity
+44,384.** That is backwards: a smaller obstacle should perturb less.
+⚠️ **Driven has a REAL port, so the open gap does NOT explain it.** The branch
+error might; blended fits might; both untested. **Do not record it as explained
+by the audit** — this rig measures Q0 per loop size a way that cannot have
+either defect, and the answer is whatever it is.
+
+🔴🔴 THE CLAIM BELOW -- "Q_ext is set by loop geometry, not by the load" -- IS
+FALSE BY ~9%, established 2026-08-25. h3_driven's measured
+S11 dip implies Q_ext ~8,100-8,600 from cold through 3e19 and 9,221 at 1e20.
+✅ SETTLED. Refitting those sweeps with INTERPOLATED 3 dB edges (CONVENTIONS
+7bh) makes the COLD driven value agree with the eigen pair to 0.78% (9,045 vs
+9,117) -- which validates the fit -- and then Q_ext dips to 8,194 at ne=1e19 and
+recovers to 9,322 at 1e20. A ~9% LOAD DEPENDENCE, not a geometry artefact.
+⚠️ beta(ne) = Q0(ne)/Q_ext is therefore a ~9% approximation, not an identity.
+⚠️ ALSO: this file's V1_ANCHOR says Q_ext = 9,117 (h3_step3) while the sweep at
+11x8 returns 9,231, and h3_driven hardcodes Q_EXT_MEASURED = 9,231. Two values,
+~1.25% apart, and their mesh styles are NOT documented in either place.
+
+🔑 AND IT GIVES THE OPTIMISER ITS COUPLING AXIS. Q_ext is set by loop geometry
+and is nearly independent of the plasma, so ONE eigen pair per loop size serves
+every density. beta(ne) is then Q0(ne)/Q_ext — **matching to beta=1 becomes a
+LOOP-SIZE choice made against a chosen operating density**, which is a design
+knob the programme has never been able to state quantitatively.
+
+⚠️ SIZES ARE e0k2_sizeq'S, DELIBERATELY. Same four loops, so the comparison is
+direct rather than interpolated.
+⚠️ GLOSSARY: the second number is a HALF-width. Area = ld * 2 * lw.
+
+🔴 EIGEN ONLY (§7c, one rig one solver). The driven half of this comparison is
+`h3_driven` and it has already run.
+
+VERIFICATION
+  V1  🔑 THE INTERNAL ANCHOR: at 11x8 this rig must reproduce `h3_step3`:
+      Q0 = 43,523, Q_L = 7,538, Q_ext = 9,117, beta = 4.77. Same mesh style,
+      same settings, same BCs. **If 11x8 does not reproduce, nothing else in
+      the sweep means anything** — check that FIRST.
+  V2  the groove must be 5x10 in every mesh except the declared control.
+  V3  TE011 identified by CONTINUATION from the anchored grooved-no-loop
+      2.450561 GHz, and reported WITH purity. Never by lowest A2/A0 (§7u).
+  V4  Q0 -> 44,414 (grooved, no loop) as area -> 0. That is what "a smaller
+      obstacle perturbs less" MEANS, and it is the only external anchor here.
+FALSIFICATION
+  🔴 F1  if eigen Q0 RISES with loop area — reproducing the driven trend — the
+         backwards behaviour is REAL and physical, and both the branch and the
+         blend explanations are dead. Report it; do not explain it away.
+         ⚠️ ASSUMPTION: that the driven anomaly and this Q0 are the same
+         quantity. They are both "unloaded Q of TE011", but if TE011 is
+         misidentified at some loop size they are not comparable at all — which
+         is why V3 demands purity on every reported mode.
+  🔴 F2  if purity degrades with loop area (spread rising above ~0.02), the loop
+         DOES hybridise TE011 beyond some size, and 11x8 merely sits below it.
+         **That is a hard design constraint, not a curiosity** — it would bound
+         loop size independently of coupling.
+  🔴 F3  if beta crosses 1 inside the swept range, the critically-coupled loop
+         size is MEASURED, not estimated. Report which side each size falls on.
+  🔴 F4  if the no-groove control's Q0 differs from its grooved twin by more
+         than ~2%, groove and loop INTERACT and the OPTIMIZER may not treat them
+         as independent axes (§2b).
+
+==============================================================================
+  a=88.0045 L=115.4158   grooved-no-loop anchor: 2.450561 GHz, Q0=44,414
+  eigen: target=2.38, N=8, order 2 — h3_step3's validated settings
+  4 case(s) x 2 port BC(s) ('pec', 'lumped') = 8 solves
+
+  --- loop 5x8 = 80 mm^2  mount=barrel  gap2=0.5 flange=0
+    h3-ldsweep-cu-01.2c6980e5_5x8_barrel_g2-0.5_pec: loop 5.8e+07 S/m on attribute 92 (wall 3.5e+07)
+    h3-ldsweep-cu-01.2c6980e5_5x8_barrel_g2-0.5_pec: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    h3-ldsweep-cu-01.2c6980e5_5x8_barrel_g2-0.5_pec: solver order 2
+    torch: eps=9.39 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 4381s
+      probes: bore_edge=121  bore_mid=62  leg_broken=1.33e+03  leg_intact=18.2  port_gap=0.559  series_gap=8.4e+03
+       pec: TE011 2.436868  Q=   34,538  P>=0.9996  spread=0.0003   (continuation -13.693 MHz)
+    h3-ldsweep-cu-01.2c6980e5_5x8_barrel_g2-0.5_lumped: loop 5.8e+07 S/m on attribute 92 (wall 3.5e+07)
+    🔑 h3-ldsweep-cu-01.2c6980e5_5x8_barrel_g2-0.5_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3-ldsweep-cu-01.2c6980e5_5x8_barrel_g2-0.5_lumped: solver order 2
+    torch: eps=9.39 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 1368s
+      probes: bore_edge=122  bore_mid=62.1  leg_broken=559  leg_intact=12.3  port_gap=1.96e+03  series_gap=3.52e+03
+    lumped: TE011 2.438711  Q=    1,411  P>=0.9999  spread=0.0001   (continuation -11.850 MHz)
+    -> Q0=   34,538  Q_L=   1,411  Q_ext=    1,472  beta= 23.470  OVERCOUPLED
+  --- loop 8x8 = 128 mm^2  mount=barrel  gap2=0.5 flange=0
+    h3-ldsweep-cu-01.2c6980e5_8x8_barrel_g2-0.5_pec: loop 5.8e+07 S/m on attribute 92 (wall 3.5e+07)
+    h3-ldsweep-cu-01.2c6980e5_8x8_barrel_g2-0.5_pec: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    h3-ldsweep-cu-01.2c6980e5_8x8_barrel_g2-0.5_pec: solver order 2
+    torch: eps=9.39 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 1147s
+      probes: bore_edge=120  bore_mid=61  leg_broken=2.18e+03  leg_intact=226  port_gap=0.612  series_gap=1.42e+04
+       pec: TE011 2.445583  Q=   26,647  P>=0.9969  spread=0.0026   (continuation -4.978 MHz)
+    h3-ldsweep-cu-01.2c6980e5_8x8_barrel_g2-0.5_lumped: loop 5.8e+07 S/m on attribute 92 (wall 3.5e+07)
+    🔑 h3-ldsweep-cu-01.2c6980e5_8x8_barrel_g2-0.5_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3-ldsweep-cu-01.2c6980e5_8x8_barrel_g2-0.5_lumped: solver order 2
+    torch: eps=9.39 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 1214s
+      probes: bore_edge=121  bore_mid=61.6  leg_broken=1.08e+03  leg_intact=110  port_gap=3.64e+03  series_gap=7.01e+03
+    lumped: TE011 2.440246  Q=      418  P>=0.9992  spread=0.0006   (continuation -10.315 MHz)
+    -> Q0=   26,647  Q_L=     418  Q_ext=      425  beta= 62.726  OVERCOUPLED
+  --- loop 11x8 = 176 mm^2  mount=barrel  gap2=0.5 flange=0
+    h3-ldsweep-cu-01.2c6980e5_11x8_barrel_g2-0.5_pec: loop 5.8e+07 S/m on attribute 92 (wall 3.5e+07)
+    h3-ldsweep-cu-01.2c6980e5_11x8_barrel_g2-0.5_pec: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    h3-ldsweep-cu-01.2c6980e5_11x8_barrel_g2-0.5_pec: solver order 2
+    torch: eps=9.39 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 743s
+      probes: bore_edge=122  bore_mid=61.5  leg_broken=504  leg_intact=163  port_gap=0.187  series_gap=4.07e+03
+       pec: TE011 2.441991  Q=   40,716  P>=0.9992  spread=0.0007   (continuation -8.570 MHz)
+    h3-ldsweep-cu-01.2c6980e5_11x8_barrel_g2-0.5_lumped: loop 5.8e+07 S/m on attribute 92 (wall 3.5e+07)
+    🔑 h3-ldsweep-cu-01.2c6980e5_11x8_barrel_g2-0.5_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3-ldsweep-cu-01.2c6980e5_11x8_barrel_g2-0.5_lumped: solver order 2
+    torch: eps=9.39 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 779s
+      probes: bore_edge=122  bore_mid=61.6  leg_broken=487  leg_intact=156  port_gap=2.24e+03  series_gap=3.94e+03
+    lumped: TE011 2.441662  Q=    1,090  P>=0.9992  spread=0.0006   (continuation -8.899 MHz)
+    -> Q0=   40,716  Q_L=   1,090  Q_ext=    1,120  beta= 36.345  OVERCOUPLED
+       driven anomaly said Q0=28,387 here -> eigen is 1.43x that
+  --- loop 14x8 = 224 mm^2  mount=barrel  gap2=0.5 flange=0
+    h3-ldsweep-cu-01.2c6980e5_14x8_barrel_g2-0.5_pec: loop 5.8e+07 S/m on attribute 92 (wall 3.5e+07)
+    h3-ldsweep-cu-01.2c6980e5_14x8_barrel_g2-0.5_pec: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    h3-ldsweep-cu-01.2c6980e5_14x8_barrel_g2-0.5_pec: solver order 2
+    torch: eps=9.39 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 620s
+      probes: bore_edge=121  bore_mid=60.6  leg_broken=1.33e+03  leg_intact=249  port_gap=0.14  series_gap=3.33e+03
+       pec: TE011 2.441799  Q=   40,901  P>=0.9990  spread=0.0009   (continuation -8.762 MHz)
+    h3-ldsweep-cu-01.2c6980e5_14x8_barrel_g2-0.5_lumped: loop 5.8e+07 S/m on attribute 92 (wall 3.5e+07)
+    🔑 h3-ldsweep-cu-01.2c6980e5_14x8_barrel_g2-0.5_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3-ldsweep-cu-01.2c6980e5_14x8_barrel_g2-0.5_lumped: solver order 2
+    torch: eps=9.39 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 702s
+      probes: bore_edge=121  bore_mid=60.6  leg_broken=1.33e+03  leg_intact=248  port_gap=1.71e+03  series_gap=3.34e+03
+    lumped: TE011 2.441724  Q=    1,841  P>=0.9990  spread=0.0009   (continuation -8.837 MHz)
+    -> Q0=   40,901  Q_L=   1,841  Q_ext=    1,928  beta= 21.217  OVERCOUPLED
+
+==============================================================================
+  ⚠️ V1 SUPPRESSED — the anchor 9,117 is for a cap loop with gap2=0, flange=0;
+     this run meshes barrel gap2=0.5 flange=0. **A DIFFERENT COUPLER.**
+     Comparing them is the wrong-cavity comparison (§7c), not a failed reproduction.
+     🔑 Anchor this run against a control in ITS OWN configuration instead.
+
+       loop   area        Q0     Q_ext     beta        branch    P_min   spread
+  5x8_barrel_g2-0.5     80    34,538     1,472   23.470   OVERCOUPLED   0.9996   0.0003
+  8x8_barrel_g2-0.5    128    26,647       425   62.726   OVERCOUPLED   0.9969   0.0026
+  11x8_barrel_g2-0.5    176    40,716     1,120   36.345   OVERCOUPLED   0.9992   0.0007
+  14x8_barrel_g2-0.5    224    40,901     1,928   21.217   OVERCOUPLED   0.9990   0.0009
+       none      0    44,414         —        —             —   0.9985   0.0015   <- anchored, no loop
+
+  ⚠️ Q0 is NOT monotonic in loop area. Neither the driven trend nor its reverse.
+     Report the numbers; do not fit a law to four non-monotonic points.
+  V4 smallest loop (80 mm^2) Q0=34,538 vs no-loop 44,414 -> -22.2%  🔴 FIRES — a small loop should approach the no-loop Q
+  F2 worst purity spread 0.0026 at 8x8_barrel_g2-0.5 ✅ no loop size hybridises TE011
+  ⚠️ beta does not cross 1 in the swept range (23.47 .. 21.22) — critical coupling is OUTSIDE it.
+
+  ⚠️ F4 not evaluable — need both the control and its grooved twin.
+
+  result -> h3-ldsweep-cu-01.2c6980e5.result.json
+EXIT=0

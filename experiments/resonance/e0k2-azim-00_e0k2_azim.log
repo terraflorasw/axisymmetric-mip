@@ -1,0 +1,88 @@
+E0k2-azim — does the azimuthal-order discriminator work on REAL solves?
+
+🔴 THE PROBLEM. Driven-only mode identification currently rests on matching an
+energy fingerprint to a reference library. Measured margin over the best
+alternative: 58.8x, 33.5x, 26.0x, and **4.5x at the weakest coupling** — and weak
+coupling is the regime we want. The threshold was calibrated on the easy case
+(mode absent) and silently accepted a false match at 0.00397 while set to 0.010.
+Unattended, that is how an optimiser scores the wrong mode and never notices.
+
+🔑 THE FIX IS A SYMMETRY TEST, NOT A BETTER THRESHOLD. TE011 is m=0; TM111 is
+m=1. Energy goes as cos^2(m*phi), so per-sector energies are FLAT for m=0 and a
+pure cos(2phi) for m=1. No reference library, no threshold from four points, and
+computable from a DRIVEN solve alone.
+
+⚠️ `geometry.py --sectors` already does this — its own help says "5 resolves
+m=1..4" — and GEO sets `--sectors 1`, so NO solve in the record has azimuthal
+bins. This rig turns it on.
+
+TWO CASES, because a discriminator must be tested where the answer is known
+BEFORE it is trusted where it is not:
+
+  bare   no loop. TE011 (Q 44,384) and the TM111 pair (Q ~20,256) are already
+         identified by Q, unambiguously. The discriminator must AGREE.
+  loop   the 176 mm^2 cap loop, driven AND eigen. The eigen solve gives truth;
+         the DRIVEN solve is where the discriminator has to stand alone.
+
+VERIFICATION
+  V1  bare: TE011 reads m=0, both TM111 polarisations read m=1.
+  V2  loop/eigen: same, with the loop present.
+  V3  loop/DRIVEN: the discriminator, applied to the driven field at the dip,
+      returns the same m as the eigen mode it matches by signature.
+
+FALSIFICATION
+  🔴 F1  if TE011 does not read m=0 on the BARE cavity, the discriminator is
+         broken and nothing downstream of it is worth running.
+  🔴 F2  if A2/A0 for m=0 and m=1 are not separated by at least 10x, the
+         symmetry test is no better than the fingerprint it replaces.
+  🔴 F3  if the driven answer disagrees with the eigen answer, driven-only
+         identification does NOT work and eigen stays mandatory per evaluation.
+
+==============================================================================
+
+==============================================================================
+  CASE 1 — BARE cavity, 5 sectors. TE011 and TM111 already identified by Q.
+
+    35,182 tets, air sectors [3, 4, 5, 6, 7] -> energy indices [12, 13, 14, 15, 16]
+    e0k2_azim_bare: solver order 2
+    solved in 155s
+
+       f (GHz)         Q    A2/A0   m    conf  sectors
+      2.450086    20,313   0.3055   1    12.0  [0.1236, 0.3154, 0.0789, 0.25, 0.2202]
+      2.450467    44,057   0.0023   0     1.5  [0.1944, 0.2091, 0.2109, 0.1982, 0.1856]
+      2.623005    24,353   0.0004   0     1.0  [0.1859, 0.1835, 0.2038, 0.2191, 0.2077]
+      2.623037    24,348   0.0002   0     1.0  [0.2141, 0.2167, 0.1961, 0.1811, 0.192]
+      2.783510    29,002   0.1511   1   175.9  [0.2113, 0.1482, 0.2531, 0.1458, 0.2148]
+      2.784914    30,794   0.0004None     0.0  [0.2441, 0.2272, 0.1724, 0.156, 0.2003]
+
+    V1  TE011 (Q=44,057) reads m=0 ✅
+        TM111 (Q=20,313) reads m=1 ✅
+    V2  separation A2/A0: 134x ✅
+
+==============================================================================
+  CASE 2 — 11.0x8.0 mm cap loop, 5 sectors. Eigen = truth, DRIVEN = the real test.
+
+    35,738 tets, 5 air sectors
+    e0k2_azim_loop: solver order 2
+    solved in 232s
+
+    EIGEN    f (GHz)         Q    A2/A0   m    conf
+           2.423706    18,457   0.3446   1     9.9
+           2.450241    31,154   0.1087None     0.0
+           2.453721    24,411   0.1975None     0.0
+           2.622953    24,321   0.0002   0     1.0
+           2.623345    24,268   0.0002   0     1.0
+           2.766243    26,546   0.0088None     0.0
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+
+    driven 2.4100-2.4900 GHz
+    solved in 2530s
+
+    DRIVEN f0=2.450245  beta=0.3411  A2/A0=0.1066  m=None  conf=0.0
+    nearest eigen mode 2.450241 (Q=31,154) reads m=None
+
+    V3  driven m == eigen m: None vs None 🔴 F3 FIRES — eigen stays mandatory per evaluation
+
+  wrote e0k2_azim.result.json
+EXIT=0

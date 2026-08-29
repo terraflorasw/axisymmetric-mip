@@ -218,8 +218,44 @@ def _materials(a, meta, vols):
     return mats
 
 
+def volume_attrs(meta):
+    """Every VOLUME attribute this mesh declares, and nothing else.
+
+    🔴 THIS EXPRESSION WAS COPIED INTO **21 SITES ACROSS 18 FILES**:
+
+        {v for k, v in attrs.items()
+         if isinstance(v, int) and k not in ("wall", "port")} | set(attrs["air"])
+
+    ⚠️ I first wrote "nine files" here, having capped the grep with `| head`.
+    The real count is 21 — `e0k2_azim` and `h3_loaded` twice each, plus
+    `e0k2_anchor`, `e3_closure`, `h2b_groovescale`, `h3_annular`, `h3_cold`,
+    `h3_eigen`, `h3_eigenprobe`, `h3_hot`, `h3_ladder`, `h3_loopq`, `h3_qext`,
+    `h3_step3`, `h3_superpose`, `h4_field`, `h4_seed`, `probecheck` and
+    `eigen_cfg` itself. **Undercounting a duplication is how you fix most of
+    it and leave the rest to fail later.**
+
+    Each copy hardcodes WHICH NAMES ARE SURFACES, so adding the `loop` surface
+    on 2026-08-27 made every one classify it as a volume. Palace refused:
+    "Domain postprocessing attribute 92 has no corresponding entry in
+    Materials". Same shape as the frozen groove living in seven files, at
+    three times the scale.
+
+    🔑 `e0k2_anchor.shared_energy_list` took `attrs` and now takes `meta` for
+    the same reason: an attrs dict CANNOT say which of its entries are
+    surfaces. Only the sidecar can, so only the sidecar should be asked.
+
+    🔑 The sidecar now SAYS which attributes are surfaces, so this reads it
+    instead of knowing it. The fallback is for meshes built before that.
+    """
+    a = meta["attributes"]
+    surf = set(meta.get("surface_attributes") or ("wall", "port"))
+    return sorted({v for k, v in a.items()
+                   if isinstance(v, int) and k not in surf}
+                  | set(a.get("air") or []))
+
+
 def eigen_cfg(tag, meta, mesh=None, sigma=None, n=22, target=1.05, order=2,
-              port_bc=None):
+              port_bc=None, tol=1e-8):
     """PEC by default — the closed form assumes it. sigma= switches to metal.
 
     GATE 3: every volume attribute gets vacuum, and we ASSERT none was missed.
@@ -256,11 +292,15 @@ def eigen_cfg(tag, meta, mesh=None, sigma=None, n=22, target=1.05, order=2,
     ⚠️ A mesh WITH a port and `port_bc=None` is now a REFUSAL, not a default.
     """
     a = meta["attributes"]
-    vols = sorted({v for k, v in a.items()
-                   if isinstance(v, int) and k not in ("wall", "port")}
-                  | set(a.get("air") or []))
+    # 🔴 SURFACES COME FROM THE SIDECAR, NOT FROM A TUPLE HERE. This was
+    # `k not in ("wall", "port")` in three places; adding the `loop` surface on
+    # 2026-08-27 made it be treated as a VOLUME and given a vacuum material,
+    # and GATE 4 below used the same tuple so it could not catch that.
+    # ⚠️ The fallback is for meshes built before the sidecar carried this.
+    _surf = set(meta.get("surface_attributes") or ("wall", "port"))
+    vols = volume_attrs(meta)
     for k, v in a.items():
-        if isinstance(v, int) and k not in ("wall", "port") and v not in vols:
+        if isinstance(v, int) and k not in _surf and v not in vols:
             raise RuntimeError(f"{tag}: volume {k}={v} has no material")
     c = {"Problem": {"Type": "Eigenmode", "Verbose": 2,
                      "Output": f"postpro/{tag}"},
@@ -289,7 +329,17 @@ def eigen_cfg(tag, meta, mesh=None, sigma=None, n=22, target=1.05, order=2,
          # differences it was resolving. A known-bad value must not be the
          # default; rigs that WANT order 1 (E0g's sweep, E0k's bridge) say so.
          "Solver": {"Order": order, "Device": "CPU",
-                    "Eigenmode": {"Target": target, "N": n, "Tol": 1e-08,
+                    # 🔴 Tol WAS HARDCODED 1e-8, AND IT MAY BE BELOW THE FLOOR.
+                    # 2026-08-28: three of four loop cases stalled a few percent
+                    # ABOVE it and never crossed — ld=5 at ~1.18e-8 with the
+                    # residual RISING, ld=14 motionless at 1.0943e-8 to seven
+                    # digits after 1,412 NLEPS. Only ld=11 got under. If the
+                    # achievable residual for this configuration sits just above
+                    # 1e-8, then more iterations and longer timeouts buy nothing
+                    # and the tolerance is the thing to move.
+                    # ⚠️ Looser tol = a less converged eigenvalue. Any run that
+                    # moves it must re-measure a KNOWN case to price the change.
+                    "Eigenmode": {"Target": target, "N": n, "Tol": tol,
                                   "MaxIts": 200, "Save": 0},
                     "Linear": {"Type": "Default", "KSPType": "GMRES",
                                "Tol": 1e-08, "MaxIts": 500}}}
@@ -299,6 +349,32 @@ def eigen_cfg(tag, meta, mesh=None, sigma=None, n=22, target=1.05, order=2,
         c["Boundaries"]["Conductivity"] = [
             {"Attributes": [a["wall"]], "Conductivity": sigma,
              "Permeability": 1.0}]
+    # 🔴 THE LOOP IS A DIFFERENT METAL. Until 2026-08-27 its surface was tagged
+    # into `wall`, so the coupler solved as ALUMINIUM and its loss could not be
+    # separated from the cavity's.
+    # 🔴🔴 FAIL CLOSED. An unassigned surface here is **PMC**, the natural BC of
+    # this formulation — a MAGNETIC WALL, not PEC. Leaving the loop unassigned
+    # would be far worse than the aluminium it had, so this refuses.
+    _loop = a.get("loop")
+    if _loop is not None:
+        if sigma is None:
+            # closed-form comparison mode: everything is PEC, loop included
+            c["Boundaries"]["PEC"]["Attributes"].append(_loop)
+        else:
+            import values as _values
+            try:
+                _lsig = _values.get("loop.conductivity.s_per_m")
+            except Exception as e:
+                raise RuntimeError(
+                    f"{tag}: the mesh declares a loop surface (attribute "
+                    f"{_loop}) but loop.conductivity.s_per_m is not usable "
+                    f"({e}). REFUSING — an unassigned surface is PMC here, so "
+                    f"solving would put a MAGNETIC WALL on the coupler.")
+            c["Boundaries"]["Conductivity"].append(
+                {"Attributes": [_loop], "Conductivity": _lsig,
+                 "Permeability": 1.0})
+            print(f"    {tag}: loop {_lsig:.3g} S/m on attribute {_loop} "
+                  f"(wall {sigma:.3g})", flush=True)
 
     # ---- GATE 5: the mesh the solver is told to read must be the mesh the
     # SIDECAR describes. `meta` records its own source in meta["mesh"]; a caller
@@ -370,7 +446,7 @@ def eigen_cfg(tag, meta, mesh=None, sigma=None, n=22, target=1.05, order=2,
 
     # every surface attribute the mesh declares must now be accounted for
     surfaces = {k: v for k, v in a.items()
-                if k in ("wall", "port") and isinstance(v, int)}
+                if k in _surf and isinstance(v, int)}
     assigned = set()
     for _k, _v in c["Boundaries"].items():
         for d in (_v if isinstance(_v, list) else [_v]):
@@ -380,7 +456,11 @@ def eigen_cfg(tag, meta, mesh=None, sigma=None, n=22, target=1.05, order=2,
     if missed:
         raise RuntimeError(
             f"{tag}: GATE 4 — surface(s) {missed} reach the solver with NO "
-            f"boundary condition. Palace would default them to PEC.")
+            f"boundary condition. Palace does NOT default them to PEC: it "
+            f"warns and applies the NATURAL BC, which for this curl-curl E "
+            f"formulation is PMC — a MAGNETIC WALL. (This message said PEC "
+            f"until 2026-08-27, disagreeing with eigen_cfg's own docstring "
+            f"three hundred lines above it.)")
     # 🔑 SAY IT. The solver order was a hardcoded 1 that six rigs inherited
     # silently, and every result from them had to be invalidated. An
     # inherited discretisation must at least be a VISIBLE one.
@@ -602,6 +682,38 @@ def run(tag, cfg, allow_lossy_eigen=False, timeout=None,
     # exception message, so a caller can tell "did not converge" from "wrong
     # answer" and from "timed out". Scoring them the same is what teaches a
     # sweep to avoid regions that are merely hard.
+    def _unassigned_boundaries():
+        """Palace's OWN verdict on whether a surface reached it unassigned.
+
+        🔴 GATE 4 CHECKS OUR MODEL OF THE MESH; THIS CHECKS THE SOLVER'S.
+        On 2026-08-27 the loop surface (attribute 92) reached Palace with no
+        boundary condition. GATE 4 did not catch it because it enumerated
+        surfaces with the SAME hardcoded ("wall", "port") tuple that caused the
+        bug — the check and its subject had one source, which is §7d exactly.
+        Palace said so plainly in its own log:
+
+            --> Warning!
+            One or more external boundary attributes has no associated
+            boundary condition!
+            Boundary attribute list: 92
+
+        ...and then SOLVED ANYWAY, putting a magnetic wall (PMC is the natural
+        BC of this formulation, not PEC) on the coupling loop and producing a
+        perfectly plausible Q. Nothing read the warning.
+        🔑 This reads it. It cannot go stale when a new surface is added,
+        because it is the CONSUMER's own report, not our list.
+        """
+        try:
+            txt = pathlib.Path(f"{tag}_p.log").read_text(errors="ignore")
+        except OSError:
+            return None
+        i = txt.find("has no associated boundary condition")
+        if i < 0:
+            return None
+        j = txt.find("Boundary attribute list:", i)
+        return (txt[j:txt.find("\n", j)].split(":", 1)[1].strip()
+                if j >= 0 else "unknown")
+
     def _nleps_count():
         try:
             return pathlib.Path(f"{tag}_p.log").read_text(
@@ -658,6 +770,23 @@ def run(tag, cfg, allow_lossy_eigen=False, timeout=None,
     # proxy for that, and a proxy calibrated on hardware we no longer use. (The
     # same substitution made ops/wait.sh call a healthy run dead and ops/go
     # think a meshing rig was idle.)
+    # 🔴 ASK THE SOLVER WHETHER ANY SURFACE REACHED IT UNASSIGNED, BEFORE
+    # READING ANY NUMBER IT PRODUCED. Palace only WARNS about this and then
+    # solves — a magnetic wall on whatever was missed, and a result that looks
+    # entirely normal. Checked here rather than in GATE 4 alone because GATE 4
+    # tests our model of the mesh, and on 2026-08-27 our model was the thing
+    # that was wrong.
+    _unassigned = _unassigned_boundaries()
+    if _unassigned:
+        raise RuntimeError(
+            f"{tag}: PALACE REPORTS UNASSIGNED BOUNDARY ATTRIBUTE(S) "
+            f"{_unassigned}. It warns and solves anyway, applying the NATURAL "
+            f"BC — PMC, a MAGNETIC WALL — to them, so the result is a different "
+            f"cavity and looks perfectly normal.\n"
+            f"  🔑 GATE 4 checks OUR list of surfaces; this is the SOLVER's. If "
+            f"they disagree, believe the solver.\n"
+            f"  Fix the boundary assignment, or add the attribute to the mesh "
+            f"sidecar's `surface_attributes` so it is given one.")
     pp = pathlib.Path("postpro") / tag
     produced = sorted(f.name for f in pp.glob("*.csv")
                       if f.stat().st_size > 0) if pp.is_dir() else []

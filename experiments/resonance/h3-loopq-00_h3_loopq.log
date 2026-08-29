@@ -1,0 +1,178 @@
+H3 loop-size sweep — Q0, Q_ext and beta per loop, by EIGEN PAIRS. No fitting.
+
+🔑 WHAT THIS MEASURES, AND WHY IT NEEDS TWO SOLVES PER LOOP.
+For each loop size, solve the SAME mesh twice and take the difference:
+
+    Q0  = eigen, port_bc="pec"      gap shorted -> no port loss -> UNLOADED Q
+    Q_L = eigen, port_bc="lumped"   real 50 ohm load           -> LOADED Q
+    1/Q_ext = 1/Q_L - 1/Q0     ->     beta = Q0 / Q_ext
+
+**No |S11|, no dip depth, no Lorentzian, no phase, no branch decision.** That is
+the whole point: every previous attempt at beta in this programme went through
+the |S11| depth, which is identical for beta and 1/beta (§7x), and the branch
+FLIPS with loading so no single choice is safe.
+
+🔴 THE DECLARED OPEN QUESTION THIS EXISTS TO SETTLE. `e0k2_sizeq` was built to
+explain a DRIVEN anomaly and its own eigen half is now void (open loop gap,
+§7v). The anomaly itself is still unexplained:
+
+    driven Q0 = 20,005 / 24,920 / 28,387 / 30,112
+    for areas =     35 /     82 /    176 /    384 mm^2
+
+**Smaller loops apparently costing MORE Q, monotonically, against a bare-cavity
+44,384.** That is backwards: a smaller obstacle should perturb less.
+⚠️ **Driven has a REAL port, so the open gap does NOT explain it.** The branch
+error might; blended fits might; both untested. **Do not record it as explained
+by the audit** — this rig measures Q0 per loop size a way that cannot have
+either defect, and the answer is whatever it is.
+
+🔑 AND IT GIVES THE OPTIMISER ITS COUPLING AXIS. Q_ext is set by loop geometry
+and is nearly independent of the plasma, so ONE eigen pair per loop size serves
+every density. beta(ne) is then Q0(ne)/Q_ext — **matching to beta=1 becomes a
+LOOP-SIZE choice made against a chosen operating density**, which is a design
+knob the programme has never been able to state quantitatively.
+
+⚠️ SIZES ARE e0k2_sizeq'S, DELIBERATELY. Same four loops, so the comparison is
+direct rather than interpolated.
+⚠️ GLOSSARY: the second number is a HALF-width. Area = ld * 2 * lw.
+
+🔴 EIGEN ONLY (§7c, one rig one solver). The driven half of this comparison is
+`h3_driven` and it has already run.
+
+VERIFICATION
+  V1  🔑 THE INTERNAL ANCHOR: at 11x8 this rig must reproduce `h3_step3`:
+      Q0 = 43,523, Q_L = 7,538, Q_ext = 9,117, beta = 4.77. Same mesh style,
+      same settings, same BCs. **If 11x8 does not reproduce, nothing else in
+      the sweep means anything** — check that FIRST.
+  V2  the groove must be 5x10 in every mesh except the declared control.
+  V3  TE011 identified by CONTINUATION from the anchored grooved-no-loop
+      2.450561 GHz, and reported WITH purity. Never by lowest A2/A0 (§7u).
+  V4  Q0 -> 44,414 (grooved, no loop) as area -> 0. That is what "a smaller
+      obstacle perturbs less" MEANS, and it is the only external anchor here.
+FALSIFICATION
+  🔴 F1  if eigen Q0 RISES with loop area — reproducing the driven trend — the
+         backwards behaviour is REAL and physical, and both the branch and the
+         blend explanations are dead. Report it; do not explain it away.
+         ⚠️ ASSUMPTION: that the driven anomaly and this Q0 are the same
+         quantity. They are both "unloaded Q of TE011", but if TE011 is
+         misidentified at some loop size they are not comparable at all — which
+         is why V3 demands purity on every reported mode.
+  🔴 F2  if purity degrades with loop area (spread rising above ~0.02), the loop
+         DOES hybridise TE011 beyond some size, and 11x8 merely sits below it.
+         **That is a hard design constraint, not a curiosity** — it would bound
+         loop size independently of coupling.
+  🔴 F3  if beta crosses 1 inside the swept range, the critically-coupled loop
+         size is MEASURED, not estimated. Report which side each size falls on.
+  🔴 F4  if the no-groove control's Q0 differs from its grooved twin by more
+         than ~2%, groove and loop INTERACT and the OPTIMIZER may not treat them
+         as independent axes (§2b).
+
+==============================================================================
+  a=88.0045 L=115.4158   grooved-no-loop anchor: 2.450561 GHz, Q0=44,414
+  eigen: target=2.38, N=8, order 2 — h3_step3's validated settings
+  4 loops x 2 port BCs + 1 no-groove control = 10 solves
+
+  --- loop 5x3.5 = 35 mm^2
+    h3_loopq_5x3.5_pec: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    h3_loopq_5x3.5_pec: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 1052s
+       pec: TE011 2.450818  Q=   44,196  P>=0.9999  spread=0.0001   (continuation +0.257 MHz)
+    🔑 h3_loopq_5x3.5_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3_loopq_5x3.5_lumped: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 375s
+    lumped: TE011 2.450782  Q=   13,594  P>=0.9999  spread=0.0001   (continuation +0.221 MHz)
+    -> Q0=   44,196  Q_L=  13,594  Q_ext=   19,633  beta=  2.251  OVERCOUPLED
+       driven anomaly said Q0=20,005 here -> eigen is 2.21x that
+  --- loop 7.5x5.5 = 82 mm^2
+    h3_loopq_7.5x5.5_pec: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    h3_loopq_7.5x5.5_pec: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 350s
+       pec: TE011 2.451084  Q=   43,946  P>=1.0000  spread=0.0000   (continuation +0.523 MHz)
+    🔑 h3_loopq_7.5x5.5_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3_loopq_7.5x5.5_lumped: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 364s
+    lumped: TE011 2.451063  Q=    8,927  P>=1.0000  spread=0.0000   (continuation +0.502 MHz)
+    -> Q0=   43,946  Q_L=   8,927  Q_ext=   11,202  beta=  3.923  OVERCOUPLED
+       driven anomaly said Q0=24,920 here -> eigen is 1.76x that
+  --- loop 11x8 = 176 mm^2
+    h3_loopq_11x8_pec: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    h3_loopq_11x8_pec: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 440s
+       pec: TE011 2.451633  Q=   43,422  P>=0.9997  spread=0.0003   (continuation +1.072 MHz)
+    🔑 h3_loopq_11x8_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3_loopq_11x8_lumped: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 432s
+    lumped: TE011 2.451631  Q=    7,613  P>=0.9997  spread=0.0003   (continuation +1.070 MHz)
+    -> Q0=   43,422  Q_L=   7,613  Q_ext=    9,231  beta=  4.704  OVERCOUPLED
+       driven anomaly said Q0=28,387 here -> eigen is 1.53x that
+  --- loop 16x12 = 384 mm^2
+    h3_loopq_16x12_pec: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    h3_loopq_16x12_pec: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 610s
+       pec: TE011 2.452526  Q=   41,747  P>=0.9990  spread=0.0010   (continuation +1.965 MHz)
+    🔑 h3_loopq_16x12_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3_loopq_16x12_lumped: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 478s
+    lumped: TE011 2.452536  Q=   10,106  P>=0.9990  spread=0.0010   (continuation +1.975 MHz)
+    -> Q0=   41,747  Q_L=  10,106  Q_ext=   13,333  beta=  3.131  OVERCOUPLED
+       driven anomaly said Q0=30,112 here -> eigen is 1.39x that
+  --- loop 11x8 = 176 mm^2   🔑 NO-GROOVE CONTROL (F4)
+    h3_loopq_11x8_nogroove_pec: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    h3_loopq_11x8_nogroove_pec: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    solved in 361s
+       pec: TE011 2.450165  Q=   30,878  P>=0.7593  spread=0.2407   (continuation -0.396 MHz)
+    🔑 h3_loopq_11x8_nogroove_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3_loopq_11x8_nogroove_lumped: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    solved in 858s
+    lumped: TE011 2.450168  Q=   22,024  P>=0.7659  spread=0.2341   (continuation -0.393 MHz)
+    -> Q0=   30,878  Q_L=  22,024  Q_ext=   76,811  beta=  0.402  undercoupled
+       driven anomaly said Q0=28,387 here -> eigen is 1.09x that
+
+==============================================================================
+  V1 Q0       43,421.6 vs h3_step3   43,523.0  ->   0.2%  ✅
+  V1 Q_L       7,612.9 vs h3_step3    7,538.0  ->   1.0%  ✅
+  V1 Q_ext     9,231.4 vs h3_step3    9,117.0  ->   1.3%  ✅
+  V1 beta          4.7 vs h3_step3        4.8  ->   1.5%  ✅
+
+       loop   area        Q0     Q_ext     beta        branch    P_min   spread
+      5x3.5     35    44,196    19,633    2.251   OVERCOUPLED   0.9999   0.0001
+    7.5x5.5     82    43,946    11,202    3.923   OVERCOUPLED   1.0000   0.0000
+       11x8    176    43,422     9,231    4.704   OVERCOUPLED   0.9997   0.0003
+      16x12    384    41,747    13,333    3.131   OVERCOUPLED   0.9990   0.0010
+       none      0    44,414         —        —             —   0.9985   0.0015   <- anchored, no loop
+
+  ✅ F1 does not fire — Q0 FALLS with loop area, as a larger obstacle should.
+     🔑 The driven anomaly was therefore an ARTEFACT of the driven extraction,
+     not physics. It was never explained by the open-gap audit (different
+     defect) — this is the measurement that settles it.
+  V4 smallest loop (35 mm^2) Q0=44,196 vs no-loop 44,414 -> -0.5%  ✅
+  F2 worst purity spread 0.0010 at 16x12 ✅ no loop size hybridises TE011
+  ⚠️ beta does not cross 1 in the swept range (2.25 .. 3.13) — critical coupling is OUTSIDE it.
+
+  F4 SEPARABILITY — loop 11x8, groove vs none:
+     Q0 30,878 (no groove) vs 43,422 (grooved) -> -28.9%
+     f0 -1.468 MHz
+     🔴 F4 FIRES — the groove's Q cost DEPENDS on the loop. They INTERACT, and
+        the optimiser must search the JOINT space (§2b). This also kills any
+        prior fitted on one axis while holding the other fixed.
+
+  result -> h3_loopq.result.json
+EXIT=0

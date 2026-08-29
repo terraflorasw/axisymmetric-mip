@@ -1,0 +1,177 @@
+E0k2 — the absolute-Q ANCHOR, and the programme's first coupling numbers.
+
+🔴 WHY. INSTRUMENT says "absolute Q has no external anchor — only its scaling
+law. A Q number is trustworthy in ratio, not in absolute value." That limitation
+is removable, and the way to remove it is to measure Q by a route that shares no
+machinery with the eigenvalue: the LINEWIDTH of a driven resonance.
+
+    eigen   Q from the imaginary part of a complex eigenvalue
+    driven  Q_L from the 3 dB width of the absorbed-power curve,
+            beta from the depth of the |S11| dip,  Q0 = Q_L (1 + beta)
+
+Two routes, one mesh, one wall. If they agree, absolute Q is anchored for the
+first time. If they do not, one of them has a systematic error and that is a
+bigger finding than the anchor.
+
+🔴 E0k TRIED THIS AND ALL FOUR OF ITS LEGS WERE WRONG. It is the only driven
+data in the record (2 solves of 69) and:
+
+  1. its driven solves used SILVER 6.3e7, the R110 template default, against
+     baselines.json's aluminium — every Q from them ~34% high;
+  2. its eigen counterpart was PEC, reporting Q ~ 2.1e9, which is noise, so it
+     COULD NOT have compared Q at all — "compared only the resonant frequency"
+     was forced by the configuration, not chosen;
+  3. it ran a=103.70, L=88.53, D/L=2.343 — candidate A, which H1 REJECTED;
+  4. its |S11| was never analysed. beta=0.0673 and Q_L=25,060 were sitting in
+     postpro/e0k_drv2/port-S.csv the whole time.
+
+Every one of those is fixed below.
+
+🔑 MODE IDENTITY COMES FROM THE FIELD, NOT THE FREQUENCY. A driven solve returns
+an |S11| dip, not a labelled mode, and TE011/TM111 are EXACTLY degenerate
+(chi'01 = chi11) so the loop's ~1 MHz splitting is the only thing separating
+them. Matching the dip to a mode by frequency is E1b's grave. Palace emits
+p_elec/p_mag at EVERY driven frequency sample, so the driven field carries the
+same energy fingerprint as an eigenmode and can be matched by SIGNATURE.
+Validated on the existing E0k data: the driven field at 2.446420 matches the
+eigen mode at 2.446475 with distance 0.0002, an 18.7x margin over the next mode.
+
+⚠️ Both solves must emit the SAME energy regions in the SAME order or the
+signatures are not comparable. eigen_cfg and solveconf.driven number them
+differently, so this rig builds ONE list and injects it into both.
+
+🔑 THE COUPLING BRANCH IS RESOLVED, NOT ASSUMED. |S11| alone cannot tell beta
+from 1/beta — the dip depth is identical for both. The PHASE can: an overcoupled
+resonance advances ~360 deg through resonance, an undercoupled one returns.
+E0k's data swings 0.7 deg, so it was undercoupled, and this rig measures that
+rather than assuming it.
+
+VERIFICATION
+  V1  the driven dip matches an eigen mode by signature with margin > 5x.
+      Without that there is no identified mode and NO Q comparison is claimed.
+  V2  beta << 1 for a diagnostic loop, and the phase test agrees with the
+      branch chosen from the dip depth.
+  V3  the loop must not move TE011 more than a few MHz from closed form. The
+      "the loop is in both solves so it cancels" argument needs the loop to be
+      a perturbation, not a redesign.
+
+FALSIFICATION
+  🔴 F1  Q0_driven and Q0_eigen differing by more than 20% means absolute Q is
+         NOT anchored. That is the RESULT; it must not be explained away by
+         adjusting the coupling model until the numbers meet.
+  🔴 F2  signature margin < 5x means the loop has hybridised the degenerate
+         pair. Report the failure; do not fall back to nearest-frequency.
+  🔴 F3  beta > 0.5 means the loop loads the cavity heavily; Q0 = Q_L(1+beta)
+         then rides on the branch choice and the anchor is not trustworthy.
+
+⚠️ THE LOOP DIMENSIONS ARE INHERITED, and that is CONVENTIONS §6 territory:
+25.8,19.4,1.5,0.3 was sized for a = 103.70 mm, where H_r peaks at
+0.4805a = 49.83 mm. This cavity is a = 88.00 mm, where that radius is 42.29 mm.
+The loop is NOT re-derived here — deliberately, because beta is an OUTPUT of
+this rig rather than an input, and F3 fires if the inherited loop turns out to
+load the cavity too hard. If F3 fires, the loop is what to change.
+
+⚠️ WHICH mode the loop couples to is also an output. A barrel loop is not
+guaranteed to pick TE011 over its degenerate TM111 partner, and with a lossy
+wall Q settles it (TE011 has ~2x TM111's Q). The anchor is reported AGAINST THE
+MODE IT ACTUALLY MEASURED, labelled — an anchor for TM111 is still an anchor,
+but calling it TE011 would not be.
+
+⚠️ This measures the EMPTY cavity at the H1 design point. It says nothing about
+a plasma (H3) — but H3 needs exactly this rig, so it is built to be reused.
+
+==============================================================================
+  design point (H1, DERIVED): a=88.0045 mm  L=115.4158 mm  D/L=1.525
+  wall: 3.5e+07 S/m from baselines.json
+  CAP loop at r = 0.4805 x a = 42.286 mm (TE011 H_r peak, J1 max)
+  exact TE011 = TM111 = 2.450000 GHz (degenerate)
+  driven band 2.4100-2.4900 GHz, step 5 kHz
+  TARGET: beta in [0.1, 1.0]
+
+==============================================================================
+  PHASE 1 — size the loop. Driven only; no eigen solve is spent on a
+  geometry that turns out to be coupled wrong.
+
+  --- e0k2_c5x3p5: 5.0 x 3.5 mm, area 35 mm^2
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    🔧 driven [2]: LossTan 3.5e-05 -> 0.0
+    33,145 tets, dropped ['brake (attribute 8 absent — --brake 0)']
+    solved in 1604s
+    f0=2.450370  |S11|=-14.022 dB  overcoupled  beta=1.4969  Q_L=8,012  linewidth 305.9 kHz
+  --- e0k2_c7p5x5p5: 7.5 x 5.5 mm, area 82 mm^2
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    🔧 driven [2]: LossTan 3.5e-05 -> 0.0
+    33,111 tets, dropped ['brake (attribute 8 absent — --brake 0)']
+    solved in 1543s
+    f0=2.450435  |S11|=-23.056 dB  undercoupled  beta=0.8686  Q_L=13,336  linewidth 183.7 kHz
+  --- e0k2_c11x8: 11.0 x 8.0 mm, area 176 mm^2
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    🔧 driven [2]: LossTan 3.5e-05 -> 0.0
+    33,608 tets, dropped ['brake (attribute 8 absent — --brake 0)']
+    solved in 1542s
+    f0=2.450405  |S11|=-10.989 dB  undercoupled  beta=0.5598  Q_L=18,199  linewidth 134.6 kHz
+  --- e0k2_c16x12: 16.0 x 12.0 mm, area 384 mm^2
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    🔧 driven [2]: LossTan 3.5e-05 -> 0.0
+    33,791 tets, dropped ['brake (attribute 8 absent — --brake 0)']
+    solved in 1604s
+    f0=2.449475  |S11|=-10.521 dB  overcoupled  beta=1.8483  Q_L=10,572  linewidth 231.7 kHz
+
+==============================================================================
+  candidate              area        beta       Q_L        branch  in range
+  e0k2_c5x3p5              35      1.4969     8,012   overcoupled          
+  e0k2_c7p5x5p5            82      0.8686    13,336  undercoupled         ✅
+  e0k2_c11x8              176      0.5598    18,199  undercoupled         ✅
+  e0k2_c16x12             384      1.8483    10,572   overcoupled          
+
+  chosen: e0k2_c11x8  beta=0.5598 (window centre 0.316)
+
+==============================================================================
+  PHASE 2 — the anchor. Eigen on the SAME mesh, SAME wall; the driven
+  solve from phase 1 is reused, not repeated.
+
+    e0k2_c11x8_eig: solver order 2
+    solved in 278s
+    6 modes:
+      f=2.423178  Q=18,411
+      f=2.450399  Q=30,020
+      f=2.453905  Q=25,107
+      f=2.622966  Q=24,274
+      f=2.623151  Q=24,269
+      f=2.765853  Q=26,407
+
+  IDENTIFICATION by signature (not frequency):
+    f=2.450399  Q=    30,020  d=0.00027   <-- driven dip
+    f=2.453905  Q=    25,107  d=0.00705
+    f=2.423178  Q=    18,411  d=0.02049
+    f=2.765853  Q=    26,407  d=0.06027
+    f=2.623151  Q=    24,269  d=0.06325
+    f=2.622966  Q=    24,274  d=0.06325
+    margin over next 26.0x (V1 needs > 5.0)
+
+  degenerate pair by Q: TE011=2.423178  TM111=2.452152  (how=multiplicity)
+    falsifier TE011 Q > TM111 Q: 18,411 vs 27,564 🔴 INVERTED — the labelling is not trustworthy
+  the loop coupled to: TM111 (one polarisation) [LABEL SUSPECT: Q inversion]
+
+  ======================================================================
+  THE ANCHOR
+    Q0 from the driven LINEWIDTH :       28,387
+    Q0 from the EIGENVALUE       :       30,020
+    ...for mode                  : TM111 (one polarisation) [LABEL SUSPECT: Q inversion]
+    ratio driven/eigen           :        0.946
+    beta                         :       0.5598
+    beta's share of Q0           :        35.9%
+
+  DECLARED CRITERIA
+    V3 loop perturbation: 0.40 MHz ✅
+    V2 beta=0.5598 ⚠️ above BETA_MAX  branch=undercoupled by phase (swing 13.9°)
+    F1 |ratio-1| = 5.4% ✅ two independent routes agree
+
+  ⚠️ NOT anchored: F1 agreeing is necessary but not sufficient — V3 and the beta window must hold too, or the number describes a cavity dominated by its own probe.
+
+  wrote e0k2.result.json
+EXIT=0

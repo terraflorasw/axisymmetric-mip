@@ -1,0 +1,115 @@
+E3 — the ENERGY-BALANCE CLOSURE. The declared falsifier for every eta.
+
+PLAN E3: **eta_total = eta_plasma + eta_wall + eta_dielectric**, and
+**F = the closure itself.** If the split does not sum to eta_total within a few
+percent, the decomposition is WRONG and only eta_total may be quoted.
+🔑 It has never been run. Every eta in the record is unfalsified.
+
+## Method — one loss channel at a time, SAME MESH
+
+Loss rates ADD in 1/Q, so if the three channels are independent:
+
+    1/Q_all  ==  1/Q_wall + 1/Q_plasma + 1/Q_dielectric
+
+Each term is measured by switching the OTHER two off on the SAME mesh:
+
+    A  all on          wall sigma + plasma sigma + torch tand   -> Q_all
+    B  WALL only       plasma sigma=0, torch tand=0             -> Q_wall
+    C  PLASMA only     wall PEC,      torch tand=0              -> Q_plasma
+    D  DIELECTRIC only wall PEC,      plasma sigma=0            -> Q_diel
+
+🔴 **THE CLOSURE CAN ONLY FAIL ONE WAY, AND THAT IS THE POINT.** 1/Q addition is
+exact IF the FIELD is the same in all four solves. It fails when a loss channel
+is strong enough to REDISTRIBUTE the field — which is exactly when the
+decomposition stops being meaningful. **So this is a test of whether "eta_plasma"
+is a real quantity, not of arithmetic.**
+
+⚠️ **RUN AT ne = 1e20, WHICH IS THE STRONGEST TEST, NOT THE OPERATING POINT.**
+The plasma there is ~275x the wall loss, so the field is maximally perturbed. If
+closure holds there it holds at the anchored 7.9e18, where the plasma perturbs
+less. 🔴 It is ALSO the only density in reach: with the corrected nu_m the
+anchored state sits at PI_1 = 2.46, inside h3_eigen's UNTESTED convergence gap
+(0.56 < PI_1 < 5.58), and 3e18 is where eigen is known to FAIL outright.
+
+## 🔴 AND A SECOND FINDING THIS RIG CARRIES
+
+**Five rigs mesh the torch as VACUUM** (`--torch-material 1.0,3.5e-05`):
+h3_driven, h3_groove, h3_margin, h3_step3, h3_loopsize. **The design torch is
+`geometry.py`'s default — SAPPHIRE, eps = 11.6**, and that file says so in
+terms: *"The build is ALL SAPPHIRE and PERMANENT... simulating quartz by default
+would model a cavity we are not building."* Modelling it as eps=1 is further from
+the design than the quartz that warning was written about.
+
+🔑 It matters here twice over: **the DIELECTRIC is one of the three channels E3
+must decompose** — with eps=1 there is almost nothing to decompose — and
+`h4_field` measured a sapphire torch shifting f0 by **-15.00 MHz**, comparable to
+the whole band margin.
+✅ **So this rig meshes the DESIGN torch, and case E re-meshes with the vacuum
+torch so the shift is measured rather than inferred.**
+⚠️ h4_field's -15.00 MHz was on a GROOVE-FREE cavity and is discarded as a
+number; it is quoted only as an order-of-magnitude expectation.
+
+VERIFICATION
+  V1  case A must reproduce a known point. ⚠️ There is NO prior loaded eigen on
+      the design cavity, so V1 here is WEAK BY CONSTRUCTION: the check is that
+      f0(A) sits below the vacuum-torch f0(E) by an amount of order 10 MHz, and
+      that Q_all is dominated by the plasma. **Stated so it is not over-read.**
+  V2  every case must mesh the SAME geometry — asserted from the sidecar, groove
+      5x10 and the torch permittivity bound by `check_torch_bound`.
+  V3  each single-channel Q must be LARGER than Q_all. A channel cannot dissipate
+      more alone than with company.
+FALSIFICATION
+  🔴 F1  **THE CLOSURE.** If |1/Q_all - sum(1/Q_i)| / (1/Q_all) exceeds ~5%, the
+         decomposition is WRONG and **only eta_total may be quoted** — every
+         "eta_plasma" in the record becomes unquotable.
+         ⚠️ ASSUMPTION: that the four solves see the same field. That is the
+         thing being tested, so a failure is INFORMATIVE, not an error.
+  🔴 F2  if eta_dielectric exceeds ~5%, the sapphire torch is a real loss term
+         and PLAN's "dielectric is only ~2% of the loss budget" is wrong.
+  🔴 F3  if f0(sapphire) - f0(vacuum) is not of order -10 MHz, then either the
+         torch binding is not reaching the solve or h4_field's -15.00 MHz does
+         not transfer to a grooved cavity. **Both are findings; neither is noise.**
+
+==============================================================================
+  a=88.0045 L=115.4158   ne=1.0e+20  eps=-30.089  sigma_p=27.53 S/m
+  torch: DESIGN = sapphire (11.6, 3.5e-05), vs the (1.0, 3.5e-05) five rigs have been meshing
+  ⚠️ run at 1e20 (strongest test AND the only convergent point); the anchored 7.9e+18 sits in eigen's untested gap
+
+  --- A_all:  wall=True  plasma=True  dielectric=True  torch_eps=11.6
+    e3_closure_A_all: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    e3_closure_A_all: solver order 2
+    torch: eps=11.6 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    🔴 e3_closure_A_all: TIMED OUT after 2700s (226 NLEPS iterations) — rank TREE killed
+  --- B_wall:  wall=True  plasma=False  dielectric=False  torch_eps=11.6
+    e3_closure_B_wall: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    e3_closure_B_wall: solver order 2
+    torch: eps=11.6 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 808s
+    f0=2.437762  Q=  44,386.7  P>=0.9998  (4 modes in window)
+  --- C_plasma:  wall=False  plasma=True  dielectric=False  torch_eps=11.6
+    e3_closure_C_plasma: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    e3_closure_C_plasma: solver order 2
+    torch: eps=11.6 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    🔴 e3_closure_C_plasma: TIMED OUT after 2700s (0 NLEPS iterations) — rank TREE killed
+  --- D_dielectric:  wall=False  plasma=False  dielectric=True  torch_eps=11.6
+    e3_closure_D_dielectric: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    e3_closure_D_dielectric: solver order 2
+    torch: eps=11.6 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 403s
+    f0=2.437789  Q=1,911,259.0  P>=0.9998  (4 modes in window)
+  --- E_vac_torch:  wall=True  plasma=True  dielectric=True  torch_eps=1
+    e3_closure_E_vac_torch: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    e3_closure_E_vac_torch: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 1140s
+    f0=2.482470  Q=     163.2  P>=0.9996  (4 modes in window)
+
+==============================================================================
+  🔴 CLOSURE CANNOT BE TESTED — missing ['A_all', 'C_plasma'].
+     E3 is UNANSWERED; every eta in the record stays unfalsified.
+EXIT=0

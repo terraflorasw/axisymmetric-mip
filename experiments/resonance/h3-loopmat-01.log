@@ -1,0 +1,122 @@
+H3 loop-size sweep — Q0, Q_ext and beta per loop, by EIGEN PAIRS. No fitting.
+
+🔑 WHAT THIS MEASURES, AND WHY IT NEEDS TWO SOLVES PER LOOP.
+For each loop size, solve the SAME mesh twice and take the difference:
+
+    Q0  = eigen, port_bc="pec"      gap shorted -> no port loss -> UNLOADED Q
+    Q_L = eigen, port_bc="lumped"   real 50 ohm load           -> LOADED Q
+    1/Q_ext = 1/Q_L - 1/Q0     ->     beta = Q0 / Q_ext
+
+**No |S11|, no dip depth, no Lorentzian, no phase, no branch decision.** That is
+the whole point: every previous attempt at beta in this programme went through
+the |S11| depth, which is identical for beta and 1/beta (§7x), and the branch
+FLIPS with loading so no single choice is safe.
+
+🔴 THE DECLARED OPEN QUESTION THIS EXISTS TO SETTLE. `e0k2_sizeq` was built to
+explain a DRIVEN anomaly and its own eigen half is now void (open loop gap,
+§7v). The anomaly itself is still unexplained:
+
+    driven Q0 = 20,005 / 24,920 / 28,387 / 30,112
+    for areas =     35 /     82 /    176 /    384 mm^2
+
+**Smaller loops apparently costing MORE Q, monotonically, against a bare-cavity
+44,384.** That is backwards: a smaller obstacle should perturb less.
+⚠️ **Driven has a REAL port, so the open gap does NOT explain it.** The branch
+error might; blended fits might; both untested. **Do not record it as explained
+by the audit** — this rig measures Q0 per loop size a way that cannot have
+either defect, and the answer is whatever it is.
+
+🔴🔴 THE CLAIM BELOW -- "Q_ext is set by loop geometry, not by the load" -- IS
+FALSE BY ~9%, established 2026-08-25. h3_driven's measured
+S11 dip implies Q_ext ~8,100-8,600 from cold through 3e19 and 9,221 at 1e20.
+✅ SETTLED. Refitting those sweeps with INTERPOLATED 3 dB edges (CONVENTIONS
+7bh) makes the COLD driven value agree with the eigen pair to 0.78% (9,045 vs
+9,117) -- which validates the fit -- and then Q_ext dips to 8,194 at ne=1e19 and
+recovers to 9,322 at 1e20. A ~9% LOAD DEPENDENCE, not a geometry artefact.
+⚠️ beta(ne) = Q0(ne)/Q_ext is therefore a ~9% approximation, not an identity.
+⚠️ ALSO: this file's V1_ANCHOR says Q_ext = 9,117 (h3_step3) while the sweep at
+11x8 returns 9,231, and h3_driven hardcodes Q_EXT_MEASURED = 9,231. Two values,
+~1.25% apart, and their mesh styles are NOT documented in either place.
+
+🔑 AND IT GIVES THE OPTIMISER ITS COUPLING AXIS. Q_ext is set by loop geometry
+and is nearly independent of the plasma, so ONE eigen pair per loop size serves
+every density. beta(ne) is then Q0(ne)/Q_ext — **matching to beta=1 becomes a
+LOOP-SIZE choice made against a chosen operating density**, which is a design
+knob the programme has never been able to state quantitatively.
+
+⚠️ SIZES ARE e0k2_sizeq'S, DELIBERATELY. Same four loops, so the comparison is
+direct rather than interpolated.
+⚠️ GLOSSARY: the second number is a HALF-width. Area = ld * 2 * lw.
+
+🔴 EIGEN ONLY (§7c, one rig one solver). The driven half of this comparison is
+`h3_driven` and it has already run.
+
+VERIFICATION
+  V1  🔑 THE INTERNAL ANCHOR: at 11x8 this rig must reproduce `h3_step3`:
+      Q0 = 43,523, Q_L = 7,538, Q_ext = 9,117, beta = 4.77. Same mesh style,
+      same settings, same BCs. **If 11x8 does not reproduce, nothing else in
+      the sweep means anything** — check that FIRST.
+  V2  the groove must be 5x10 in every mesh except the declared control.
+  V3  TE011 identified by CONTINUATION from the anchored grooved-no-loop
+      2.450561 GHz, and reported WITH purity. Never by lowest A2/A0 (§7u).
+  V4  Q0 -> 44,414 (grooved, no loop) as area -> 0. That is what "a smaller
+      obstacle perturbs less" MEANS, and it is the only external anchor here.
+FALSIFICATION
+  🔴 F1  if eigen Q0 RISES with loop area — reproducing the driven trend — the
+         backwards behaviour is REAL and physical, and both the branch and the
+         blend explanations are dead. Report it; do not explain it away.
+         ⚠️ ASSUMPTION: that the driven anomaly and this Q0 are the same
+         quantity. They are both "unloaded Q of TE011", but if TE011 is
+         misidentified at some loop size they are not comparable at all — which
+         is why V3 demands purity on every reported mode.
+  🔴 F2  if purity degrades with loop area (spread rising above ~0.02), the loop
+         DOES hybridise TE011 beyond some size, and 11x8 merely sits below it.
+         **That is a hard design constraint, not a curiosity** — it would bound
+         loop size independently of coupling.
+  🔴 F3  if beta crosses 1 inside the swept range, the critically-coupled loop
+         size is MEASURED, not estimated. Report which side each size falls on.
+  🔴 F4  if the no-groove control's Q0 differs from its grooved twin by more
+         than ~2%, groove and loop INTERACT and the OPTIMIZER may not treat them
+         as independent axes (§2b).
+
+==============================================================================
+  a=88.0045 L=115.4158   grooved-no-loop anchor: 2.450561 GHz, Q0=44,414
+  eigen: target=2.38, N=8, order 2 — h3_step3's validated settings
+  1 case(s) x 2 port BCs = 2 solves
+
+  🔑 PARTIAL: 11x8_barrel_g2-0.5 already has pec on disk — those solves will be REUSED, not repeated.
+  --- loop 11x8 = 176 mm^2  mount=barrel  gap2=0.5 flange=0
+    ♻️  pec: reusing 4 mode(s) checkpointed before the interruption — not re-solving
+       pec: TE011 2.441991  Q=   40,716  P>=0.9992  spread=0.0007   (continuation -8.570 MHz)
+    h3-loopmat-01.bf186030_11x8_barrel_g2-0.5_lumped: loop 5.8e+07 S/m on attribute 92 (wall 3.5e+07)
+    🔑 h3-loopmat-01.bf186030_11x8_barrel_g2-0.5_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3-loopmat-01.bf186030_11x8_barrel_g2-0.5_lumped: solver order 2
+    torch: eps=9.39 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 772s
+      probes: bore_edge=122  bore_mid=61.6  leg_broken=487  leg_intact=156  port_gap=2.24e+03  series_gap=3.94e+03
+    lumped: TE011 2.441662  Q=    1,090  P>=0.9992  spread=0.0006   (continuation -8.899 MHz)
+    -> Q0=   40,716  Q_L=   1,090  Q_ext=    1,120  beta= 36.345  OVERCOUPLED
+       driven anomaly said Q0=28,387 here -> eigen is 1.43x that
+
+==============================================================================
+  ⚠️ V1 SUPPRESSED — the anchor 9,117 is for a cap loop with gap2=0, flange=0;
+     this run meshes barrel gap2=0.5 flange=0. **A DIFFERENT COUPLER.**
+     Comparing them is the wrong-cavity comparison (§7c), not a failed reproduction.
+     🔑 Anchor this run against a control in ITS OWN configuration instead.
+
+       loop   area        Q0     Q_ext     beta        branch    P_min   spread
+  11x8_barrel_g2-0.5    176    40,716     1,120   36.345   OVERCOUPLED   0.9992   0.0007
+       none      0    44,414         —        —             —   0.9985   0.0015   <- anchored, no loop
+
+  🔴 F1 FIRES — eigen Q0 RISES with loop area, reproducing the driven trend.
+     The backwards behaviour is REAL. Branch error and blended fits are BOTH dead
+     as explanations. Report it; do not explain it away.
+  V4 smallest loop (176 mm^2) Q0=40,716 vs no-loop 44,414 -> -8.3%  ✅
+  F2 worst purity spread 0.0007 at 11x8_barrel_g2-0.5 ✅ no loop size hybridises TE011
+  ⚠️ beta does not cross 1 in the swept range (36.34 .. 36.34) — critical coupling is OUTSIDE it.
+
+  ⚠️ F4 not evaluable — need both the control and its grooved twin.
+
+  result -> h3-loopmat-01.bf186030.result.json
+EXIT=0

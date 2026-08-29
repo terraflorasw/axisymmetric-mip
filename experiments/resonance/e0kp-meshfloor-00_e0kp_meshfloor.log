@@ -1,0 +1,42 @@
+E0kp — the REPRODUCIBILITY FLOOR of the whole instrument.
+
+E0m: two IDENTICAL serial gmsh commands produce different order-2 meshes —
+~2,540 node coordinates apart (~12 um), identical topology. Localised to
+setOrder(2) (high-order node placement); geometric order 1 is bit-identical, and
+disabling HighOrderOptimize does not help. It is not reachable by a flag.
+
+So the question is not "is the mesher deterministic" — it is not — but HOW MUCH
+FREQUENCY that costs. That number is the floor under every comparison this
+programme makes between results that do not share a mesh FILE.
+
+  N independent meshes, same command, same solver, same order.
+  The SPREAD in TE011 is the floor.
+
+VERIFICATION   all N meshes must have identical topology (same tet count); if
+               they do not, the variation is coarser than node jitter and this
+               measures something else.
+FALSIFICATION  if the spread is comparable to the 1.3-3.3 MHz "cross-mesh error"
+               already in the record, then that error was never about differing
+               MESH PARAMETERS — it is irreducible mesher noise, and every
+               cross-mesh comparison ever made carries it.
+
+⚠️ This does not threaten same-mesh differencing (METHODOLOGY 2b), which reuses
+one FILE. It sets the price of NOT doing that.
+
+==============================================================================
+  exact TE011 (no loop) = 2.444385 GHz
+
+    solved in 273s
+  mesh 0: 27,578 tets  sha 0fc68a3ebe40854f  ->  TE011 2.446475 GHz  (+2.09 MHz vs exact)
+    solved in 274s
+  mesh 1: 27,578 tets  sha 37e7143c9161f68a  ->  TE011 2.446475 GHz  (+2.09 MHz vs exact)
+    solved in 273s
+  mesh 2: 27,578 tets  sha bd558c84664b1f54  ->  TE011 2.446475 GHz  (+2.09 MHz vs exact)
+
+==============================================================================
+  distinct meshes: 3 of 3   topology: IDENTICAL
+  TE011 spread over 3 identical commands = 0.000 MHz
+  recorded cross-mesh error for comparison   = 1.3 - 3.3 MHz
+
+  wrote e0kp.result.json — NO VERDICT HERE
+EXIT=0

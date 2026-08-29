@@ -269,7 +269,7 @@ def save(out):
     os.replace(t, p)
 
 
-def build_mesh(tag, a, L, zlo, zhi, eps_p, sig_p, rec, ri=None, ro=None):
+def build_mesh(tag, a, L, zlo, zhi, eps_p, sig_p, rec, ri=None, ro=None, _ld_override=None):
     """Mesh with the cap loop AND the plasma. Returns meta or None.
 
     🔑 `ri`/`ro` are EXPLICIT so the plasma annulus can be a SWEEP AXIS. It was
@@ -294,21 +294,30 @@ def build_mesh(tag, a, L, zlo, zhi, eps_p, sig_p, rec, ri=None, ro=None):
     #    annulus here, so the field varies slowly across it.
     _ph = PRM.get("plasma_h")
     ph_mesh = float(_ph) if _ph else min(1.0, max(0.30, thick / 6.0))
+    # 🔑 LOOP GEOMETRY IS PER-RUN, defaulting to the historical constants so
+    # every existing config meshes byte-identically. A loop SWEEP needs these
+    # to vary; the eta guard below refuses to QUOTE eta when they do.
+    _LD = float(_ld_override) if _ld_override else float(PRM.get("loop_ld", LOOP_LD))
+    _LW = float(PRM.get("loop_lw", LOOP_LW))
+    _MOUNT = PRM.get("loop_mount", "cap")
+    _G2 = float(PRM.get("loop_gap2", 0.0))
     args = ([x for x in GEO if x != "--no-torch"]
             + ["--radius", f"{a:.6f}", "--length", f"{L:.6f}",
                "--sectors", str(SECTORS),
                "--torch-material", "1.0,3.5e-05",
                "--plasma", f"{ri},{ro},{zlo:.4f},{zhi:.4f}",
                "--plasma-h", f"{ph_mesh:.3f}",
-               "--loop", f"{LOOP_LD},{LOOP_LW},{LOOP_RW},{LOOP_GAP}",
+               "--loop", f"{_LD},{_LW},{LOOP_RW},{LOOP_GAP}",
                # 🔴 --loop-cap IS NOT OPTIONAL. Without it the loop mounts on the
                # BARREL, where the radius is forced to a and it links H_z rather
                # than H_r — a different coupling to a different field component,
                # i.e. a different instrument. h3_loaded and e0k2_anchor both
                # mount on the CAP at CAP_R_FRAC*a, and V1/V2 compare against
                # their numbers. Omitting it silently changes what is measured.
-               "--loop-cap", f"{CAP_R_FRAC * a:.4f}",
-               "--loop-phi", LOOP_PHI])
+               "--loop-phi", LOOP_PHI]
+            + ([] if _MOUNT == "barrel"
+               else ["--loop-cap", f"{CAP_R_FRAC * a:.4f}"])
+            + ([f"--loop-gap2", f"{_G2:g}"] if _G2 else []))
     for sf in SIZE_FACTORS:
         r = subprocess.run([sys.executable, "geometry.py", "--out", f"{tag}.msh",
                             "--size-factor", sf] + args,
@@ -517,6 +526,9 @@ def sweep(mesh_tag, out_tag, band, step, eps_p, sig_p, attrs):
     return fit(out_tag)
 
 
+ETA_VALID = True
+
+
 def check_eta_reference():
     """🔴 Refuse to score eta against a reference from a different cavity.
 
@@ -533,12 +545,20 @@ def check_eta_reference():
             f"{GROOVE_DESIGN[0]:g}x{GROOVE_DESIGN[1]:g}. Re-measure the "
             f"reference on the new groove before quoting any eta.")
     want_l = tuple(Q_REF_CONFIG["loop_mm"])
-    if (LOOP_LD, LOOP_LW) != want_l:
-        raise SystemExit(
-            f"🔴 eta reference {Q_REF:,.0f} was measured with an "
-            f"{want_l[0]:g}x{want_l[1]:g} loop, but this rig meshes "
-            f"{LOOP_LD:g}x{LOOP_LW:g}. Q0 depends on loop size "
-            f"(44,414 no loop -> 12,368 at 11x8): re-measure, do not scale.")
+    got_l = (float(PRM.get("loop_ld", LOOP_LD)), float(PRM.get("loop_lw", LOOP_LW)))
+    got_mount = PRM.get("loop_mount", "cap")
+    # 🔑 REFUSE TO QUOTE eta, NOT TO RUN. The guard's purpose is that Q0 depends
+    # on loop size (44,414 no loop -> 12,368 at 11x8), so an eta normalised
+    # against the WRONG reference is meaningless. That is a reason to withhold
+    # eta, not to forbid measuring BETA -- which comes from the dip depth and
+    # needs no reference at all. Blocking the whole run turned a reporting
+    # guard into a capability limit (CONVENTIONS 7bp: instrument fit).
+    if got_l != want_l or got_mount != "cap":
+        globals()["ETA_VALID"] = False
+        print(f"  ⚠️ eta SUPPRESSED: reference {Q_REF:,.0f} is for a "
+              f"{want_l[0]:g}x{want_l[1]:g} CAP loop; this run meshes "
+              f"{got_l[0]:g}x{got_l[1]:g} {got_mount}. beta and Q_L are still "
+              f"valid — they come from the dip, not from Q_REF.", flush=True)
 
 
 def main():
@@ -552,9 +572,16 @@ def main():
     print(f"  cavity a={a:.4f} L={L:.4f}  "
           f"Q_ref(groove 5x10 + loop 11x8)={Q_REF:,.0f}")
     print(f"    eta reference: {Q_REF_SOURCE}")
-    _axis = ("annulus " + ", ".join(f"{c[0]:g}-{c[1]:g}" for c in PRM["annulus_grid"])
-             + f" mm at fixed ne={PRM['ne_fixed']:.1e}"
-             if PRM.get("annulus_grid") else f"density, annulus {RI}-{RO} mm")
+    if PRM.get("loop_grid"):
+        _axis = ("loop leg depth ld = "
+                 + ", ".join(f"{v:g}" for v in PRM["loop_grid"])
+                 + f" mm at fixed ne={float(PRM.get('ne_fixed', 0.0)):.1e}")
+    elif PRM.get("annulus_grid"):
+        _axis = ("annulus " + ", ".join(f"{c[0]:g}-{c[1]:g}"
+                                        for c in PRM["annulus_grid"])
+                 + f" mm at fixed ne={PRM['ne_fixed']:.1e}")
+    else:
+        _axis = f"density, annulus {RI}-{RO} mm"
     print(f"  SWEEP AXIS: {_axis}", flush=True)
     print(f"  plasma r={RI}-{RO} mm  z=+-{Z_FRAC}L   cap loop "
           f"{LOOP_LD}x{LOOP_LW} mm (TE011 branch)")
@@ -589,7 +616,14 @@ def main():
            # summary keyed points by ne; a BORE sweep holds ne fixed, so all
            # three results collapsed onto one dict entry and the table printed
            # "no result" three times over a result file that was complete.
-           "sweep_axis": ("annulus" if PRM.get("annulus_grid") else "density"),
+           # 🔴 2026-08-27: `loop_grid` was added to the SWEEP and NOT here,
+           # so a LOOP sweep called itself "density" — and with ne fixed at 0.0
+           # every case collapsed onto one key. That is the bore-sweep failure
+           # this comment was written for, repeated on the next axis added.
+           # The axis list has to grow with the sweep or the report follows the
+           # wrong one.
+           "sweep_axis": ("loop" if PRM.get("loop_grid") else
+                          "annulus" if PRM.get("annulus_grid") else "density"),
            "points": []}
 
     # 🔴 CONTINUATION SEED — MEASURED, NOT ANALYTIC. Was `exact` (2.4500, the
@@ -606,9 +640,48 @@ def main():
     # carrying `annulus_grid` sweeps the BORE at a fixed density instead — the
     # lever surfaced 2026-08-25 (KNOWN.md § THE TORCH BORE IS A COUPLING LEVER).
     _ann = PRM.get("annulus_grid")
-    SWEEP = ([(float(PRM["ne_fixed"]), float(c[0]), float(c[1])) for c in _ann]
-             if _ann else [(ne, RI, RO) for ne in NE_GRID])
-    for ne, ri, ro in SWEEP:
+    # 🔑 THIRD SWEEP AXIS: the LOOP itself. `loop_grid` is a list of leg depths,
+    # swept at fixed density — the coupler is the subject, not the plasma.
+    # Added because the unwound conductor length is L = 2*ld + crossbar - gap,
+    # so ld carries TWICE the leverage of gap and is the variable to sweep
+    # (CONVENTIONS 7bp: a sweep must span the governing variable).
+    _lg = PRM.get("loop_grid")
+    if _lg:
+        SWEEP = [(float(PRM.get("ne_fixed", 0.0)), RI, RO, float(v))
+                 for v in _lg]
+    elif _ann:
+        SWEEP = [(float(PRM["ne_fixed"]), float(c[0]), float(c[1]), float(PRM.get('loop_ld', LOOP_LD)))
+                 for c in _ann]
+    else:
+        SWEEP = [(ne, RI, RO, float(PRM.get('loop_ld', LOOP_LD))) for ne in NE_GRID]
+    # 🔴 A TAG THAT DOES NOT CARRY WHAT VARIES IS A COLLISION WAITING FOR
+    # SOMEONE TO CHANGE THE AXIS — and it has now happened TWICE. Once when the
+    # annulus became the axis (caught at case 2, from the log banner), and again
+    # on 2026-08-27 when the LOOP did: four ld cases shared ONE tag, so one
+    # .msh, one .meta.json and one postpro dir served all four. Cases 1-3's
+    # artefacts were overwritten and ld appeared nowhere in the record.
+    # 🔑 Naming discipline did not survive either time, so this does not rely on
+    # it: the guard FAILS BEFORE THE FIRST SOLVE if any two cases would write to
+    # the same place, whatever axis is added next.
+    def case_tag(ne, ri, ro, ld):
+        _n = "cold" if ne == 0.0 else (
+            f"n{math.log10(ne):.2f}".replace(".", "p").replace("+", ""))
+        _r = f"r{ri:g}-{ro:g}".replace(".", "p")
+        _l = f"ld{ld:g}".replace(".", "p")
+        return f"{TAG}_{_n}_{_r}_{_l}"
+
+    _tags = [case_tag(*s) for s in SWEEP]
+    if len(set(_tags)) != len(_tags):
+        _dup = sorted({t for t in _tags if _tags.count(t) > 1})
+        raise SystemExit(
+            f"🔴 TAG COLLISION — {len(_tags)} cases produce "
+            f"{len(set(_tags))} distinct tags. Cases sharing a tag share a "
+            f"mesh, a postpro directory and an S11 file, so all but the last "
+            f"are overwritten.\n     colliding: {_dup}\n"
+            f"  🔑 case_tag() does not name a variable this sweep is varying. "
+            f"Add it there, not in the caller.")
+
+    for ne, ri, ro, _ld_case in SWEEP:
         eps_p, sig_p = drude(ne, w)
         # 🔴 THE TAG MUST NAME EVERY SWEPT VARIABLE, NOT JUST DENSITY.
         # It was f"{TAG}_n{log10(ne)}" — fine while ne was the only axis. With
@@ -619,12 +692,19 @@ def main():
         # 🔑 Caught before the second case, from the log banner. CONVENTIONS
         # 7ap at the CASE level: a name that does not carry what varies is a
         # collision waiting for someone to change the axis.
-        _n = "cold" if ne == 0.0 else (
-            f"n{math.log10(ne):.2f}".replace(".", "p").replace("+", ""))
-        _r = f"r{ri:g}-{ro:g}".replace(".", "p")
-        tag = f"{TAG}_{_n}_{_r}"
+        tag = case_tag(ne, ri, ro, _ld_case)
+        # 🔑 RECORD THE SLICE COORDINATES, not just the axis (NEXT.md's standing
+        # requirement: "which other variables were held fixed, and at what").
+        # `ld_mm` was the swept variable on 2026-08-27 and was in NO field of the
+        # record — the four points were distinguishable only by array order,
+        # which is an argument, not a measurement (§7bm).
         rec = {"ne": ne, "eps": eps_p, "sigma": sig_p, "tag": tag,
-               "ri_mm": ri, "ro_mm": ro}
+               "ri_mm": ri, "ro_mm": ro,
+               "ld_mm": float(_ld_case),
+               "lw_mm": float(PRM.get("loop_lw", LOOP_LW)),
+               "loop_gap_mm": float(LOOP_GAP),
+               "loop_gap2_mm": float(PRM.get("loop_gap2", 0.0)),
+               "loop_mount": PRM.get("loop_mount", "cap")}
         if ne == 0.0:
             print("  --- COLD (ne=0, plasma region = vacuum) — THE ANCHOR CASE",
                   flush=True)
@@ -633,7 +713,8 @@ def main():
         else:
             print(f"  --- ne={ne:.1e}  eps={eps_p:+.3f}  sigma={sig_p:.4g} S/m",
                   flush=True)
-        meta = build_mesh(tag, a, L, zlo, zhi, eps_p, sig_p, rec, ri, ro)
+        meta = build_mesh(tag, a, L, zlo, zhi, eps_p, sig_p, rec, ri, ro,
+                          _ld_override=_ld_case)
         if meta is None:
             rec["error"] = f"mesh failed: {rec.pop('_last_mesh_err','')[:150]}"
             print(f"    🔴 {rec['error']}\n    REPORTED.", flush=True)
@@ -815,10 +896,52 @@ def main():
     _report(out)
 
 
+def resolve_branch(w, ne):
+    """Which root of |S11| is this? Returns the resolved beta, Q0 and Q_ext.
+
+    🔴 `fit` returns the UNDERCOUPLED root beta_u = (1-|S11|)/(1+|S11|). The
+    overcoupled root is its reciprocal, and |S11| ALONE CANNOT TELL THEM APART:
+    both give a shallow dip. Reading the wrong one produced Q0 = 359 and 1,325
+    on healthy cold barrel cases and a false "the rig is broken" alarm.
+
+    🔴 THE DISCRIMINATOR IS ONLY VALID COLD, AND THAT GATE IS NOT OPTIONAL.
+    It works by requiring Q0 to be the cavity's own cold Q0 — which is only true
+    when there is no plasma to load it. At the anchored density Q0 ~ 105, so
+    comparing against Q_ref = 43,523 would pick OVERcoupled for a case that is
+    genuinely undercoupled (beta ~ 0.012) and invert every number downstream.
+    ⚠️ This is the failure this repo keeps repeating: an instrument validated in
+    one regime and reused in another without checking it still applies. So a
+    loaded point is returned UNRESOLVED rather than guessed at.
+
+    🔑 Q_ext is robust on either root — Q_ext = Q_L*(1+beta_u) overcoupled,
+    which is Q_L to within a few percent. Q0 is the fragile number, not Q_ext.
+    """
+    qL, b_u = w["Q_L"], w["beta"]
+    q0_u = qL * (1.0 + b_u)
+    if not b_u:
+        return {"resolved": False, "over": False, "beta": b_u, "Q0": q0_u,
+                "Q_ext": float("nan"), "why": "beta = 0"}
+    q0_o = qL * (1.0 + 1.0 / b_u)
+    if ne != 0.0:
+        # loaded: the cold anchor does not apply. Report the undercoupled root
+        # as the fit gives it, and SAY it was not resolved.
+        return {"resolved": False, "over": False, "beta": b_u, "Q0": q0_u,
+                "Q_ext": q0_u / b_u,
+                "why": f"loaded (ne={ne:.1e}) — the cold Q0 anchor does not "
+                       f"apply, so the branch is NOT resolved here"}
+    over = abs(math.log(q0_o / Q_REF)) < abs(math.log(q0_u / Q_REF))
+    return {"resolved": True, "over": over,
+            "beta": (1.0 / b_u) if over else b_u,
+            "Q0": q0_o if over else q0_u,
+            "Q_ext": qL * (1.0 + b_u) if over else q0_u / b_u,
+            "why": f"cold: |ln(Q0/Q_ref)| against Q_ref = {Q_REF:,.0f}"}
+
+
 def _report(out):
     print("\n" + "=" * 78)
-    _lead = f"{'bore mm':<10}" if out.get("sweep_axis") == "annulus" \
-        else f"  {'ne':>9}"
+    _axis_now = out.get("sweep_axis")
+    _lead = (f"{'ld mm':<10}" if _axis_now == "loop" else
+             f"{'bore mm':<10}" if _axis_now == "annulus" else f"  {'ne':>9}")
     print(f"{_lead}{'eps':>9}{'f0 GHz':>11}{'lw MHz':>9}{'Q_L':>8}"
           f"{'beta':>8}{'Q0':>7}{'eta':>9}")
     for p in out["points"]:
@@ -837,9 +960,9 @@ def _report(out):
             flag = f"  1-sided({f['one_sided']})"
         elif p.get("width_under_resolved"):
             flag = "  width thin"
-        lead = (f"{p['ri_mm']:.0f}-{p['ro_mm']:<7.1f}"
-                if out.get("sweep_axis") == "annulus"
-                else f"  {p['ne']:>9.1e}")
+        lead = (f"  {p['ld_mm']:<8.1f}" if _axis_now == "loop" else
+                f"{p['ri_mm']:.0f}-{p['ro_mm']:<7.1f}"
+                if _axis_now == "annulus" else f"  {p['ne']:>9.1e}")
         eta = f"{p['eta']:>9.4f}" if p.get("eta") is not None else f"{'—':>9}"
         q0 = p.get("Q0", f.get("Q0"))
         print(f"{lead}{p['eps']:>9.3f}{f['f0']:>11.4f}"
@@ -850,8 +973,19 @@ def _report(out):
     # keying on eta silently dropped it and the summary reported the anchor
     # "PRODUCED NO FIT" while its Q0=8,462 sat in the result file being used
     # by every loaded point. §7d: two statements from one source disagreed.
-    _key = ((lambda q: (q["ri_mm"], q["ro_mm"]))
-            if out.get("sweep_axis") == "annulus" else (lambda q: q["ne"]))
+    # 🔴 §7d — TWO VALUES FROM ONE SOURCE CANNOT DISAGREE. The Q0 column above
+    # is the fit's UNDERCOUPLED root; the resolved table below reports the
+    # branch the cold anchor actually selects. On the loop sweep those differ by
+    # ~30x (1,490 vs 40,861 for ld=5), and printing both unlabelled in one
+    # report is precisely the disagreement §7d forbids.
+    if _axis_now == "loop":
+        print("  ⚠️ the Q0 column above is the UNDERCOUPLED root, as `fit` "
+              "returns it. These cold\n     barrel cases are OVERcoupled — "
+              "see the branch-resolved table below, and read Q_ext\n"
+              "     from there, not Q0 from here.")
+    _key = ((lambda q: q["ld_mm"]) if _axis_now == "loop" else
+            (lambda q: (q["ri_mm"], q["ro_mm"]))
+            if _axis_now == "annulus" else (lambda q: q["ne"]))
     P = {_key(p): p for p in out["points"] if p.get("wide_fit")}
     if len(P) != len([q for q in out["points"] if q.get("wide_fit")]):
         print("  🔴 SWEEP KEY COLLIDES — two points share a key, so the "
@@ -869,14 +1003,27 @@ def _report(out):
     # ✅ V1' — THE COLD ANCHOR, AS A THREE-WAY. The cold sweep LOCATES the
     # resonance this port couples to; that location says which eigen story is
     # right, and the answer is not assumed either way.
-    c = P.get(0.0)
+    # 🔑 AXIS-AWARE CONTROL. On a LOOP sweep every case is cold, so P has no
+    # 0.0 key at all and this block silently vanished. The control there is the
+    # DESIGN loop — the case that must reproduce the measured family — exactly
+    # as the design annulus is the control on a bore sweep.
+    c = P.get(float(LOOP_LD)) if _axis_now == "loop" else P.get(0.0)
     if c and c.get("wide_fit"):
         f0c = c["wide_fit"]["f0"]; q0c = c["wide_fit"]["Q0"]
         d_cold = (f0c - COLD_TE011_GHZ) * 1e3       # h3_cold's design candidate
         d_grv = (f0c - 2.450561) * 1e3              # ladder grooved, NO loop
         print("  ✅ V1' COLD LOCATOR — where does this port actually resonate?")
+        _br = resolve_branch(c["wide_fit"], c["ne"])
         print(f"     measured  f0={f0c:.6f} GHz   Q0={q0c:,.0f}   "
               f"|S11|={c['wide_fit']['s11_db']:.2f} dB")
+        if _br["resolved"] and _br["over"]:
+            # ⚠️ q0c above is the undercoupled root. Saying "eta is referenced
+            # to THIS measured Q0" while that number is off by 30x is how a
+            # wrong reference gets adopted (§7c has caught this name 4 times).
+            print(f"     🔑 BRANCH: OVERcoupled — beta={_br['beta']:.1f}, so "
+                  f"Q0={_br['Q0']:,.0f} and Q_ext={_br['Q_ext']:,.0f}.\n"
+                  f"        The {q0c:,.0f} above is the UNDERCOUPLED root and "
+                  f"is NOT this cavity's Q0.")
         print(f"     vs h3_cold eigen 2.440003 (A2/A0-selected, m_az=1) "
               f"-> {d_cold:+.3f} MHz")
         print(f"     vs ladder grooved-NO-loop 2.450561 (ANCHORED)   "
@@ -900,8 +1047,10 @@ def _report(out):
                   "        Do not name this mode from frequency alone — get "
                   "purity on the eigen\n"
                   "        solve of THIS mesh before calling it TE011.")
-        print(f"     🔑 eta below is referenced to THIS measured Q0={q0c:,.0f} "
-              f"— same mesh, same solver.")
+        _q0ref = _br["Q0"] if _br["resolved"] else q0c
+        print(f"     🔑 eta below is referenced to THIS measured "
+              f"Q0={_q0ref:,.0f} — same mesh, same solver"
+              + (", branch-resolved." if _br["resolved"] else "."))
     elif out.get("sweep_axis") == "annulus":
         # 🔑 A BORE SWEEP HAS NO COLD CASE AND DOES NOT NEED ONE. Its anchor is
         # the DESIGN annulus reproducing the density run. Printing "nothing here
@@ -918,7 +1067,9 @@ def _report(out):
     # it is 13x the anchored density (CONVENTIONS §7ab). Report the ANCHOR.
     # 🔑 AXIS-AWARE ANCHOR. On a bore sweep the anchor is the DESIGN annulus
     # (the control that must reproduce the density run), not a density.
-    if out.get("sweep_axis") == "annulus":
+    if _axis_now == "loop":
+        a = P.get(float(LOOP_LD))     # the design loop = the control
+    elif _axis_now == "annulus":
         a = P.get((RI, RO))   # the design annulus = the control
     else:
         a = P.get(N_E_ANCHOR)
@@ -926,16 +1077,27 @@ def _report(out):
         print("  🔴 V1 SUSPENDED — no valid eigen anchor on the DESIGN cavity.")
         _eta = (f"{a['eta']:.4f}" if a.get("eta") is not None
                 else "— (reference case)")
-        _q0 = a.get("Q0", a["wide_fit"].get("Q0"))
+        # 🔴 branch-resolve before quoting. This line printed the
+        # UNDERCOUPLED root as "measured here: Q0=", 30x low on a cold
+        # overcoupled case, directly under a heading that invites adoption.
+        _abr = resolve_branch(a["wide_fit"], a["ne"])
+        _q0 = (_abr["Q0"] if _abr["resolved"]
+               else a.get("Q0", a["wide_fit"].get("Q0")))
         print(f"     measured here: f0={a['wide_fit']['f0']:.6f} GHz  "
               f"eta={_eta}  Q0={_q0:,.0f}")
         print("     ⚠️ NOT cross-checked. The old anchor (2.481566 / 0.9963) was "
               "groove-free and is void.")
         print("     ⚠️ eta = 1 - Q0/Q_ref is INSENSITIVE to Q0 when Q0 << Q_ref. "
               "Quote eta, not Q0.")
+    # ⚠️ These branches were once a bare `else:` whose body ran inside the `if`,
+    # so the rig printed a measured eta AND "missing" for the same case.
+    elif _axis_now in ("loop", "annulus"):
+        # 🔴 NOT "the operating point was not measured". A fixed-density sweep
+        # has no density anchor BY DESIGN; printing the density sweep's alarm
+        # over a complete result set is how a good run gets thrown away.
+        print("  🔴 the CONTROL case is missing — no design-loop/annulus "
+              "point to place this sweep against.")
     else:
-        # ⚠️ This `else:` was lost in an edit and its body ran inside the `if`,
-        # so the rig printed a measured eta AND "missing" for the same case.
         print(f"  🔴 ne={N_E_ANCHOR:.1e} missing — THE OPERATING POINT WAS NOT "
               f"MEASURED. (Do not substitute 1e20: different regime — the plasma "
               f"shields there, delta/shell 0.30, vs 1.06 here.)")
@@ -955,7 +1117,7 @@ def _report(out):
                          if g["eta"] < 0.5 else
                          f"✅ eta = {g['eta']:.4f} >= 0.5 — the margin survives. "
                          f"Mass loading is NOT a hard EM constraint."))
-    elif out.get("sweep_axis") != "annulus":
+    elif _axis_now == "density":
         print("\n  🔴 ne=1e19 missing — the gap is NOT bridged (F2).")
 
     # ── bore sweep: report the LEVER, which is the whole question ────────────
@@ -990,6 +1152,98 @@ def _report(out):
             print("     🔴 THE BORE IS NOT AN EM KNOB. Ordering is "
                   "slm -> residency -> LOD (user, 2026-08-25): the analysis "
                   "picks the bore and the EM copes. This measures the price.")
+
+    # ── loop sweep: Q_ext vs UNWOUND CONDUCTOR LENGTH, and the λ/4 test ─────
+    # 🔴 THE COUPLING BRANCH IS NOT OPTIONAL HERE, AND IT HAS BITTEN TWICE.
+    # `fit` returns the UNDERCOUPLED root beta_u = (1-|S11|)/(1+|S11|). The
+    # overcoupled root is its reciprocal, and |S11| ALONE CANNOT TELL THEM
+    # APART — both roots give a shallow dip. These cold barrel cases are
+    # strongly OVERcoupled, so the printed beta and the Q0 derived from it are
+    # the wrong root; reading them as Q0 produced 359 and 1,325 and a false
+    # "the rig is broken" alarm on a healthy run.
+    #
+    # 🔑 THE DISCRIMINATOR IS EXTERNAL, not a preference: with no plasma, Q0
+    # MUST be the cavity's own cold Q0. The two roots differ by ~30x here, so
+    # the choice is unambiguous even though Q_REF is a CAP-loop reference and
+    # this is a barrel loop (that difference is percent, not decades).
+    #
+    # 🔑 AND Q_ext IS ROBUST ON EITHER ROOT:  Q_ext = Q0/beta = Q_L*(1+beta_u)
+    # on the overcoupled root — Q_L to within a few percent. It barely uses the
+    # ill-conditioned beta at all. Q0 is the fragile number here, NOT Q_ext,
+    # which is why this table reports Q_ext as the measurement and Q0 as the
+    # branch check. VSWR is branch-INVARIANT and is printed as a third witness.
+    if _axis_now == "loop":
+        pts = sorted((q for q in out["points"] if q.get("wide_fit")),
+                     key=lambda q: q["ld_mm"])
+        if len(pts) >= 2:
+            print(f"\n  {'ld mm':>7}{'L_unwound':>11}{'L/(λ/4)':>10}"
+                  f"{'Q_L':>8}{'VSWR':>8}{'Q_ext':>9}{'Q0 sel':>9}  branch")
+            rows = []
+            for q in pts:
+                w = q["wide_fit"]
+                qL, b_u = w["Q_L"], w["beta"]
+                # unwound conductor: two radial legs of ld, plus the crossbar
+                # (2*lw less the PORT gap), less the SERIES gap that breaks one
+                # leg. Derived from the meshed geometry, not a quoted literal.
+                Lc = (2.0 * q["ld_mm"] + (2.0 * q["lw_mm"] - q["loop_gap_mm"])
+                      - q["loop_gap2_mm"])
+                quarter = (299.792458 / w["f0"]) / 4.0     # mm, at THIS case's f0
+                s11 = abs((b_u - 1.0) / (b_u + 1.0))
+                vswr = (1 + s11) / (1 - s11)
+                br = resolve_branch(w, q["ne"])
+                if not br["resolved"]:
+                    print(f"  {q['ld_mm']:>7.1f}  🔴 branch NOT resolved: "
+                          f"{br['why']}")
+                    continue
+                over, q_ext, q0 = br["over"], br["Q_ext"], br["Q0"]
+                rows.append({"ld": q["ld_mm"], "L": Lc, "q_ext": q_ext,
+                             "q0": q0, "over": over})
+                print(f"  {q['ld_mm']:>7.1f}{Lc:>11.2f}{Lc / quarter:>10.3f}"
+                      f"{qL:>8.0f}{vswr:>8.1f}{q_ext:>9,.0f}{q0:>9,.0f}"
+                      f"  {'OVER' if over else 'under'}coupled")
+            print(f"     λ/4 = {(299.792458 / pts[0]['wide_fit']['f0']) / 4.0:.2f} mm"
+                  f" · branch chosen by |ln(Q0/Q_ref)|, Q_ref = {Q_REF:,.0f}")
+
+            # 🔴 THE FALSIFIERS THE CONFIG DECLARED. They were stated in the run
+            # config's `falsification` field and existed NOWHERE IN THE CODE,
+            # so the rig could not answer the question it was launched to ask.
+            # §8b: the solve can succeed completely and the CONCLUSION still be
+            # lost, because nothing in the rig was built to receive it.
+            qs = [r["q_ext"] for r in rows]
+            lo_i = qs.index(min(qs))
+            spread = max(qs) / min(qs)
+            mono = all(b <= a for a, b in zip(qs, qs[1:])) or \
+                   all(b >= a for a, b in zip(qs, qs[1:]))
+            print(f"\n  Q_ext spans {min(qs):,.0f}-{max(qs):,.0f} = "
+                  f"{spread:.1f}x across L = {rows[0]['L']:.1f}-"
+                  f"{rows[-1]['L']:.1f} mm")
+            if spread < 1.5:
+                print("  🔴 F-FLAT FIRES — Q_ext is flat across the whole span. "
+                      "Conductor length is\n"
+                      "     NOT the mechanism, and λ/4 AND the area/capacitance "
+                      "story fail TOGETHER.")
+            elif 0 < lo_i < len(qs) - 1:
+                print(f"  ✅ λ/4 SUPPORTED — Q_ext has an INTERIOR MINIMUM at "
+                      f"ld = {rows[lo_i]['ld']:g} mm,\n"
+                      f"     L = {rows[lo_i]['L']:.2f} mm = "
+                      f"{rows[lo_i]['L'] / ((299.792458 / pts[lo_i]['wide_fit']['f0']) / 4.0):.3f} λ/4."
+                      f" A capacitance/area picture predicts no turn.")
+            elif mono:
+                print("  🔴 λ/4 NOT SUPPORTED on this span — Q_ext is MONOTONIC "
+                      "and never turns.\n"
+                      "     The area/capacitance story survives. ⚠️ A minimum "
+                      "OUTSIDE the swept range\n"
+                      "     is not excluded; state the span, not a universal.")
+            else:
+                print("  🔴 NEITHER — Q_ext is neither flat, monotonic, nor "
+                      "singly-minimal.\n"
+                      "     Do not fit a story to it; report the points.")
+            print("  ⚠️ SLICE: cold (ne=0), barrel mount, "
+                  f"lw={pts[0]['lw_mm']:g} mm, port gap="
+                  f"{pts[0]['loop_gap_mm']:g} mm, series gap="
+                  f"{pts[0]['loop_gap2_mm']:g} mm, bore {RI:g}-{RO:g} mm. "
+                  "Q_ext is COLD and geometric;\n"
+                  "     beta at any density is arithmetic on Q0(n_e)/Q_ext.")
 
     es = [p["eta"] for p in out["points"] if p.get("eta") is not None]
     if len(es) >= 2 and out.get("sweep_axis") != "annulus":

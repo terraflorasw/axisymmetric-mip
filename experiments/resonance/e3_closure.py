@@ -91,7 +91,7 @@ import physics as ph
 import solveconf
 import eigmodes
 import values
-from e0_solver_vs_math import GEO, eigen_cfg, run
+from e0_solver_vs_math import GEO, eigen_cfg, run, volume_attrs
 from e0k2_anchor import design_point, wall_sigma, LOOP_PHI, LOOP_RW, LOOP_GAP
 from h3_loaded import drude, Z_FRAC, SECTORS, CAP_R_FRAC
 from azimuthal import order as az_order
@@ -217,9 +217,10 @@ def main():
                       sigma=(wall_sigma() if wall_on else None),
                       n=N_MODES, target=EIGEN_TARGET, port_bc="pec")
         c["Solver"]["Order"] = 2
-        vols = sorted({v for k, v in attrs.items()
-                       if isinstance(v, int) and k not in ("wall", "port")}
-                      | set(attrs.get("air") or []))
+        # 🔴 was a local copy of the surface/volume rule. A `loop`
+        # SURFACE got classified as a VOLUME (2026-08-27) and
+        # Palace refused the config. One definition now.
+        vols = volume_attrs(meta)
         # 🔴 MATERIALS, ONE CHANNEL AT A TIME. Permittivity is MESH-BOUND
         # (check_torch_bound refuses a mismatch), so only the LOSS terms switch.
         plain = sorted(set(vols) - {attrs["plasma"], attrs["torch"]})

@@ -1,0 +1,3438 @@
+>> /opt/amip/envs/emsim/bin/mpirun -n 32 /opt/amip/palace/bin/palace-x86_64.bin h3_margin_g10_5x3.5_wide.json
+
+_____________     _______
+_____   __   \____ __   /____ ____________
+____   /_/  /  __ ` /  /  __ ` /  ___/  _ \
+___   _____/  /_/  /  /  /_/  /  /__/  ___/
+  /__/     \___,__/__/\___,__/\_____\_____/
+
+Git changeset ID: v0.17.0-293-g3c83b9db0
+Running with 32 MPI processes, 1 OpenMP thread
+Device configuration: omp,cpu
+Memory configuration: host-std
+libCEED backend: /cpu/self/xsmm/blocked
+
+Added 10527 boundary elements for material interfaces to the mesh
+
+Characteristic length and time scales:
+ Lc = 1.760e-01 m, tc = 5.871e-01 ns
+Finished partitioning mesh into 32 subdomains
+
+Mesh curvature order: 2
+Mesh bounding box:
+ (Xmin, Ymin, Zmin) = (-8.800e-02, -8.800e-02, -6.771e-02) m
+ (Xmax, Ymax, Zmax) = (+8.800e-02, +8.800e-02, +6.771e-02) m
+
+Parallel Mesh Stats:
+
+                minimum     average     maximum       total
+ vertices           232         386         549       12368
+ edges             2114        2620        3148       83869
+ faces             4000        4405        4832      140978
+ elements          2107        2171        2233       69476
+ neighbors            3           9          24
+
+            minimum     maximum
+ h      0.000736234    0.195467
+ kappa      1.02065     23.4911
+
+Estimated current per-rank memory usage is: Min. 32.7M, Max. 84.4M, Avg. 34.9M, Total 1.1G
+Estimated current per-node memory usage is: Min. 1.1G, Max. 1.1G, Avg. 1.1G, Total 1.1G
+
+Configuring Robin finite conductivity BC at attributes:
+ 90: σ = 3.500e+07 S/m, n = (-0.0,-0.1,-1.0)
+
+Configuring Robin impedance BC for lumped ports at attributes:
+ 91: Rs = 3.000e+02 Ω/sq, n = (-0.0,-0.0,+1.0)
+
+Configuring lumped port circuit properties:
+ Index = 1: R = 5.000e+01 Ω
+
+Configuring lumped port excitation source term at attributes:
+ 91: Index = 1
+
+Computing adaptive fast frequency response for:
+Excitation with index 1 has contributions from:
+ Lumped port  1
+
+Beginning PROM construction offline phase:
+ 501 points for frequency sweep over [2.420e+00, 2.520e+00] GHz
+
+Assembling system matrices, number of global unknowns:
+ H1 (p = 2): 96237, ND (p = 2): 449694, RT (p = 2): 631362
+ Operator assembly level: Partial
+ Mesh geometries:
+  Tetrahedron: P = 20, Q = 14 (quadrature order = 4)
+
+Assembling multigrid hierarchy:
+ Level 0 (p = 1): 83869 unknowns
+ Level 1 (p = 2): 449694 unknowns
+ Level 0 (auxiliary) (p = 1): 12368 unknowns
+ Level 1 (auxiliary) (p = 2): 96237 unknowns
+
+  Residual norms for GMRES solve
+  0 (restart 0) KSP residual norm 2.376037e+01
+  1 (restart 0) KSP residual norm 1.307866e+01
+  2 (restart 0) KSP residual norm 1.235232e+00
+  3 (restart 0) KSP residual norm 4.065433e-01
+  4 (restart 0) KSP residual norm 1.784721e-01
+  5 (restart 0) KSP residual norm 9.389002e-02
+  6 (restart 0) KSP residual norm 4.095086e-02
+  7 (restart 0) KSP residual norm 2.190342e-02
+  8 (restart 0) KSP residual norm 1.359690e-02
+  9 (restart 0) KSP residual norm 9.164388e-03
+ 10 (restart 0) KSP residual norm 4.979106e-03
+ 11 (restart 0) KSP residual norm 3.493953e-03
+ 12 (restart 0) KSP residual norm 2.712125e-03
+ 13 (restart 0) KSP residual norm 1.647321e-03
+ 14 (restart 0) KSP residual norm 1.178940e-03
+ 15 (restart 0) KSP residual norm 8.749626e-04
+ 16 (restart 0) KSP residual norm 6.221105e-04
+ 17 (restart 0) KSP residual norm 4.692124e-04
+ 18 (restart 0) KSP residual norm 3.440809e-04
+ 19 (restart 0) KSP residual norm 2.353807e-04
+ 20 (restart 0) KSP residual norm 1.756485e-04
+ 21 (restart 0) KSP residual norm 1.214792e-04
+ 22 (restart 0) KSP residual norm 7.702966e-05
+ 23 (restart 0) KSP residual norm 5.595644e-05
+ 24 (restart 0) KSP residual norm 4.475396e-05
+ 25 (restart 0) KSP residual norm 3.300648e-05
+ 26 (restart 0) KSP residual norm 2.466191e-05
+ 27 (restart 0) KSP residual norm 1.752094e-05
+ 28 (restart 0) KSP residual norm 1.411800e-05
+ 29 (restart 0) KSP residual norm 1.192211e-05
+ 30 (restart 0) KSP residual norm 9.578564e-06
+ 31 (restart 0) KSP residual norm 7.701066e-06
+ 32 (restart 0) KSP residual norm 6.205540e-06
+ 33 (restart 0) KSP residual norm 4.603945e-06
+ 34 (restart 0) KSP residual norm 3.557275e-06
+ 35 (restart 0) KSP residual norm 2.756321e-06
+ 36 (restart 0) KSP residual norm 2.102135e-06
+ 37 (restart 0) KSP residual norm 1.691029e-06
+ 38 (restart 0) KSP residual norm 1.319731e-06
+ 39 (restart 0) KSP residual norm 1.029709e-06
+ 40 (restart 0) KSP residual norm 8.326923e-07
+ 41 (restart 0) KSP residual norm 6.922680e-07
+ 42 (restart 0) KSP residual norm 5.627447e-07
+ 43 (restart 0) KSP residual norm 4.540722e-07
+ 44 (restart 0) KSP residual norm 3.503482e-07
+ 45 (restart 0) KSP residual norm 2.681591e-07
+ 46 (restart 0) KSP residual norm 2.091548e-07
+GMRES solver converged in 46 iterations (avg. reduction factor: 6.682e-01)
+ Field energy E (3.198e-11 J) + H (8.913e-11 J) = 1.211e-10 J
+
+  Residual norms for GMRES solve
+  0 (restart 0) KSP residual norm 2.392504e+01
+  1 (restart 0) KSP residual norm 1.620580e+00
+  2 (restart 0) KSP residual norm 6.687928e-01
+  3 (restart 0) KSP residual norm 2.544651e-01
+  4 (restart 0) KSP residual norm 1.506564e-01
+  5 (restart 0) KSP residual norm 4.812327e-02
+  6 (restart 0) KSP residual norm 3.225429e-02
+  7 (restart 0) KSP residual norm 1.963074e-02
+  8 (restart 0) KSP residual norm 1.428424e-02
+  9 (restart 0) KSP residual norm 1.055346e-02
+ 10 (restart 0) KSP residual norm 5.539224e-03
+ 11 (restart 0) KSP residual norm 3.874134e-03
+ 12 (restart 0) KSP residual norm 2.861085e-03
+ 13 (restart 0) KSP residual norm 1.998605e-03
+ 14 (restart 0) KSP residual norm 1.283457e-03
+ 15 (restart 0) KSP residual norm 9.244820e-04
+ 16 (restart 0) KSP residual norm 6.613302e-04
+ 17 (restart 0) KSP residual norm 5.013892e-04
+ 18 (restart 0) KSP residual norm 3.730651e-04
+ 19 (restart 0) KSP residual norm 2.817002e-04
+ 20 (restart 0) KSP residual norm 2.055257e-04
+ 21 (restart 0) KSP residual norm 1.491417e-04
+ 22 (restart 0) KSP residual norm 1.013794e-04
+ 23 (restart 0) KSP residual norm 6.886863e-05
+ 24 (restart 0) KSP residual norm 5.104698e-05
+ 25 (restart 0) KSP residual norm 3.542406e-05
+ 26 (restart 0) KSP residual norm 2.545719e-05
+ 27 (restart 0) KSP residual norm 1.887633e-05
+ 28 (restart 0) KSP residual norm 1.539019e-05
+ 29 (restart 0) KSP residual norm 1.260114e-05
+ 30 (restart 0) KSP residual norm 1.036915e-05
+ 31 (restart 0) KSP residual norm 8.436027e-06
+ 32 (restart 0) KSP residual norm 6.815375e-06
+ 33 (restart 0) KSP residual norm 5.186318e-06
+ 34 (restart 0) KSP residual norm 4.061649e-06
+ 35 (restart 0) KSP residual norm 3.150168e-06
+ 36 (restart 0) KSP residual norm 2.401101e-06
+ 37 (restart 0) KSP residual norm 1.865468e-06
+ 38 (restart 0) KSP residual norm 1.502856e-06
+ 39 (restart 0) KSP residual norm 1.198350e-06
+ 40 (restart 0) KSP residual norm 9.660227e-07
+ 41 (restart 0) KSP residual norm 7.823774e-07
+ 42 (restart 0) KSP residual norm 6.428657e-07
+ 43 (restart 0) KSP residual norm 5.268645e-07
+ 44 (restart 0) KSP residual norm 4.041099e-07
+ 45 (restart 0) KSP residual norm 3.258401e-07
+ 46 (restart 0) KSP residual norm 2.587544e-07
+ 47 (restart 0) KSP residual norm 1.921255e-07
+GMRES solver converged in 47 iterations (avg. reduction factor: 6.726e-01)
+ Field energy E (2.539e-11 J) + H (7.850e-11 J) = 1.039e-10 J
+
+  Residual norms for GMRES solve
+  0 (restart 0) KSP residual norm 2.363989e+01
+  1 (restart 0) KSP residual norm 4.465150e+00
+  2 (restart 0) KSP residual norm 3.274451e+00
+  3 (restart 0) KSP residual norm 1.105530e+00
+  4 (restart 0) KSP residual norm 3.361633e-01
+  5 (restart 0) KSP residual norm 1.927168e-01
+  6 (restart 0) KSP residual norm 8.294596e-02
+  7 (restart 0) KSP residual norm 4.724374e-02
+  8 (restart 0) KSP residual norm 2.980091e-02
+  9 (restart 0) KSP residual norm 1.630036e-02
+ 10 (restart 0) KSP residual norm 9.231038e-03
+ 11 (restart 0) KSP residual norm 6.600496e-03
+ 12 (restart 0) KSP residual norm 4.953040e-03
+ 13 (restart 0) KSP residual norm 3.075702e-03
+ 14 (restart 0) KSP residual norm 2.034492e-03
+ 15 (restart 0) KSP residual norm 1.472635e-03
+ 16 (restart 0) KSP residual norm 1.058823e-03
+ 17 (restart 0) KSP residual norm 7.606260e-04
+ 18 (restart 0) KSP residual norm 5.444849e-04
+ 19 (restart 0) KSP residual norm 3.968637e-04
+ 20 (restart 0) KSP residual norm 2.878381e-04
+ 21 (restart 0) KSP residual norm 2.055031e-04
+ 22 (restart 0) KSP residual norm 1.398944e-04
+ 23 (restart 0) KSP residual norm 9.761234e-05
+ 24 (restart 0) KSP residual norm 7.079461e-05
+ 25 (restart 0) KSP residual norm 4.906093e-05
+ 26 (restart 0) KSP residual norm 3.525639e-05
+ 27 (restart 0) KSP residual norm 2.597005e-05
+ 28 (restart 0) KSP residual norm 1.872206e-05
+ 29 (restart 0) KSP residual norm 1.556649e-05
+ 30 (restart 0) KSP residual norm 1.323408e-05
+ 31 (restart 0) KSP residual norm 1.016620e-05
+ 32 (restart 0) KSP residual norm 8.195727e-06
+ 33 (restart 0) KSP residual norm 6.741869e-06
+ 34 (restart 0) KSP residual norm 5.184044e-06
+ 35 (restart 0) KSP residual norm 4.005794e-06
+ 36 (restart 0) KSP residual norm 3.100937e-06
+ 37 (restart 0) KSP residual norm 2.473449e-06
+ 38 (restart 0) KSP residual norm 1.949312e-06
+ 39 (restart 0) KSP residual norm 1.487608e-06
+ 40 (restart 0) KSP residual norm 1.181268e-06
+ 41 (restart 0) KSP residual norm 9.748465e-07
+ 42 (restart 0) KSP residual norm 8.034157e-07
+ 43 (restart 0) KSP residual norm 6.312904e-07
+ 44 (restart 0) KSP residual norm 5.114838e-07
+ 45 (restart 0) KSP residual norm 4.113626e-07
+ 46 (restart 0) KSP residual norm 3.250664e-07
+ 47 (restart 0) KSP residual norm 2.467835e-07
+ 48 (restart 0) KSP residual norm 1.811782e-07
+GMRES solver converged in 48 iterations (avg. reduction factor: 6.775e-01)
+
+Greedy iteration 1 (n = 4): ω* = 2.471e+00 GHz (9.114e+00), error = 2.983e-01, memory = 0/2
+ Field energy E (7.535e-11 J) + H (1.299e-10 J) = 2.052e-10 J
+
+  Residual norms for GMRES solve
+  0 (restart 0) KSP residual norm 2.370753e+01
+  1 (restart 0) KSP residual norm 2.331898e+00
+  2 (restart 0) KSP residual norm 1.689599e+00
+  3 (restart 0) KSP residual norm 1.126997e+00
+  4 (restart 0) KSP residual norm 5.130194e-01
+  5 (restart 0) KSP residual norm 3.068553e-01
+  6 (restart 0) KSP residual norm 9.671094e-02
+  7 (restart 0) KSP residual norm 4.929325e-02
+  8 (restart 0) KSP residual norm 3.250445e-02
+  9 (restart 0) KSP residual norm 1.818386e-02
+ 10 (restart 0) KSP residual norm 9.174884e-03
+ 11 (restart 0) KSP residual norm 6.691668e-03
+ 12 (restart 0) KSP residual norm 4.769194e-03
+ 13 (restart 0) KSP residual norm 3.012203e-03
+ 14 (restart 0) KSP residual norm 2.078199e-03
+ 15 (restart 0) KSP residual norm 1.405022e-03
+ 16 (restart 0) KSP residual norm 1.005609e-03
+ 17 (restart 0) KSP residual norm 7.190865e-04
+ 18 (restart 0) KSP residual norm 5.057595e-04
+ 19 (restart 0) KSP residual norm 3.702948e-04
+ 20 (restart 0) KSP residual norm 2.767158e-04
+ 21 (restart 0) KSP residual norm 2.073316e-04
+ 22 (restart 0) KSP residual norm 1.418964e-04
+ 23 (restart 0) KSP residual norm 9.645167e-05
+ 24 (restart 0) KSP residual norm 7.168082e-05
+ 25 (restart 0) KSP residual norm 4.791619e-05
+ 26 (restart 0) KSP residual norm 3.507367e-05
+ 27 (restart 0) KSP residual norm 2.558982e-05
+ 28 (restart 0) KSP residual norm 1.781324e-05
+ 29 (restart 0) KSP residual norm 1.454586e-05
+ 30 (restart 0) KSP residual norm 1.212717e-05
+ 31 (restart 0) KSP residual norm 9.544106e-06
+ 32 (restart 0) KSP residual norm 7.830351e-06
+ 33 (restart 0) KSP residual norm 6.401496e-06
+ 34 (restart 0) KSP residual norm 4.922236e-06
+ 35 (restart 0) KSP residual norm 3.797602e-06
+ 36 (restart 0) KSP residual norm 2.926961e-06
+ 37 (restart 0) KSP residual norm 2.362019e-06
+ 38 (restart 0) KSP residual norm 1.848203e-06
+ 39 (restart 0) KSP residual norm 1.414314e-06
+ 40 (restart 0) KSP residual norm 1.138831e-06
+ 41 (restart 0) KSP residual norm 9.350772e-07
+ 42 (restart 0) KSP residual norm 7.592818e-07
+ 43 (restart 0) KSP residual norm 6.223633e-07
+ 44 (restart 0) KSP residual norm 5.131377e-07
+ 45 (restart 0) KSP residual norm 4.164381e-07
+ 46 (restart 0) KSP residual norm 3.243772e-07
+ 47 (restart 0) KSP residual norm 2.512252e-07
+ 48 (restart 0) KSP residual norm 1.929423e-07
+GMRES solver converged in 48 iterations (avg. reduction factor: 6.784e-01)
+
+Greedy iteration 2 (n = 6): ω* = 2.486e+00 GHz (9.172e+00), error = 5.892e-03, memory = 0/2
+ Field energy E (1.435e-10 J) + H (1.975e-10 J) = 3.409e-10 J
+
+  Residual norms for GMRES solve
+  0 (restart 0) KSP residual norm 1.417322e+03
+  1 (restart 0) KSP residual norm 2.339125e+01
+  2 (restart 0) KSP residual norm 1.356682e+00
+  3 (restart 0) KSP residual norm 3.961338e-01
+  4 (restart 0) KSP residual norm 1.673876e-01
+  5 (restart 0) KSP residual norm 9.269762e-02
+  6 (restart 0) KSP residual norm 4.471670e-02
+  7 (restart 0) KSP residual norm 2.524724e-02
+  8 (restart 0) KSP residual norm 1.467330e-02
+  9 (restart 0) KSP residual norm 9.210852e-03
+ 10 (restart 0) KSP residual norm 5.263271e-03
+ 11 (restart 0) KSP residual norm 3.666255e-03
+ 12 (restart 0) KSP residual norm 2.852626e-03
+ 13 (restart 0) KSP residual norm 1.734298e-03
+ 14 (restart 0) KSP residual norm 1.220832e-03
+ 15 (restart 0) KSP residual norm 9.499077e-04
+ 16 (restart 0) KSP residual norm 6.682838e-04
+ 17 (restart 0) KSP residual norm 4.921743e-04
+ 18 (restart 0) KSP residual norm 3.664917e-04
+ 19 (restart 0) KSP residual norm 2.571255e-04
+ 20 (restart 0) KSP residual norm 1.813374e-04
+ 21 (restart 0) KSP residual norm 1.178026e-04
+ 22 (restart 0) KSP residual norm 8.494728e-05
+ 23 (restart 0) KSP residual norm 6.154524e-05
+ 24 (restart 0) KSP residual norm 4.512619e-05
+ 25 (restart 0) KSP residual norm 3.007768e-05
+ 26 (restart 0) KSP residual norm 2.257195e-05
+ 27 (restart 0) KSP residual norm 1.878000e-05
+ 28 (restart 0) KSP residual norm 1.446315e-05
+ 29 (restart 0) KSP residual norm 1.205105e-05
+GMRES solver converged in 29 iterations (avg. reduction factor: 5.269e-01)
+
+Greedy iteration 3 (n = 8): ω* = 2.437e+00 GHz (8.992e+00), error = 2.395e-04, memory = 1/2
+ Field energy E (2.788e-11 J) + H (8.423e-11 J) = 1.121e-10 J
+
+  Residual norms for GMRES solve
+  0 (restart 0) KSP residual norm 2.382474e+01
+  1 (restart 0) KSP residual norm 1.698116e+00
+  2 (restart 0) KSP residual norm 8.027231e-01
+  3 (restart 0) KSP residual norm 4.285069e-01
+  4 (restart 0) KSP residual norm 2.572381e-01
+  5 (restart 0) KSP residual norm 7.578070e-02
+  6 (restart 0) KSP residual norm 3.510403e-02
+  7 (restart 0) KSP residual norm 1.905977e-02
+  8 (restart 0) KSP residual norm 1.423317e-02
+  9 (restart 0) KSP residual norm 1.088593e-02
+ 10 (restart 0) KSP residual norm 6.209190e-03
+ 11 (restart 0) KSP residual norm 4.538517e-03
+ 12 (restart 0) KSP residual norm 3.195015e-03
+ 13 (restart 0) KSP residual norm 2.037091e-03
+ 14 (restart 0) KSP residual norm 1.385415e-03
+ 15 (restart 0) KSP residual norm 9.956403e-04
+ 16 (restart 0) KSP residual norm 6.984657e-04
+ 17 (restart 0) KSP residual norm 5.179608e-04
+ 18 (restart 0) KSP residual norm 3.800573e-04
+ 19 (restart 0) KSP residual norm 2.995877e-04
+ 20 (restart 0) KSP residual norm 2.099397e-04
+ 21 (restart 0) KSP residual norm 1.536525e-04
+ 22 (restart 0) KSP residual norm 1.058453e-04
+ 23 (restart 0) KSP residual norm 7.251593e-05
+ 24 (restart 0) KSP residual norm 5.445750e-05
+ 25 (restart 0) KSP residual norm 3.797236e-05
+ 26 (restart 0) KSP residual norm 2.635058e-05
+ 27 (restart 0) KSP residual norm 1.956699e-05
+ 28 (restart 0) KSP residual norm 1.541057e-05
+ 29 (restart 0) KSP residual norm 1.267700e-05
+ 30 (restart 0) KSP residual norm 1.053295e-05
+ 31 (restart 0) KSP residual norm 8.513714e-06
+ 32 (restart 0) KSP residual norm 6.876503e-06
+ 33 (restart 0) KSP residual norm 5.369888e-06
+ 34 (restart 0) KSP residual norm 4.152687e-06
+ 35 (restart 0) KSP residual norm 3.191371e-06
+ 36 (restart 0) KSP residual norm 2.421429e-06
+ 37 (restart 0) KSP residual norm 1.894537e-06
+ 38 (restart 0) KSP residual norm 1.507084e-06
+ 39 (restart 0) KSP residual norm 1.218573e-06
+ 40 (restart 0) KSP residual norm 9.961410e-07
+ 41 (restart 0) KSP residual norm 8.005934e-07
+ 42 (restart 0) KSP residual norm 6.583339e-07
+ 43 (restart 0) KSP residual norm 5.554384e-07
+ 44 (restart 0) KSP residual norm 4.266375e-07
+ 45 (restart 0) KSP residual norm 3.368630e-07
+ 46 (restart 0) KSP residual norm 2.676192e-07
+ 47 (restart 0) KSP residual norm 2.043528e-07
+GMRES solver converged in 47 iterations (avg. reduction factor: 6.735e-01)
+
+Greedy iteration 4 (n = 10): ω* = 2.505e+00 GHz (9.242e+00), error = 2.391e-05, memory = 2/2
+ Field energy E (3.521e-11 J) + H (8.893e-11 J) = 1.241e-10 J
+
+Adaptive sampling converged with 6 frequency samples:
+ n = 12, error = 2.391e-05, tol = 1.000e-03, memory = 2/2
+ Sampled frequencies (GHz): 2.420e+00, 2.520e+00, 2.471e+00, 2.486e+00,
+                            2.437e+00, 2.505e+00
+ Sample errors: inf, inf, 2.983e-01, 5.892e-03, 2.395e-04,
+                2.391e-05
+ Total offline phase elapsed time: 6.91e+01 s
+
+Beginning fast frequency sweep online phase
+
+It 1/501: ω/2π = 2.420e+00 GHz (total elapsed time = 6.91e+01 s)
+
+ Sol. ||E|| = 3.386935e+01
+ Field energy E (3.198e-11 J) + H (8.913e-11 J) = 1.211e-10 J
+ S[1][1] = +4.888e-01+8.700e-01i, |S[1][1]| = -1.837e-02, arg(S[1][1]) = +6.067e+01
+
+It 2/501: ω/2π = 2.420e+00 GHz (total elapsed time = 6.91e+01 s)
+
+ Sol. ||E|| = 3.386929e+01
+ Field energy E (3.187e-11 J) + H (8.901e-11 J) = 1.209e-10 J
+ S[1][1] = +4.889e-01+8.699e-01i, |S[1][1]| = -1.831e-02, arg(S[1][1]) = +6.066e+01
+
+It 3/501: ω/2π = 2.420e+00 GHz (total elapsed time = 6.92e+01 s)
+
+ Sol. ||E|| = 3.386925e+01
+ Field energy E (3.176e-11 J) + H (8.889e-11 J) = 1.207e-10 J
+ S[1][1] = +4.891e-01+8.698e-01i, |S[1][1]| = -1.826e-02, arg(S[1][1]) = +6.065e+01
+
+It 4/501: ω/2π = 2.421e+00 GHz (total elapsed time = 6.92e+01 s)
+
+ Sol. ||E|| = 3.386924e+01
+ Field energy E (3.165e-11 J) + H (8.878e-11 J) = 1.204e-10 J
+ S[1][1] = +4.892e-01+8.698e-01i, |S[1][1]| = -1.820e-02, arg(S[1][1]) = +6.064e+01
+
+It 5/501: ω/2π = 2.421e+00 GHz (total elapsed time = 6.93e+01 s)
+
+ Sol. ||E|| = 3.386925e+01
+ Field energy E (3.155e-11 J) + H (8.866e-11 J) = 1.202e-10 J
+ S[1][1] = +4.893e-01+8.697e-01i, |S[1][1]| = -1.815e-02, arg(S[1][1]) = +6.064e+01
+
+It 6/501: ω/2π = 2.421e+00 GHz (total elapsed time = 6.93e+01 s)
+
+ Sol. ||E|| = 3.386929e+01
+ Field energy E (3.145e-11 J) + H (8.855e-11 J) = 1.200e-10 J
+ S[1][1] = +4.895e-01+8.696e-01i, |S[1][1]| = -1.810e-02, arg(S[1][1]) = +6.063e+01
+
+It 7/501: ω/2π = 2.421e+00 GHz (total elapsed time = 6.93e+01 s)
+
+ Sol. ||E|| = 3.386935e+01
+ Field energy E (3.135e-11 J) + H (8.844e-11 J) = 1.198e-10 J
+ S[1][1] = +4.896e-01+8.696e-01i, |S[1][1]| = -1.805e-02, arg(S[1][1]) = +6.062e+01
+
+It 8/501: ω/2π = 2.421e+00 GHz (total elapsed time = 6.94e+01 s)
+
+ Sol. ||E|| = 3.386943e+01
+ Field energy E (3.125e-11 J) + H (8.833e-11 J) = 1.196e-10 J
+ S[1][1] = +4.897e-01+8.695e-01i, |S[1][1]| = -1.800e-02, arg(S[1][1]) = +6.061e+01
+
+It 9/501: ω/2π = 2.422e+00 GHz (total elapsed time = 6.94e+01 s)
+
+ Sol. ||E|| = 3.386953e+01
+ Field energy E (3.115e-11 J) + H (8.823e-11 J) = 1.194e-10 J
+ S[1][1] = +4.899e-01+8.694e-01i, |S[1][1]| = -1.795e-02, arg(S[1][1]) = +6.060e+01
+
+It 10/501: ω/2π = 2.422e+00 GHz (total elapsed time = 6.95e+01 s)
+
+ Sol. ||E|| = 3.386966e+01
+ Field energy E (3.106e-11 J) + H (8.812e-11 J) = 1.192e-10 J
+ S[1][1] = +4.900e-01+8.694e-01i, |S[1][1]| = -1.790e-02, arg(S[1][1]) = +6.059e+01
+
+It 11/501: ω/2π = 2.422e+00 GHz (total elapsed time = 6.95e+01 s)
+
+ Sol. ||E|| = 3.386981e+01
+ Field energy E (3.096e-11 J) + H (8.802e-11 J) = 1.190e-10 J
+ S[1][1] = +4.901e-01+8.693e-01i, |S[1][1]| = -1.786e-02, arg(S[1][1]) = +6.058e+01
+
+It 12/501: ω/2π = 2.422e+00 GHz (total elapsed time = 6.96e+01 s)
+
+ Sol. ||E|| = 3.386998e+01
+ Field energy E (3.087e-11 J) + H (8.792e-11 J) = 1.188e-10 J
+ S[1][1] = +4.903e-01+8.692e-01i, |S[1][1]| = -1.781e-02, arg(S[1][1]) = +6.058e+01
+
+It 13/501: ω/2π = 2.422e+00 GHz (total elapsed time = 6.96e+01 s)
+
+ Sol. ||E|| = 3.387017e+01
+ Field energy E (3.078e-11 J) + H (8.782e-11 J) = 1.186e-10 J
+ S[1][1] = +4.904e-01+8.692e-01i, |S[1][1]| = -1.777e-02, arg(S[1][1]) = +6.057e+01
+
+It 14/501: ω/2π = 2.423e+00 GHz (total elapsed time = 6.96e+01 s)
+
+ Sol. ||E|| = 3.387038e+01
+ Field energy E (3.070e-11 J) + H (8.773e-11 J) = 1.184e-10 J
+ S[1][1] = +4.905e-01+8.691e-01i, |S[1][1]| = -1.772e-02, arg(S[1][1]) = +6.056e+01
+
+It 15/501: ω/2π = 2.423e+00 GHz (total elapsed time = 6.97e+01 s)
+
+ Sol. ||E|| = 3.387061e+01
+ Field energy E (3.061e-11 J) + H (8.763e-11 J) = 1.182e-10 J
+ S[1][1] = +4.907e-01+8.690e-01i, |S[1][1]| = -1.768e-02, arg(S[1][1]) = +6.055e+01
+
+It 16/501: ω/2π = 2.423e+00 GHz (total elapsed time = 6.97e+01 s)
+
+ Sol. ||E|| = 3.387086e+01
+ Field energy E (3.053e-11 J) + H (8.754e-11 J) = 1.181e-10 J
+ S[1][1] = +4.908e-01+8.689e-01i, |S[1][1]| = -1.764e-02, arg(S[1][1]) = +6.054e+01
+
+It 17/501: ω/2π = 2.423e+00 GHz (total elapsed time = 6.98e+01 s)
+
+ Sol. ||E|| = 3.387113e+01
+ Field energy E (3.044e-11 J) + H (8.745e-11 J) = 1.179e-10 J
+ S[1][1] = +4.909e-01+8.689e-01i, |S[1][1]| = -1.760e-02, arg(S[1][1]) = +6.053e+01
+
+It 18/501: ω/2π = 2.423e+00 GHz (total elapsed time = 6.98e+01 s)
+
+ Sol. ||E|| = 3.387142e+01
+ Field energy E (3.036e-11 J) + H (8.736e-11 J) = 1.177e-10 J
+ S[1][1] = +4.911e-01+8.688e-01i, |S[1][1]| = -1.756e-02, arg(S[1][1]) = +6.052e+01
+
+It 19/501: ω/2π = 2.424e+00 GHz (total elapsed time = 6.98e+01 s)
+
+ Sol. ||E|| = 3.387173e+01
+ Field energy E (3.028e-11 J) + H (8.727e-11 J) = 1.176e-10 J
+ S[1][1] = +4.912e-01+8.687e-01i, |S[1][1]| = -1.752e-02, arg(S[1][1]) = +6.052e+01
+
+It 20/501: ω/2π = 2.424e+00 GHz (total elapsed time = 6.99e+01 s)
+
+ Sol. ||E|| = 3.387206e+01
+ Field energy E (3.021e-11 J) + H (8.718e-11 J) = 1.174e-10 J
+ S[1][1] = +4.913e-01+8.687e-01i, |S[1][1]| = -1.748e-02, arg(S[1][1]) = +6.051e+01
+
+It 21/501: ω/2π = 2.424e+00 GHz (total elapsed time = 6.99e+01 s)
+
+ Sol. ||E|| = 3.387241e+01
+ Field energy E (3.013e-11 J) + H (8.710e-11 J) = 1.172e-10 J
+ S[1][1] = +4.914e-01+8.686e-01i, |S[1][1]| = -1.744e-02, arg(S[1][1]) = +6.050e+01
+
+It 22/501: ω/2π = 2.424e+00 GHz (total elapsed time = 7.00e+01 s)
+
+ Sol. ||E|| = 3.387277e+01
+ Field energy E (3.006e-11 J) + H (8.701e-11 J) = 1.171e-10 J
+ S[1][1] = +4.916e-01+8.685e-01i, |S[1][1]| = -1.741e-02, arg(S[1][1]) = +6.049e+01
+
+It 23/501: ω/2π = 2.424e+00 GHz (total elapsed time = 7.00e+01 s)
+
+ Sol. ||E|| = 3.387316e+01
+ Field energy E (2.998e-11 J) + H (8.693e-11 J) = 1.169e-10 J
+ S[1][1] = +4.917e-01+8.685e-01i, |S[1][1]| = -1.737e-02, arg(S[1][1]) = +6.048e+01
+
+It 24/501: ω/2π = 2.425e+00 GHz (total elapsed time = 7.01e+01 s)
+
+ Sol. ||E|| = 3.387356e+01
+ Field energy E (2.991e-11 J) + H (8.685e-11 J) = 1.168e-10 J
+ S[1][1] = +4.918e-01+8.684e-01i, |S[1][1]| = -1.734e-02, arg(S[1][1]) = +6.047e+01
+
+It 25/501: ω/2π = 2.425e+00 GHz (total elapsed time = 7.01e+01 s)
+
+ Sol. ||E|| = 3.387397e+01
+ Field energy E (2.984e-11 J) + H (8.677e-11 J) = 1.166e-10 J
+ S[1][1] = +4.920e-01+8.683e-01i, |S[1][1]| = -1.730e-02, arg(S[1][1]) = +6.047e+01
+
+It 26/501: ω/2π = 2.425e+00 GHz (total elapsed time = 7.01e+01 s)
+
+ Sol. ||E|| = 3.387441e+01
+ Field energy E (2.977e-11 J) + H (8.669e-11 J) = 1.165e-10 J
+ S[1][1] = +4.921e-01+8.683e-01i, |S[1][1]| = -1.727e-02, arg(S[1][1]) = +6.046e+01
+
+It 27/501: ω/2π = 2.425e+00 GHz (total elapsed time = 7.02e+01 s)
+
+ Sol. ||E|| = 3.387486e+01
+ Field energy E (2.971e-11 J) + H (8.662e-11 J) = 1.163e-10 J
+ S[1][1] = +4.922e-01+8.682e-01i, |S[1][1]| = -1.724e-02, arg(S[1][1]) = +6.045e+01
+
+It 28/501: ω/2π = 2.425e+00 GHz (total elapsed time = 7.02e+01 s)
+
+ Sol. ||E|| = 3.387533e+01
+ Field energy E (2.964e-11 J) + H (8.654e-11 J) = 1.162e-10 J
+ S[1][1] = +4.923e-01+8.681e-01i, |S[1][1]| = -1.721e-02, arg(S[1][1]) = +6.044e+01
+
+It 29/501: ω/2π = 2.426e+00 GHz (total elapsed time = 7.03e+01 s)
+
+ Sol. ||E|| = 3.387581e+01
+ Field energy E (2.958e-11 J) + H (8.647e-11 J) = 1.160e-10 J
+ S[1][1] = +4.925e-01+8.681e-01i, |S[1][1]| = -1.718e-02, arg(S[1][1]) = +6.043e+01
+
+It 30/501: ω/2π = 2.426e+00 GHz (total elapsed time = 7.03e+01 s)
+
+ Sol. ||E|| = 3.387631e+01
+ Field energy E (2.951e-11 J) + H (8.640e-11 J) = 1.159e-10 J
+ S[1][1] = +4.926e-01+8.680e-01i, |S[1][1]| = -1.715e-02, arg(S[1][1]) = +6.042e+01
+
+It 31/501: ω/2π = 2.426e+00 GHz (total elapsed time = 7.03e+01 s)
+
+ Sol. ||E|| = 3.387683e+01
+ Field energy E (2.945e-11 J) + H (8.633e-11 J) = 1.158e-10 J
+ S[1][1] = +4.927e-01+8.679e-01i, |S[1][1]| = -1.712e-02, arg(S[1][1]) = +6.042e+01
+
+It 32/501: ω/2π = 2.426e+00 GHz (total elapsed time = 7.04e+01 s)
+
+ Sol. ||E|| = 3.387737e+01
+ Field energy E (2.939e-11 J) + H (8.626e-11 J) = 1.156e-10 J
+ S[1][1] = +4.929e-01+8.679e-01i, |S[1][1]| = -1.709e-02, arg(S[1][1]) = +6.041e+01
+
+It 33/501: ω/2π = 2.426e+00 GHz (total elapsed time = 7.04e+01 s)
+
+ Sol. ||E|| = 3.387791e+01
+ Field energy E (2.933e-11 J) + H (8.619e-11 J) = 1.155e-10 J
+ S[1][1] = +4.930e-01+8.678e-01i, |S[1][1]| = -1.707e-02, arg(S[1][1]) = +6.040e+01
+
+It 34/501: ω/2π = 2.427e+00 GHz (total elapsed time = 7.05e+01 s)
+
+ Sol. ||E|| = 3.387848e+01
+ Field energy E (2.928e-11 J) + H (8.612e-11 J) = 1.154e-10 J
+ S[1][1] = +4.931e-01+8.677e-01i, |S[1][1]| = -1.704e-02, arg(S[1][1]) = +6.039e+01
+
+It 35/501: ω/2π = 2.427e+00 GHz (total elapsed time = 7.05e+01 s)
+
+ Sol. ||E|| = 3.387906e+01
+ Field energy E (2.922e-11 J) + H (8.606e-11 J) = 1.153e-10 J
+ S[1][1] = +4.932e-01+8.676e-01i, |S[1][1]| = -1.702e-02, arg(S[1][1]) = +6.038e+01
+
+It 36/501: ω/2π = 2.427e+00 GHz (total elapsed time = 7.05e+01 s)
+
+ Sol. ||E|| = 3.387965e+01
+ Field energy E (2.917e-11 J) + H (8.599e-11 J) = 1.152e-10 J
+ S[1][1] = +4.934e-01+8.676e-01i, |S[1][1]| = -1.699e-02, arg(S[1][1]) = +6.037e+01
+
+It 37/501: ω/2π = 2.427e+00 GHz (total elapsed time = 7.06e+01 s)
+
+ Sol. ||E|| = 3.388026e+01
+ Field energy E (2.911e-11 J) + H (8.593e-11 J) = 1.150e-10 J
+ S[1][1] = +4.935e-01+8.675e-01i, |S[1][1]| = -1.697e-02, arg(S[1][1]) = +6.037e+01
+
+It 38/501: ω/2π = 2.427e+00 GHz (total elapsed time = 7.06e+01 s)
+
+ Sol. ||E|| = 3.388089e+01
+ Field energy E (2.906e-11 J) + H (8.587e-11 J) = 1.149e-10 J
+ S[1][1] = +4.936e-01+8.674e-01i, |S[1][1]| = -1.694e-02, arg(S[1][1]) = +6.036e+01
+
+It 39/501: ω/2π = 2.428e+00 GHz (total elapsed time = 7.07e+01 s)
+
+ Sol. ||E|| = 3.388152e+01
+ Field energy E (2.901e-11 J) + H (8.581e-11 J) = 1.148e-10 J
+ S[1][1] = +4.937e-01+8.674e-01i, |S[1][1]| = -1.692e-02, arg(S[1][1]) = +6.035e+01
+
+It 40/501: ω/2π = 2.428e+00 GHz (total elapsed time = 7.07e+01 s)
+
+ Sol. ||E|| = 3.388218e+01
+ Field energy E (2.896e-11 J) + H (8.575e-11 J) = 1.147e-10 J
+ S[1][1] = +4.939e-01+8.673e-01i, |S[1][1]| = -1.690e-02, arg(S[1][1]) = +6.034e+01
+
+It 41/501: ω/2π = 2.428e+00 GHz (total elapsed time = 7.08e+01 s)
+
+ Sol. ||E|| = 3.388284e+01
+ Field energy E (2.891e-11 J) + H (8.569e-11 J) = 1.146e-10 J
+ S[1][1] = +4.940e-01+8.672e-01i, |S[1][1]| = -1.688e-02, arg(S[1][1]) = +6.033e+01
+
+It 42/501: ω/2π = 2.428e+00 GHz (total elapsed time = 7.08e+01 s)
+
+ Sol. ||E|| = 3.388353e+01
+ Field energy E (2.886e-11 J) + H (8.564e-11 J) = 1.145e-10 J
+ S[1][1] = +4.941e-01+8.672e-01i, |S[1][1]| = -1.686e-02, arg(S[1][1]) = +6.033e+01
+
+It 43/501: ω/2π = 2.428e+00 GHz (total elapsed time = 7.08e+01 s)
+
+ Sol. ||E|| = 3.388422e+01
+ Field energy E (2.882e-11 J) + H (8.558e-11 J) = 1.144e-10 J
+ S[1][1] = +4.942e-01+8.671e-01i, |S[1][1]| = -1.684e-02, arg(S[1][1]) = +6.032e+01
+
+It 44/501: ω/2π = 2.429e+00 GHz (total elapsed time = 7.09e+01 s)
+
+ Sol. ||E|| = 3.388493e+01
+ Field energy E (2.877e-11 J) + H (8.553e-11 J) = 1.143e-10 J
+ S[1][1] = +4.944e-01+8.670e-01i, |S[1][1]| = -1.682e-02, arg(S[1][1]) = +6.031e+01
+
+It 45/501: ω/2π = 2.429e+00 GHz (total elapsed time = 7.09e+01 s)
+
+ Sol. ||E|| = 3.388565e+01
+ Field energy E (2.873e-11 J) + H (8.547e-11 J) = 1.142e-10 J
+ S[1][1] = +4.945e-01+8.670e-01i, |S[1][1]| = -1.680e-02, arg(S[1][1]) = +6.030e+01
+
+It 46/501: ω/2π = 2.429e+00 GHz (total elapsed time = 7.10e+01 s)
+
+ Sol. ||E|| = 3.388639e+01
+ Field energy E (2.869e-11 J) + H (8.542e-11 J) = 1.141e-10 J
+ S[1][1] = +4.946e-01+8.669e-01i, |S[1][1]| = -1.679e-02, arg(S[1][1]) = +6.029e+01
+
+It 47/501: ω/2π = 2.429e+00 GHz (total elapsed time = 7.10e+01 s)
+
+ Sol. ||E|| = 3.388714e+01
+ Field energy E (2.865e-11 J) + H (8.537e-11 J) = 1.140e-10 J
+ S[1][1] = +4.947e-01+8.668e-01i, |S[1][1]| = -1.677e-02, arg(S[1][1]) = +6.028e+01
+
+It 48/501: ω/2π = 2.429e+00 GHz (total elapsed time = 7.11e+01 s)
+
+ Sol. ||E|| = 3.388790e+01
+ Field energy E (2.861e-11 J) + H (8.532e-11 J) = 1.139e-10 J
+ S[1][1] = +4.949e-01+8.667e-01i, |S[1][1]| = -1.675e-02, arg(S[1][1]) = +6.028e+01
+
+It 49/501: ω/2π = 2.430e+00 GHz (total elapsed time = 7.11e+01 s)
+
+ Sol. ||E|| = 3.388868e+01
+ Field energy E (2.857e-11 J) + H (8.528e-11 J) = 1.138e-10 J
+ S[1][1] = +4.950e-01+8.667e-01i, |S[1][1]| = -1.674e-02, arg(S[1][1]) = +6.027e+01
+
+It 50/501: ω/2π = 2.430e+00 GHz (total elapsed time = 7.11e+01 s)
+
+ Sol. ||E|| = 3.388947e+01
+ Field energy E (2.853e-11 J) + H (8.523e-11 J) = 1.138e-10 J
+ S[1][1] = +4.951e-01+8.666e-01i, |S[1][1]| = -1.672e-02, arg(S[1][1]) = +6.026e+01
+
+It 51/501: ω/2π = 2.430e+00 GHz (total elapsed time = 7.12e+01 s)
+
+ Sol. ||E|| = 3.389027e+01
+ Field energy E (2.849e-11 J) + H (8.518e-11 J) = 1.137e-10 J
+ S[1][1] = +4.952e-01+8.665e-01i, |S[1][1]| = -1.671e-02, arg(S[1][1]) = +6.025e+01
+
+It 52/501: ω/2π = 2.430e+00 GHz (total elapsed time = 7.12e+01 s)
+
+ Sol. ||E|| = 3.389109e+01
+ Field energy E (2.846e-11 J) + H (8.514e-11 J) = 1.136e-10 J
+ S[1][1] = +4.954e-01+8.665e-01i, |S[1][1]| = -1.670e-02, arg(S[1][1]) = +6.024e+01
+
+It 53/501: ω/2π = 2.430e+00 GHz (total elapsed time = 7.13e+01 s)
+
+ Sol. ||E|| = 3.389192e+01
+ Field energy E (2.842e-11 J) + H (8.509e-11 J) = 1.135e-10 J
+ S[1][1] = +4.955e-01+8.664e-01i, |S[1][1]| = -1.669e-02, arg(S[1][1]) = +6.024e+01
+
+It 54/501: ω/2π = 2.431e+00 GHz (total elapsed time = 7.13e+01 s)
+
+ Sol. ||E|| = 3.389276e+01
+ Field energy E (2.839e-11 J) + H (8.505e-11 J) = 1.134e-10 J
+ S[1][1] = +4.956e-01+8.663e-01i, |S[1][1]| = -1.667e-02, arg(S[1][1]) = +6.023e+01
+
+It 55/501: ω/2π = 2.431e+00 GHz (total elapsed time = 7.13e+01 s)
+
+ Sol. ||E|| = 3.389361e+01
+ Field energy E (2.836e-11 J) + H (8.501e-11 J) = 1.134e-10 J
+ S[1][1] = +4.957e-01+8.663e-01i, |S[1][1]| = -1.666e-02, arg(S[1][1]) = +6.022e+01
+
+It 56/501: ω/2π = 2.431e+00 GHz (total elapsed time = 7.14e+01 s)
+
+ Sol. ||E|| = 3.389448e+01
+ Field energy E (2.833e-11 J) + H (8.497e-11 J) = 1.133e-10 J
+ S[1][1] = +4.959e-01+8.662e-01i, |S[1][1]| = -1.665e-02, arg(S[1][1]) = +6.021e+01
+
+It 57/501: ω/2π = 2.431e+00 GHz (total elapsed time = 7.14e+01 s)
+
+ Sol. ||E|| = 3.389535e+01
+ Field energy E (2.830e-11 J) + H (8.493e-11 J) = 1.132e-10 J
+ S[1][1] = +4.960e-01+8.661e-01i, |S[1][1]| = -1.664e-02, arg(S[1][1]) = +6.020e+01
+
+It 58/501: ω/2π = 2.431e+00 GHz (total elapsed time = 7.15e+01 s)
+
+ Sol. ||E|| = 3.389624e+01
+ Field energy E (2.827e-11 J) + H (8.489e-11 J) = 1.132e-10 J
+ S[1][1] = +4.961e-01+8.661e-01i, |S[1][1]| = -1.663e-02, arg(S[1][1]) = +6.019e+01
+
+It 59/501: ω/2π = 2.432e+00 GHz (total elapsed time = 7.15e+01 s)
+
+ Sol. ||E|| = 3.389715e+01
+ Field energy E (2.824e-11 J) + H (8.486e-11 J) = 1.131e-10 J
+ S[1][1] = +4.962e-01+8.660e-01i, |S[1][1]| = -1.663e-02, arg(S[1][1]) = +6.019e+01
+
+It 60/501: ω/2π = 2.432e+00 GHz (total elapsed time = 7.15e+01 s)
+
+ Sol. ||E|| = 3.389806e+01
+ Field energy E (2.821e-11 J) + H (8.482e-11 J) = 1.130e-10 J
+ S[1][1] = +4.964e-01+8.659e-01i, |S[1][1]| = -1.662e-02, arg(S[1][1]) = +6.018e+01
+
+It 61/501: ω/2π = 2.432e+00 GHz (total elapsed time = 7.16e+01 s)
+
+ Sol. ||E|| = 3.389899e+01
+ Field energy E (2.819e-11 J) + H (8.478e-11 J) = 1.130e-10 J
+ S[1][1] = +4.965e-01+8.658e-01i, |S[1][1]| = -1.661e-02, arg(S[1][1]) = +6.017e+01
+
+It 62/501: ω/2π = 2.432e+00 GHz (total elapsed time = 7.16e+01 s)
+
+ Sol. ||E|| = 3.389993e+01
+ Field energy E (2.816e-11 J) + H (8.475e-11 J) = 1.129e-10 J
+ S[1][1] = +4.966e-01+8.658e-01i, |S[1][1]| = -1.661e-02, arg(S[1][1]) = +6.016e+01
+
+It 63/501: ω/2π = 2.432e+00 GHz (total elapsed time = 7.17e+01 s)
+
+ Sol. ||E|| = 3.390088e+01
+ Field energy E (2.814e-11 J) + H (8.472e-11 J) = 1.129e-10 J
+ S[1][1] = +4.967e-01+8.657e-01i, |S[1][1]| = -1.660e-02, arg(S[1][1]) = +6.015e+01
+
+It 64/501: ω/2π = 2.433e+00 GHz (total elapsed time = 7.17e+01 s)
+
+ Sol. ||E|| = 3.390184e+01
+ Field energy E (2.811e-11 J) + H (8.469e-11 J) = 1.128e-10 J
+ S[1][1] = +4.968e-01+8.656e-01i, |S[1][1]| = -1.660e-02, arg(S[1][1]) = +6.015e+01
+
+It 65/501: ω/2π = 2.433e+00 GHz (total elapsed time = 7.18e+01 s)
+
+ Sol. ||E|| = 3.390282e+01
+ Field energy E (2.809e-11 J) + H (8.465e-11 J) = 1.127e-10 J
+ S[1][1] = +4.970e-01+8.656e-01i, |S[1][1]| = -1.659e-02, arg(S[1][1]) = +6.014e+01
+
+It 66/501: ω/2π = 2.433e+00 GHz (total elapsed time = 7.18e+01 s)
+
+ Sol. ||E|| = 3.390380e+01
+ Field energy E (2.807e-11 J) + H (8.463e-11 J) = 1.127e-10 J
+ S[1][1] = +4.971e-01+8.655e-01i, |S[1][1]| = -1.659e-02, arg(S[1][1]) = +6.013e+01
+
+It 67/501: ω/2π = 2.433e+00 GHz (total elapsed time = 7.19e+01 s)
+
+ Sol. ||E|| = 3.390480e+01
+ Field energy E (2.805e-11 J) + H (8.460e-11 J) = 1.126e-10 J
+ S[1][1] = +4.972e-01+8.654e-01i, |S[1][1]| = -1.659e-02, arg(S[1][1]) = +6.012e+01
+
+It 68/501: ω/2π = 2.433e+00 GHz (total elapsed time = 7.19e+01 s)
+
+ Sol. ||E|| = 3.390581e+01
+ Field energy E (2.803e-11 J) + H (8.457e-11 J) = 1.126e-10 J
+ S[1][1] = +4.973e-01+8.654e-01i, |S[1][1]| = -1.658e-02, arg(S[1][1]) = +6.011e+01
+
+It 69/501: ω/2π = 2.434e+00 GHz (total elapsed time = 7.19e+01 s)
+
+ Sol. ||E|| = 3.390683e+01
+ Field energy E (2.802e-11 J) + H (8.454e-11 J) = 1.126e-10 J
+ S[1][1] = +4.975e-01+8.653e-01i, |S[1][1]| = -1.658e-02, arg(S[1][1]) = +6.011e+01
+
+It 70/501: ω/2π = 2.434e+00 GHz (total elapsed time = 7.20e+01 s)
+
+ Sol. ||E|| = 3.390787e+01
+ Field energy E (2.800e-11 J) + H (8.452e-11 J) = 1.125e-10 J
+ S[1][1] = +4.976e-01+8.652e-01i, |S[1][1]| = -1.658e-02, arg(S[1][1]) = +6.010e+01
+
+It 71/501: ω/2π = 2.434e+00 GHz (total elapsed time = 7.20e+01 s)
+
+ Sol. ||E|| = 3.390891e+01
+ Field energy E (2.799e-11 J) + H (8.449e-11 J) = 1.125e-10 J
+ S[1][1] = +4.977e-01+8.652e-01i, |S[1][1]| = -1.658e-02, arg(S[1][1]) = +6.009e+01
+
+It 72/501: ω/2π = 2.434e+00 GHz (total elapsed time = 7.21e+01 s)
+
+ Sol. ||E|| = 3.390997e+01
+ Field energy E (2.797e-11 J) + H (8.447e-11 J) = 1.124e-10 J
+ S[1][1] = +4.978e-01+8.651e-01i, |S[1][1]| = -1.658e-02, arg(S[1][1]) = +6.008e+01
+
+It 73/501: ω/2π = 2.434e+00 GHz (total elapsed time = 7.21e+01 s)
+
+ Sol. ||E|| = 3.391104e+01
+ Field energy E (2.796e-11 J) + H (8.445e-11 J) = 1.124e-10 J
+ S[1][1] = +4.979e-01+8.650e-01i, |S[1][1]| = -1.658e-02, arg(S[1][1]) = +6.007e+01
+
+It 74/501: ω/2π = 2.435e+00 GHz (total elapsed time = 7.21e+01 s)
+
+ Sol. ||E|| = 3.391212e+01
+ Field energy E (2.795e-11 J) + H (8.442e-11 J) = 1.124e-10 J
+ S[1][1] = +4.981e-01+8.649e-01i, |S[1][1]| = -1.658e-02, arg(S[1][1]) = +6.007e+01
+
+It 75/501: ω/2π = 2.435e+00 GHz (total elapsed time = 7.22e+01 s)
+
+ Sol. ||E|| = 3.391321e+01
+ Field energy E (2.793e-11 J) + H (8.440e-11 J) = 1.123e-10 J
+ S[1][1] = +4.982e-01+8.649e-01i, |S[1][1]| = -1.659e-02, arg(S[1][1]) = +6.006e+01
+
+It 76/501: ω/2π = 2.435e+00 GHz (total elapsed time = 7.22e+01 s)
+
+ Sol. ||E|| = 3.391431e+01
+ Field energy E (2.792e-11 J) + H (8.438e-11 J) = 1.123e-10 J
+ S[1][1] = +4.983e-01+8.648e-01i, |S[1][1]| = -1.659e-02, arg(S[1][1]) = +6.005e+01
+
+It 77/501: ω/2π = 2.435e+00 GHz (total elapsed time = 7.23e+01 s)
+
+ Sol. ||E|| = 3.391542e+01
+ Field energy E (2.791e-11 J) + H (8.437e-11 J) = 1.123e-10 J
+ S[1][1] = +4.984e-01+8.647e-01i, |S[1][1]| = -1.659e-02, arg(S[1][1]) = +6.004e+01
+
+It 78/501: ω/2π = 2.435e+00 GHz (total elapsed time = 7.23e+01 s)
+
+ Sol. ||E|| = 3.391655e+01
+ Field energy E (2.791e-11 J) + H (8.435e-11 J) = 1.123e-10 J
+ S[1][1] = +4.985e-01+8.647e-01i, |S[1][1]| = -1.660e-02, arg(S[1][1]) = +6.003e+01
+
+It 79/501: ω/2π = 2.436e+00 GHz (total elapsed time = 7.24e+01 s)
+
+ Sol. ||E|| = 3.391769e+01
+ Field energy E (2.790e-11 J) + H (8.433e-11 J) = 1.122e-10 J
+ S[1][1] = +4.987e-01+8.646e-01i, |S[1][1]| = -1.660e-02, arg(S[1][1]) = +6.002e+01
+
+It 80/501: ω/2π = 2.436e+00 GHz (total elapsed time = 7.24e+01 s)
+
+ Sol. ||E|| = 3.391884e+01
+ Field energy E (2.789e-11 J) + H (8.432e-11 J) = 1.122e-10 J
+ S[1][1] = +4.988e-01+8.645e-01i, |S[1][1]| = -1.661e-02, arg(S[1][1]) = +6.002e+01
+
+It 81/501: ω/2π = 2.436e+00 GHz (total elapsed time = 7.24e+01 s)
+
+ Sol. ||E|| = 3.391999e+01
+ Field energy E (2.789e-11 J) + H (8.430e-11 J) = 1.122e-10 J
+ S[1][1] = +4.989e-01+8.644e-01i, |S[1][1]| = -1.662e-02, arg(S[1][1]) = +6.001e+01
+
+It 82/501: ω/2π = 2.436e+00 GHz (total elapsed time = 7.25e+01 s)
+
+ Sol. ||E|| = 3.392117e+01
+ Field energy E (2.788e-11 J) + H (8.429e-11 J) = 1.122e-10 J
+ S[1][1] = +4.990e-01+8.644e-01i, |S[1][1]| = -1.663e-02, arg(S[1][1]) = +6.000e+01
+
+It 83/501: ω/2π = 2.436e+00 GHz (total elapsed time = 7.25e+01 s)
+
+ Sol. ||E|| = 3.392235e+01
+ Field energy E (2.788e-11 J) + H (8.428e-11 J) = 1.122e-10 J
+ S[1][1] = +4.992e-01+8.643e-01i, |S[1][1]| = -1.663e-02, arg(S[1][1]) = +5.999e+01
+
+It 84/501: ω/2π = 2.437e+00 GHz (total elapsed time = 7.26e+01 s)
+
+ Sol. ||E|| = 3.392354e+01
+ Field energy E (2.788e-11 J) + H (8.426e-11 J) = 1.121e-10 J
+ S[1][1] = +4.993e-01+8.642e-01i, |S[1][1]| = -1.664e-02, arg(S[1][1]) = +5.998e+01
+
+It 85/501: ω/2π = 2.437e+00 GHz (total elapsed time = 7.26e+01 s)
+
+ Sol. ||E|| = 3.392475e+01
+ Field energy E (2.788e-11 J) + H (8.425e-11 J) = 1.121e-10 J
+ S[1][1] = +4.994e-01+8.642e-01i, |S[1][1]| = -1.665e-02, arg(S[1][1]) = +5.998e+01
+
+It 86/501: ω/2π = 2.437e+00 GHz (total elapsed time = 7.26e+01 s)
+
+ Sol. ||E|| = 3.392597e+01
+ Field energy E (2.788e-11 J) + H (8.424e-11 J) = 1.121e-10 J
+ S[1][1] = +4.995e-01+8.641e-01i, |S[1][1]| = -1.666e-02, arg(S[1][1]) = +5.997e+01
+
+It 87/501: ω/2π = 2.437e+00 GHz (total elapsed time = 7.27e+01 s)
+
+ Sol. ||E|| = 3.392720e+01
+ Field energy E (2.788e-11 J) + H (8.424e-11 J) = 1.121e-10 J
+ S[1][1] = +4.996e-01+8.640e-01i, |S[1][1]| = -1.667e-02, arg(S[1][1]) = +5.996e+01
+
+It 88/501: ω/2π = 2.437e+00 GHz (total elapsed time = 7.27e+01 s)
+
+ Sol. ||E|| = 3.392844e+01
+ Field energy E (2.788e-11 J) + H (8.423e-11 J) = 1.121e-10 J
+ S[1][1] = +4.998e-01+8.640e-01i, |S[1][1]| = -1.668e-02, arg(S[1][1]) = +5.995e+01
+
+It 89/501: ω/2π = 2.438e+00 GHz (total elapsed time = 7.28e+01 s)
+
+ Sol. ||E|| = 3.392969e+01
+ Field energy E (2.788e-11 J) + H (8.422e-11 J) = 1.121e-10 J
+ S[1][1] = +4.999e-01+8.639e-01i, |S[1][1]| = -1.670e-02, arg(S[1][1]) = +5.994e+01
+
+It 90/501: ω/2π = 2.438e+00 GHz (total elapsed time = 7.28e+01 s)
+
+ Sol. ||E|| = 3.393095e+01
+ Field energy E (2.789e-11 J) + H (8.422e-11 J) = 1.121e-10 J
+ S[1][1] = +5.000e-01+8.638e-01i, |S[1][1]| = -1.671e-02, arg(S[1][1]) = +5.994e+01
+
+It 91/501: ω/2π = 2.438e+00 GHz (total elapsed time = 7.29e+01 s)
+
+ Sol. ||E|| = 3.393223e+01
+ Field energy E (2.789e-11 J) + H (8.421e-11 J) = 1.121e-10 J
+ S[1][1] = +5.001e-01+8.637e-01i, |S[1][1]| = -1.672e-02, arg(S[1][1]) = +5.993e+01
+
+It 92/501: ω/2π = 2.438e+00 GHz (total elapsed time = 7.29e+01 s)
+
+ Sol. ||E|| = 3.393351e+01
+ Field energy E (2.790e-11 J) + H (8.421e-11 J) = 1.121e-10 J
+ S[1][1] = +5.002e-01+8.637e-01i, |S[1][1]| = -1.674e-02, arg(S[1][1]) = +5.992e+01
+
+It 93/501: ω/2π = 2.438e+00 GHz (total elapsed time = 7.29e+01 s)
+
+ Sol. ||E|| = 3.393481e+01
+ Field energy E (2.791e-11 J) + H (8.421e-11 J) = 1.121e-10 J
+ S[1][1] = +5.004e-01+8.636e-01i, |S[1][1]| = -1.675e-02, arg(S[1][1]) = +5.991e+01
+
+It 94/501: ω/2π = 2.439e+00 GHz (total elapsed time = 7.30e+01 s)
+
+ Sol. ||E|| = 3.393612e+01
+ Field energy E (2.791e-11 J) + H (8.421e-11 J) = 1.121e-10 J
+ S[1][1] = +5.005e-01+8.635e-01i, |S[1][1]| = -1.677e-02, arg(S[1][1]) = +5.990e+01
+
+It 95/501: ω/2π = 2.439e+00 GHz (total elapsed time = 7.30e+01 s)
+
+ Sol. ||E|| = 3.393745e+01
+ Field energy E (2.792e-11 J) + H (8.421e-11 J) = 1.121e-10 J
+ S[1][1] = +5.006e-01+8.634e-01i, |S[1][1]| = -1.679e-02, arg(S[1][1]) = +5.990e+01
+
+It 96/501: ω/2π = 2.439e+00 GHz (total elapsed time = 7.31e+01 s)
+
+ Sol. ||E|| = 3.393878e+01
+ Field energy E (2.793e-11 J) + H (8.421e-11 J) = 1.121e-10 J
+ S[1][1] = +5.007e-01+8.634e-01i, |S[1][1]| = -1.680e-02, arg(S[1][1]) = +5.989e+01
+
+It 97/501: ω/2π = 2.439e+00 GHz (total elapsed time = 7.31e+01 s)
+
+ Sol. ||E|| = 3.394013e+01
+ Field energy E (2.794e-11 J) + H (8.421e-11 J) = 1.122e-10 J
+ S[1][1] = +5.008e-01+8.633e-01i, |S[1][1]| = -1.682e-02, arg(S[1][1]) = +5.988e+01
+
+It 98/501: ω/2π = 2.439e+00 GHz (total elapsed time = 7.32e+01 s)
+
+ Sol. ||E|| = 3.394148e+01
+ Field energy E (2.796e-11 J) + H (8.421e-11 J) = 1.122e-10 J
+ S[1][1] = +5.010e-01+8.632e-01i, |S[1][1]| = -1.684e-02, arg(S[1][1]) = +5.987e+01
+
+It 99/501: ω/2π = 2.440e+00 GHz (total elapsed time = 7.32e+01 s)
+
+ Sol. ||E|| = 3.394286e+01
+ Field energy E (2.797e-11 J) + H (8.422e-11 J) = 1.122e-10 J
+ S[1][1] = +5.011e-01+8.632e-01i, |S[1][1]| = -1.686e-02, arg(S[1][1]) = +5.986e+01
+
+It 100/501: ω/2π = 2.440e+00 GHz (total elapsed time = 7.32e+01 s)
+
+ Sol. ||E|| = 3.394424e+01
+ Field energy E (2.799e-11 J) + H (8.422e-11 J) = 1.122e-10 J
+ S[1][1] = +5.012e-01+8.631e-01i, |S[1][1]| = -1.688e-02, arg(S[1][1]) = +5.986e+01
+
+It 101/501: ω/2π = 2.440e+00 GHz (total elapsed time = 7.33e+01 s)
+
+ Sol. ||E|| = 3.394563e+01
+ Field energy E (2.800e-11 J) + H (8.423e-11 J) = 1.122e-10 J
+ S[1][1] = +5.013e-01+8.630e-01i, |S[1][1]| = -1.690e-02, arg(S[1][1]) = +5.985e+01
+
+It 102/501: ω/2π = 2.440e+00 GHz (total elapsed time = 7.33e+01 s)
+
+ Sol. ||E|| = 3.394704e+01
+ Field energy E (2.802e-11 J) + H (8.424e-11 J) = 1.123e-10 J
+ S[1][1] = +5.014e-01+8.629e-01i, |S[1][1]| = -1.693e-02, arg(S[1][1]) = +5.984e+01
+
+It 103/501: ω/2π = 2.440e+00 GHz (total elapsed time = 7.34e+01 s)
+
+ Sol. ||E|| = 3.394846e+01
+ Field energy E (2.804e-11 J) + H (8.425e-11 J) = 1.123e-10 J
+ S[1][1] = +5.016e-01+8.629e-01i, |S[1][1]| = -1.695e-02, arg(S[1][1]) = +5.983e+01
+
+It 104/501: ω/2π = 2.441e+00 GHz (total elapsed time = 7.34e+01 s)
+
+ Sol. ||E|| = 3.394989e+01
+ Field energy E (2.805e-11 J) + H (8.426e-11 J) = 1.123e-10 J
+ S[1][1] = +5.017e-01+8.628e-01i, |S[1][1]| = -1.697e-02, arg(S[1][1]) = +5.982e+01
+
+It 105/501: ω/2π = 2.441e+00 GHz (total elapsed time = 7.34e+01 s)
+
+ Sol. ||E|| = 3.395134e+01
+ Field energy E (2.808e-11 J) + H (8.427e-11 J) = 1.123e-10 J
+ S[1][1] = +5.018e-01+8.627e-01i, |S[1][1]| = -1.700e-02, arg(S[1][1]) = +5.982e+01
+
+It 106/501: ω/2π = 2.441e+00 GHz (total elapsed time = 7.35e+01 s)
+
+ Sol. ||E|| = 3.395279e+01
+ Field energy E (2.810e-11 J) + H (8.428e-11 J) = 1.124e-10 J
+ S[1][1] = +5.019e-01+8.627e-01i, |S[1][1]| = -1.702e-02, arg(S[1][1]) = +5.981e+01
+
+It 107/501: ω/2π = 2.441e+00 GHz (total elapsed time = 7.35e+01 s)
+
+ Sol. ||E|| = 3.395426e+01
+ Field energy E (2.812e-11 J) + H (8.429e-11 J) = 1.124e-10 J
+ S[1][1] = +5.020e-01+8.626e-01i, |S[1][1]| = -1.705e-02, arg(S[1][1]) = +5.980e+01
+
+It 108/501: ω/2π = 2.441e+00 GHz (total elapsed time = 7.36e+01 s)
+
+ Sol. ||E|| = 3.395575e+01
+ Field energy E (2.814e-11 J) + H (8.431e-11 J) = 1.124e-10 J
+ S[1][1] = +5.022e-01+8.625e-01i, |S[1][1]| = -1.708e-02, arg(S[1][1]) = +5.979e+01
+
+It 109/501: ω/2π = 2.442e+00 GHz (total elapsed time = 7.36e+01 s)
+
+ Sol. ||E|| = 3.395724e+01
+ Field energy E (2.817e-11 J) + H (8.432e-11 J) = 1.125e-10 J
+ S[1][1] = +5.023e-01+8.624e-01i, |S[1][1]| = -1.711e-02, arg(S[1][1]) = +5.978e+01
+
+It 110/501: ω/2π = 2.442e+00 GHz (total elapsed time = 7.37e+01 s)
+
+ Sol. ||E|| = 3.395875e+01
+ Field energy E (2.819e-11 J) + H (8.434e-11 J) = 1.125e-10 J
+ S[1][1] = +5.024e-01+8.624e-01i, |S[1][1]| = -1.714e-02, arg(S[1][1]) = +5.978e+01
+
+It 111/501: ω/2π = 2.442e+00 GHz (total elapsed time = 7.37e+01 s)
+
+ Sol. ||E|| = 3.396027e+01
+ Field energy E (2.822e-11 J) + H (8.436e-11 J) = 1.126e-10 J
+ S[1][1] = +5.025e-01+8.623e-01i, |S[1][1]| = -1.717e-02, arg(S[1][1]) = +5.977e+01
+
+It 112/501: ω/2π = 2.442e+00 GHz (total elapsed time = 7.38e+01 s)
+
+ Sol. ||E|| = 3.396181e+01
+ Field energy E (2.825e-11 J) + H (8.437e-11 J) = 1.126e-10 J
+ S[1][1] = +5.026e-01+8.622e-01i, |S[1][1]| = -1.720e-02, arg(S[1][1]) = +5.976e+01
+
+It 113/501: ω/2π = 2.442e+00 GHz (total elapsed time = 7.38e+01 s)
+
+ Sol. ||E|| = 3.396336e+01
+ Field energy E (2.828e-11 J) + H (8.440e-11 J) = 1.127e-10 J
+ S[1][1] = +5.027e-01+8.621e-01i, |S[1][1]| = -1.723e-02, arg(S[1][1]) = +5.975e+01
+
+It 114/501: ω/2π = 2.443e+00 GHz (total elapsed time = 7.38e+01 s)
+
+ Sol. ||E|| = 3.396492e+01
+ Field energy E (2.831e-11 J) + H (8.442e-11 J) = 1.127e-10 J
+ S[1][1] = +5.029e-01+8.621e-01i, |S[1][1]| = -1.726e-02, arg(S[1][1]) = +5.974e+01
+
+It 115/501: ω/2π = 2.443e+00 GHz (total elapsed time = 7.39e+01 s)
+
+ Sol. ||E|| = 3.396650e+01
+ Field energy E (2.834e-11 J) + H (8.444e-11 J) = 1.128e-10 J
+ S[1][1] = +5.030e-01+8.620e-01i, |S[1][1]| = -1.729e-02, arg(S[1][1]) = +5.974e+01
+
+It 116/501: ω/2π = 2.443e+00 GHz (total elapsed time = 7.39e+01 s)
+
+ Sol. ||E|| = 3.396809e+01
+ Field energy E (2.838e-11 J) + H (8.446e-11 J) = 1.128e-10 J
+ S[1][1] = +5.031e-01+8.619e-01i, |S[1][1]| = -1.733e-02, arg(S[1][1]) = +5.973e+01
+
+It 117/501: ω/2π = 2.443e+00 GHz (total elapsed time = 7.40e+01 s)
+
+ Sol. ||E|| = 3.396969e+01
+ Field energy E (2.841e-11 J) + H (8.449e-11 J) = 1.129e-10 J
+ S[1][1] = +5.032e-01+8.618e-01i, |S[1][1]| = -1.736e-02, arg(S[1][1]) = +5.972e+01
+
+It 118/501: ω/2π = 2.443e+00 GHz (total elapsed time = 7.40e+01 s)
+
+ Sol. ||E|| = 3.397131e+01
+ Field energy E (2.845e-11 J) + H (8.451e-11 J) = 1.130e-10 J
+ S[1][1] = +5.033e-01+8.618e-01i, |S[1][1]| = -1.740e-02, arg(S[1][1]) = +5.971e+01
+
+It 119/501: ω/2π = 2.444e+00 GHz (total elapsed time = 7.40e+01 s)
+
+ Sol. ||E|| = 3.397294e+01
+ Field energy E (2.848e-11 J) + H (8.454e-11 J) = 1.130e-10 J
+ S[1][1] = +5.035e-01+8.617e-01i, |S[1][1]| = -1.744e-02, arg(S[1][1]) = +5.970e+01
+
+It 120/501: ω/2π = 2.444e+00 GHz (total elapsed time = 7.41e+01 s)
+
+ Sol. ||E|| = 3.397459e+01
+ Field energy E (2.852e-11 J) + H (8.457e-11 J) = 1.131e-10 J
+ S[1][1] = +5.036e-01+8.616e-01i, |S[1][1]| = -1.748e-02, arg(S[1][1]) = +5.970e+01
+
+It 121/501: ω/2π = 2.444e+00 GHz (total elapsed time = 7.41e+01 s)
+
+ Sol. ||E|| = 3.397625e+01
+ Field energy E (2.856e-11 J) + H (8.460e-11 J) = 1.132e-10 J
+ S[1][1] = +5.037e-01+8.615e-01i, |S[1][1]| = -1.752e-02, arg(S[1][1]) = +5.969e+01
+
+It 122/501: ω/2π = 2.444e+00 GHz (total elapsed time = 7.42e+01 s)
+
+ Sol. ||E|| = 3.397793e+01
+ Field energy E (2.860e-11 J) + H (8.463e-11 J) = 1.132e-10 J
+ S[1][1] = +5.038e-01+8.615e-01i, |S[1][1]| = -1.756e-02, arg(S[1][1]) = +5.968e+01
+
+It 123/501: ω/2π = 2.444e+00 GHz (total elapsed time = 7.42e+01 s)
+
+ Sol. ||E|| = 3.397962e+01
+ Field energy E (2.865e-11 J) + H (8.467e-11 J) = 1.133e-10 J
+ S[1][1] = +5.039e-01+8.614e-01i, |S[1][1]| = -1.760e-02, arg(S[1][1]) = +5.967e+01
+
+It 124/501: ω/2π = 2.445e+00 GHz (total elapsed time = 7.43e+01 s)
+
+ Sol. ||E|| = 3.398133e+01
+ Field energy E (2.869e-11 J) + H (8.470e-11 J) = 1.134e-10 J
+ S[1][1] = +5.041e-01+8.613e-01i, |S[1][1]| = -1.764e-02, arg(S[1][1]) = +5.966e+01
+
+It 125/501: ω/2π = 2.445e+00 GHz (total elapsed time = 7.43e+01 s)
+
+ Sol. ||E|| = 3.398305e+01
+ Field energy E (2.873e-11 J) + H (8.474e-11 J) = 1.135e-10 J
+ S[1][1] = +5.042e-01+8.612e-01i, |S[1][1]| = -1.769e-02, arg(S[1][1]) = +5.965e+01
+
+It 126/501: ω/2π = 2.445e+00 GHz (total elapsed time = 7.43e+01 s)
+
+ Sol. ||E|| = 3.398479e+01
+ Field energy E (2.878e-11 J) + H (8.477e-11 J) = 1.136e-10 J
+ S[1][1] = +5.043e-01+8.612e-01i, |S[1][1]| = -1.773e-02, arg(S[1][1]) = +5.965e+01
+
+It 127/501: ω/2π = 2.445e+00 GHz (total elapsed time = 7.44e+01 s)
+
+ Sol. ||E|| = 3.398654e+01
+ Field energy E (2.883e-11 J) + H (8.481e-11 J) = 1.136e-10 J
+ S[1][1] = +5.044e-01+8.611e-01i, |S[1][1]| = -1.778e-02, arg(S[1][1]) = +5.964e+01
+
+It 128/501: ω/2π = 2.445e+00 GHz (total elapsed time = 7.44e+01 s)
+
+ Sol. ||E|| = 3.398831e+01
+ Field energy E (2.888e-11 J) + H (8.485e-11 J) = 1.137e-10 J
+ S[1][1] = +5.045e-01+8.610e-01i, |S[1][1]| = -1.782e-02, arg(S[1][1]) = +5.963e+01
+
+It 129/501: ω/2π = 2.446e+00 GHz (total elapsed time = 7.45e+01 s)
+
+ Sol. ||E|| = 3.399009e+01
+ Field energy E (2.893e-11 J) + H (8.490e-11 J) = 1.138e-10 J
+ S[1][1] = +5.047e-01+8.609e-01i, |S[1][1]| = -1.787e-02, arg(S[1][1]) = +5.962e+01
+
+It 130/501: ω/2π = 2.446e+00 GHz (total elapsed time = 7.45e+01 s)
+
+ Sol. ||E|| = 3.399190e+01
+ Field energy E (2.898e-11 J) + H (8.494e-11 J) = 1.139e-10 J
+ S[1][1] = +5.048e-01+8.609e-01i, |S[1][1]| = -1.792e-02, arg(S[1][1]) = +5.961e+01
+
+It 131/501: ω/2π = 2.446e+00 GHz (total elapsed time = 7.46e+01 s)
+
+ Sol. ||E|| = 3.399372e+01
+ Field energy E (2.904e-11 J) + H (8.498e-11 J) = 1.140e-10 J
+ S[1][1] = +5.049e-01+8.608e-01i, |S[1][1]| = -1.797e-02, arg(S[1][1]) = +5.961e+01
+
+It 132/501: ω/2π = 2.446e+00 GHz (total elapsed time = 7.46e+01 s)
+
+ Sol. ||E|| = 3.399555e+01
+ Field energy E (2.909e-11 J) + H (8.503e-11 J) = 1.141e-10 J
+ S[1][1] = +5.050e-01+8.607e-01i, |S[1][1]| = -1.802e-02, arg(S[1][1]) = +5.960e+01
+
+It 133/501: ω/2π = 2.446e+00 GHz (total elapsed time = 7.46e+01 s)
+
+ Sol. ||E|| = 3.399741e+01
+ Field energy E (2.915e-11 J) + H (8.508e-11 J) = 1.142e-10 J
+ S[1][1] = +5.051e-01+8.606e-01i, |S[1][1]| = -1.808e-02, arg(S[1][1]) = +5.959e+01
+
+It 134/501: ω/2π = 2.447e+00 GHz (total elapsed time = 7.47e+01 s)
+
+ Sol. ||E|| = 3.399928e+01
+ Field energy E (2.921e-11 J) + H (8.513e-11 J) = 1.143e-10 J
+ S[1][1] = +5.053e-01+8.606e-01i, |S[1][1]| = -1.813e-02, arg(S[1][1]) = +5.958e+01
+
+It 135/501: ω/2π = 2.447e+00 GHz (total elapsed time = 7.47e+01 s)
+
+ Sol. ||E|| = 3.400116e+01
+ Field energy E (2.927e-11 J) + H (8.518e-11 J) = 1.144e-10 J
+ S[1][1] = +5.054e-01+8.605e-01i, |S[1][1]| = -1.819e-02, arg(S[1][1]) = +5.957e+01
+
+It 136/501: ω/2π = 2.447e+00 GHz (total elapsed time = 7.48e+01 s)
+
+ Sol. ||E|| = 3.400307e+01
+ Field energy E (2.933e-11 J) + H (8.523e-11 J) = 1.146e-10 J
+ S[1][1] = +5.055e-01+8.604e-01i, |S[1][1]| = -1.824e-02, arg(S[1][1]) = +5.957e+01
+
+It 137/501: ω/2π = 2.447e+00 GHz (total elapsed time = 7.48e+01 s)
+
+ Sol. ||E|| = 3.400500e+01
+ Field energy E (2.940e-11 J) + H (8.528e-11 J) = 1.147e-10 J
+ S[1][1] = +5.056e-01+8.603e-01i, |S[1][1]| = -1.830e-02, arg(S[1][1]) = +5.956e+01
+
+It 138/501: ω/2π = 2.447e+00 GHz (total elapsed time = 7.49e+01 s)
+
+ Sol. ||E|| = 3.400694e+01
+ Field energy E (2.946e-11 J) + H (8.534e-11 J) = 1.148e-10 J
+ S[1][1] = +5.057e-01+8.602e-01i, |S[1][1]| = -1.836e-02, arg(S[1][1]) = +5.955e+01
+
+It 139/501: ω/2π = 2.448e+00 GHz (total elapsed time = 7.49e+01 s)
+
+ Sol. ||E|| = 3.400890e+01
+ Field energy E (2.953e-11 J) + H (8.540e-11 J) = 1.149e-10 J
+ S[1][1] = +5.058e-01+8.602e-01i, |S[1][1]| = -1.842e-02, arg(S[1][1]) = +5.954e+01
+
+It 140/501: ω/2π = 2.448e+00 GHz (total elapsed time = 7.49e+01 s)
+
+ Sol. ||E|| = 3.401088e+01
+ Field energy E (2.960e-11 J) + H (8.546e-11 J) = 1.151e-10 J
+ S[1][1] = +5.060e-01+8.601e-01i, |S[1][1]| = -1.848e-02, arg(S[1][1]) = +5.953e+01
+
+It 141/501: ω/2π = 2.448e+00 GHz (total elapsed time = 7.50e+01 s)
+
+ Sol. ||E|| = 3.401288e+01
+ Field energy E (2.967e-11 J) + H (8.552e-11 J) = 1.152e-10 J
+ S[1][1] = +5.061e-01+8.600e-01i, |S[1][1]| = -1.855e-02, arg(S[1][1]) = +5.952e+01
+
+It 142/501: ω/2π = 2.448e+00 GHz (total elapsed time = 7.50e+01 s)
+
+ Sol. ||E|| = 3.401490e+01
+ Field energy E (2.974e-11 J) + H (8.558e-11 J) = 1.153e-10 J
+ S[1][1] = +5.062e-01+8.599e-01i, |S[1][1]| = -1.861e-02, arg(S[1][1]) = +5.952e+01
+
+It 143/501: ω/2π = 2.448e+00 GHz (total elapsed time = 7.51e+01 s)
+
+ Sol. ||E|| = 3.401694e+01
+ Field energy E (2.982e-11 J) + H (8.565e-11 J) = 1.155e-10 J
+ S[1][1] = +5.063e-01+8.599e-01i, |S[1][1]| = -1.868e-02, arg(S[1][1]) = +5.951e+01
+
+It 144/501: ω/2π = 2.449e+00 GHz (total elapsed time = 7.51e+01 s)
+
+ Sol. ||E|| = 3.401901e+01
+ Field energy E (2.989e-11 J) + H (8.571e-11 J) = 1.156e-10 J
+ S[1][1] = +5.064e-01+8.598e-01i, |S[1][1]| = -1.875e-02, arg(S[1][1]) = +5.950e+01
+
+It 145/501: ω/2π = 2.449e+00 GHz (total elapsed time = 7.52e+01 s)
+
+ Sol. ||E|| = 3.402109e+01
+ Field energy E (2.997e-11 J) + H (8.578e-11 J) = 1.158e-10 J
+ S[1][1] = +5.066e-01+8.597e-01i, |S[1][1]| = -1.882e-02, arg(S[1][1]) = +5.949e+01
+
+It 146/501: ω/2π = 2.449e+00 GHz (total elapsed time = 7.52e+01 s)
+
+ Sol. ||E|| = 3.402319e+01
+ Field energy E (3.005e-11 J) + H (8.585e-11 J) = 1.159e-10 J
+ S[1][1] = +5.067e-01+8.596e-01i, |S[1][1]| = -1.889e-02, arg(S[1][1]) = +5.948e+01
+
+It 147/501: ω/2π = 2.449e+00 GHz (total elapsed time = 7.52e+01 s)
+
+ Sol. ||E|| = 3.402532e+01
+ Field energy E (3.013e-11 J) + H (8.592e-11 J) = 1.161e-10 J
+ S[1][1] = +5.068e-01+8.595e-01i, |S[1][1]| = -1.896e-02, arg(S[1][1]) = +5.948e+01
+
+It 148/501: ω/2π = 2.449e+00 GHz (total elapsed time = 7.53e+01 s)
+
+ Sol. ||E|| = 3.402746e+01
+ Field energy E (3.022e-11 J) + H (8.600e-11 J) = 1.162e-10 J
+ S[1][1] = +5.069e-01+8.595e-01i, |S[1][1]| = -1.904e-02, arg(S[1][1]) = +5.947e+01
+
+It 149/501: ω/2π = 2.450e+00 GHz (total elapsed time = 7.53e+01 s)
+
+ Sol. ||E|| = 3.402963e+01
+ Field energy E (3.030e-11 J) + H (8.608e-11 J) = 1.164e-10 J
+ S[1][1] = +5.070e-01+8.594e-01i, |S[1][1]| = -1.911e-02, arg(S[1][1]) = +5.946e+01
+
+It 150/501: ω/2π = 2.450e+00 GHz (total elapsed time = 7.54e+01 s)
+
+ Sol. ||E|| = 3.403182e+01
+ Field energy E (3.039e-11 J) + H (8.615e-11 J) = 1.165e-10 J
+ S[1][1] = +5.072e-01+8.593e-01i, |S[1][1]| = -1.919e-02, arg(S[1][1]) = +5.945e+01
+
+It 151/501: ω/2π = 2.450e+00 GHz (total elapsed time = 7.54e+01 s)
+
+ Sol. ||E|| = 3.403404e+01
+ Field energy E (3.048e-11 J) + H (8.624e-11 J) = 1.167e-10 J
+ S[1][1] = +5.073e-01+8.592e-01i, |S[1][1]| = -1.927e-02, arg(S[1][1]) = +5.944e+01
+
+It 152/501: ω/2π = 2.450e+00 GHz (total elapsed time = 7.55e+01 s)
+
+ Sol. ||E|| = 3.403628e+01
+ Field energy E (3.058e-11 J) + H (8.632e-11 J) = 1.169e-10 J
+ S[1][1] = +5.074e-01+8.591e-01i, |S[1][1]| = -1.935e-02, arg(S[1][1]) = +5.943e+01
+
+It 153/501: ω/2π = 2.450e+00 GHz (total elapsed time = 7.55e+01 s)
+
+ Sol. ||E|| = 3.403854e+01
+ Field energy E (3.067e-11 J) + H (8.640e-11 J) = 1.171e-10 J
+ S[1][1] = +5.075e-01+8.590e-01i, |S[1][1]| = -1.943e-02, arg(S[1][1]) = +5.943e+01
+
+It 154/501: ω/2π = 2.451e+00 GHz (total elapsed time = 7.55e+01 s)
+
+ Sol. ||E|| = 3.404083e+01
+ Field energy E (3.077e-11 J) + H (8.649e-11 J) = 1.173e-10 J
+ S[1][1] = +5.076e-01+8.590e-01i, |S[1][1]| = -1.952e-02, arg(S[1][1]) = +5.942e+01
+
+It 155/501: ω/2π = 2.451e+00 GHz (total elapsed time = 7.56e+01 s)
+
+ Sol. ||E|| = 3.404314e+01
+ Field energy E (3.087e-11 J) + H (8.658e-11 J) = 1.174e-10 J
+ S[1][1] = +5.078e-01+8.589e-01i, |S[1][1]| = -1.961e-02, arg(S[1][1]) = +5.941e+01
+
+It 156/501: ω/2π = 2.451e+00 GHz (total elapsed time = 7.56e+01 s)
+
+ Sol. ||E|| = 3.404548e+01
+ Field energy E (3.097e-11 J) + H (8.667e-11 J) = 1.176e-10 J
+ S[1][1] = +5.079e-01+8.588e-01i, |S[1][1]| = -1.970e-02, arg(S[1][1]) = +5.940e+01
+
+It 157/501: ω/2π = 2.451e+00 GHz (total elapsed time = 7.57e+01 s)
+
+ Sol. ||E|| = 3.404784e+01
+ Field energy E (3.107e-11 J) + H (8.677e-11 J) = 1.178e-10 J
+ S[1][1] = +5.080e-01+8.587e-01i, |S[1][1]| = -1.979e-02, arg(S[1][1]) = +5.939e+01
+
+It 158/501: ω/2π = 2.451e+00 GHz (total elapsed time = 7.57e+01 s)
+
+ Sol. ||E|| = 3.405023e+01
+ Field energy E (3.118e-11 J) + H (8.686e-11 J) = 1.180e-10 J
+ S[1][1] = +5.081e-01+8.586e-01i, |S[1][1]| = -1.988e-02, arg(S[1][1]) = +5.938e+01
+
+It 159/501: ω/2π = 2.452e+00 GHz (total elapsed time = 7.58e+01 s)
+
+ Sol. ||E|| = 3.405265e+01
+ Field energy E (3.129e-11 J) + H (8.696e-11 J) = 1.183e-10 J
+ S[1][1] = +5.082e-01+8.586e-01i, |S[1][1]| = -1.997e-02, arg(S[1][1]) = +5.938e+01
+
+It 160/501: ω/2π = 2.452e+00 GHz (total elapsed time = 7.58e+01 s)
+
+ Sol. ||E|| = 3.405510e+01
+ Field energy E (3.140e-11 J) + H (8.707e-11 J) = 1.185e-10 J
+ S[1][1] = +5.084e-01+8.585e-01i, |S[1][1]| = -2.007e-02, arg(S[1][1]) = +5.937e+01
+
+It 161/501: ω/2π = 2.452e+00 GHz (total elapsed time = 7.58e+01 s)
+
+ Sol. ||E|| = 3.405757e+01
+ Field energy E (3.152e-11 J) + H (8.717e-11 J) = 1.187e-10 J
+ S[1][1] = +5.085e-01+8.584e-01i, |S[1][1]| = -2.017e-02, arg(S[1][1]) = +5.936e+01
+
+It 162/501: ω/2π = 2.452e+00 GHz (total elapsed time = 7.59e+01 s)
+
+ Sol. ||E|| = 3.406007e+01
+ Field energy E (3.164e-11 J) + H (8.728e-11 J) = 1.189e-10 J
+ S[1][1] = +5.086e-01+8.583e-01i, |S[1][1]| = -2.027e-02, arg(S[1][1]) = +5.935e+01
+
+It 163/501: ω/2π = 2.452e+00 GHz (total elapsed time = 7.59e+01 s)
+
+ Sol. ||E|| = 3.406261e+01
+ Field energy E (3.176e-11 J) + H (8.739e-11 J) = 1.191e-10 J
+ S[1][1] = +5.087e-01+8.582e-01i, |S[1][1]| = -2.037e-02, arg(S[1][1]) = +5.934e+01
+
+It 164/501: ω/2π = 2.453e+00 GHz (total elapsed time = 7.60e+01 s)
+
+ Sol. ||E|| = 3.406517e+01
+ Field energy E (3.188e-11 J) + H (8.750e-11 J) = 1.194e-10 J
+ S[1][1] = +5.088e-01+8.581e-01i, |S[1][1]| = -2.048e-02, arg(S[1][1]) = +5.933e+01
+
+It 165/501: ω/2π = 2.453e+00 GHz (total elapsed time = 7.60e+01 s)
+
+ Sol. ||E|| = 3.406776e+01
+ Field energy E (3.200e-11 J) + H (8.762e-11 J) = 1.196e-10 J
+ S[1][1] = +5.089e-01+8.580e-01i, |S[1][1]| = -2.059e-02, arg(S[1][1]) = +5.933e+01
+
+It 166/501: ω/2π = 2.453e+00 GHz (total elapsed time = 7.61e+01 s)
+
+ Sol. ||E|| = 3.407039e+01
+ Field energy E (3.213e-11 J) + H (8.774e-11 J) = 1.199e-10 J
+ S[1][1] = +5.091e-01+8.580e-01i, |S[1][1]| = -2.070e-02, arg(S[1][1]) = +5.932e+01
+
+It 167/501: ω/2π = 2.453e+00 GHz (total elapsed time = 7.61e+01 s)
+
+ Sol. ||E|| = 3.407304e+01
+ Field energy E (3.226e-11 J) + H (8.786e-11 J) = 1.201e-10 J
+ S[1][1] = +5.092e-01+8.579e-01i, |S[1][1]| = -2.081e-02, arg(S[1][1]) = +5.931e+01
+
+It 168/501: ω/2π = 2.453e+00 GHz (total elapsed time = 7.61e+01 s)
+
+ Sol. ||E|| = 3.407573e+01
+ Field energy E (3.240e-11 J) + H (8.798e-11 J) = 1.204e-10 J
+ S[1][1] = +5.093e-01+8.578e-01i, |S[1][1]| = -2.093e-02, arg(S[1][1]) = +5.930e+01
+
+It 169/501: ω/2π = 2.454e+00 GHz (total elapsed time = 7.62e+01 s)
+
+ Sol. ||E|| = 3.407845e+01
+ Field energy E (3.254e-11 J) + H (8.811e-11 J) = 1.206e-10 J
+ S[1][1] = +5.094e-01+8.577e-01i, |S[1][1]| = -2.104e-02, arg(S[1][1]) = +5.929e+01
+
+It 170/501: ω/2π = 2.454e+00 GHz (total elapsed time = 7.62e+01 s)
+
+ Sol. ||E|| = 3.408121e+01
+ Field energy E (3.268e-11 J) + H (8.824e-11 J) = 1.209e-10 J
+ S[1][1] = +5.095e-01+8.576e-01i, |S[1][1]| = -2.116e-02, arg(S[1][1]) = +5.928e+01
+
+It 171/501: ω/2π = 2.454e+00 GHz (total elapsed time = 7.63e+01 s)
+
+ Sol. ||E|| = 3.408400e+01
+ Field energy E (3.282e-11 J) + H (8.838e-11 J) = 1.212e-10 J
+ S[1][1] = +5.097e-01+8.575e-01i, |S[1][1]| = -2.129e-02, arg(S[1][1]) = +5.927e+01
+
+It 172/501: ω/2π = 2.454e+00 GHz (total elapsed time = 7.63e+01 s)
+
+ Sol. ||E|| = 3.408683e+01
+ Field energy E (3.297e-11 J) + H (8.851e-11 J) = 1.215e-10 J
+ S[1][1] = +5.098e-01+8.574e-01i, |S[1][1]| = -2.141e-02, arg(S[1][1]) = +5.927e+01
+
+It 173/501: ω/2π = 2.454e+00 GHz (total elapsed time = 7.64e+01 s)
+
+ Sol. ||E|| = 3.408970e+01
+ Field energy E (3.312e-11 J) + H (8.865e-11 J) = 1.218e-10 J
+ S[1][1] = +5.099e-01+8.573e-01i, |S[1][1]| = -2.154e-02, arg(S[1][1]) = +5.926e+01
+
+It 174/501: ω/2π = 2.455e+00 GHz (total elapsed time = 7.64e+01 s)
+
+ Sol. ||E|| = 3.409260e+01
+ Field energy E (3.328e-11 J) + H (8.880e-11 J) = 1.221e-10 J
+ S[1][1] = +5.100e-01+8.573e-01i, |S[1][1]| = -2.168e-02, arg(S[1][1]) = +5.925e+01
+
+It 175/501: ω/2π = 2.455e+00 GHz (total elapsed time = 7.64e+01 s)
+
+ Sol. ||E|| = 3.409554e+01
+ Field energy E (3.344e-11 J) + H (8.895e-11 J) = 1.224e-10 J
+ S[1][1] = +5.101e-01+8.572e-01i, |S[1][1]| = -2.181e-02, arg(S[1][1]) = +5.924e+01
+
+It 176/501: ω/2π = 2.455e+00 GHz (total elapsed time = 7.65e+01 s)
+
+ Sol. ||E|| = 3.409852e+01
+ Field energy E (3.360e-11 J) + H (8.910e-11 J) = 1.227e-10 J
+ S[1][1] = +5.103e-01+8.571e-01i, |S[1][1]| = -2.195e-02, arg(S[1][1]) = +5.923e+01
+
+It 177/501: ω/2π = 2.455e+00 GHz (total elapsed time = 7.65e+01 s)
+
+ Sol. ||E|| = 3.410154e+01
+ Field energy E (3.376e-11 J) + H (8.925e-11 J) = 1.230e-10 J
+ S[1][1] = +5.104e-01+8.570e-01i, |S[1][1]| = -2.209e-02, arg(S[1][1]) = +5.922e+01
+
+It 178/501: ω/2π = 2.455e+00 GHz (total elapsed time = 7.66e+01 s)
+
+ Sol. ||E|| = 3.410460e+01
+ Field energy E (3.393e-11 J) + H (8.941e-11 J) = 1.233e-10 J
+ S[1][1] = +5.105e-01+8.569e-01i, |S[1][1]| = -2.223e-02, arg(S[1][1]) = +5.922e+01
+
+It 179/501: ω/2π = 2.456e+00 GHz (total elapsed time = 7.66e+01 s)
+
+ Sol. ||E|| = 3.410770e+01
+ Field energy E (3.411e-11 J) + H (8.958e-11 J) = 1.237e-10 J
+ S[1][1] = +5.106e-01+8.568e-01i, |S[1][1]| = -2.238e-02, arg(S[1][1]) = +5.921e+01
+
+It 180/501: ω/2π = 2.456e+00 GHz (total elapsed time = 7.67e+01 s)
+
+ Sol. ||E|| = 3.411085e+01
+ Field energy E (3.429e-11 J) + H (8.975e-11 J) = 1.240e-10 J
+ S[1][1] = +5.107e-01+8.567e-01i, |S[1][1]| = -2.253e-02, arg(S[1][1]) = +5.920e+01
+
+It 181/501: ω/2π = 2.456e+00 GHz (total elapsed time = 7.67e+01 s)
+
+ Sol. ||E|| = 3.411404e+01
+ Field energy E (3.447e-11 J) + H (8.992e-11 J) = 1.244e-10 J
+ S[1][1] = +5.109e-01+8.566e-01i, |S[1][1]| = -2.269e-02, arg(S[1][1]) = +5.919e+01
+
+It 182/501: ω/2π = 2.456e+00 GHz (total elapsed time = 7.68e+01 s)
+
+ Sol. ||E|| = 3.411728e+01
+ Field energy E (3.466e-11 J) + H (9.009e-11 J) = 1.247e-10 J
+ S[1][1] = +5.110e-01+8.565e-01i, |S[1][1]| = -2.284e-02, arg(S[1][1]) = +5.918e+01
+
+It 183/501: ω/2π = 2.456e+00 GHz (total elapsed time = 7.68e+01 s)
+
+ Sol. ||E|| = 3.412056e+01
+ Field energy E (3.485e-11 J) + H (9.027e-11 J) = 1.251e-10 J
+ S[1][1] = +5.111e-01+8.564e-01i, |S[1][1]| = -2.301e-02, arg(S[1][1]) = +5.917e+01
+
+It 184/501: ω/2π = 2.457e+00 GHz (total elapsed time = 7.68e+01 s)
+
+ Sol. ||E|| = 3.412389e+01
+ Field energy E (3.504e-11 J) + H (9.046e-11 J) = 1.255e-10 J
+ S[1][1] = +5.112e-01+8.563e-01i, |S[1][1]| = -2.317e-02, arg(S[1][1]) = +5.916e+01
+
+It 185/501: ω/2π = 2.457e+00 GHz (total elapsed time = 7.69e+01 s)
+
+ Sol. ||E|| = 3.412727e+01
+ Field energy E (3.524e-11 J) + H (9.065e-11 J) = 1.259e-10 J
+ S[1][1] = +5.113e-01+8.562e-01i, |S[1][1]| = -2.334e-02, arg(S[1][1]) = +5.915e+01
+
+It 186/501: ω/2π = 2.457e+00 GHz (total elapsed time = 7.69e+01 s)
+
+ Sol. ||E|| = 3.413070e+01
+ Field energy E (3.545e-11 J) + H (9.084e-11 J) = 1.263e-10 J
+ S[1][1] = +5.115e-01+8.562e-01i, |S[1][1]| = -2.351e-02, arg(S[1][1]) = +5.915e+01
+
+It 187/501: ω/2π = 2.457e+00 GHz (total elapsed time = 7.70e+01 s)
+
+ Sol. ||E|| = 3.413418e+01
+ Field energy E (3.566e-11 J) + H (9.104e-11 J) = 1.267e-10 J
+ S[1][1] = +5.116e-01+8.561e-01i, |S[1][1]| = -2.369e-02, arg(S[1][1]) = +5.914e+01
+
+It 188/501: ω/2π = 2.457e+00 GHz (total elapsed time = 7.70e+01 s)
+
+ Sol. ||E|| = 3.413771e+01
+ Field energy E (3.587e-11 J) + H (9.125e-11 J) = 1.271e-10 J
+ S[1][1] = +5.117e-01+8.560e-01i, |S[1][1]| = -2.387e-02, arg(S[1][1]) = +5.913e+01
+
+It 189/501: ω/2π = 2.458e+00 GHz (total elapsed time = 7.71e+01 s)
+
+ Sol. ||E|| = 3.414130e+01
+ Field energy E (3.609e-11 J) + H (9.146e-11 J) = 1.275e-10 J
+ S[1][1] = +5.118e-01+8.559e-01i, |S[1][1]| = -2.406e-02, arg(S[1][1]) = +5.912e+01
+
+It 190/501: ω/2π = 2.458e+00 GHz (total elapsed time = 7.71e+01 s)
+
+ Sol. ||E|| = 3.414494e+01
+ Field energy E (3.632e-11 J) + H (9.167e-11 J) = 1.280e-10 J
+ S[1][1] = +5.119e-01+8.558e-01i, |S[1][1]| = -2.425e-02, arg(S[1][1]) = +5.911e+01
+
+It 191/501: ω/2π = 2.458e+00 GHz (total elapsed time = 7.71e+01 s)
+
+ Sol. ||E|| = 3.414864e+01
+ Field energy E (3.655e-11 J) + H (9.189e-11 J) = 1.284e-10 J
+ S[1][1] = +5.121e-01+8.557e-01i, |S[1][1]| = -2.444e-02, arg(S[1][1]) = +5.910e+01
+
+It 192/501: ω/2π = 2.458e+00 GHz (total elapsed time = 7.72e+01 s)
+
+ Sol. ||E|| = 3.415240e+01
+ Field energy E (3.679e-11 J) + H (9.212e-11 J) = 1.289e-10 J
+ S[1][1] = +5.122e-01+8.556e-01i, |S[1][1]| = -2.464e-02, arg(S[1][1]) = +5.909e+01
+
+It 193/501: ω/2π = 2.458e+00 GHz (total elapsed time = 7.72e+01 s)
+
+ Sol. ||E|| = 3.415622e+01
+ Field energy E (3.703e-11 J) + H (9.235e-11 J) = 1.294e-10 J
+ S[1][1] = +5.123e-01+8.555e-01i, |S[1][1]| = -2.484e-02, arg(S[1][1]) = +5.908e+01
+
+It 194/501: ω/2π = 2.459e+00 GHz (total elapsed time = 7.73e+01 s)
+
+ Sol. ||E|| = 3.416010e+01
+ Field energy E (3.728e-11 J) + H (9.259e-11 J) = 1.299e-10 J
+ S[1][1] = +5.124e-01+8.554e-01i, |S[1][1]| = -2.505e-02, arg(S[1][1]) = +5.908e+01
+
+It 195/501: ω/2π = 2.459e+00 GHz (total elapsed time = 7.73e+01 s)
+
+ Sol. ||E|| = 3.416404e+01
+ Field energy E (3.753e-11 J) + H (9.283e-11 J) = 1.304e-10 J
+ S[1][1] = +5.126e-01+8.553e-01i, |S[1][1]| = -2.527e-02, arg(S[1][1]) = +5.907e+01
+
+It 196/501: ω/2π = 2.459e+00 GHz (total elapsed time = 7.74e+01 s)
+
+ Sol. ||E|| = 3.416805e+01
+ Field energy E (3.779e-11 J) + H (9.308e-11 J) = 1.309e-10 J
+ S[1][1] = +5.127e-01+8.552e-01i, |S[1][1]| = -2.549e-02, arg(S[1][1]) = +5.906e+01
+
+It 197/501: ω/2π = 2.459e+00 GHz (total elapsed time = 7.74e+01 s)
+
+ Sol. ||E|| = 3.417213e+01
+ Field energy E (3.806e-11 J) + H (9.333e-11 J) = 1.314e-10 J
+ S[1][1] = +5.128e-01+8.551e-01i, |S[1][1]| = -2.571e-02, arg(S[1][1]) = +5.905e+01
+
+It 198/501: ω/2π = 2.459e+00 GHz (total elapsed time = 7.74e+01 s)
+
+ Sol. ||E|| = 3.417627e+01
+ Field energy E (3.833e-11 J) + H (9.360e-11 J) = 1.319e-10 J
+ S[1][1] = +5.129e-01+8.550e-01i, |S[1][1]| = -2.594e-02, arg(S[1][1]) = +5.904e+01
+
+It 199/501: ω/2π = 2.460e+00 GHz (total elapsed time = 7.75e+01 s)
+
+ Sol. ||E|| = 3.418049e+01
+ Field energy E (3.861e-11 J) + H (9.387e-11 J) = 1.325e-10 J
+ S[1][1] = +5.130e-01+8.549e-01i, |S[1][1]| = -2.618e-02, arg(S[1][1]) = +5.903e+01
+
+It 200/501: ω/2π = 2.460e+00 GHz (total elapsed time = 7.75e+01 s)
+
+ Sol. ||E|| = 3.418477e+01
+ Field energy E (3.890e-11 J) + H (9.414e-11 J) = 1.330e-10 J
+ S[1][1] = +5.132e-01+8.548e-01i, |S[1][1]| = -2.642e-02, arg(S[1][1]) = +5.902e+01
+
+It 201/501: ω/2π = 2.460e+00 GHz (total elapsed time = 7.76e+01 s)
+
+ Sol. ||E|| = 3.418914e+01
+ Field energy E (3.920e-11 J) + H (9.443e-11 J) = 1.336e-10 J
+ S[1][1] = +5.133e-01+8.547e-01i, |S[1][1]| = -2.667e-02, arg(S[1][1]) = +5.901e+01
+
+It 202/501: ω/2π = 2.460e+00 GHz (total elapsed time = 7.76e+01 s)
+
+ Sol. ||E|| = 3.419357e+01
+ Field energy E (3.950e-11 J) + H (9.472e-11 J) = 1.342e-10 J
+ S[1][1] = +5.134e-01+8.545e-01i, |S[1][1]| = -2.692e-02, arg(S[1][1]) = +5.900e+01
+
+It 203/501: ω/2π = 2.460e+00 GHz (total elapsed time = 7.77e+01 s)
+
+ Sol. ||E|| = 3.419809e+01
+ Field energy E (3.981e-11 J) + H (9.502e-11 J) = 1.348e-10 J
+ S[1][1] = +5.135e-01+8.544e-01i, |S[1][1]| = -2.718e-02, arg(S[1][1]) = +5.899e+01
+
+It 204/501: ω/2π = 2.461e+00 GHz (total elapsed time = 7.77e+01 s)
+
+ Sol. ||E|| = 3.420269e+01
+ Field energy E (4.013e-11 J) + H (9.532e-11 J) = 1.354e-10 J
+ S[1][1] = +5.136e-01+8.543e-01i, |S[1][1]| = -2.745e-02, arg(S[1][1]) = +5.899e+01
+
+It 205/501: ω/2π = 2.461e+00 GHz (total elapsed time = 7.77e+01 s)
+
+ Sol. ||E|| = 3.420737e+01
+ Field energy E (4.045e-11 J) + H (9.564e-11 J) = 1.361e-10 J
+ S[1][1] = +5.138e-01+8.542e-01i, |S[1][1]| = -2.772e-02, arg(S[1][1]) = +5.898e+01
+
+It 206/501: ω/2π = 2.461e+00 GHz (total elapsed time = 7.78e+01 s)
+
+ Sol. ||E|| = 3.421214e+01
+ Field energy E (4.079e-11 J) + H (9.596e-11 J) = 1.367e-10 J
+ S[1][1] = +5.139e-01+8.541e-01i, |S[1][1]| = -2.800e-02, arg(S[1][1]) = +5.897e+01
+
+It 207/501: ω/2π = 2.461e+00 GHz (total elapsed time = 7.78e+01 s)
+
+ Sol. ||E|| = 3.421699e+01
+ Field energy E (4.113e-11 J) + H (9.629e-11 J) = 1.374e-10 J
+ S[1][1] = +5.140e-01+8.540e-01i, |S[1][1]| = -2.829e-02, arg(S[1][1]) = +5.896e+01
+
+It 208/501: ω/2π = 2.461e+00 GHz (total elapsed time = 7.79e+01 s)
+
+ Sol. ||E|| = 3.422194e+01
+ Field energy E (4.148e-11 J) + H (9.663e-11 J) = 1.381e-10 J
+ S[1][1] = +5.141e-01+8.539e-01i, |S[1][1]| = -2.858e-02, arg(S[1][1]) = +5.895e+01
+
+It 209/501: ω/2π = 2.462e+00 GHz (total elapsed time = 7.79e+01 s)
+
+ Sol. ||E|| = 3.422698e+01
+ Field energy E (4.184e-11 J) + H (9.698e-11 J) = 1.388e-10 J
+ S[1][1] = +5.142e-01+8.538e-01i, |S[1][1]| = -2.889e-02, arg(S[1][1]) = +5.894e+01
+
+It 210/501: ω/2π = 2.462e+00 GHz (total elapsed time = 7.80e+01 s)
+
+ Sol. ||E|| = 3.423212e+01
+ Field energy E (4.221e-11 J) + H (9.734e-11 J) = 1.396e-10 J
+ S[1][1] = +5.144e-01+8.537e-01i, |S[1][1]| = -2.920e-02, arg(S[1][1]) = +5.893e+01
+
+It 211/501: ω/2π = 2.462e+00 GHz (total elapsed time = 7.80e+01 s)
+
+ Sol. ||E|| = 3.423735e+01
+ Field energy E (4.260e-11 J) + H (9.771e-11 J) = 1.403e-10 J
+ S[1][1] = +5.145e-01+8.535e-01i, |S[1][1]| = -2.952e-02, arg(S[1][1]) = +5.892e+01
+
+It 212/501: ω/2π = 2.462e+00 GHz (total elapsed time = 7.80e+01 s)
+
+ Sol. ||E|| = 3.424269e+01
+ Field energy E (4.299e-11 J) + H (9.809e-11 J) = 1.411e-10 J
+ S[1][1] = +5.146e-01+8.534e-01i, |S[1][1]| = -2.984e-02, arg(S[1][1]) = +5.891e+01
+
+It 213/501: ω/2π = 2.462e+00 GHz (total elapsed time = 7.81e+01 s)
+
+ Sol. ||E|| = 3.424814e+01
+ Field energy E (4.339e-11 J) + H (9.848e-11 J) = 1.419e-10 J
+ S[1][1] = +5.147e-01+8.533e-01i, |S[1][1]| = -3.018e-02, arg(S[1][1]) = +5.890e+01
+
+It 214/501: ω/2π = 2.463e+00 GHz (total elapsed time = 7.81e+01 s)
+
+ Sol. ||E|| = 3.425369e+01
+ Field energy E (4.380e-11 J) + H (9.888e-11 J) = 1.427e-10 J
+ S[1][1] = +5.148e-01+8.532e-01i, |S[1][1]| = -3.052e-02, arg(S[1][1]) = +5.889e+01
+
+It 215/501: ω/2π = 2.463e+00 GHz (total elapsed time = 7.82e+01 s)
+
+ Sol. ||E|| = 3.425935e+01
+ Field energy E (4.422e-11 J) + H (9.929e-11 J) = 1.435e-10 J
+ S[1][1] = +5.149e-01+8.531e-01i, |S[1][1]| = -3.088e-02, arg(S[1][1]) = +5.888e+01
+
+It 216/501: ω/2π = 2.463e+00 GHz (total elapsed time = 7.82e+01 s)
+
+ Sol. ||E|| = 3.426513e+01
+ Field energy E (4.466e-11 J) + H (9.971e-11 J) = 1.444e-10 J
+ S[1][1] = +5.151e-01+8.530e-01i, |S[1][1]| = -3.124e-02, arg(S[1][1]) = +5.887e+01
+
+It 217/501: ω/2π = 2.463e+00 GHz (total elapsed time = 7.83e+01 s)
+
+ Sol. ||E|| = 3.427103e+01
+ Field energy E (4.510e-11 J) + H (1.001e-10 J) = 1.452e-10 J
+ S[1][1] = +5.152e-01+8.528e-01i, |S[1][1]| = -3.161e-02, arg(S[1][1]) = +5.886e+01
+
+It 218/501: ω/2π = 2.463e+00 GHz (total elapsed time = 7.83e+01 s)
+
+ Sol. ||E|| = 3.427705e+01
+ Field energy E (4.556e-11 J) + H (1.006e-10 J) = 1.461e-10 J
+ S[1][1] = +5.153e-01+8.527e-01i, |S[1][1]| = -3.200e-02, arg(S[1][1]) = +5.886e+01
+
+It 219/501: ω/2π = 2.464e+00 GHz (total elapsed time = 7.84e+01 s)
+
+ Sol. ||E|| = 3.428320e+01
+ Field energy E (4.603e-11 J) + H (1.010e-10 J) = 1.471e-10 J
+ S[1][1] = +5.154e-01+8.526e-01i, |S[1][1]| = -3.239e-02, arg(S[1][1]) = +5.885e+01
+
+It 220/501: ω/2π = 2.464e+00 GHz (total elapsed time = 7.84e+01 s)
+
+ Sol. ||E|| = 3.428948e+01
+ Field energy E (4.651e-11 J) + H (1.015e-10 J) = 1.480e-10 J
+ S[1][1] = +5.155e-01+8.525e-01i, |S[1][1]| = -3.280e-02, arg(S[1][1]) = +5.884e+01
+
+It 221/501: ω/2π = 2.464e+00 GHz (total elapsed time = 7.84e+01 s)
+
+ Sol. ||E|| = 3.429589e+01
+ Field energy E (4.701e-11 J) + H (1.020e-10 J) = 1.490e-10 J
+ S[1][1] = +5.157e-01+8.523e-01i, |S[1][1]| = -3.321e-02, arg(S[1][1]) = +5.883e+01
+
+It 222/501: ω/2π = 2.464e+00 GHz (total elapsed time = 7.85e+01 s)
+
+ Sol. ||E|| = 3.430244e+01
+ Field energy E (4.752e-11 J) + H (1.025e-10 J) = 1.500e-10 J
+ S[1][1] = +5.158e-01+8.522e-01i, |S[1][1]| = -3.364e-02, arg(S[1][1]) = +5.882e+01
+
+It 223/501: ω/2π = 2.464e+00 GHz (total elapsed time = 7.85e+01 s)
+
+ Sol. ||E|| = 3.430913e+01
+ Field energy E (4.805e-11 J) + H (1.030e-10 J) = 1.511e-10 J
+ S[1][1] = +5.159e-01+8.521e-01i, |S[1][1]| = -3.408e-02, arg(S[1][1]) = +5.881e+01
+
+It 224/501: ω/2π = 2.465e+00 GHz (total elapsed time = 7.86e+01 s)
+
+ Sol. ||E|| = 3.431597e+01
+ Field energy E (4.859e-11 J) + H (1.035e-10 J) = 1.521e-10 J
+ S[1][1] = +5.160e-01+8.520e-01i, |S[1][1]| = -3.453e-02, arg(S[1][1]) = +5.880e+01
+
+It 225/501: ω/2π = 2.465e+00 GHz (total elapsed time = 7.86e+01 s)
+
+ Sol. ||E|| = 3.432296e+01
+ Field energy E (4.914e-11 J) + H (1.041e-10 J) = 1.532e-10 J
+ S[1][1] = +5.161e-01+8.518e-01i, |S[1][1]| = -3.500e-02, arg(S[1][1]) = +5.879e+01
+
+It 226/501: ω/2π = 2.465e+00 GHz (total elapsed time = 7.87e+01 s)
+
+ Sol. ||E|| = 3.433011e+01
+ Field energy E (4.971e-11 J) + H (1.046e-10 J) = 1.544e-10 J
+ S[1][1] = +5.162e-01+8.517e-01i, |S[1][1]| = -3.548e-02, arg(S[1][1]) = +5.878e+01
+
+It 227/501: ω/2π = 2.465e+00 GHz (total elapsed time = 7.87e+01 s)
+
+ Sol. ||E|| = 3.433743e+01
+ Field energy E (5.030e-11 J) + H (1.052e-10 J) = 1.555e-10 J
+ S[1][1] = +5.163e-01+8.515e-01i, |S[1][1]| = -3.597e-02, arg(S[1][1]) = +5.877e+01
+
+It 228/501: ω/2π = 2.465e+00 GHz (total elapsed time = 7.87e+01 s)
+
+ Sol. ||E|| = 3.434490e+01
+ Field energy E (5.091e-11 J) + H (1.058e-10 J) = 1.567e-10 J
+ S[1][1] = +5.165e-01+8.514e-01i, |S[1][1]| = -3.648e-02, arg(S[1][1]) = +5.876e+01
+
+It 229/501: ω/2π = 2.466e+00 GHz (total elapsed time = 7.88e+01 s)
+
+ Sol. ||E|| = 3.435255e+01
+ Field energy E (5.153e-11 J) + H (1.064e-10 J) = 1.579e-10 J
+ S[1][1] = +5.166e-01+8.513e-01i, |S[1][1]| = -3.700e-02, arg(S[1][1]) = +5.875e+01
+
+It 230/501: ω/2π = 2.466e+00 GHz (total elapsed time = 7.88e+01 s)
+
+ Sol. ||E|| = 3.436038e+01
+ Field energy E (5.217e-11 J) + H (1.070e-10 J) = 1.592e-10 J
+ S[1][1] = +5.167e-01+8.511e-01i, |S[1][1]| = -3.753e-02, arg(S[1][1]) = +5.874e+01
+
+It 231/501: ω/2π = 2.466e+00 GHz (total elapsed time = 7.89e+01 s)
+
+ Sol. ||E|| = 3.436840e+01
+ Field energy E (5.283e-11 J) + H (1.077e-10 J) = 1.605e-10 J
+ S[1][1] = +5.168e-01+8.510e-01i, |S[1][1]| = -3.808e-02, arg(S[1][1]) = +5.873e+01
+
+It 232/501: ω/2π = 2.466e+00 GHz (total elapsed time = 7.89e+01 s)
+
+ Sol. ||E|| = 3.437660e+01
+ Field energy E (5.350e-11 J) + H (1.084e-10 J) = 1.619e-10 J
+ S[1][1] = +5.169e-01+8.508e-01i, |S[1][1]| = -3.865e-02, arg(S[1][1]) = +5.872e+01
+
+It 233/501: ω/2π = 2.466e+00 GHz (total elapsed time = 7.90e+01 s)
+
+ Sol. ||E|| = 3.438500e+01
+ Field energy E (5.420e-11 J) + H (1.090e-10 J) = 1.632e-10 J
+ S[1][1] = +5.170e-01+8.507e-01i, |S[1][1]| = -3.924e-02, arg(S[1][1]) = +5.871e+01
+
+It 234/501: ω/2π = 2.467e+00 GHz (total elapsed time = 7.90e+01 s)
+
+ Sol. ||E|| = 3.439360e+01
+ Field energy E (5.492e-11 J) + H (1.097e-10 J) = 1.647e-10 J
+ S[1][1] = +5.171e-01+8.506e-01i, |S[1][1]| = -3.984e-02, arg(S[1][1]) = +5.870e+01
+
+It 235/501: ω/2π = 2.467e+00 GHz (total elapsed time = 7.91e+01 s)
+
+ Sol. ||E|| = 3.440241e+01
+ Field energy E (5.566e-11 J) + H (1.105e-10 J) = 1.661e-10 J
+ S[1][1] = +5.172e-01+8.504e-01i, |S[1][1]| = -4.046e-02, arg(S[1][1]) = +5.869e+01
+
+It 236/501: ω/2π = 2.467e+00 GHz (total elapsed time = 7.91e+01 s)
+
+ Sol. ||E|| = 3.441143e+01
+ Field energy E (5.642e-11 J) + H (1.112e-10 J) = 1.676e-10 J
+ S[1][1] = +5.174e-01+8.503e-01i, |S[1][1]| = -4.110e-02, arg(S[1][1]) = +5.868e+01
+
+It 237/501: ω/2π = 2.467e+00 GHz (total elapsed time = 7.91e+01 s)
+
+ Sol. ||E|| = 3.442068e+01
+ Field energy E (5.721e-11 J) + H (1.120e-10 J) = 1.692e-10 J
+ S[1][1] = +5.175e-01+8.501e-01i, |S[1][1]| = -4.175e-02, arg(S[1][1]) = +5.867e+01
+
+It 238/501: ω/2π = 2.467e+00 GHz (total elapsed time = 7.92e+01 s)
+
+ Sol. ||E|| = 3.443016e+01
+ Field energy E (5.802e-11 J) + H (1.128e-10 J) = 1.708e-10 J
+ S[1][1] = +5.176e-01+8.499e-01i, |S[1][1]| = -4.243e-02, arg(S[1][1]) = +5.866e+01
+
+It 239/501: ω/2π = 2.468e+00 GHz (total elapsed time = 7.92e+01 s)
+
+ Sol. ||E|| = 3.443988e+01
+ Field energy E (5.885e-11 J) + H (1.136e-10 J) = 1.724e-10 J
+ S[1][1] = +5.177e-01+8.498e-01i, |S[1][1]| = -4.313e-02, arg(S[1][1]) = +5.865e+01
+
+It 240/501: ω/2π = 2.468e+00 GHz (total elapsed time = 7.93e+01 s)
+
+ Sol. ||E|| = 3.444984e+01
+ Field energy E (5.971e-11 J) + H (1.144e-10 J) = 1.741e-10 J
+ S[1][1] = +5.178e-01+8.496e-01i, |S[1][1]| = -4.385e-02, arg(S[1][1]) = +5.864e+01
+
+It 241/501: ω/2π = 2.468e+00 GHz (total elapsed time = 7.93e+01 s)
+
+ Sol. ||E|| = 3.446005e+01
+ Field energy E (6.059e-11 J) + H (1.153e-10 J) = 1.759e-10 J
+ S[1][1] = +5.179e-01+8.495e-01i, |S[1][1]| = -4.459e-02, arg(S[1][1]) = +5.863e+01
+
+It 242/501: ω/2π = 2.468e+00 GHz (total elapsed time = 7.94e+01 s)
+
+ Sol. ||E|| = 3.447052e+01
+ Field energy E (6.150e-11 J) + H (1.162e-10 J) = 1.777e-10 J
+ S[1][1] = +5.180e-01+8.493e-01i, |S[1][1]| = -4.535e-02, arg(S[1][1]) = +5.862e+01
+
+It 243/501: ω/2π = 2.468e+00 GHz (total elapsed time = 7.94e+01 s)
+
+ Sol. ||E|| = 3.448127e+01
+ Field energy E (6.244e-11 J) + H (1.171e-10 J) = 1.796e-10 J
+ S[1][1] = +5.181e-01+8.491e-01i, |S[1][1]| = -4.614e-02, arg(S[1][1]) = +5.861e+01
+
+It 244/501: ω/2π = 2.469e+00 GHz (total elapsed time = 7.94e+01 s)
+
+ Sol. ||E|| = 3.449229e+01
+ Field energy E (6.341e-11 J) + H (1.181e-10 J) = 1.815e-10 J
+ S[1][1] = +5.182e-01+8.490e-01i, |S[1][1]| = -4.696e-02, arg(S[1][1]) = +5.860e+01
+
+It 245/501: ω/2π = 2.469e+00 GHz (total elapsed time = 7.95e+01 s)
+
+ Sol. ||E|| = 3.450360e+01
+ Field energy E (6.441e-11 J) + H (1.191e-10 J) = 1.835e-10 J
+ S[1][1] = +5.183e-01+8.488e-01i, |S[1][1]| = -4.779e-02, arg(S[1][1]) = +5.859e+01
+
+It 246/501: ω/2π = 2.469e+00 GHz (total elapsed time = 7.95e+01 s)
+
+ Sol. ||E|| = 3.451520e+01
+ Field energy E (6.544e-11 J) + H (1.201e-10 J) = 1.855e-10 J
+ S[1][1] = +5.184e-01+8.486e-01i, |S[1][1]| = -4.866e-02, arg(S[1][1]) = +5.858e+01
+
+It 247/501: ω/2π = 2.469e+00 GHz (total elapsed time = 7.96e+01 s)
+
+ Sol. ||E|| = 3.452711e+01
+ Field energy E (6.650e-11 J) + H (1.211e-10 J) = 1.876e-10 J
+ S[1][1] = +5.185e-01+8.484e-01i, |S[1][1]| = -4.955e-02, arg(S[1][1]) = +5.857e+01
+
+It 248/501: ω/2π = 2.469e+00 GHz (total elapsed time = 7.96e+01 s)
+
+ Sol. ||E|| = 3.453933e+01
+ Field energy E (6.760e-11 J) + H (1.222e-10 J) = 1.898e-10 J
+ S[1][1] = +5.186e-01+8.483e-01i, |S[1][1]| = -5.047e-02, arg(S[1][1]) = +5.856e+01
+
+It 249/501: ω/2π = 2.470e+00 GHz (total elapsed time = 7.97e+01 s)
+
+ Sol. ||E|| = 3.455188e+01
+ Field energy E (6.873e-11 J) + H (1.233e-10 J) = 1.920e-10 J
+ S[1][1] = +5.187e-01+8.481e-01i, |S[1][1]| = -5.142e-02, arg(S[1][1]) = +5.855e+01
+
+It 250/501: ω/2π = 2.470e+00 GHz (total elapsed time = 7.97e+01 s)
+
+ Sol. ||E|| = 3.456476e+01
+ Field energy E (6.989e-11 J) + H (1.245e-10 J) = 1.944e-10 J
+ S[1][1] = +5.187e-01+8.479e-01i, |S[1][1]| = -5.239e-02, arg(S[1][1]) = +5.854e+01
+
+It 251/501: ω/2π = 2.470e+00 GHz (total elapsed time = 7.98e+01 s)
+
+ Sol. ||E|| = 3.457799e+01
+ Field energy E (7.109e-11 J) + H (1.257e-10 J) = 1.967e-10 J
+ S[1][1] = +5.188e-01+8.477e-01i, |S[1][1]| = -5.340e-02, arg(S[1][1]) = +5.853e+01
+
+It 252/501: ω/2π = 2.470e+00 GHz (total elapsed time = 7.98e+01 s)
+
+ Sol. ||E|| = 3.459157e+01
+ Field energy E (7.233e-11 J) + H (1.269e-10 J) = 1.992e-10 J
+ S[1][1] = +5.189e-01+8.475e-01i, |S[1][1]| = -5.445e-02, arg(S[1][1]) = +5.852e+01
+
+It 253/501: ω/2π = 2.470e+00 GHz (total elapsed time = 7.98e+01 s)
+
+ Sol. ||E|| = 3.460551e+01
+ Field energy E (7.361e-11 J) + H (1.281e-10 J) = 2.017e-10 J
+ S[1][1] = +5.190e-01+8.473e-01i, |S[1][1]| = -5.552e-02, arg(S[1][1]) = +5.851e+01
+
+It 254/501: ω/2π = 2.471e+00 GHz (total elapsed time = 7.99e+01 s)
+
+ Sol. ||E|| = 3.461983e+01
+ Field energy E (7.493e-11 J) + H (1.294e-10 J) = 2.044e-10 J
+ S[1][1] = +5.191e-01+8.471e-01i, |S[1][1]| = -5.663e-02, arg(S[1][1]) = +5.850e+01
+
+It 255/501: ω/2π = 2.471e+00 GHz (total elapsed time = 7.99e+01 s)
+
+ Sol. ||E|| = 3.463453e+01
+ Field energy E (7.629e-11 J) + H (1.308e-10 J) = 2.071e-10 J
+ S[1][1] = +5.191e-01+8.469e-01i, |S[1][1]| = -5.777e-02, arg(S[1][1]) = +5.849e+01
+
+It 256/501: ω/2π = 2.471e+00 GHz (total elapsed time = 8.00e+01 s)
+
+ Sol. ||E|| = 3.464962e+01
+ Field energy E (7.769e-11 J) + H (1.322e-10 J) = 2.099e-10 J
+ S[1][1] = +5.192e-01+8.467e-01i, |S[1][1]| = -5.895e-02, arg(S[1][1]) = +5.848e+01
+
+It 257/501: ω/2π = 2.471e+00 GHz (total elapsed time = 8.00e+01 s)
+
+ Sol. ||E|| = 3.466512e+01
+ Field energy E (7.914e-11 J) + H (1.336e-10 J) = 2.127e-10 J
+ S[1][1] = +5.193e-01+8.465e-01i, |S[1][1]| = -6.017e-02, arg(S[1][1]) = +5.847e+01
+
+It 258/501: ω/2π = 2.471e+00 GHz (total elapsed time = 8.01e+01 s)
+
+ Sol. ||E|| = 3.468104e+01
+ Field energy E (8.063e-11 J) + H (1.351e-10 J) = 2.157e-10 J
+ S[1][1] = +5.193e-01+8.463e-01i, |S[1][1]| = -6.142e-02, arg(S[1][1]) = +5.846e+01
+
+It 259/501: ω/2π = 2.472e+00 GHz (total elapsed time = 8.01e+01 s)
+
+ Sol. ||E|| = 3.469738e+01
+ Field energy E (8.217e-11 J) + H (1.366e-10 J) = 2.188e-10 J
+ S[1][1] = +5.194e-01+8.461e-01i, |S[1][1]| = -6.272e-02, arg(S[1][1]) = +5.845e+01
+
+It 260/501: ω/2π = 2.472e+00 GHz (total elapsed time = 8.01e+01 s)
+
+ Sol. ||E|| = 3.471416e+01
+ Field energy E (8.375e-11 J) + H (1.382e-10 J) = 2.219e-10 J
+ S[1][1] = +5.195e-01+8.459e-01i, |S[1][1]| = -6.405e-02, arg(S[1][1]) = +5.845e+01
+
+It 261/501: ω/2π = 2.472e+00 GHz (total elapsed time = 8.02e+01 s)
+
+ Sol. ||E|| = 3.473138e+01
+ Field energy E (8.539e-11 J) + H (1.398e-10 J) = 2.252e-10 J
+ S[1][1] = +5.195e-01+8.457e-01i, |S[1][1]| = -6.543e-02, arg(S[1][1]) = +5.844e+01
+
+It 262/501: ω/2π = 2.472e+00 GHz (total elapsed time = 8.02e+01 s)
+
+ Sol. ||E|| = 3.474905e+01
+ Field energy E (8.707e-11 J) + H (1.414e-10 J) = 2.285e-10 J
+ S[1][1] = +5.196e-01+8.454e-01i, |S[1][1]| = -6.685e-02, arg(S[1][1]) = +5.843e+01
+
+It 263/501: ω/2π = 2.472e+00 GHz (total elapsed time = 8.03e+01 s)
+
+ Sol. ||E|| = 3.476719e+01
+ Field energy E (8.881e-11 J) + H (1.432e-10 J) = 2.320e-10 J
+ S[1][1] = +5.196e-01+8.452e-01i, |S[1][1]| = -6.832e-02, arg(S[1][1]) = +5.842e+01
+
+It 264/501: ω/2π = 2.473e+00 GHz (total elapsed time = 8.03e+01 s)
+
+ Sol. ||E|| = 3.478579e+01
+ Field energy E (9.060e-11 J) + H (1.449e-10 J) = 2.355e-10 J
+ S[1][1] = +5.196e-01+8.450e-01i, |S[1][1]| = -6.983e-02, arg(S[1][1]) = +5.841e+01
+
+It 265/501: ω/2π = 2.473e+00 GHz (total elapsed time = 8.04e+01 s)
+
+ Sol. ||E|| = 3.480487e+01
+ Field energy E (9.244e-11 J) + H (1.467e-10 J) = 2.392e-10 J
+ S[1][1] = +5.197e-01+8.448e-01i, |S[1][1]| = -7.138e-02, arg(S[1][1]) = +5.840e+01
+
+It 266/501: ω/2π = 2.473e+00 GHz (total elapsed time = 8.04e+01 s)
+
+ Sol. ||E|| = 3.482444e+01
+ Field energy E (9.434e-11 J) + H (1.486e-10 J) = 2.430e-10 J
+ S[1][1] = +5.197e-01+8.445e-01i, |S[1][1]| = -7.298e-02, arg(S[1][1]) = +5.839e+01
+
+It 267/501: ω/2π = 2.473e+00 GHz (total elapsed time = 8.05e+01 s)
+
+ Sol. ||E|| = 3.484449e+01
+ Field energy E (9.629e-11 J) + H (1.506e-10 J) = 2.468e-10 J
+ S[1][1] = +5.197e-01+8.443e-01i, |S[1][1]| = -7.463e-02, arg(S[1][1]) = +5.838e+01
+
+It 268/501: ω/2π = 2.473e+00 GHz (total elapsed time = 8.05e+01 s)
+
+ Sol. ||E|| = 3.486503e+01
+ Field energy E (9.830e-11 J) + H (1.525e-10 J) = 2.508e-10 J
+ S[1][1] = +5.197e-01+8.441e-01i, |S[1][1]| = -7.633e-02, arg(S[1][1]) = +5.838e+01
+
+It 269/501: ω/2π = 2.474e+00 GHz (total elapsed time = 8.05e+01 s)
+
+ Sol. ||E|| = 3.488607e+01
+ Field energy E (1.004e-10 J) + H (1.546e-10 J) = 2.550e-10 J
+ S[1][1] = +5.198e-01+8.438e-01i, |S[1][1]| = -7.808e-02, arg(S[1][1]) = +5.837e+01
+
+It 270/501: ω/2π = 2.474e+00 GHz (total elapsed time = 8.06e+01 s)
+
+ Sol. ||E|| = 3.490760e+01
+ Field energy E (1.025e-10 J) + H (1.567e-10 J) = 2.592e-10 J
+ S[1][1] = +5.198e-01+8.436e-01i, |S[1][1]| = -7.988e-02, arg(S[1][1]) = +5.836e+01
+
+It 271/501: ω/2π = 2.474e+00 GHz (total elapsed time = 8.06e+01 s)
+
+ Sol. ||E|| = 3.492962e+01
+ Field energy E (1.047e-10 J) + H (1.589e-10 J) = 2.635e-10 J
+ S[1][1] = +5.198e-01+8.433e-01i, |S[1][1]| = -8.172e-02, arg(S[1][1]) = +5.835e+01
+
+It 272/501: ω/2π = 2.474e+00 GHz (total elapsed time = 8.07e+01 s)
+
+ Sol. ||E|| = 3.495214e+01
+ Field energy E (1.069e-10 J) + H (1.611e-10 J) = 2.680e-10 J
+ S[1][1] = +5.197e-01+8.431e-01i, |S[1][1]| = -8.362e-02, arg(S[1][1]) = +5.835e+01
+
+It 273/501: ω/2π = 2.474e+00 GHz (total elapsed time = 8.07e+01 s)
+
+ Sol. ||E|| = 3.497514e+01
+ Field energy E (1.092e-10 J) + H (1.634e-10 J) = 2.726e-10 J
+ S[1][1] = +5.197e-01+8.428e-01i, |S[1][1]| = -8.557e-02, arg(S[1][1]) = +5.834e+01
+
+It 274/501: ω/2π = 2.475e+00 GHz (total elapsed time = 8.08e+01 s)
+
+ Sol. ||E|| = 3.499861e+01
+ Field energy E (1.116e-10 J) + H (1.657e-10 J) = 2.773e-10 J
+ S[1][1] = +5.197e-01+8.426e-01i, |S[1][1]| = -8.757e-02, arg(S[1][1]) = +5.833e+01
+
+It 275/501: ω/2π = 2.475e+00 GHz (total elapsed time = 8.08e+01 s)
+
+ Sol. ||E|| = 3.502255e+01
+ Field energy E (1.140e-10 J) + H (1.681e-10 J) = 2.821e-10 J
+ S[1][1] = +5.196e-01+8.423e-01i, |S[1][1]| = -8.961e-02, arg(S[1][1]) = +5.833e+01
+
+It 276/501: ω/2π = 2.475e+00 GHz (total elapsed time = 8.09e+01 s)
+
+ Sol. ||E|| = 3.504694e+01
+ Field energy E (1.165e-10 J) + H (1.705e-10 J) = 2.870e-10 J
+ S[1][1] = +5.196e-01+8.421e-01i, |S[1][1]| = -9.171e-02, arg(S[1][1]) = +5.832e+01
+
+It 277/501: ω/2π = 2.475e+00 GHz (total elapsed time = 8.09e+01 s)
+
+ Sol. ||E|| = 3.507176e+01
+ Field energy E (1.190e-10 J) + H (1.730e-10 J) = 2.920e-10 J
+ S[1][1] = +5.195e-01+8.418e-01i, |S[1][1]| = -9.386e-02, arg(S[1][1]) = +5.832e+01
+
+It 278/501: ω/2π = 2.475e+00 GHz (total elapsed time = 8.09e+01 s)
+
+ Sol. ||E|| = 3.509699e+01
+ Field energy E (1.216e-10 J) + H (1.756e-10 J) = 2.972e-10 J
+ S[1][1] = +5.195e-01+8.416e-01i, |S[1][1]| = -9.605e-02, arg(S[1][1]) = +5.831e+01
+
+It 279/501: ω/2π = 2.476e+00 GHz (total elapsed time = 8.10e+01 s)
+
+ Sol. ||E|| = 3.512261e+01
+ Field energy E (1.242e-10 J) + H (1.782e-10 J) = 3.024e-10 J
+ S[1][1] = +5.194e-01+8.413e-01i, |S[1][1]| = -9.828e-02, arg(S[1][1]) = +5.831e+01
+
+It 280/501: ω/2π = 2.476e+00 GHz (total elapsed time = 8.10e+01 s)
+
+ Sol. ||E|| = 3.514857e+01
+ Field energy E (1.269e-10 J) + H (1.809e-10 J) = 3.077e-10 J
+ S[1][1] = +5.193e-01+8.411e-01i, |S[1][1]| = -1.006e-01, arg(S[1][1]) = +5.831e+01
+
+It 281/501: ω/2π = 2.476e+00 GHz (total elapsed time = 8.11e+01 s)
+
+ Sol. ||E|| = 3.517485e+01
+ Field energy E (1.296e-10 J) + H (1.836e-10 J) = 3.132e-10 J
+ S[1][1] = +5.192e-01+8.408e-01i, |S[1][1]| = -1.029e-01, arg(S[1][1]) = +5.830e+01
+
+It 282/501: ω/2π = 2.476e+00 GHz (total elapsed time = 8.11e+01 s)
+
+ Sol. ||E|| = 3.520139e+01
+ Field energy E (1.324e-10 J) + H (1.863e-10 J) = 3.187e-10 J
+ S[1][1] = +5.191e-01+8.406e-01i, |S[1][1]| = -1.052e-01, arg(S[1][1]) = +5.830e+01
+
+It 283/501: ω/2π = 2.476e+00 GHz (total elapsed time = 8.12e+01 s)
+
+ Sol. ||E|| = 3.522817e+01
+ Field energy E (1.352e-10 J) + H (1.891e-10 J) = 3.243e-10 J
+ S[1][1] = +5.190e-01+8.403e-01i, |S[1][1]| = -1.076e-01, arg(S[1][1]) = +5.830e+01
+
+It 284/501: ω/2π = 2.477e+00 GHz (total elapsed time = 8.12e+01 s)
+
+ Sol. ||E|| = 3.525511e+01
+ Field energy E (1.380e-10 J) + H (1.919e-10 J) = 3.299e-10 J
+ S[1][1] = +5.188e-01+8.401e-01i, |S[1][1]| = -1.100e-01, arg(S[1][1]) = +5.830e+01
+
+It 285/501: ω/2π = 2.477e+00 GHz (total elapsed time = 8.13e+01 s)
+
+ Sol. ||E|| = 3.528216e+01
+ Field energy E (1.409e-10 J) + H (1.948e-10 J) = 3.356e-10 J
+ S[1][1] = +5.187e-01+8.399e-01i, |S[1][1]| = -1.125e-01, arg(S[1][1]) = +5.830e+01
+
+It 286/501: ω/2π = 2.477e+00 GHz (total elapsed time = 8.13e+01 s)
+
+ Sol. ||E|| = 3.530925e+01
+ Field energy E (1.437e-10 J) + H (1.976e-10 J) = 3.414e-10 J
+ S[1][1] = +5.185e-01+8.396e-01i, |S[1][1]| = -1.150e-01, arg(S[1][1]) = +5.830e+01
+
+It 287/501: ω/2π = 2.477e+00 GHz (total elapsed time = 8.13e+01 s)
+
+ Sol. ||E|| = 3.533631e+01
+ Field energy E (1.466e-10 J) + H (2.005e-10 J) = 3.471e-10 J
+ S[1][1] = +5.184e-01+8.394e-01i, |S[1][1]| = -1.174e-01, arg(S[1][1]) = +5.830e+01
+
+It 288/501: ω/2π = 2.477e+00 GHz (total elapsed time = 8.14e+01 s)
+
+ Sol. ||E|| = 3.536325e+01
+ Field energy E (1.495e-10 J) + H (2.034e-10 J) = 3.529e-10 J
+ S[1][1] = +5.182e-01+8.392e-01i, |S[1][1]| = -1.199e-01, arg(S[1][1]) = +5.831e+01
+
+It 289/501: ω/2π = 2.478e+00 GHz (total elapsed time = 8.14e+01 s)
+
+ Sol. ||E|| = 3.538999e+01
+ Field energy E (1.524e-10 J) + H (2.063e-10 J) = 3.587e-10 J
+ S[1][1] = +5.180e-01+8.390e-01i, |S[1][1]| = -1.224e-01, arg(S[1][1]) = +5.831e+01
+
+It 290/501: ω/2π = 2.478e+00 GHz (total elapsed time = 8.15e+01 s)
+
+ Sol. ||E|| = 3.541644e+01
+ Field energy E (1.553e-10 J) + H (2.091e-10 J) = 3.644e-10 J
+ S[1][1] = +5.178e-01+8.388e-01i, |S[1][1]| = -1.249e-01, arg(S[1][1]) = +5.831e+01
+
+It 291/501: ω/2π = 2.478e+00 GHz (total elapsed time = 8.15e+01 s)
+
+ Sol. ||E|| = 3.544249e+01
+ Field energy E (1.582e-10 J) + H (2.120e-10 J) = 3.701e-10 J
+ S[1][1] = +5.176e-01+8.386e-01i, |S[1][1]| = -1.273e-01, arg(S[1][1]) = +5.832e+01
+
+It 292/501: ω/2π = 2.478e+00 GHz (total elapsed time = 8.16e+01 s)
+
+ Sol. ||E|| = 3.546803e+01
+ Field energy E (1.610e-10 J) + H (2.148e-10 J) = 3.758e-10 J
+ S[1][1] = +5.173e-01+8.384e-01i, |S[1][1]| = -1.297e-01, arg(S[1][1]) = +5.832e+01
+
+It 293/501: ω/2π = 2.478e+00 GHz (total elapsed time = 8.16e+01 s)
+
+ Sol. ||E|| = 3.549296e+01
+ Field energy E (1.638e-10 J) + H (2.175e-10 J) = 3.813e-10 J
+ S[1][1] = +5.171e-01+8.383e-01i, |S[1][1]| = -1.321e-01, arg(S[1][1]) = +5.833e+01
+
+It 294/501: ω/2π = 2.479e+00 GHz (total elapsed time = 8.16e+01 s)
+
+ Sol. ||E|| = 3.551715e+01
+ Field energy E (1.665e-10 J) + H (2.202e-10 J) = 3.867e-10 J
+ S[1][1] = +5.168e-01+8.381e-01i, |S[1][1]| = -1.344e-01, arg(S[1][1]) = +5.834e+01
+
+It 295/501: ω/2π = 2.479e+00 GHz (total elapsed time = 8.17e+01 s)
+
+ Sol. ||E|| = 3.554048e+01
+ Field energy E (1.691e-10 J) + H (2.229e-10 J) = 3.920e-10 J
+ S[1][1] = +5.166e-01+8.380e-01i, |S[1][1]| = -1.367e-01, arg(S[1][1]) = +5.835e+01
+
+It 296/501: ω/2π = 2.479e+00 GHz (total elapsed time = 8.17e+01 s)
+
+ Sol. ||E|| = 3.556283e+01
+ Field energy E (1.717e-10 J) + H (2.254e-10 J) = 3.971e-10 J
+ S[1][1] = +5.163e-01+8.378e-01i, |S[1][1]| = -1.389e-01, arg(S[1][1]) = +5.836e+01
+
+It 297/501: ω/2π = 2.479e+00 GHz (total elapsed time = 8.18e+01 s)
+
+ Sol. ||E|| = 3.558407e+01
+ Field energy E (1.741e-10 J) + H (2.279e-10 J) = 4.020e-10 J
+ S[1][1] = +5.160e-01+8.377e-01i, |S[1][1]| = -1.410e-01, arg(S[1][1]) = +5.837e+01
+
+It 298/501: ω/2π = 2.479e+00 GHz (total elapsed time = 8.18e+01 s)
+
+ Sol. ||E|| = 3.560407e+01
+ Field energy E (1.765e-10 J) + H (2.302e-10 J) = 4.067e-10 J
+ S[1][1] = +5.157e-01+8.376e-01i, |S[1][1]| = -1.431e-01, arg(S[1][1]) = +5.838e+01
+
+It 299/501: ω/2π = 2.480e+00 GHz (total elapsed time = 8.19e+01 s)
+
+ Sol. ||E|| = 3.562270e+01
+ Field energy E (1.787e-10 J) + H (2.324e-10 J) = 4.111e-10 J
+ S[1][1] = +5.154e-01+8.376e-01i, |S[1][1]| = -1.450e-01, arg(S[1][1]) = +5.839e+01
+
+It 300/501: ω/2π = 2.480e+00 GHz (total elapsed time = 8.19e+01 s)
+
+ Sol. ||E|| = 3.563985e+01
+ Field energy E (1.808e-10 J) + H (2.345e-10 J) = 4.152e-10 J
+ S[1][1] = +5.151e-01+8.375e-01i, |S[1][1]| = -1.468e-01, arg(S[1][1]) = +5.841e+01
+
+It 301/501: ω/2π = 2.480e+00 GHz (total elapsed time = 8.20e+01 s)
+
+ Sol. ||E|| = 3.565540e+01
+ Field energy E (1.827e-10 J) + H (2.364e-10 J) = 4.191e-10 J
+ S[1][1] = +5.148e-01+8.375e-01i, |S[1][1]| = -1.484e-01, arg(S[1][1]) = +5.842e+01
+
+It 302/501: ω/2π = 2.480e+00 GHz (total elapsed time = 8.20e+01 s)
+
+ Sol. ||E|| = 3.566922e+01
+ Field energy E (1.844e-10 J) + H (2.381e-10 J) = 4.225e-10 J
+ S[1][1] = +5.145e-01+8.375e-01i, |S[1][1]| = -1.499e-01, arg(S[1][1]) = +5.844e+01
+
+It 303/501: ω/2π = 2.480e+00 GHz (total elapsed time = 8.21e+01 s)
+
+ Sol. ||E|| = 3.568122e+01
+ Field energy E (1.860e-10 J) + H (2.397e-10 J) = 4.257e-10 J
+ S[1][1] = +5.142e-01+8.375e-01i, |S[1][1]| = -1.513e-01, arg(S[1][1]) = +5.845e+01
+
+It 304/501: ω/2π = 2.481e+00 GHz (total elapsed time = 8.21e+01 s)
+
+ Sol. ||E|| = 3.569131e+01
+ Field energy E (1.874e-10 J) + H (2.410e-10 J) = 4.284e-10 J
+ S[1][1] = +5.138e-01+8.375e-01i, |S[1][1]| = -1.525e-01, arg(S[1][1]) = +5.847e+01
+
+It 305/501: ω/2π = 2.481e+00 GHz (total elapsed time = 8.21e+01 s)
+
+ Sol. ||E|| = 3.569939e+01
+ Field energy E (1.885e-10 J) + H (2.422e-10 J) = 4.307e-10 J
+ S[1][1] = +5.135e-01+8.376e-01i, |S[1][1]| = -1.535e-01, arg(S[1][1]) = +5.849e+01
+
+It 306/501: ω/2π = 2.481e+00 GHz (total elapsed time = 8.22e+01 s)
+
+ Sol. ||E|| = 3.570541e+01
+ Field energy E (1.895e-10 J) + H (2.432e-10 J) = 4.327e-10 J
+ S[1][1] = +5.132e-01+8.377e-01i, |S[1][1]| = -1.543e-01, arg(S[1][1]) = +5.850e+01
+
+It 307/501: ω/2π = 2.481e+00 GHz (total elapsed time = 8.22e+01 s)
+
+ Sol. ||E|| = 3.570930e+01
+ Field energy E (1.902e-10 J) + H (2.439e-10 J) = 4.341e-10 J
+ S[1][1] = +5.129e-01+8.378e-01i, |S[1][1]| = -1.550e-01, arg(S[1][1]) = +5.852e+01
+
+It 308/501: ω/2π = 2.481e+00 GHz (total elapsed time = 8.23e+01 s)
+
+ Sol. ||E|| = 3.571103e+01
+ Field energy E (1.907e-10 J) + H (2.444e-10 J) = 4.352e-10 J
+ S[1][1] = +5.126e-01+8.379e-01i, |S[1][1]| = -1.554e-01, arg(S[1][1]) = +5.854e+01
+
+It 309/501: ω/2π = 2.482e+00 GHz (total elapsed time = 8.23e+01 s)
+
+ Sol. ||E|| = 3.571057e+01
+ Field energy E (1.910e-10 J) + H (2.447e-10 J) = 4.357e-10 J
+ S[1][1] = +5.123e-01+8.380e-01i, |S[1][1]| = -1.557e-01, arg(S[1][1]) = +5.856e+01
+
+It 310/501: ω/2π = 2.482e+00 GHz (total elapsed time = 8.24e+01 s)
+
+ Sol. ||E|| = 3.570792e+01
+ Field energy E (1.911e-10 J) + H (2.447e-10 J) = 4.358e-10 J
+ S[1][1] = +5.121e-01+8.382e-01i, |S[1][1]| = -1.557e-01, arg(S[1][1]) = +5.858e+01
+
+It 311/501: ω/2π = 2.482e+00 GHz (total elapsed time = 8.24e+01 s)
+
+ Sol. ||E|| = 3.570310e+01
+ Field energy E (1.909e-10 J) + H (2.446e-10 J) = 4.354e-10 J
+ S[1][1] = +5.118e-01+8.384e-01i, |S[1][1]| = -1.556e-01, arg(S[1][1]) = +5.860e+01
+
+It 312/501: ω/2π = 2.482e+00 GHz (total elapsed time = 8.25e+01 s)
+
+ Sol. ||E|| = 3.569612e+01
+ Field energy E (1.905e-10 J) + H (2.442e-10 J) = 4.346e-10 J
+ S[1][1] = +5.116e-01+8.386e-01i, |S[1][1]| = -1.552e-01, arg(S[1][1]) = +5.861e+01
+
+It 313/501: ω/2π = 2.482e+00 GHz (total elapsed time = 8.25e+01 s)
+
+ Sol. ||E|| = 3.568704e+01
+ Field energy E (1.898e-10 J) + H (2.435e-10 J) = 4.333e-10 J
+ S[1][1] = +5.113e-01+8.388e-01i, |S[1][1]| = -1.547e-01, arg(S[1][1]) = +5.863e+01
+
+It 314/501: ω/2π = 2.483e+00 GHz (total elapsed time = 8.25e+01 s)
+
+ Sol. ||E|| = 3.567592e+01
+ Field energy E (1.889e-10 J) + H (2.427e-10 J) = 4.316e-10 J
+ S[1][1] = +5.111e-01+8.390e-01i, |S[1][1]| = -1.540e-01, arg(S[1][1]) = +5.865e+01
+
+It 315/501: ω/2π = 2.483e+00 GHz (total elapsed time = 8.26e+01 s)
+
+ Sol. ||E|| = 3.566283e+01
+ Field energy E (1.878e-10 J) + H (2.416e-10 J) = 4.294e-10 J
+ S[1][1] = +5.109e-01+8.393e-01i, |S[1][1]| = -1.530e-01, arg(S[1][1]) = +5.867e+01
+
+It 316/501: ω/2π = 2.483e+00 GHz (total elapsed time = 8.26e+01 s)
+
+ Sol. ||E|| = 3.564788e+01
+ Field energy E (1.866e-10 J) + H (2.403e-10 J) = 4.269e-10 J
+ S[1][1] = +5.107e-01+8.395e-01i, |S[1][1]| = -1.519e-01, arg(S[1][1]) = +5.869e+01
+
+It 317/501: ω/2π = 2.483e+00 GHz (total elapsed time = 8.27e+01 s)
+
+ Sol. ||E|| = 3.563115e+01
+ Field energy E (1.851e-10 J) + H (2.388e-10 J) = 4.239e-10 J
+ S[1][1] = +5.106e-01+8.398e-01i, |S[1][1]| = -1.507e-01, arg(S[1][1]) = +5.870e+01
+
+It 318/501: ω/2π = 2.483e+00 GHz (total elapsed time = 8.27e+01 s)
+
+ Sol. ||E|| = 3.561276e+01
+ Field energy E (1.834e-10 J) + H (2.372e-10 J) = 4.205e-10 J
+ S[1][1] = +5.104e-01+8.401e-01i, |S[1][1]| = -1.492e-01, arg(S[1][1]) = +5.872e+01
+
+It 319/501: ω/2π = 2.484e+00 GHz (total elapsed time = 8.28e+01 s)
+
+ Sol. ||E|| = 3.559284e+01
+ Field energy E (1.815e-10 J) + H (2.353e-10 J) = 4.168e-10 J
+ S[1][1] = +5.103e-01+8.403e-01i, |S[1][1]| = -1.476e-01, arg(S[1][1]) = +5.873e+01
+
+It 320/501: ω/2π = 2.484e+00 GHz (total elapsed time = 8.28e+01 s)
+
+ Sol. ||E|| = 3.557151e+01
+ Field energy E (1.795e-10 J) + H (2.333e-10 J) = 4.128e-10 J
+ S[1][1] = +5.102e-01+8.406e-01i, |S[1][1]| = -1.459e-01, arg(S[1][1]) = +5.875e+01
+
+It 321/501: ω/2π = 2.484e+00 GHz (total elapsed time = 8.29e+01 s)
+
+ Sol. ||E|| = 3.554890e+01
+ Field energy E (1.773e-10 J) + H (2.312e-10 J) = 4.085e-10 J
+ S[1][1] = +5.101e-01+8.409e-01i, |S[1][1]| = -1.441e-01, arg(S[1][1]) = +5.876e+01
+
+It 322/501: ω/2π = 2.484e+00 GHz (total elapsed time = 8.29e+01 s)
+
+ Sol. ||E|| = 3.552515e+01
+ Field energy E (1.750e-10 J) + H (2.289e-10 J) = 4.039e-10 J
+ S[1][1] = +5.100e-01+8.412e-01i, |S[1][1]| = -1.421e-01, arg(S[1][1]) = +5.877e+01
+
+It 323/501: ω/2π = 2.484e+00 GHz (total elapsed time = 8.29e+01 s)
+
+ Sol. ||E|| = 3.550040e+01
+ Field energy E (1.726e-10 J) + H (2.265e-10 J) = 3.991e-10 J
+ S[1][1] = +5.100e-01+8.415e-01i, |S[1][1]| = -1.400e-01, arg(S[1][1]) = +5.878e+01
+
+It 324/501: ω/2π = 2.485e+00 GHz (total elapsed time = 8.30e+01 s)
+
+ Sol. ||E|| = 3.547477e+01
+ Field energy E (1.701e-10 J) + H (2.239e-10 J) = 3.940e-10 J
+ S[1][1] = +5.100e-01+8.418e-01i, |S[1][1]| = -1.379e-01, arg(S[1][1]) = +5.879e+01
+
+It 325/501: ω/2π = 2.485e+00 GHz (total elapsed time = 8.30e+01 s)
+
+ Sol. ||E|| = 3.544842e+01
+ Field energy E (1.675e-10 J) + H (2.213e-10 J) = 3.888e-10 J
+ S[1][1] = +5.100e-01+8.421e-01i, |S[1][1]| = -1.356e-01, arg(S[1][1]) = +5.880e+01
+
+It 326/501: ω/2π = 2.485e+00 GHz (total elapsed time = 8.31e+01 s)
+
+ Sol. ||E|| = 3.542145e+01
+ Field energy E (1.648e-10 J) + H (2.187e-10 J) = 3.834e-10 J
+ S[1][1] = +5.100e-01+8.424e-01i, |S[1][1]| = -1.333e-01, arg(S[1][1]) = +5.881e+01
+
+It 327/501: ω/2π = 2.485e+00 GHz (total elapsed time = 8.31e+01 s)
+
+ Sol. ||E|| = 3.539400e+01
+ Field energy E (1.620e-10 J) + H (2.159e-10 J) = 3.779e-10 J
+ S[1][1] = +5.100e-01+8.427e-01i, |S[1][1]| = -1.310e-01, arg(S[1][1]) = +5.882e+01
+
+It 328/501: ω/2π = 2.485e+00 GHz (total elapsed time = 8.32e+01 s)
+
+ Sol. ||E|| = 3.536619e+01
+ Field energy E (1.592e-10 J) + H (2.131e-10 J) = 3.723e-10 J
+ S[1][1] = +5.100e-01+8.430e-01i, |S[1][1]| = -1.286e-01, arg(S[1][1]) = +5.883e+01
+
+It 329/501: ω/2π = 2.486e+00 GHz (total elapsed time = 8.32e+01 s)
+
+ Sol. ||E|| = 3.533813e+01
+ Field energy E (1.563e-10 J) + H (2.103e-10 J) = 3.666e-10 J
+ S[1][1] = +5.101e-01+8.433e-01i, |S[1][1]| = -1.261e-01, arg(S[1][1]) = +5.883e+01
+
+It 330/501: ω/2π = 2.486e+00 GHz (total elapsed time = 8.33e+01 s)
+
+ Sol. ||E|| = 3.530992e+01
+ Field energy E (1.534e-10 J) + H (2.074e-10 J) = 3.608e-10 J
+ S[1][1] = +5.102e-01+8.436e-01i, |S[1][1]| = -1.237e-01, arg(S[1][1]) = +5.884e+01
+
+It 331/501: ω/2π = 2.486e+00 GHz (total elapsed time = 8.33e+01 s)
+
+ Sol. ||E|| = 3.528167e+01
+ Field energy E (1.505e-10 J) + H (2.045e-10 J) = 3.550e-10 J
+ S[1][1] = +5.103e-01+8.439e-01i, |S[1][1]| = -1.212e-01, arg(S[1][1]) = +5.884e+01
+
+It 332/501: ω/2π = 2.486e+00 GHz (total elapsed time = 8.33e+01 s)
+
+ Sol. ||E|| = 3.525346e+01
+ Field energy E (1.476e-10 J) + H (2.016e-10 J) = 3.492e-10 J
+ S[1][1] = +5.104e-01+8.441e-01i, |S[1][1]| = -1.187e-01, arg(S[1][1]) = +5.884e+01
+
+It 333/501: ω/2π = 2.486e+00 GHz (total elapsed time = 8.34e+01 s)
+
+ Sol. ||E|| = 3.522538e+01
+ Field energy E (1.447e-10 J) + H (1.987e-10 J) = 3.434e-10 J
+ S[1][1] = +5.105e-01+8.444e-01i, |S[1][1]| = -1.162e-01, arg(S[1][1]) = +5.885e+01
+
+It 334/501: ω/2π = 2.487e+00 GHz (total elapsed time = 8.34e+01 s)
+
+ Sol. ||E|| = 3.519751e+01
+ Field energy E (1.418e-10 J) + H (1.958e-10 J) = 3.376e-10 J
+ S[1][1] = +5.106e-01+8.447e-01i, |S[1][1]| = -1.137e-01, arg(S[1][1]) = +5.885e+01
+
+It 335/501: ω/2π = 2.487e+00 GHz (total elapsed time = 8.35e+01 s)
+
+ Sol. ||E|| = 3.516990e+01
+ Field energy E (1.389e-10 J) + H (1.929e-10 J) = 3.318e-10 J
+ S[1][1] = +5.107e-01+8.449e-01i, |S[1][1]| = -1.113e-01, arg(S[1][1]) = +5.885e+01
+
+It 336/501: ω/2π = 2.487e+00 GHz (total elapsed time = 8.35e+01 s)
+
+ Sol. ||E|| = 3.514262e+01
+ Field energy E (1.360e-10 J) + H (1.901e-10 J) = 3.261e-10 J
+ S[1][1] = +5.109e-01+8.451e-01i, |S[1][1]| = -1.088e-01, arg(S[1][1]) = +5.885e+01
+
+It 337/501: ω/2π = 2.487e+00 GHz (total elapsed time = 8.36e+01 s)
+
+ Sol. ||E|| = 3.511573e+01
+ Field energy E (1.332e-10 J) + H (1.872e-10 J) = 3.204e-10 J
+ S[1][1] = +5.110e-01+8.454e-01i, |S[1][1]| = -1.064e-01, arg(S[1][1]) = +5.885e+01
+
+It 338/501: ω/2π = 2.487e+00 GHz (total elapsed time = 8.36e+01 s)
+
+ Sol. ||E|| = 3.508926e+01
+ Field energy E (1.304e-10 J) + H (1.845e-10 J) = 3.149e-10 J
+ S[1][1] = +5.112e-01+8.456e-01i, |S[1][1]| = -1.041e-01, arg(S[1][1]) = +5.885e+01
+
+It 339/501: ω/2π = 2.488e+00 GHz (total elapsed time = 8.37e+01 s)
+
+ Sol. ||E|| = 3.506327e+01
+ Field energy E (1.277e-10 J) + H (1.817e-10 J) = 3.094e-10 J
+ S[1][1] = +5.114e-01+8.458e-01i, |S[1][1]| = -1.017e-01, arg(S[1][1]) = +5.884e+01
+
+It 340/501: ω/2π = 2.488e+00 GHz (total elapsed time = 8.37e+01 s)
+
+ Sol. ||E|| = 3.503778e+01
+ Field energy E (1.249e-10 J) + H (1.790e-10 J) = 3.039e-10 J
+ S[1][1] = +5.115e-01+8.460e-01i, |S[1][1]| = -9.940e-02, arg(S[1][1]) = +5.884e+01
+
+It 341/501: ω/2π = 2.488e+00 GHz (total elapsed time = 8.37e+01 s)
+
+ Sol. ||E|| = 3.501281e+01
+ Field energy E (1.223e-10 J) + H (1.763e-10 J) = 2.986e-10 J
+ S[1][1] = +5.117e-01+8.462e-01i, |S[1][1]| = -9.714e-02, arg(S[1][1]) = +5.884e+01
+
+It 342/501: ω/2π = 2.488e+00 GHz (total elapsed time = 8.38e+01 s)
+
+ Sol. ||E|| = 3.498841e+01
+ Field energy E (1.197e-10 J) + H (1.737e-10 J) = 2.934e-10 J
+ S[1][1] = +5.119e-01+8.464e-01i, |S[1][1]| = -9.492e-02, arg(S[1][1]) = +5.883e+01
+
+It 343/501: ω/2π = 2.488e+00 GHz (total elapsed time = 8.38e+01 s)
+
+ Sol. ||E|| = 3.496457e+01
+ Field energy E (1.171e-10 J) + H (1.712e-10 J) = 2.883e-10 J
+ S[1][1] = +5.121e-01+8.465e-01i, |S[1][1]| = -9.274e-02, arg(S[1][1]) = +5.883e+01
+
+It 344/501: ω/2π = 2.489e+00 GHz (total elapsed time = 8.39e+01 s)
+
+ Sol. ||E|| = 3.494132e+01
+ Field energy E (1.146e-10 J) + H (1.687e-10 J) = 2.832e-10 J
+ S[1][1] = +5.123e-01+8.467e-01i, |S[1][1]| = -9.061e-02, arg(S[1][1]) = +5.882e+01
+
+It 345/501: ω/2π = 2.489e+00 GHz (total elapsed time = 8.39e+01 s)
+
+ Sol. ||E|| = 3.491866e+01
+ Field energy E (1.121e-10 J) + H (1.662e-10 J) = 2.783e-10 J
+ S[1][1] = +5.125e-01+8.468e-01i, |S[1][1]| = -8.853e-02, arg(S[1][1]) = +5.882e+01
+
+It 346/501: ω/2π = 2.489e+00 GHz (total elapsed time = 8.40e+01 s)
+
+ Sol. ||E|| = 3.489661e+01
+ Field energy E (1.097e-10 J) + H (1.638e-10 J) = 2.736e-10 J
+ S[1][1] = +5.127e-01+8.470e-01i, |S[1][1]| = -8.650e-02, arg(S[1][1]) = +5.881e+01
+
+It 347/501: ω/2π = 2.489e+00 GHz (total elapsed time = 8.40e+01 s)
+
+ Sol. ||E|| = 3.487516e+01
+ Field energy E (1.074e-10 J) + H (1.615e-10 J) = 2.689e-10 J
+ S[1][1] = +5.129e-01+8.471e-01i, |S[1][1]| = -8.452e-02, arg(S[1][1]) = +5.881e+01
+
+It 348/501: ω/2π = 2.489e+00 GHz (total elapsed time = 8.41e+01 s)
+
+ Sol. ||E|| = 3.485432e+01
+ Field energy E (1.051e-10 J) + H (1.592e-10 J) = 2.643e-10 J
+ S[1][1] = +5.131e-01+8.473e-01i, |S[1][1]| = -8.258e-02, arg(S[1][1]) = +5.880e+01
+
+It 349/501: ω/2π = 2.490e+00 GHz (total elapsed time = 8.41e+01 s)
+
+ Sol. ||E|| = 3.483408e+01
+ Field energy E (1.029e-10 J) + H (1.570e-10 J) = 2.599e-10 J
+ S[1][1] = +5.133e-01+8.474e-01i, |S[1][1]| = -8.070e-02, arg(S[1][1]) = +5.879e+01
+
+It 350/501: ω/2π = 2.490e+00 GHz (total elapsed time = 8.42e+01 s)
+
+ Sol. ||E|| = 3.481445e+01
+ Field energy E (1.007e-10 J) + H (1.548e-10 J) = 2.556e-10 J
+ S[1][1] = +5.136e-01+8.475e-01i, |S[1][1]| = -7.887e-02, arg(S[1][1]) = +5.879e+01
+
+It 351/501: ω/2π = 2.490e+00 GHz (total elapsed time = 8.42e+01 s)
+
+ Sol. ||E|| = 3.479540e+01
+ Field energy E (9.862e-11 J) + H (1.527e-10 J) = 2.513e-10 J
+ S[1][1] = +5.138e-01+8.476e-01i, |S[1][1]| = -7.709e-02, arg(S[1][1]) = +5.878e+01
+
+It 352/501: ω/2π = 2.490e+00 GHz (total elapsed time = 8.42e+01 s)
+
+ Sol. ||E|| = 3.477695e+01
+ Field energy E (9.657e-11 J) + H (1.507e-10 J) = 2.473e-10 J
+ S[1][1] = +5.140e-01+8.477e-01i, |S[1][1]| = -7.536e-02, arg(S[1][1]) = +5.877e+01
+
+It 353/501: ω/2π = 2.490e+00 GHz (total elapsed time = 8.43e+01 s)
+
+ Sol. ||E|| = 3.475907e+01
+ Field energy E (9.458e-11 J) + H (1.487e-10 J) = 2.433e-10 J
+ S[1][1] = +5.142e-01+8.478e-01i, |S[1][1]| = -7.367e-02, arg(S[1][1]) = +5.876e+01
+
+It 354/501: ω/2π = 2.491e+00 GHz (total elapsed time = 8.43e+01 s)
+
+ Sol. ||E|| = 3.474176e+01
+ Field energy E (9.264e-11 J) + H (1.468e-10 J) = 2.394e-10 J
+ S[1][1] = +5.144e-01+8.479e-01i, |S[1][1]| = -7.204e-02, arg(S[1][1]) = +5.875e+01
+
+It 355/501: ω/2π = 2.491e+00 GHz (total elapsed time = 8.44e+01 s)
+
+ Sol. ||E|| = 3.472501e+01
+ Field energy E (9.076e-11 J) + H (1.449e-10 J) = 2.356e-10 J
+ S[1][1] = +5.146e-01+8.480e-01i, |S[1][1]| = -7.045e-02, arg(S[1][1]) = +5.875e+01
+
+It 356/501: ω/2π = 2.491e+00 GHz (total elapsed time = 8.44e+01 s)
+
+ Sol. ||E|| = 3.470880e+01
+ Field energy E (8.894e-11 J) + H (1.431e-10 J) = 2.320e-10 J
+ S[1][1] = +5.149e-01+8.480e-01i, |S[1][1]| = -6.890e-02, arg(S[1][1]) = +5.874e+01
+
+It 357/501: ω/2π = 2.491e+00 GHz (total elapsed time = 8.45e+01 s)
+
+ Sol. ||E|| = 3.469313e+01
+ Field energy E (8.717e-11 J) + H (1.413e-10 J) = 2.285e-10 J
+ S[1][1] = +5.151e-01+8.481e-01i, |S[1][1]| = -6.741e-02, arg(S[1][1]) = +5.873e+01
+
+It 358/501: ω/2π = 2.491e+00 GHz (total elapsed time = 8.45e+01 s)
+
+ Sol. ||E|| = 3.467797e+01
+ Field energy E (8.545e-11 J) + H (1.396e-10 J) = 2.250e-10 J
+ S[1][1] = +5.153e-01+8.482e-01i, |S[1][1]| = -6.595e-02, arg(S[1][1]) = +5.872e+01
+
+It 359/501: ω/2π = 2.492e+00 GHz (total elapsed time = 8.46e+01 s)
+
+ Sol. ||E|| = 3.466333e+01
+ Field energy E (8.378e-11 J) + H (1.379e-10 J) = 2.217e-10 J
+ S[1][1] = +5.155e-01+8.482e-01i, |S[1][1]| = -6.454e-02, arg(S[1][1]) = +5.871e+01
+
+It 360/501: ω/2π = 2.492e+00 GHz (total elapsed time = 8.46e+01 s)
+
+ Sol. ||E|| = 3.464918e+01
+ Field energy E (8.216e-11 J) + H (1.363e-10 J) = 2.184e-10 J
+ S[1][1] = +5.157e-01+8.483e-01i, |S[1][1]| = -6.318e-02, arg(S[1][1]) = +5.870e+01
+
+It 361/501: ω/2π = 2.492e+00 GHz (total elapsed time = 8.46e+01 s)
+
+ Sol. ||E|| = 3.463551e+01
+ Field energy E (8.058e-11 J) + H (1.347e-10 J) = 2.153e-10 J
+ S[1][1] = +5.159e-01+8.483e-01i, |S[1][1]| = -6.185e-02, arg(S[1][1]) = +5.869e+01
+
+It 362/501: ω/2π = 2.492e+00 GHz (total elapsed time = 8.47e+01 s)
+
+ Sol. ||E|| = 3.462230e+01
+ Field energy E (7.906e-11 J) + H (1.332e-10 J) = 2.122e-10 J
+ S[1][1] = +5.162e-01+8.484e-01i, |S[1][1]| = -6.056e-02, arg(S[1][1]) = +5.868e+01
+
+It 363/501: ω/2π = 2.492e+00 GHz (total elapsed time = 8.47e+01 s)
+
+ Sol. ||E|| = 3.460955e+01
+ Field energy E (7.758e-11 J) + H (1.317e-10 J) = 2.093e-10 J
+ S[1][1] = +5.164e-01+8.484e-01i, |S[1][1]| = -5.932e-02, arg(S[1][1]) = +5.867e+01
+
+It 364/501: ω/2π = 2.493e+00 GHz (total elapsed time = 8.48e+01 s)
+
+ Sol. ||E|| = 3.459724e+01
+ Field energy E (7.615e-11 J) + H (1.303e-10 J) = 2.064e-10 J
+ S[1][1] = +5.166e-01+8.484e-01i, |S[1][1]| = -5.811e-02, arg(S[1][1]) = +5.866e+01
+
+It 365/501: ω/2π = 2.493e+00 GHz (total elapsed time = 8.48e+01 s)
+
+ Sol. ||E|| = 3.458535e+01
+ Field energy E (7.476e-11 J) + H (1.289e-10 J) = 2.036e-10 J
+ S[1][1] = +5.168e-01+8.485e-01i, |S[1][1]| = -5.693e-02, arg(S[1][1]) = +5.866e+01
+
+It 366/501: ω/2π = 2.493e+00 GHz (total elapsed time = 8.49e+01 s)
+
+ Sol. ||E|| = 3.457388e+01
+ Field energy E (7.341e-11 J) + H (1.275e-10 J) = 2.009e-10 J
+ S[1][1] = +5.170e-01+8.485e-01i, |S[1][1]| = -5.580e-02, arg(S[1][1]) = +5.865e+01
+
+It 367/501: ω/2π = 2.493e+00 GHz (total elapsed time = 8.49e+01 s)
+
+ Sol. ||E|| = 3.456280e+01
+ Field energy E (7.210e-11 J) + H (1.262e-10 J) = 1.983e-10 J
+ S[1][1] = +5.172e-01+8.485e-01i, |S[1][1]| = -5.470e-02, arg(S[1][1]) = +5.864e+01
+
+It 368/501: ω/2π = 2.493e+00 GHz (total elapsed time = 8.50e+01 s)
+
+ Sol. ||E|| = 3.455212e+01
+ Field energy E (7.084e-11 J) + H (1.249e-10 J) = 1.958e-10 J
+ S[1][1] = +5.174e-01+8.485e-01i, |S[1][1]| = -5.363e-02, arg(S[1][1]) = +5.863e+01
+
+It 369/501: ω/2π = 2.494e+00 GHz (total elapsed time = 8.50e+01 s)
+
+ Sol. ||E|| = 3.454180e+01
+ Field energy E (6.961e-11 J) + H (1.237e-10 J) = 1.933e-10 J
+ S[1][1] = +5.176e-01+8.486e-01i, |S[1][1]| = -5.259e-02, arg(S[1][1]) = +5.862e+01
+
+It 370/501: ω/2π = 2.494e+00 GHz (total elapsed time = 8.51e+01 s)
+
+ Sol. ||E|| = 3.453185e+01
+ Field energy E (6.841e-11 J) + H (1.225e-10 J) = 1.909e-10 J
+ S[1][1] = +5.178e-01+8.486e-01i, |S[1][1]| = -5.158e-02, arg(S[1][1]) = +5.861e+01
+
+It 371/501: ω/2π = 2.494e+00 GHz (total elapsed time = 8.51e+01 s)
+
+ Sol. ||E|| = 3.452225e+01
+ Field energy E (6.726e-11 J) + H (1.213e-10 J) = 1.886e-10 J
+ S[1][1] = +5.180e-01+8.486e-01i, |S[1][1]| = -5.061e-02, arg(S[1][1]) = +5.860e+01
+
+It 372/501: ω/2π = 2.494e+00 GHz (total elapsed time = 8.51e+01 s)
+
+ Sol. ||E|| = 3.451299e+01
+ Field energy E (6.614e-11 J) + H (1.202e-10 J) = 1.864e-10 J
+ S[1][1] = +5.182e-01+8.486e-01i, |S[1][1]| = -4.966e-02, arg(S[1][1]) = +5.859e+01
+
+It 373/501: ω/2π = 2.494e+00 GHz (total elapsed time = 8.52e+01 s)
+
+ Sol. ||E|| = 3.450405e+01
+ Field energy E (6.505e-11 J) + H (1.191e-10 J) = 1.842e-10 J
+ S[1][1] = +5.184e-01+8.486e-01i, |S[1][1]| = -4.875e-02, arg(S[1][1]) = +5.858e+01
+
+It 374/501: ω/2π = 2.495e+00 GHz (total elapsed time = 8.52e+01 s)
+
+ Sol. ||E|| = 3.449543e+01
+ Field energy E (6.399e-11 J) + H (1.181e-10 J) = 1.821e-10 J
+ S[1][1] = +5.186e-01+8.486e-01i, |S[1][1]| = -4.786e-02, arg(S[1][1]) = +5.857e+01
+
+It 375/501: ω/2π = 2.495e+00 GHz (total elapsed time = 8.53e+01 s)
+
+ Sol. ||E|| = 3.448712e+01
+ Field energy E (6.297e-11 J) + H (1.170e-10 J) = 1.800e-10 J
+ S[1][1] = +5.188e-01+8.486e-01i, |S[1][1]| = -4.700e-02, arg(S[1][1]) = +5.856e+01
+
+It 376/501: ω/2π = 2.495e+00 GHz (total elapsed time = 8.53e+01 s)
+
+ Sol. ||E|| = 3.447909e+01
+ Field energy E (6.197e-11 J) + H (1.160e-10 J) = 1.780e-10 J
+ S[1][1] = +5.190e-01+8.486e-01i, |S[1][1]| = -4.616e-02, arg(S[1][1]) = +5.855e+01
+
+It 377/501: ω/2π = 2.495e+00 GHz (total elapsed time = 8.54e+01 s)
+
+ Sol. ||E|| = 3.447135e+01
+ Field energy E (6.101e-11 J) + H (1.151e-10 J) = 1.761e-10 J
+ S[1][1] = +5.192e-01+8.486e-01i, |S[1][1]| = -4.535e-02, arg(S[1][1]) = +5.854e+01
+
+It 378/501: ω/2π = 2.495e+00 GHz (total elapsed time = 8.54e+01 s)
+
+ Sol. ||E|| = 3.446389e+01
+ Field energy E (6.008e-11 J) + H (1.141e-10 J) = 1.742e-10 J
+ S[1][1] = +5.194e-01+8.485e-01i, |S[1][1]| = -4.456e-02, arg(S[1][1]) = +5.853e+01
+
+It 379/501: ω/2π = 2.496e+00 GHz (total elapsed time = 8.55e+01 s)
+
+ Sol. ||E|| = 3.445669e+01
+ Field energy E (5.917e-11 J) + H (1.132e-10 J) = 1.724e-10 J
+ S[1][1] = +5.196e-01+8.485e-01i, |S[1][1]| = -4.379e-02, arg(S[1][1]) = +5.852e+01
+
+It 380/501: ω/2π = 2.496e+00 GHz (total elapsed time = 8.55e+01 s)
+
+ Sol. ||E|| = 3.444974e+01
+ Field energy E (5.829e-11 J) + H (1.123e-10 J) = 1.706e-10 J
+ S[1][1] = +5.198e-01+8.485e-01i, |S[1][1]| = -4.305e-02, arg(S[1][1]) = +5.851e+01
+
+It 381/501: ω/2π = 2.496e+00 GHz (total elapsed time = 8.55e+01 s)
+
+ Sol. ||E|| = 3.444305e+01
+ Field energy E (5.743e-11 J) + H (1.115e-10 J) = 1.689e-10 J
+ S[1][1] = +5.200e-01+8.485e-01i, |S[1][1]| = -4.233e-02, arg(S[1][1]) = +5.850e+01
+
+It 382/501: ω/2π = 2.496e+00 GHz (total elapsed time = 8.56e+01 s)
+
+ Sol. ||E|| = 3.443658e+01
+ Field energy E (5.660e-11 J) + H (1.106e-10 J) = 1.672e-10 J
+ S[1][1] = +5.201e-01+8.485e-01i, |S[1][1]| = -4.163e-02, arg(S[1][1]) = +5.849e+01
+
+It 383/501: ω/2π = 2.496e+00 GHz (total elapsed time = 8.56e+01 s)
+
+ Sol. ||E|| = 3.443035e+01
+ Field energy E (5.579e-11 J) + H (1.098e-10 J) = 1.656e-10 J
+ S[1][1] = +5.203e-01+8.485e-01i, |S[1][1]| = -4.095e-02, arg(S[1][1]) = +5.848e+01
+
+It 384/501: ω/2π = 2.497e+00 GHz (total elapsed time = 8.57e+01 s)
+
+ Sol. ||E|| = 3.442434e+01
+ Field energy E (5.501e-11 J) + H (1.090e-10 J) = 1.640e-10 J
+ S[1][1] = +5.205e-01+8.484e-01i, |S[1][1]| = -4.029e-02, arg(S[1][1]) = +5.847e+01
+
+It 385/501: ω/2π = 2.497e+00 GHz (total elapsed time = 8.57e+01 s)
+
+ Sol. ||E|| = 3.441855e+01
+ Field energy E (5.425e-11 J) + H (1.083e-10 J) = 1.625e-10 J
+ S[1][1] = +5.207e-01+8.484e-01i, |S[1][1]| = -3.965e-02, arg(S[1][1]) = +5.846e+01
+
+It 386/501: ω/2π = 2.497e+00 GHz (total elapsed time = 8.58e+01 s)
+
+ Sol. ||E|| = 3.441296e+01
+ Field energy E (5.351e-11 J) + H (1.075e-10 J) = 1.610e-10 J
+ S[1][1] = +5.209e-01+8.484e-01i, |S[1][1]| = -3.903e-02, arg(S[1][1]) = +5.845e+01
+
+It 387/501: ω/2π = 2.497e+00 GHz (total elapsed time = 8.58e+01 s)
+
+ Sol. ||E|| = 3.440757e+01
+ Field energy E (5.279e-11 J) + H (1.068e-10 J) = 1.596e-10 J
+ S[1][1] = +5.210e-01+8.484e-01i, |S[1][1]| = -3.842e-02, arg(S[1][1]) = +5.844e+01
+
+It 388/501: ω/2π = 2.497e+00 GHz (total elapsed time = 8.59e+01 s)
+
+ Sol. ||E|| = 3.440237e+01
+ Field energy E (5.209e-11 J) + H (1.061e-10 J) = 1.582e-10 J
+ S[1][1] = +5.212e-01+8.483e-01i, |S[1][1]| = -3.783e-02, arg(S[1][1]) = +5.843e+01
+
+It 389/501: ω/2π = 2.498e+00 GHz (total elapsed time = 8.59e+01 s)
+
+ Sol. ||E|| = 3.439735e+01
+ Field energy E (5.141e-11 J) + H (1.054e-10 J) = 1.568e-10 J
+ S[1][1] = +5.214e-01+8.483e-01i, |S[1][1]| = -3.726e-02, arg(S[1][1]) = +5.842e+01
+
+It 390/501: ω/2π = 2.498e+00 GHz (total elapsed time = 8.60e+01 s)
+
+ Sol. ||E|| = 3.439252e+01
+ Field energy E (5.075e-11 J) + H (1.047e-10 J) = 1.555e-10 J
+ S[1][1] = +5.216e-01+8.483e-01i, |S[1][1]| = -3.671e-02, arg(S[1][1]) = +5.841e+01
+
+It 391/501: ω/2π = 2.498e+00 GHz (total elapsed time = 8.60e+01 s)
+
+ Sol. ||E|| = 3.438786e+01
+ Field energy E (5.011e-11 J) + H (1.041e-10 J) = 1.542e-10 J
+ S[1][1] = +5.217e-01+8.482e-01i, |S[1][1]| = -3.617e-02, arg(S[1][1]) = +5.840e+01
+
+It 392/501: ω/2π = 2.498e+00 GHz (total elapsed time = 8.61e+01 s)
+
+ Sol. ||E|| = 3.438336e+01
+ Field energy E (4.949e-11 J) + H (1.035e-10 J) = 1.529e-10 J
+ S[1][1] = +5.219e-01+8.482e-01i, |S[1][1]| = -3.564e-02, arg(S[1][1]) = +5.839e+01
+
+It 393/501: ω/2π = 2.498e+00 GHz (total elapsed time = 8.61e+01 s)
+
+ Sol. ||E|| = 3.437903e+01
+ Field energy E (4.888e-11 J) + H (1.028e-10 J) = 1.517e-10 J
+ S[1][1] = +5.221e-01+8.482e-01i, |S[1][1]| = -3.513e-02, arg(S[1][1]) = +5.839e+01
+
+It 394/501: ω/2π = 2.499e+00 GHz (total elapsed time = 8.61e+01 s)
+
+ Sol. ||E|| = 3.437485e+01
+ Field energy E (4.829e-11 J) + H (1.023e-10 J) = 1.505e-10 J
+ S[1][1] = +5.223e-01+8.481e-01i, |S[1][1]| = -3.463e-02, arg(S[1][1]) = +5.838e+01
+
+It 395/501: ω/2π = 2.499e+00 GHz (total elapsed time = 8.62e+01 s)
+
+ Sol. ||E|| = 3.437082e+01
+ Field energy E (4.771e-11 J) + H (1.017e-10 J) = 1.494e-10 J
+ S[1][1] = +5.224e-01+8.481e-01i, |S[1][1]| = -3.415e-02, arg(S[1][1]) = +5.837e+01
+
+It 396/501: ω/2π = 2.499e+00 GHz (total elapsed time = 8.62e+01 s)
+
+ Sol. ||E|| = 3.436694e+01
+ Field energy E (4.716e-11 J) + H (1.011e-10 J) = 1.483e-10 J
+ S[1][1] = +5.226e-01+8.480e-01i, |S[1][1]| = -3.368e-02, arg(S[1][1]) = +5.836e+01
+
+It 397/501: ω/2π = 2.499e+00 GHz (total elapsed time = 8.63e+01 s)
+
+ Sol. ||E|| = 3.436320e+01
+ Field energy E (4.661e-11 J) + H (1.006e-10 J) = 1.472e-10 J
+ S[1][1] = +5.228e-01+8.480e-01i, |S[1][1]| = -3.322e-02, arg(S[1][1]) = +5.835e+01
+
+It 398/501: ω/2π = 2.499e+00 GHz (total elapsed time = 8.63e+01 s)
+
+ Sol. ||E|| = 3.435959e+01
+ Field energy E (4.608e-11 J) + H (1.000e-10 J) = 1.461e-10 J
+ S[1][1] = +5.229e-01+8.480e-01i, |S[1][1]| = -3.277e-02, arg(S[1][1]) = +5.834e+01
+
+It 399/501: ω/2π = 2.500e+00 GHz (total elapsed time = 8.64e+01 s)
+
+ Sol. ||E|| = 3.435612e+01
+ Field energy E (4.557e-11 J) + H (9.949e-11 J) = 1.451e-10 J
+ S[1][1] = +5.231e-01+8.479e-01i, |S[1][1]| = -3.234e-02, arg(S[1][1]) = +5.833e+01
+
+It 400/501: ω/2π = 2.500e+00 GHz (total elapsed time = 8.64e+01 s)
+
+ Sol. ||E|| = 3.435277e+01
+ Field energy E (4.506e-11 J) + H (9.898e-11 J) = 1.440e-10 J
+ S[1][1] = +5.233e-01+8.479e-01i, |S[1][1]| = -3.192e-02, arg(S[1][1]) = +5.832e+01
+
+It 401/501: ω/2π = 2.500e+00 GHz (total elapsed time = 8.65e+01 s)
+
+ Sol. ||E|| = 3.434954e+01
+ Field energy E (4.458e-11 J) + H (9.849e-11 J) = 1.431e-10 J
+ S[1][1] = +5.234e-01+8.478e-01i, |S[1][1]| = -3.150e-02, arg(S[1][1]) = +5.831e+01
+
+It 402/501: ω/2π = 2.500e+00 GHz (total elapsed time = 8.65e+01 s)
+
+ Sol. ||E|| = 3.434643e+01
+ Field energy E (4.410e-11 J) + H (9.800e-11 J) = 1.421e-10 J
+ S[1][1] = +5.236e-01+8.478e-01i, |S[1][1]| = -3.110e-02, arg(S[1][1]) = +5.830e+01
+
+It 403/501: ω/2π = 2.500e+00 GHz (total elapsed time = 8.65e+01 s)
+
+ Sol. ||E|| = 3.434344e+01
+ Field energy E (4.364e-11 J) + H (9.753e-11 J) = 1.412e-10 J
+ S[1][1] = +5.237e-01+8.477e-01i, |S[1][1]| = -3.071e-02, arg(S[1][1]) = +5.829e+01
+
+It 404/501: ω/2π = 2.501e+00 GHz (total elapsed time = 8.66e+01 s)
+
+ Sol. ||E|| = 3.434055e+01
+ Field energy E (4.318e-11 J) + H (9.707e-11 J) = 1.403e-10 J
+ S[1][1] = +5.239e-01+8.477e-01i, |S[1][1]| = -3.033e-02, arg(S[1][1]) = +5.828e+01
+
+It 405/501: ω/2π = 2.501e+00 GHz (total elapsed time = 8.66e+01 s)
+
+ Sol. ||E|| = 3.433778e+01
+ Field energy E (4.274e-11 J) + H (9.663e-11 J) = 1.394e-10 J
+ S[1][1] = +5.241e-01+8.476e-01i, |S[1][1]| = -2.996e-02, arg(S[1][1]) = +5.827e+01
+
+It 406/501: ω/2π = 2.501e+00 GHz (total elapsed time = 8.67e+01 s)
+
+ Sol. ||E|| = 3.433510e+01
+ Field energy E (4.231e-11 J) + H (9.619e-11 J) = 1.385e-10 J
+ S[1][1] = +5.242e-01+8.476e-01i, |S[1][1]| = -2.960e-02, arg(S[1][1]) = +5.826e+01
+
+It 407/501: ω/2π = 2.501e+00 GHz (total elapsed time = 8.67e+01 s)
+
+ Sol. ||E|| = 3.433253e+01
+ Field energy E (4.189e-11 J) + H (9.576e-11 J) = 1.377e-10 J
+ S[1][1] = +5.244e-01+8.475e-01i, |S[1][1]| = -2.924e-02, arg(S[1][1]) = +5.826e+01
+
+It 408/501: ω/2π = 2.501e+00 GHz (total elapsed time = 8.68e+01 s)
+
+ Sol. ||E|| = 3.433006e+01
+ Field energy E (4.149e-11 J) + H (9.535e-11 J) = 1.368e-10 J
+ S[1][1] = +5.245e-01+8.475e-01i, |S[1][1]| = -2.890e-02, arg(S[1][1]) = +5.825e+01
+
+It 409/501: ω/2π = 2.502e+00 GHz (total elapsed time = 8.68e+01 s)
+
+ Sol. ||E|| = 3.432767e+01
+ Field energy E (4.109e-11 J) + H (9.494e-11 J) = 1.360e-10 J
+ S[1][1] = +5.247e-01+8.474e-01i, |S[1][1]| = -2.856e-02, arg(S[1][1]) = +5.824e+01
+
+It 410/501: ω/2π = 2.502e+00 GHz (total elapsed time = 8.69e+01 s)
+
+ Sol. ||E|| = 3.432538e+01
+ Field energy E (4.070e-11 J) + H (9.455e-11 J) = 1.352e-10 J
+ S[1][1] = +5.248e-01+8.474e-01i, |S[1][1]| = -2.824e-02, arg(S[1][1]) = +5.823e+01
+
+It 411/501: ω/2π = 2.502e+00 GHz (total elapsed time = 8.69e+01 s)
+
+ Sol. ||E|| = 3.432318e+01
+ Field energy E (4.032e-11 J) + H (9.416e-11 J) = 1.345e-10 J
+ S[1][1] = +5.250e-01+8.473e-01i, |S[1][1]| = -2.792e-02, arg(S[1][1]) = +5.822e+01
+
+It 412/501: ω/2π = 2.502e+00 GHz (total elapsed time = 8.70e+01 s)
+
+ Sol. ||E|| = 3.432106e+01
+ Field energy E (3.995e-11 J) + H (9.378e-11 J) = 1.337e-10 J
+ S[1][1] = +5.251e-01+8.473e-01i, |S[1][1]| = -2.761e-02, arg(S[1][1]) = +5.821e+01
+
+It 413/501: ω/2π = 2.502e+00 GHz (total elapsed time = 8.70e+01 s)
+
+ Sol. ||E|| = 3.431902e+01
+ Field energy E (3.959e-11 J) + H (9.342e-11 J) = 1.330e-10 J
+ S[1][1] = +5.253e-01+8.472e-01i, |S[1][1]| = -2.730e-02, arg(S[1][1]) = +5.820e+01
+
+It 414/501: ω/2π = 2.503e+00 GHz (total elapsed time = 8.71e+01 s)
+
+ Sol. ||E|| = 3.431707e+01
+ Field energy E (3.924e-11 J) + H (9.306e-11 J) = 1.323e-10 J
+ S[1][1] = +5.254e-01+8.472e-01i, |S[1][1]| = -2.701e-02, arg(S[1][1]) = +5.819e+01
+
+It 415/501: ω/2π = 2.503e+00 GHz (total elapsed time = 8.71e+01 s)
+
+ Sol. ||E|| = 3.431519e+01
+ Field energy E (3.890e-11 J) + H (9.271e-11 J) = 1.316e-10 J
+ S[1][1] = +5.256e-01+8.471e-01i, |S[1][1]| = -2.672e-02, arg(S[1][1]) = +5.818e+01
+
+It 416/501: ω/2π = 2.503e+00 GHz (total elapsed time = 8.71e+01 s)
+
+ Sol. ||E|| = 3.431338e+01
+ Field energy E (3.856e-11 J) + H (9.236e-11 J) = 1.309e-10 J
+ S[1][1] = +5.257e-01+8.471e-01i, |S[1][1]| = -2.643e-02, arg(S[1][1]) = +5.818e+01
+
+It 417/501: ω/2π = 2.503e+00 GHz (total elapsed time = 8.72e+01 s)
+
+ Sol. ||E|| = 3.431165e+01
+ Field energy E (3.823e-11 J) + H (9.203e-11 J) = 1.303e-10 J
+ S[1][1] = +5.259e-01+8.470e-01i, |S[1][1]| = -2.616e-02, arg(S[1][1]) = +5.817e+01
+
+It 418/501: ω/2π = 2.503e+00 GHz (total elapsed time = 8.72e+01 s)
+
+ Sol. ||E|| = 3.430999e+01
+ Field energy E (3.791e-11 J) + H (9.170e-11 J) = 1.296e-10 J
+ S[1][1] = +5.260e-01+8.470e-01i, |S[1][1]| = -2.589e-02, arg(S[1][1]) = +5.816e+01
+
+It 419/501: ω/2π = 2.504e+00 GHz (total elapsed time = 8.73e+01 s)
+
+ Sol. ||E|| = 3.430840e+01
+ Field energy E (3.760e-11 J) + H (9.138e-11 J) = 1.290e-10 J
+ S[1][1] = +5.262e-01+8.469e-01i, |S[1][1]| = -2.562e-02, arg(S[1][1]) = +5.815e+01
+
+It 420/501: ω/2π = 2.504e+00 GHz (total elapsed time = 8.73e+01 s)
+
+ Sol. ||E|| = 3.430687e+01
+ Field energy E (3.730e-11 J) + H (9.107e-11 J) = 1.284e-10 J
+ S[1][1] = +5.263e-01+8.469e-01i, |S[1][1]| = -2.536e-02, arg(S[1][1]) = +5.814e+01
+
+It 421/501: ω/2π = 2.504e+00 GHz (total elapsed time = 8.74e+01 s)
+
+ Sol. ||E|| = 3.430541e+01
+ Field energy E (3.700e-11 J) + H (9.076e-11 J) = 1.278e-10 J
+ S[1][1] = +5.264e-01+8.468e-01i, |S[1][1]| = -2.511e-02, arg(S[1][1]) = +5.813e+01
+
+It 422/501: ω/2π = 2.504e+00 GHz (total elapsed time = 8.74e+01 s)
+
+ Sol. ||E|| = 3.430401e+01
+ Field energy E (3.671e-11 J) + H (9.046e-11 J) = 1.272e-10 J
+ S[1][1] = +5.266e-01+8.468e-01i, |S[1][1]| = -2.487e-02, arg(S[1][1]) = +5.812e+01
+
+It 423/501: ω/2π = 2.504e+00 GHz (total elapsed time = 8.75e+01 s)
+
+ Sol. ||E|| = 3.430266e+01
+ Field energy E (3.642e-11 J) + H (9.017e-11 J) = 1.266e-10 J
+ S[1][1] = +5.267e-01+8.467e-01i, |S[1][1]| = -2.463e-02, arg(S[1][1]) = +5.811e+01
+
+It 424/501: ω/2π = 2.505e+00 GHz (total elapsed time = 8.75e+01 s)
+
+ Sol. ||E|| = 3.430138e+01
+ Field energy E (3.615e-11 J) + H (8.988e-11 J) = 1.260e-10 J
+ S[1][1] = +5.269e-01+8.466e-01i, |S[1][1]| = -2.439e-02, arg(S[1][1]) = +5.811e+01
+
+It 425/501: ω/2π = 2.505e+00 GHz (total elapsed time = 8.75e+01 s)
+
+ Sol. ||E|| = 3.430016e+01
+ Field energy E (3.587e-11 J) + H (8.961e-11 J) = 1.255e-10 J
+ S[1][1] = +5.270e-01+8.466e-01i, |S[1][1]| = -2.416e-02, arg(S[1][1]) = +5.810e+01
+
+It 426/501: ω/2π = 2.505e+00 GHz (total elapsed time = 8.76e+01 s)
+
+ Sol. ||E|| = 3.429899e+01
+ Field energy E (3.561e-11 J) + H (8.933e-11 J) = 1.249e-10 J
+ S[1][1] = +5.272e-01+8.465e-01i, |S[1][1]| = -2.394e-02, arg(S[1][1]) = +5.809e+01
+
+It 427/501: ω/2π = 2.505e+00 GHz (total elapsed time = 8.76e+01 s)
+
+ Sol. ||E|| = 3.429787e+01
+ Field energy E (3.535e-11 J) + H (8.906e-11 J) = 1.244e-10 J
+ S[1][1] = +5.273e-01+8.465e-01i, |S[1][1]| = -2.372e-02, arg(S[1][1]) = +5.808e+01
+
+It 428/501: ω/2π = 2.505e+00 GHz (total elapsed time = 8.77e+01 s)
+
+ Sol. ||E|| = 3.429680e+01
+ Field energy E (3.509e-11 J) + H (8.880e-11 J) = 1.239e-10 J
+ S[1][1] = +5.274e-01+8.464e-01i, |S[1][1]| = -2.350e-02, arg(S[1][1]) = +5.807e+01
+
+It 429/501: ω/2π = 2.506e+00 GHz (total elapsed time = 8.77e+01 s)
+
+ Sol. ||E|| = 3.429579e+01
+ Field energy E (3.485e-11 J) + H (8.855e-11 J) = 1.234e-10 J
+ S[1][1] = +5.276e-01+8.464e-01i, |S[1][1]| = -2.329e-02, arg(S[1][1]) = +5.806e+01
+
+It 430/501: ω/2π = 2.506e+00 GHz (total elapsed time = 8.78e+01 s)
+
+ Sol. ||E|| = 3.429482e+01
+ Field energy E (3.460e-11 J) + H (8.829e-11 J) = 1.229e-10 J
+ S[1][1] = +5.277e-01+8.463e-01i, |S[1][1]| = -2.309e-02, arg(S[1][1]) = +5.805e+01
+
+It 431/501: ω/2π = 2.506e+00 GHz (total elapsed time = 8.78e+01 s)
+
+ Sol. ||E|| = 3.429391e+01
+ Field energy E (3.437e-11 J) + H (8.805e-11 J) = 1.224e-10 J
+ S[1][1] = +5.278e-01+8.462e-01i, |S[1][1]| = -2.289e-02, arg(S[1][1]) = +5.805e+01
+
+It 432/501: ω/2π = 2.506e+00 GHz (total elapsed time = 8.79e+01 s)
+
+ Sol. ||E|| = 3.429303e+01
+ Field energy E (3.413e-11 J) + H (8.781e-11 J) = 1.219e-10 J
+ S[1][1] = +5.280e-01+8.462e-01i, |S[1][1]| = -2.269e-02, arg(S[1][1]) = +5.804e+01
+
+It 433/501: ω/2π = 2.506e+00 GHz (total elapsed time = 8.79e+01 s)
+
+ Sol. ||E|| = 3.429221e+01
+ Field energy E (3.391e-11 J) + H (8.757e-11 J) = 1.215e-10 J
+ S[1][1] = +5.281e-01+8.461e-01i, |S[1][1]| = -2.250e-02, arg(S[1][1]) = +5.803e+01
+
+It 434/501: ω/2π = 2.507e+00 GHz (total elapsed time = 8.80e+01 s)
+
+ Sol. ||E|| = 3.429142e+01
+ Field energy E (3.368e-11 J) + H (8.734e-11 J) = 1.210e-10 J
+ S[1][1] = +5.282e-01+8.461e-01i, |S[1][1]| = -2.231e-02, arg(S[1][1]) = +5.802e+01
+
+It 435/501: ω/2π = 2.507e+00 GHz (total elapsed time = 8.80e+01 s)
+
+ Sol. ||E|| = 3.429068e+01
+ Field energy E (3.346e-11 J) + H (8.712e-11 J) = 1.206e-10 J
+ S[1][1] = +5.284e-01+8.460e-01i, |S[1][1]| = -2.212e-02, arg(S[1][1]) = +5.801e+01
+
+It 436/501: ω/2π = 2.507e+00 GHz (total elapsed time = 8.81e+01 s)
+
+ Sol. ||E|| = 3.428998e+01
+ Field energy E (3.325e-11 J) + H (8.689e-11 J) = 1.201e-10 J
+ S[1][1] = +5.285e-01+8.459e-01i, |S[1][1]| = -2.194e-02, arg(S[1][1]) = +5.800e+01
+
+It 437/501: ω/2π = 2.507e+00 GHz (total elapsed time = 8.81e+01 s)
+
+ Sol. ||E|| = 3.428932e+01
+ Field energy E (3.304e-11 J) + H (8.668e-11 J) = 1.197e-10 J
+ S[1][1] = +5.287e-01+8.459e-01i, |S[1][1]| = -2.176e-02, arg(S[1][1]) = +5.800e+01
+
+It 438/501: ω/2π = 2.507e+00 GHz (total elapsed time = 8.81e+01 s)
+
+ Sol. ||E|| = 3.428870e+01
+ Field energy E (3.284e-11 J) + H (8.646e-11 J) = 1.193e-10 J
+ S[1][1] = +5.288e-01+8.458e-01i, |S[1][1]| = -2.159e-02, arg(S[1][1]) = +5.799e+01
+
+It 439/501: ω/2π = 2.508e+00 GHz (total elapsed time = 8.82e+01 s)
+
+ Sol. ||E|| = 3.428812e+01
+ Field energy E (3.264e-11 J) + H (8.626e-11 J) = 1.189e-10 J
+ S[1][1] = +5.289e-01+8.458e-01i, |S[1][1]| = -2.142e-02, arg(S[1][1]) = +5.798e+01
+
+It 440/501: ω/2π = 2.508e+00 GHz (total elapsed time = 8.82e+01 s)
+
+ Sol. ||E|| = 3.428757e+01
+ Field energy E (3.244e-11 J) + H (8.605e-11 J) = 1.185e-10 J
+ S[1][1] = +5.290e-01+8.457e-01i, |S[1][1]| = -2.125e-02, arg(S[1][1]) = +5.797e+01
+
+It 441/501: ω/2π = 2.508e+00 GHz (total elapsed time = 8.83e+01 s)
+
+ Sol. ||E|| = 3.428706e+01
+ Field energy E (3.225e-11 J) + H (8.585e-11 J) = 1.181e-10 J
+ S[1][1] = +5.292e-01+8.457e-01i, |S[1][1]| = -2.109e-02, arg(S[1][1]) = +5.796e+01
+
+It 442/501: ω/2π = 2.508e+00 GHz (total elapsed time = 8.83e+01 s)
+
+ Sol. ||E|| = 3.428658e+01
+ Field energy E (3.206e-11 J) + H (8.565e-11 J) = 1.177e-10 J
+ S[1][1] = +5.293e-01+8.456e-01i, |S[1][1]| = -2.093e-02, arg(S[1][1]) = +5.795e+01
+
+It 443/501: ω/2π = 2.508e+00 GHz (total elapsed time = 8.84e+01 s)
+
+ Sol. ||E|| = 3.428614e+01
+ Field energy E (3.188e-11 J) + H (8.546e-11 J) = 1.173e-10 J
+ S[1][1] = +5.294e-01+8.455e-01i, |S[1][1]| = -2.077e-02, arg(S[1][1]) = +5.795e+01
+
+It 444/501: ω/2π = 2.509e+00 GHz (total elapsed time = 8.84e+01 s)
+
+ Sol. ||E|| = 3.428573e+01
+ Field energy E (3.169e-11 J) + H (8.527e-11 J) = 1.170e-10 J
+ S[1][1] = +5.296e-01+8.455e-01i, |S[1][1]| = -2.062e-02, arg(S[1][1]) = +5.794e+01
+
+It 445/501: ω/2π = 2.509e+00 GHz (total elapsed time = 8.85e+01 s)
+
+ Sol. ||E|| = 3.428535e+01
+ Field energy E (3.152e-11 J) + H (8.509e-11 J) = 1.166e-10 J
+ S[1][1] = +5.297e-01+8.454e-01i, |S[1][1]| = -2.047e-02, arg(S[1][1]) = +5.793e+01
+
+It 446/501: ω/2π = 2.509e+00 GHz (total elapsed time = 8.85e+01 s)
+
+ Sol. ||E|| = 3.428501e+01
+ Field energy E (3.134e-11 J) + H (8.491e-11 J) = 1.162e-10 J
+ S[1][1] = +5.298e-01+8.453e-01i, |S[1][1]| = -2.032e-02, arg(S[1][1]) = +5.792e+01
+
+It 447/501: ω/2π = 2.509e+00 GHz (total elapsed time = 8.86e+01 s)
+
+ Sol. ||E|| = 3.428469e+01
+ Field energy E (3.117e-11 J) + H (8.473e-11 J) = 1.159e-10 J
+ S[1][1] = +5.300e-01+8.453e-01i, |S[1][1]| = -2.018e-02, arg(S[1][1]) = +5.791e+01
+
+It 448/501: ω/2π = 2.509e+00 GHz (total elapsed time = 8.86e+01 s)
+
+ Sol. ||E|| = 3.428441e+01
+ Field energy E (3.101e-11 J) + H (8.455e-11 J) = 1.156e-10 J
+ S[1][1] = +5.301e-01+8.452e-01i, |S[1][1]| = -2.003e-02, arg(S[1][1]) = +5.791e+01
+
+It 449/501: ω/2π = 2.510e+00 GHz (total elapsed time = 8.86e+01 s)
+
+ Sol. ||E|| = 3.428415e+01
+ Field energy E (3.084e-11 J) + H (8.438e-11 J) = 1.152e-10 J
+ S[1][1] = +5.302e-01+8.452e-01i, |S[1][1]| = -1.990e-02, arg(S[1][1]) = +5.790e+01
+
+It 450/501: ω/2π = 2.510e+00 GHz (total elapsed time = 8.87e+01 s)
+
+ Sol. ||E|| = 3.428392e+01
+ Field energy E (3.068e-11 J) + H (8.421e-11 J) = 1.149e-10 J
+ S[1][1] = +5.303e-01+8.451e-01i, |S[1][1]| = -1.976e-02, arg(S[1][1]) = +5.789e+01
+
+It 451/501: ω/2π = 2.510e+00 GHz (total elapsed time = 8.87e+01 s)
+
+ Sol. ||E|| = 3.428372e+01
+ Field energy E (3.052e-11 J) + H (8.405e-11 J) = 1.146e-10 J
+ S[1][1] = +5.305e-01+8.450e-01i, |S[1][1]| = -1.962e-02, arg(S[1][1]) = +5.788e+01
+
+It 452/501: ω/2π = 2.510e+00 GHz (total elapsed time = 8.88e+01 s)
+
+ Sol. ||E|| = 3.428354e+01
+ Field energy E (3.037e-11 J) + H (8.388e-11 J) = 1.143e-10 J
+ S[1][1] = +5.306e-01+8.450e-01i, |S[1][1]| = -1.949e-02, arg(S[1][1]) = +5.787e+01
+
+It 453/501: ω/2π = 2.510e+00 GHz (total elapsed time = 8.88e+01 s)
+
+ Sol. ||E|| = 3.428339e+01
+ Field energy E (3.022e-11 J) + H (8.372e-11 J) = 1.139e-10 J
+ S[1][1] = +5.307e-01+8.449e-01i, |S[1][1]| = -1.936e-02, arg(S[1][1]) = +5.787e+01
+
+It 454/501: ω/2π = 2.511e+00 GHz (total elapsed time = 8.89e+01 s)
+
+ Sol. ||E|| = 3.428327e+01
+ Field energy E (3.007e-11 J) + H (8.357e-11 J) = 1.136e-10 J
+ S[1][1] = +5.308e-01+8.449e-01i, |S[1][1]| = -1.924e-02, arg(S[1][1]) = +5.786e+01
+
+It 455/501: ω/2π = 2.511e+00 GHz (total elapsed time = 8.89e+01 s)
+
+ Sol. ||E|| = 3.428317e+01
+ Field energy E (2.993e-11 J) + H (8.341e-11 J) = 1.133e-10 J
+ S[1][1] = +5.310e-01+8.448e-01i, |S[1][1]| = -1.911e-02, arg(S[1][1]) = +5.785e+01
+
+It 456/501: ω/2π = 2.511e+00 GHz (total elapsed time = 8.90e+01 s)
+
+ Sol. ||E|| = 3.428310e+01
+ Field energy E (2.978e-11 J) + H (8.326e-11 J) = 1.130e-10 J
+ S[1][1] = +5.311e-01+8.447e-01i, |S[1][1]| = -1.899e-02, arg(S[1][1]) = +5.784e+01
+
+It 457/501: ω/2π = 2.511e+00 GHz (total elapsed time = 8.90e+01 s)
+
+ Sol. ||E|| = 3.428304e+01
+ Field energy E (2.964e-11 J) + H (8.311e-11 J) = 1.128e-10 J
+ S[1][1] = +5.312e-01+8.447e-01i, |S[1][1]| = -1.887e-02, arg(S[1][1]) = +5.783e+01
+
+It 458/501: ω/2π = 2.511e+00 GHz (total elapsed time = 8.91e+01 s)
+
+ Sol. ||E|| = 3.428301e+01
+ Field energy E (2.950e-11 J) + H (8.297e-11 J) = 1.125e-10 J
+ S[1][1] = +5.313e-01+8.446e-01i, |S[1][1]| = -1.875e-02, arg(S[1][1]) = +5.783e+01
+
+It 459/501: ω/2π = 2.512e+00 GHz (total elapsed time = 8.91e+01 s)
+
+ Sol. ||E|| = 3.428301e+01
+ Field energy E (2.937e-11 J) + H (8.283e-11 J) = 1.122e-10 J
+ S[1][1] = +5.315e-01+8.445e-01i, |S[1][1]| = -1.864e-02, arg(S[1][1]) = +5.782e+01
+
+It 460/501: ω/2π = 2.512e+00 GHz (total elapsed time = 8.92e+01 s)
+
+ Sol. ||E|| = 3.428302e+01
+ Field energy E (2.924e-11 J) + H (8.269e-11 J) = 1.119e-10 J
+ S[1][1] = +5.316e-01+8.445e-01i, |S[1][1]| = -1.853e-02, arg(S[1][1]) = +5.781e+01
+
+It 461/501: ω/2π = 2.512e+00 GHz (total elapsed time = 8.92e+01 s)
+
+ Sol. ||E|| = 3.428306e+01
+ Field energy E (2.911e-11 J) + H (8.255e-11 J) = 1.117e-10 J
+ S[1][1] = +5.317e-01+8.444e-01i, |S[1][1]| = -1.841e-02, arg(S[1][1]) = +5.780e+01
+
+It 462/501: ω/2π = 2.512e+00 GHz (total elapsed time = 8.93e+01 s)
+
+ Sol. ||E|| = 3.428312e+01
+ Field energy E (2.898e-11 J) + H (8.241e-11 J) = 1.114e-10 J
+ S[1][1] = +5.318e-01+8.444e-01i, |S[1][1]| = -1.830e-02, arg(S[1][1]) = +5.779e+01
+
+It 463/501: ω/2π = 2.512e+00 GHz (total elapsed time = 8.93e+01 s)
+
+ Sol. ||E|| = 3.428319e+01
+ Field energy E (2.885e-11 J) + H (8.228e-11 J) = 1.111e-10 J
+ S[1][1] = +5.320e-01+8.443e-01i, |S[1][1]| = -1.820e-02, arg(S[1][1]) = +5.779e+01
+
+It 464/501: ω/2π = 2.513e+00 GHz (total elapsed time = 8.93e+01 s)
+
+ Sol. ||E|| = 3.428329e+01
+ Field energy E (2.873e-11 J) + H (8.215e-11 J) = 1.109e-10 J
+ S[1][1] = +5.321e-01+8.442e-01i, |S[1][1]| = -1.809e-02, arg(S[1][1]) = +5.778e+01
+
+It 465/501: ω/2π = 2.513e+00 GHz (total elapsed time = 8.94e+01 s)
+
+ Sol. ||E|| = 3.428341e+01
+ Field energy E (2.861e-11 J) + H (8.202e-11 J) = 1.106e-10 J
+ S[1][1] = +5.322e-01+8.442e-01i, |S[1][1]| = -1.799e-02, arg(S[1][1]) = +5.777e+01
+
+It 466/501: ω/2π = 2.513e+00 GHz (total elapsed time = 8.94e+01 s)
+
+ Sol. ||E|| = 3.428354e+01
+ Field energy E (2.849e-11 J) + H (8.189e-11 J) = 1.104e-10 J
+ S[1][1] = +5.323e-01+8.441e-01i, |S[1][1]| = -1.789e-02, arg(S[1][1]) = +5.776e+01
+
+It 467/501: ω/2π = 2.513e+00 GHz (total elapsed time = 8.95e+01 s)
+
+ Sol. ||E|| = 3.428369e+01
+ Field energy E (2.837e-11 J) + H (8.176e-11 J) = 1.101e-10 J
+ S[1][1] = +5.324e-01+8.440e-01i, |S[1][1]| = -1.779e-02, arg(S[1][1]) = +5.776e+01
+
+It 468/501: ω/2π = 2.513e+00 GHz (total elapsed time = 8.95e+01 s)
+
+ Sol. ||E|| = 3.428386e+01
+ Field energy E (2.826e-11 J) + H (8.164e-11 J) = 1.099e-10 J
+ S[1][1] = +5.326e-01+8.440e-01i, |S[1][1]| = -1.769e-02, arg(S[1][1]) = +5.775e+01
+
+It 469/501: ω/2π = 2.514e+00 GHz (total elapsed time = 8.96e+01 s)
+
+ Sol. ||E|| = 3.428405e+01
+ Field energy E (2.815e-11 J) + H (8.152e-11 J) = 1.097e-10 J
+ S[1][1] = +5.327e-01+8.439e-01i, |S[1][1]| = -1.759e-02, arg(S[1][1]) = +5.774e+01
+
+It 470/501: ω/2π = 2.514e+00 GHz (total elapsed time = 8.96e+01 s)
+
+ Sol. ||E|| = 3.428426e+01
+ Field energy E (2.804e-11 J) + H (8.140e-11 J) = 1.094e-10 J
+ S[1][1] = +5.328e-01+8.439e-01i, |S[1][1]| = -1.750e-02, arg(S[1][1]) = +5.773e+01
+
+It 471/501: ω/2π = 2.514e+00 GHz (total elapsed time = 8.97e+01 s)
+
+ Sol. ||E|| = 3.428448e+01
+ Field energy E (2.793e-11 J) + H (8.129e-11 J) = 1.092e-10 J
+ S[1][1] = +5.329e-01+8.438e-01i, |S[1][1]| = -1.740e-02, arg(S[1][1]) = +5.772e+01
+
+It 472/501: ω/2π = 2.514e+00 GHz (total elapsed time = 8.97e+01 s)
+
+ Sol. ||E|| = 3.428472e+01
+ Field energy E (2.782e-11 J) + H (8.117e-11 J) = 1.090e-10 J
+ S[1][1] = +5.330e-01+8.437e-01i, |S[1][1]| = -1.731e-02, arg(S[1][1]) = +5.772e+01
+
+It 473/501: ω/2π = 2.514e+00 GHz (total elapsed time = 8.98e+01 s)
+
+ Sol. ||E|| = 3.428497e+01
+ Field energy E (2.772e-11 J) + H (8.106e-11 J) = 1.088e-10 J
+ S[1][1] = +5.332e-01+8.437e-01i, |S[1][1]| = -1.722e-02, arg(S[1][1]) = +5.771e+01
+
+It 474/501: ω/2π = 2.515e+00 GHz (total elapsed time = 8.98e+01 s)
+
+ Sol. ||E|| = 3.428524e+01
+ Field energy E (2.761e-11 J) + H (8.095e-11 J) = 1.086e-10 J
+ S[1][1] = +5.333e-01+8.436e-01i, |S[1][1]| = -1.713e-02, arg(S[1][1]) = +5.770e+01
+
+It 475/501: ω/2π = 2.515e+00 GHz (total elapsed time = 8.99e+01 s)
+
+ Sol. ||E|| = 3.428553e+01
+ Field energy E (2.751e-11 J) + H (8.084e-11 J) = 1.083e-10 J
+ S[1][1] = +5.334e-01+8.435e-01i, |S[1][1]| = -1.704e-02, arg(S[1][1]) = +5.769e+01
+
+It 476/501: ω/2π = 2.515e+00 GHz (total elapsed time = 8.99e+01 s)
+
+ Sol. ||E|| = 3.428582e+01
+ Field energy E (2.741e-11 J) + H (8.073e-11 J) = 1.081e-10 J
+ S[1][1] = +5.335e-01+8.435e-01i, |S[1][1]| = -1.696e-02, arg(S[1][1]) = +5.769e+01
+
+It 477/501: ω/2π = 2.515e+00 GHz (total elapsed time = 8.99e+01 s)
+
+ Sol. ||E|| = 3.428614e+01
+ Field energy E (2.731e-11 J) + H (8.062e-11 J) = 1.079e-10 J
+ S[1][1] = +5.336e-01+8.434e-01i, |S[1][1]| = -1.687e-02, arg(S[1][1]) = +5.768e+01
+
+It 478/501: ω/2π = 2.515e+00 GHz (total elapsed time = 9.00e+01 s)
+
+ Sol. ||E|| = 3.428647e+01
+ Field energy E (2.722e-11 J) + H (8.052e-11 J) = 1.077e-10 J
+ S[1][1] = +5.338e-01+8.434e-01i, |S[1][1]| = -1.679e-02, arg(S[1][1]) = +5.767e+01
+
+It 479/501: ω/2π = 2.516e+00 GHz (total elapsed time = 9.00e+01 s)
+
+ Sol. ||E|| = 3.428681e+01
+ Field energy E (2.712e-11 J) + H (8.042e-11 J) = 1.075e-10 J
+ S[1][1] = +5.339e-01+8.433e-01i, |S[1][1]| = -1.671e-02, arg(S[1][1]) = +5.766e+01
+
+It 480/501: ω/2π = 2.516e+00 GHz (total elapsed time = 9.01e+01 s)
+
+ Sol. ||E|| = 3.428716e+01
+ Field energy E (2.703e-11 J) + H (8.031e-11 J) = 1.073e-10 J
+ S[1][1] = +5.340e-01+8.432e-01i, |S[1][1]| = -1.663e-02, arg(S[1][1]) = +5.766e+01
+
+It 481/501: ω/2π = 2.516e+00 GHz (total elapsed time = 9.01e+01 s)
+
+ Sol. ||E|| = 3.428753e+01
+ Field energy E (2.694e-11 J) + H (8.021e-11 J) = 1.072e-10 J
+ S[1][1] = +5.341e-01+8.432e-01i, |S[1][1]| = -1.655e-02, arg(S[1][1]) = +5.765e+01
+
+It 482/501: ω/2π = 2.516e+00 GHz (total elapsed time = 9.02e+01 s)
+
+ Sol. ||E|| = 3.428791e+01
+ Field energy E (2.685e-11 J) + H (8.012e-11 J) = 1.070e-10 J
+ S[1][1] = +5.342e-01+8.431e-01i, |S[1][1]| = -1.647e-02, arg(S[1][1]) = +5.764e+01
+
+It 483/501: ω/2π = 2.516e+00 GHz (total elapsed time = 9.02e+01 s)
+
+ Sol. ||E|| = 3.428831e+01
+ Field energy E (2.676e-11 J) + H (8.002e-11 J) = 1.068e-10 J
+ S[1][1] = +5.343e-01+8.430e-01i, |S[1][1]| = -1.640e-02, arg(S[1][1]) = +5.763e+01
+
+It 484/501: ω/2π = 2.517e+00 GHz (total elapsed time = 9.03e+01 s)
+
+ Sol. ||E|| = 3.428871e+01
+ Field energy E (2.667e-11 J) + H (7.992e-11 J) = 1.066e-10 J
+ S[1][1] = +5.345e-01+8.430e-01i, |S[1][1]| = -1.632e-02, arg(S[1][1]) = +5.762e+01
+
+It 485/501: ω/2π = 2.517e+00 GHz (total elapsed time = 9.03e+01 s)
+
+ Sol. ||E|| = 3.428913e+01
+ Field energy E (2.659e-11 J) + H (7.983e-11 J) = 1.064e-10 J
+ S[1][1] = +5.346e-01+8.429e-01i, |S[1][1]| = -1.625e-02, arg(S[1][1]) = +5.762e+01
+
+It 486/501: ω/2π = 2.517e+00 GHz (total elapsed time = 9.04e+01 s)
+
+ Sol. ||E|| = 3.428956e+01
+ Field energy E (2.650e-11 J) + H (7.974e-11 J) = 1.062e-10 J
+ S[1][1] = +5.347e-01+8.428e-01i, |S[1][1]| = -1.617e-02, arg(S[1][1]) = +5.761e+01
+
+It 487/501: ω/2π = 2.517e+00 GHz (total elapsed time = 9.04e+01 s)
+
+ Sol. ||E|| = 3.429000e+01
+ Field energy E (2.642e-11 J) + H (7.965e-11 J) = 1.061e-10 J
+ S[1][1] = +5.348e-01+8.428e-01i, |S[1][1]| = -1.610e-02, arg(S[1][1]) = +5.760e+01
+
+It 488/501: ω/2π = 2.517e+00 GHz (total elapsed time = 9.05e+01 s)
+
+ Sol. ||E|| = 3.429046e+01
+ Field energy E (2.634e-11 J) + H (7.956e-11 J) = 1.059e-10 J
+ S[1][1] = +5.349e-01+8.427e-01i, |S[1][1]| = -1.603e-02, arg(S[1][1]) = +5.759e+01
+
+It 489/501: ω/2π = 2.518e+00 GHz (total elapsed time = 9.05e+01 s)
+
+ Sol. ||E|| = 3.429092e+01
+ Field energy E (2.626e-11 J) + H (7.947e-11 J) = 1.057e-10 J
+ S[1][1] = +5.350e-01+8.427e-01i, |S[1][1]| = -1.596e-02, arg(S[1][1]) = +5.759e+01
+
+It 490/501: ω/2π = 2.518e+00 GHz (total elapsed time = 9.05e+01 s)
+
+ Sol. ||E|| = 3.429140e+01
+ Field energy E (2.618e-11 J) + H (7.938e-11 J) = 1.056e-10 J
+ S[1][1] = +5.351e-01+8.426e-01i, |S[1][1]| = -1.589e-02, arg(S[1][1]) = +5.758e+01
+
+It 491/501: ω/2π = 2.518e+00 GHz (total elapsed time = 9.06e+01 s)
+
+ Sol. ||E|| = 3.429188e+01
+ Field energy E (2.610e-11 J) + H (7.930e-11 J) = 1.054e-10 J
+ S[1][1] = +5.353e-01+8.425e-01i, |S[1][1]| = -1.582e-02, arg(S[1][1]) = +5.757e+01
+
+It 492/501: ω/2π = 2.518e+00 GHz (total elapsed time = 9.06e+01 s)
+
+ Sol. ||E|| = 3.429238e+01
+ Field energy E (2.603e-11 J) + H (7.921e-11 J) = 1.052e-10 J
+ S[1][1] = +5.354e-01+8.425e-01i, |S[1][1]| = -1.576e-02, arg(S[1][1]) = +5.756e+01
+
+It 493/501: ω/2π = 2.518e+00 GHz (total elapsed time = 9.07e+01 s)
+
+ Sol. ||E|| = 3.429288e+01
+ Field energy E (2.595e-11 J) + H (7.913e-11 J) = 1.051e-10 J
+ S[1][1] = +5.355e-01+8.424e-01i, |S[1][1]| = -1.569e-02, arg(S[1][1]) = +5.756e+01
+
+It 494/501: ω/2π = 2.519e+00 GHz (total elapsed time = 9.07e+01 s)
+
+ Sol. ||E|| = 3.429340e+01
+ Field energy E (2.588e-11 J) + H (7.905e-11 J) = 1.049e-10 J
+ S[1][1] = +5.356e-01+8.423e-01i, |S[1][1]| = -1.563e-02, arg(S[1][1]) = +5.755e+01
+
+It 495/501: ω/2π = 2.519e+00 GHz (total elapsed time = 9.08e+01 s)
+
+ Sol. ||E|| = 3.429393e+01
+ Field energy E (2.580e-11 J) + H (7.897e-11 J) = 1.048e-10 J
+ S[1][1] = +5.357e-01+8.423e-01i, |S[1][1]| = -1.556e-02, arg(S[1][1]) = +5.754e+01
+
+It 496/501: ω/2π = 2.519e+00 GHz (total elapsed time = 9.08e+01 s)
+
+ Sol. ||E|| = 3.429446e+01
+ Field energy E (2.573e-11 J) + H (7.889e-11 J) = 1.046e-10 J
+ S[1][1] = +5.358e-01+8.422e-01i, |S[1][1]| = -1.550e-02, arg(S[1][1]) = +5.753e+01
+
+It 497/501: ω/2π = 2.519e+00 GHz (total elapsed time = 9.09e+01 s)
+
+ Sol. ||E|| = 3.429501e+01
+ Field energy E (2.566e-11 J) + H (7.881e-11 J) = 1.045e-10 J
+ S[1][1] = +5.359e-01+8.421e-01i, |S[1][1]| = -1.544e-02, arg(S[1][1]) = +5.753e+01
+
+It 498/501: ω/2π = 2.519e+00 GHz (total elapsed time = 9.09e+01 s)
+
+ Sol. ||E|| = 3.429556e+01
+ Field energy E (2.559e-11 J) + H (7.873e-11 J) = 1.043e-10 J
+ S[1][1] = +5.361e-01+8.421e-01i, |S[1][1]| = -1.538e-02, arg(S[1][1]) = +5.752e+01
+
+It 499/501: ω/2π = 2.520e+00 GHz (total elapsed time = 9.10e+01 s)
+
+ Sol. ||E|| = 3.429612e+01
+ Field energy E (2.552e-11 J) + H (7.865e-11 J) = 1.042e-10 J
+ S[1][1] = +5.362e-01+8.420e-01i, |S[1][1]| = -1.532e-02, arg(S[1][1]) = +5.751e+01
+
+It 500/501: ω/2π = 2.520e+00 GHz (total elapsed time = 9.10e+01 s)
+
+ Sol. ||E|| = 3.429669e+01
+ Field energy E (2.546e-11 J) + H (7.858e-11 J) = 1.040e-10 J
+ S[1][1] = +5.363e-01+8.420e-01i, |S[1][1]| = -1.526e-02, arg(S[1][1]) = +5.750e+01
+
+It 501/501: ω/2π = 2.520e+00 GHz (total elapsed time = 9.11e+01 s)
+
+ Sol. ||E|| = 3.429727e+01
+ Field energy E (2.539e-11 J) + H (7.850e-11 J) = 1.039e-10 J
+ S[1][1] = +5.364e-01+8.419e-01i, |S[1][1]| = -1.520e-02, arg(S[1][1]) = +5.750e+01
+
+Completed 0 iterations of adaptive mesh refinement (AMR):
+ Indicator norm = nan, global unknowns = 449694
+ Max. iterations = 0, tol. = 1.000e-02
+
+Estimated peak per-rank memory usage is: Min. 240.9M, Max. 283.5M, Avg. 262.6M, Total 8.2G
+Estimated peak per-node memory usage is: Min. 8.2G, Max. 8.2G, Avg. 8.2G, Total 8.2G
+
+Elapsed Time Report (s)           Min.        Max.        Avg.
+==============================================================
+Initialization                   0.193       0.504       0.494
+  Mesh Preprocessing             0.364       0.675       0.374
+Operator Construction            0.105       0.155       0.110
+  Wave Ports                     0.001       0.001       0.001
+Linear Solve                     4.312       4.382       4.327
+  Setup                          6.741       6.742       6.742
+  Preconditioner                44.925      45.139      45.109
+  Coarse Solve                   5.824       5.975       5.844
+PROM Construction                0.274       0.274       0.274
+PROM Solve                       0.093       0.201       0.182
+Estimation                       0.054       0.058       0.056
+  Construction                   0.399       0.400       0.399
+  Solve                          6.409       6.411       6.410
+Postprocessing                  22.062      22.121      22.079
+Disk IO                          0.755       0.755       0.755
+--------------------------------------------------------------
+Total                           94.291      94.308      94.299
+
+Peak Memory                   Per-Node       Total   Total HWM
+==============================================================
+Initialization                   55.5M       55.5M       55.5M
+  Mesh Preprocessing            121.2M      121.2M      176.8M
+Operator Construction           313.6M      313.6M      490.3M
+  Wave Ports                      0.0K        0.0K      490.3M
+Linear Solve                    536.0K      536.0K      490.9M
+  Setup                           1.0G        1.0G        1.5G
+  Preconditioner                 23.2M       23.2M        1.5G
+  Coarse Solve                    5.3G        5.3G        6.8G
+PROM Construction                 0.0K        0.0K        6.8G
+PROM Solve                        0.0K        0.0K        6.8G
+Estimation                        0.0K        0.0K        6.8G
+  Construction                  514.3M      514.3M        7.3G
+  Solve                           0.0K        0.0K        7.3G
+Postprocessing                    0.0K        0.0K        7.3G
+Disk IO                          69.8M       69.8M        7.3G
+--------------------------------------------------------------
+Total                             7.8G        7.8G        7.8G
+

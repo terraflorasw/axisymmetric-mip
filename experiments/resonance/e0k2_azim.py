@@ -50,7 +50,7 @@ import physics as ph
 import eigmodes
 import solveconf
 import azimuthal
-from e0_solver_vs_math import GEO, eigen_cfg, run
+from e0_solver_vs_math import GEO, eigen_cfg, run, volume_attrs
 from e0k2_anchor import (design_point, wall_sigma, CAP_R_FRAC, LOOP_PHI,
                          LOOP_RW, LOOP_GAP, N_MODES, FREQ_STEP,
                          BAND_HALFWIDTH_MHZ)
@@ -68,9 +68,10 @@ def sector_bins(meta):
     """
     attrs = meta["attributes"]
     air = sorted(attrs.get("air") or [])
-    vols = sorted({v for k, v in attrs.items()
-                   if isinstance(v, int) and k not in ("wall", "port")}
-                  | set(air))
+    # 🔴 was a local copy of the surface/volume rule — one of
+    # NINE. A `loop` SURFACE got classified as a VOLUME and
+    # Palace refused the config (2026-08-27). One definition.
+    vols = volume_attrs(meta)
     return [(10 + vols.index(a), a) for a in air]
 
 
@@ -135,9 +136,10 @@ def solve_eigen(tag, m, sigma, fmin, energy):
 
 def energy_list(meta, bins):
     attrs = meta["attributes"]
-    vols = sorted({v for k, v in attrs.items()
-                   if isinstance(v, int) and k not in ("wall", "port")}
-                  | set(attrs.get("air") or []))
+    # 🔴 was a local copy of the surface/volume rule — one of
+    # NINE. A `loop` SURFACE got classified as a VOLUME and
+    # Palace refused the config (2026-08-27). One definition.
+    vols = volume_attrs(meta)
     return ([{"Index": 1, "Attributes": [attrs["bore"]]}]
             + [{"Index": 10 + i, "Attributes": [v]} for i, v in enumerate(vols)])
 

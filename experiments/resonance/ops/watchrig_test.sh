@@ -75,6 +75,69 @@ OUT=$(WATCH_RUNNER="$TD/alive" WATCH_SLEEP=1 timeout 20 "$W" "$LOG"); RC=$?
 ok "$RC" 3 "exit code 3 when the run finished before the watch armed"
 echo "$OUT" | grep -q 'ALREADY contains EXIT=' && ok yes yes "says so instead of waiting" || ok no yes "says so instead of waiting"
 
+echo "== 6. THE CALLER CANNOT HIDE IT: progress survives a buffering pipe =="
+# 🔴 THE REGRESSION THIS GUARDS. `ops/watchrig.sh ... | tail -60` was used twice
+# in one session. `tail` holds its whole input until EOF, so a watch that was
+# alive and emitting per-case events produced NOTHING until the run ended — a
+# job stepping through cases was indistinguishable from a dead watch. The
+# watcher was correct; the call site destroyed it. Nothing in the watcher could
+# detect that, so instead it MIRRORS every line to disk.
+printf 'x\n' > "$LOG"; rm -f "$STUB_STATE"
+MIR="$TD/mirror.watch.log"; rm -f "$MIR"
+( sleep 2; printf '  --- loop 8x8 = 128 mm^2\n' >> "$LOG"
+  sleep 2; printf '    -> Q0=40,147\nEXIT=0\n' >> "$LOG" ) &
+# stdout thrown away entirely — the worst case a caller can inflict
+WATCH_MIRROR="$MIR" WATCH_RUNNER="$TD/alive" WATCH_SLEEP=1 \
+  timeout 30 "$W" "$LOG" > /dev/null 2>&1; RC=$?
+wait
+ok "$RC" 0 "still completes with stdout discarded"
+grep -q 'loop 8x8' "$MIR" && ok yes yes "per-case progress reached the mirror" \
+  || ok no yes "per-case progress reached the mirror"
+grep -q 'Q0=40,147' "$MIR" && ok yes yes "result line reached the mirror" \
+  || ok no yes "result line reached the mirror"
+grep -q 'watch armed' "$MIR" && ok yes yes "mirror records when the watch armed" \
+  || ok no yes "mirror records when the watch armed"
+
+echo "== 7. CASE BOUNDARY: exits 10 so the caller is actually notified =="
+# 🔴 THE REGRESSION THIS GUARDS. Reported twice: "a step finished but the
+# monitor is missing", then "it just turned over and again, the monitor didn't
+# fire". The watch was alive, matching and mirroring — but the harness running
+# it re-invokes on COMMAND EXIT, not on output, so streaming forever notified
+# nobody until the whole job ended. Printing is not telling.
+printf 'x\n' > "$LOG"; rm -f "$STUB_STATE"
+( sleep 2; printf '       pec: TE011 2.4420  Q= 40,716\n' >> "$LOG"
+  sleep 6; printf 'EXIT=0\n' >> "$LOG" ) &
+OUT=$(WATCH_MIRROR=/dev/null WATCH_RUNNER="$TD/alive" WATCH_SLEEP=1 \
+      timeout 30 "$W" "$LOG"); RC=$?
+ok "$RC" 10 "exit 10 at a per-solve verdict, not 0"
+echo "$OUT" | grep -q 'RE-ARM' && ok yes yes "says to re-arm" || ok no yes "says to re-arm"
+echo "$OUT" | grep -q 'pec: TE011' && ok yes yes "emits the line it stopped on" \
+  || ok no yes "emits the line it stopped on"
+wait
+
+echo "== 7b. JOB END STILL WINS over a boundary on the same poll =="
+# A poll that brings BOTH a verdict and EXIT= must report the job finished (0),
+# not a boundary (10) — otherwise the last case of a run never triggers the
+# end-of-run fetch and the instance is left idle. That is the failure that left
+# a box burning for 24 minutes on 2026-08-27.
+printf 'x\n' > "$LOG"; rm -f "$STUB_STATE"
+( sleep 2; printf '    lumped: TE011 2.4417  Q= 1,090\nEXIT=0\n' >> "$LOG" ) &
+OUT=$(WATCH_MIRROR=/dev/null WATCH_RUNNER="$TD/alive" WATCH_SLEEP=1 \
+      timeout 30 "$W" "$LOG"); RC=$?
+wait
+ok "$RC" 0 "exit 0 when the same poll carries EXIT="
+echo "$OUT" | grep -q 'run finished' && ok yes yes "reports the job finished" \
+  || ok no yes "reports the job finished"
+
+echo "== 7c. WATCH_STOP_RE= disables boundaries (stream to the end) =="
+printf 'x\n' > "$LOG"; rm -f "$STUB_STATE"
+( sleep 2; printf '       pec: TE011 2.4420  Q= 40,716\n' >> "$LOG"
+  sleep 3; printf 'EXIT=0\n' >> "$LOG" ) &
+OUT=$(WATCH_STOP_RE= WATCH_MIRROR=/dev/null WATCH_RUNNER="$TD/alive" \
+      WATCH_SLEEP=1 timeout 30 "$W" "$LOG"); RC=$?
+wait
+ok "$RC" 0 "streams past the verdict to the end when disabled"
+
 echo
 echo "  $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ] || exit 1

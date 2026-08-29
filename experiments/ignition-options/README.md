@@ -137,8 +137,8 @@ ignition re-imposes the component the loop work was removing.
 
 | | | blocks |
 |---|---|---|
-| **1** | **Which option is the instrument's?** | 🔴 `../resonance/` item 7's TARGET. The measurement is done; the CHOICE is not |
-| 2 | E-field for N₂ breakdown at 1 atm in the torch bore, vs what the cavity can produce cold | decides whether option 1 exists at all |
+| **1** | **Which option is the instrument's?** | ⚠️ **NARROWED 2026-08-26.** Option 1 (cavity-only) is CLOSED by measurement, so the choice is among the ASSISTED options (2-5) — and item 7 is no longer blocked on it, since every assisted option leaves cold coupling unconstrained |
+| ~~2~~ | ✅ **ANSWERED 2026-08-26 — OPTION 1 DOES NOT EXIST.** Measured bore field **0.020 MV/m** at 1 kW (`h3-field-01`) against N₂ breakdown ~3 MV/m. Scaling by √Q to a cavity with **no port at all** still leaves it **13× short in field = 158× in power (0.2 MW)**. 🔑 **A STRIKER IS MANDATORY**, and item 7's target settles as β = 1 loaded. See `../resonance/KNOWN.md` § FIELD MEASURED | ✅ closed |
 | 3 | Does ignition happen once per run, or per sample? | if per-sample, ignition reliability outranks loaded efficiency |
 | 4 | Time budget for ignition | a slow ramp tolerates a poor cold match; a fast one does not |
 

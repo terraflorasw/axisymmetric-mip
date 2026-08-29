@@ -1,0 +1,73 @@
+E0k2-portfix — does beta agree between meshes now the port is RESOLVED?
+
+🔴 THE DEFECT. The lumped port meshed with **2 elements** on a 1.8 x 0.30 mm
+rectangle against a 1.2 mm floor: the primary port gap sat 4x below the mesh
+floor. R62 diagnosed exactly this for the SERIES capacitor gap — "a first
+attempt left it below the mesh floor and Q_ext came back identical to 4
+significant figures across gaps of 0, 0.15, 0.30 and 0.60 mm" — and fixed it
+there ONLY. The primary gap was never given the same treatment.
+
+Consequences measured before the fix:
+  * the SAME geometry at 1 and 5 azimuthal sectors gave beta 0.5598 and 0.3411,
+    **39% apart**, with |S11|min differing by 4.8 dB;
+  * the loop-area sizing sweep came back NON-MONOTONIC (1.50, 0.87, 0.56, 1.85),
+    which no coupling model explains.
+
+⚠️ Q0 = Q_L(1+beta) SURVIVED this. Q_L and beta come from the same S11 curve and
+track whatever the actual coupling was, so the anchor's four driven-vs-eigen
+comparisons held at 4.9-8.8% throughout. What was never trustworthy is beta as a
+DESIGN quantity — "what coupling will this loop geometry give?"
+
+THE FIX (R112): let the primary gap lower the mesh floor, as gap2 already does,
+AND add a Ball refinement at the port centre — because lowering the floor alone
+refines nothing (R15: the floor only stops a deliberate request being
+overridden). Port: 2 -> 42 elements, tets +22%, floor 1.2 -> 0.096 mm, and both
+meshes now give the SAME 42.
+
+VERIFICATION
+  V1  beta must agree between the 1-sector and 5-sector meshes to within 10%.
+      They are the same geometry; only the partition differs.
+  V2  Q0 = Q_L(1+beta) must still agree with the eigen Q, as it did before —
+      the fix must not break what was already working.
+FALSIFICATION
+  🔴 F1  if beta still differs by tens of percent, the port was NOT the cause
+         and the 39% comes from somewhere else. Say so; do not re-fit.
+  🔴 F2  if Q0-vs-eigen agreement gets WORSE, the refinement has disturbed
+         something that was right.
+
+==============================================================================
+
+==============================================================================
+  e0k2_portfix_s1  (1 sector)
+    41,183 tets, floor 0.096 mm
+    e0k2_portfix_s1_eig: solver order 2
+    solved in 370s
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    solved in 1724s
+    beta=0.5887 (was 0.5598)  |S11|min=-11.737 dB  Q_L=18,593
+    Q0_driven=29,539  vs eigen 29,854 -> 1.1%
+
+==============================================================================
+  e0k2_portfix_s5  (5 sectors)
+    43,491 tets, floor 0.096 mm
+    e0k2_portfix_s5_eig: solver order 2
+    solved in 347s
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    solved in 2577s
+    beta=0.4081 (was 0.3411)  |S11|min=-7.529 dB  Q_L=20,864
+    Q0_driven=29,379  vs eigen 30,878 -> 4.9%
+
+==============================================================================
+                  beta before  beta after
+  1 sector             0.5598      0.5887
+  5 sectors            0.3411      0.4081
+  spread               64.1%       44.2%
+
+  V1 beta agrees within 10%: 44.2% 🔴 F1 FIRES — the port was NOT the cause. Look elsewhere; do not re-fit.
+  V2 s1: Q0 vs eigen 1.1% ✅
+  V2 s5: Q0 vs eigen 4.9% ✅
+
+  wrote e0k2_portfix.result.json
+EXIT=0

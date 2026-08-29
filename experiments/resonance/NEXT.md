@@ -14,6 +14,48 @@ conclusion in it is in `KNOWN.md`; the narrative is in git:
 ⚠️ **Do not re-grow it.** A result goes in `KNOWN.md`; a lesson goes in
 `CONVENTIONS.md`; only the *queue* goes here.
 
+## 🔴 LIVE STATE — written 2026-08-27T15:26Z, refresh or delete when stale
+
+**RUNNING:** `h3-ehratio-01` (stamp `d6043449`) on a NEW host — 4 cases
+`ld = 5, 8, 11, 14`, lw 8, barrel, gap2 0.5, grooved, cold. **8 eigen solves**
+(2 port BCs per case). `h3_loopq` has REAL resume keyed on the config stamp, so
+a reclamation costs only the case in flight.
+
+    ops/watch.sh h3-ehratio-01        # mirror: h3-ehratio-01.watch.log
+
+**What it answers:** rho = |E|/(c|B|) at the loop. `series_gap` reads 9.30
+where TE011's own value at that radius is 0.218 (`h3-field-01`) — but a series
+capacitor has a voltage across it BY CONSTRUCTION, so that alone decides
+nothing. The NEW `leg_intact` / `leg_broken` probes are where it decides: legs
+are current maxima, so a flux-linking loop must be H-dominated there.
+F1/F2/F3 are declared in the config, before the run.
+
+**🔴 CORRECTION TO THAT CONFIG'S OWN RECORD — read before quoting it.** Its
+`slice_note` says "no torch". **Wrong: the torch is SAPPHIRE, eps = 9.39** —
+`GEO_DESIGN` carries the design torch by default and the log confirms it. So
+this run IS on `h3-field-01`'s slice (the comparison that matters) but is NOT
+on `h3-lambda4-02`'s, which was DRIVEN with a VACUUM torch. Same four ld
+values; the torch moves f0 by ~10.4 MHz, i.e. ~0.42 % in L/(lambda/4).
+⚠️ **The config was NOT edited to fix this, deliberately:** `stamp()` is
+sha256 of the config file and every artefact name carries it, so an edit
+mid-run would orphan the solves and silently empty the resume set. The
+correction belongs in the write-up.
+
+**LANDED SINCE:** `h3-lambda4-02` finished — `KNOWN.md` § MEASURED, Q_ext has an
+interior minimum near lambda/4. ⚠️ Its heading first read "lambda/4 CONFIRMED"
+and was downgraded: **surviving a falsifier is not confirmation** (user). One
+thing IS falsified — the monotonic-area prediction.
+
+**NOT LANDED, ON PURPOSE:** the E-vs-H results. User: *"I don't think we should
+be updating KNOWN without going through the full process."* `ehratio.py` is the
+evaluation layer; the numbers are in the session and the result files only.
+
+**🔑 THE WATCHER IS STANDARDIZED — see CONVENTIONS §7bq.** It had failed FOUR
+times, never the same way twice, and CONVENTIONS had nothing on it. `ops/watch.sh
+<slug>` is now the only watch command to type; every line is mirrored to disk so
+a buffering caller cannot hide a live watch; `ops/status.sh` is a SNAPSHOT and
+`ops/remote.sh` no longer calls it a watch.
+
 ## Instance
 
 **UP.** Address in `ops/env.sh` (one line — it was hardcoded in 29 places once).
@@ -306,6 +348,26 @@ queued for the GEO re-run, which will re-produce them stamped as a side effect.
 **Do not re-run them for the stamp alone** — re-run them when their claim is
 needed, and take the stamp then.
 
+### 🔴 THE FOURTH DEBT — THE MESH SIDECAR DOES NOT RECORD THE LOOP SIZE
+
+**Opened 2026-08-27, by `h3-lambda4-02`.** `geometry_mm` records `loop_cap_r`,
+`loop_mount`, `loop_gap2`, `loop_flange_r`, and `loop_phi_deg`/`loop_tilt_deg`
+sit alongside it — **but not `[ld, lw]`, the loop's actual size.**
+
+🔴 **This is the artefact the programme relies on to discharge §7bm.** The GEO
+debt was closed "by artefact, not by argument" because every mesh sidecar
+recorded `geometry_mm.radius/length`. For a loop sweep the equivalent record
+does not exist, so when `h3_driven`'s tags collided there was **nothing in the
+sidecar to bind a point to its ld** — it took a re-mesh (`verify_ld_tets.py`)
+to do by measurement what the sidecar should have carried for free.
+
+✅ **THE FIX IS ONE FIELD:** `geometry_mm.loop = [ld, lw, rw, gap]` in
+`geometry.py`, alongside `groove`. Then assert it at the consumer, the way
+`cavity.groove.mm` is asserted (`mesh-is-what-you-ordered`).
+⚠️ It changes no mesh — sidecar content only — but it touches `geometry.py`,
+which owns `GEO`/`GEO_DESIGN` and the groove. **Verify the tet count is
+unchanged on one mesh before and after.**
+
 ### 🔴 THE OTHER DEBT — values still literal
 
 The widened linter surfaced residue that was invisible before. It is
@@ -322,6 +384,64 @@ grandfathered so it cannot grow, and **the list may only shrink**:
 must reproduce its CONCLUSION (the instrument claim) while changing its
 NUMBERS. If a conclusion flips, that rig's claim depended on the cavity and was
 never an instrument result.
+
+## 🔴 THE MATERIALS QUEUE — opened 2026-08-27
+
+**User: *"We should also try to get rid of all PEC that would also be a real part
+in a real build. I'd guess aluminum for the cavity, copper otherwise."***
+
+⚠️ **The premise needed one correction and the conclusion survives it.** Almost
+nothing is spuriously PEC: `geometry.py:990` tags the wall TOPOLOGICALLY — every
+face with a single adjacent volume — and the loop wire is cut OUT of the vacuum,
+so its surface has one adjacent volume and is swept into attribute 90 with the
+cavity wall. Confirmed from the resolved config Palace actually ran:
+`Conductivity {Attributes:[90], 3.5e7}` and `PEC {Attributes:[91]}`, where 91 is
+only the port face in the shorted control.
+
+🔴 **So the loop is not PEC — it is ALUMINIUM, and indistinguishable from the
+wall.** Two defects, one cause.
+
+| A | **the loop is the wrong metal** | it should be copper 5.8e7, not the wall's 3.5e7 |
+| B | **its loss cannot be separated from the wall's** | one attribute, one Conductivity entry, one number out |
+
+⚠️ **B invalidates a claim I made today.** "The coupler eats 45.3 % of cold
+dissipation at λ/4" is NOT supportable: the solve cannot tell wire loss from wall
+loss. **What is measured is that the loop's PRESENCE raises dissipation on the
+conducting surfaces by 83 % (Q₀ 44,414 → 24,292), location unknown.**
+
+### The order, and why
+
+| | do | why here |
+|---|---|---|
+| **A1** | **give the loop its own attribute + copper** | 🔴 **FIRST.** It moves every Q₀ and every loss number downstream. Re-running anything before it burns solves on numbers that will change (§7bp) |
+| ~~A6~~ | ✅ **DONE** — the surface/volume rule has ONE definition | 🔴 **21 SITES ACROSS 18 FILES**, not the "nine" I first reported — I had capped the grep with `\| head`, and **undercounting a duplication is how you fix most of it and leave the rest to fail later**. All bound to `volume_attrs(meta)`, proven identical to the expression it replaced on a pre-loop sidecar. `e0k2_anchor.shared_energy_list` now takes `meta` instead of `attrs` (an attrs dict CANNOT say which entries are surfaces; only the sidecar can) and its five callers are updated. Zero new lint warnings, diffed against HEAD |
+| A2 | re-run the three missing `h3-ehratio-01` cases | needs a SETTINGS decision (645 / 1,402 NLEPS without convergence is conditioning, not impatience) **and** A1 |
+| ~~A3~~ | ✅ **DONE** — `h3_loopq`'s V1 anchor is configuration-aware | It matched the anchor case on `(ld, lw)` + `grooved` only, so every barrel+capacitor run was compared against a **cap loop with no capacitor**. Now SUPPRESSES with the reason instead of firing. `check_v1()` is a pure function of the points; all five paths exercised, two on real landed data |
+| ~~A4~~ | ✅ **DONE** — item 7 step 4 **RETIRED**, not restated | Stronger than expected: **area is bounded by length**, area_max = (L + gaps)²/8, and the design sits at **97.5 %** of its own bound. The surviving axis is **aspect ratio at fixed L** — the radial/azimuthal split of the conductor |
+| ~~A5~~ | ✅ **DONE** — item 7 step 3 reframed, and a probe added | The **port gap is the tighter break** (0.3 vs 0.5 mm) and carries the drive, yet had no probe while the series gap had one. `port_gap` added to `h3_loopq`; `fieldcheck` maps it to a limit. ⚠️ `values.get` REFUSED its width as TENTATIVE — correct, it has no owner |
+
+### A1 — what it must prove, not just do
+
+`loop.conductivity.s_per_m` = 5.8e7 is declared in `baselines.json` and consumed
+by **NOTHING** — zero hits across every rig. This is its first consumer, so the
+declared-but-unused pattern is exactly the risk.
+
+- ✅ **V** tet count UNCHANGED (a boundary retag is not a geometry change);
+  the wall attribute's face count drops by exactly the loop's faces; the new
+  attribute contains only wire faces.
+- 🔴 **F** if Q₀ on a known case does not move AT ALL, the new attribute is not
+  being consumed and the change is cosmetic. Copper is less lossy than
+  aluminium, so **Q₀ must RISE** — a fall means the assignment is inverted.
+- 🔑 The payoff is the PARTITION: wall loss and loop loss as separate numbers,
+  which is what the 83 % question actually needs.
+
+### A3 — the V1 anchor fires on the wrong comparison
+
+`h3_loopq` compares every run against `h3_step3`'s **cap loop with no series
+capacitor** (Q_ext 9,117, β 4.8) and printed *"THE ANCHOR DOES NOT REPRODUCE —
+treat every other row as SUSPECT"* over a run whose own declared control passed
+at 0.6–1.9 %. **A guard that fires when it should not trains you to ignore it.**
+It should suppress on a non-cap config the way `eta` already does.
 
 ## THE QUEUE
 
@@ -399,14 +519,82 @@ loaded VSWR 83 → 3.1 bought cold ignition power 556 W → 45 W. **The minimax
 fixed loop is Q_ext ≈ 1,700 (VSWR ~16 in both states) — roughly where the gap
 sweep STARTED.**
 
+### 🔎 QUEUED — THE AZIMUTHAL LOOP, and the question is VSWR (2026-08-28)
+
+**User: *"the other loop option: one that runs azimuthally along the wall at the
+cavity equator ... My main interest in the other loop shape is if/how it manages
+VSWR."*** ⚠️ Framed on VSWR deliberately — my first analysis emphasised mode
+perturbation, which is not the question.
+
+✅ **PRIOR ART: NONE.** No azimuthal / wall-following / equatorial loop appears in
+`KNOWN`, `PLAN`, `NEXT`, `CONVENTIONS`, `HYPOTHESES` or `OPTIMIZER`. Only two
+mounts have ever been meshed — cap and barrel.
+
+### 🔴 THE NULL HYPOTHESIS IS "NO VSWR BENEFIT", AND IT IS STRONG
+
+VSWR is set by β = Q₀/Q_ext. **Q_ext is cold and geometric; Q₀ swings ~400×
+cold→loaded.** So a topology can only move VSWR through Q_ext.
+
+🔑 **Both topologies are the SAME optimisation** — a rectangle *closed through the
+wall*, conductor on three sides, the wall closing the fourth for free:
+
+| conductor 38 mm | max area | at |
+|---|---:|---|
+| radial (current) | 180.5 mm² | ld = 9.5 |
+| azimuthal | **191.4 mm²** | h = 9.5 |
+
+**6 %**, all of it the outer arc being longer than the inner. And the area sits
+over the same J₀ range (r/a 0.875–1.0 vs 0.892–1.0). Same flux, same Q_ext, same
+VSWR. **Against Q_ext moving 5.6× across the ld sweep, 6 % is nothing.**
+
+### 🔑 THE ONE MECHANISM THAT COULD BREAK THE NULL — image loading
+
+A conductor running **parallel and close to** the wall is image-loaded: its image
+current largely cancels its own, cutting self-inductance and changing its
+effective electrical length. A radial leg poking into the volume is not.
+**Since λ/4 governs Q_ext (KNOWN.md § MEASURED), moving the effective length
+moves the resonance — and Q_ext with it.**
+
+> **The measurement:** Q_ext vs conductor length for the azimuthal loop, plotted
+> against the radial curve already measured — **1,325 / 359 / 1,135 / 2,024 at
+> L/(λ/4) = 0.82 / 1.02 / 1.22 / 1.41.**
+>
+> 🔴 **F1 — if azimuthal Q_ext falls on the SAME curve vs conductor length,**
+> image loading is negligible, the topology is a MECHANICAL choice and not an
+> electrical one, **VSWR is unchanged, and the decision goes to buildability.**
+> 🔴 **F2 — if it falls on a DIFFERENT curve,** the λ/4 point has moved and there
+> is a new axis: the same Q_ext at a different physical size, which is exactly
+> what the tolerance problem wants (d ln Q_ext / d ln L ≈ 4–6.5 means ±0.37 mm
+> is ±5 % in Q_ext).
+
+⚠️ **What NOT to spend the run on.** Whether it perturbs TE011 less — the arc
+runs *along* the wall current (K = H_z φ̂) the way the groove does, while radial
+legs cross it — is a real and testable side-effect, but it is NOT the question.
+Record Q₀ and purity because they come free; do not size the sweep for them.
+
+### What it costs to build
+
+A third branch in `geometry.py` beside cap and barrel. The arc is free —
+`occ.addTorus` takes an angular extent — plus two radial legs and the existing
+fuse/cut/port machinery. By analogy with the current design: **port gap in the
+ARC** (the side parallel to the wall, as the crossbar is now), **series gap in a
+radial leg**.
+✅ **The 2026-08-27 loop-surface machinery carries over unchanged**: an arc at
+z = 0 with circular cross-section still has z-extent exactly 2·lrw with centroid
+at z = 0, so the copper attribute, the partition assertion and the leg probes all
+work as-is.
+🔴 **`geometry.py` is where this session's regression came from.** Same
+discipline: `--dump-faces` first, tet-count A/B with the branch disabled, and the
+partition assertion must pass before any solve.
+
 ### What item 7 still owes, in order
 
 | | | blocked on |
 |---|---|---|
 | **1** | **Choose the target: minimax, β = 1 loaded, or TWO LOOPS** | 🔴 **`../ignition-options/`** — the choice is theirs, not this programme's. 🔑 **Two loops (user, 2026-08-25) gives β = 1 in BOTH states** and makes the choice moot; its cost is a second port in `geometry.py`, a switch, and an unmeasured mode perturbation |
-| 2 | **Series-gap E-field** — a probe coordinate, not new capability | nothing. **PRECONDITION for any further gap widening**, since the field rises with both I and X_C |
-| 3 | Port-gap sweep — `loop.gap.mm` = 0.3 is TENTATIVE and is the tighter feature | nothing |
-| 4 | Re-sweep AREA on the barrel — 176 mm² was a CAP result and does not transfer | nothing |
+| ~~2~~ | ✅ **DONE 2026-08-27 — series-gap E-field measured.** `fieldcheck`: **1.334 MV/m at 1 kW cold, limit 5.44, margin 4.08×** (ld 11, gap2 0.5). The precondition on gap widening is discharged | — |
+| **3** | 🔑 **REFRAMED (A5) — the PORT gap is the tighter break and was NEVER probed.** 0.3 mm against the series gap's 0.5, and it carries the **drive**; the series gap had a probe and a margin, this had neither. ✅ `port_gap` probe added to `h3_loopq`, and `fieldcheck` now maps it to a limit. ⚠️ Its width is **TENTATIVE with no owner** — `values.get` REFUSED it until the call site said `allow_tentative`, so the margin is only as good as a number nobody chose. 🔑 It is also a **length trim**: 0.3 → 1.0 mm is −1.9 % in L ≈ **8–12 % in Q_ext** | nothing |
+| ~~4~~ | 🔴 **RETIRED AS WRITTEN (A4) — "re-sweep AREA" cannot do what it says.** Area is **bounded by length**: with S = (L + gaps)/2, area ≤ S²/2, i.e. **area_max = (L + gaps)²/8**. The design's 176 mm² is **97.5 %** of the 180.5 mm² available at its own conductor length, so *"increase area"* and *"increase length"* are the same instruction and the length sweep already ran it. ✅ **The real independent axis is ASPECT RATIO at fixed L** — ld + lw constant changes the **radial/azimuthal split of the conductor** (how much links H_z), which is an orientation question, not an area one. Area along that line only spans 96–180 mm² and needs ld=16/lw=3 to move at all | nothing |
 | 5 | Feed transition, support, material, cooling (7d.B) | **hardware design, not EM sweeps** |
 
 ⚠️ **Do not run another gap sweep before 1 and 2.** Widening further optimises

@@ -63,7 +63,7 @@ import physics as ph
 import solveconf
 import eigmodes
 import azimuthal
-from e0_solver_vs_math import GEO, GEO_DESIGN, eigen_cfg, run
+from e0_solver_vs_math import GEO, GEO_DESIGN, eigen_cfg, run, volume_attrs
 from e0k2_anchor import (design_point, wall_sigma, LOOP_PHI, LOOP_RW, LOOP_GAP,
                          CAP_R_FRAC)
 from e0k2_azim import sector_bins, read_sector_energy
@@ -267,9 +267,10 @@ def main():
         print(f"    groove in mesh: {g}   tets={meta['tets']:,}", flush=True)
         attrs = meta["attributes"]
         bins = sector_bins(meta)
-        vols = sorted({v for k, v in attrs.items()
-                       if isinstance(v, int) and k not in ("wall", "port")}
-                      | set(attrs.get("air") or []))
+        # 🔴 was a local copy of the surface/volume rule — one of
+        # NINE. A `loop` SURFACE got classified as a VOLUME and
+        # Palace refused the config (2026-08-27). One definition.
+        vols = volume_attrs(meta)
         # 🔴 port_bc="pec" — GATE 4, added 2026-08-24 (CONVENTIONS §7v).
         # This rig wants the UNLOADED Q, so the port must not be a loss
         # channel. Shorting the gap makes the loop a small closed ring

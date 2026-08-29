@@ -1,0 +1,75 @@
+E0k — the missing cell. Isolate PROBLEM TYPE from LOADING.
+
+The comparison as it stood changed two things at once:
+
+    old, DRIVEN,    LOADED (quartz torch + filter)   offset +24.54 MHz   R38
+    new, EIGENMODE, EMPTY                            offset +12.00 MHz   E0g
+
+A factor of 2 — but problem type AND loading both differ, so the table cannot
+attribute it. The user's point: there must be a "new, DRIVEN, EMPTY" row.
+
+🔑 ONE MESH, FOUR SOLVES. Driven needs a port, so this mesh HAS a coupling loop.
+That is fine, because the quantity measured is an ORDER-1 -> ORDER-2 OFFSET on a
+FIXED mesh: the loop is present in both solves of each pair and cancels exactly,
+the same way discretisation cancels. What does NOT cancel between the pairs is
+the problem type, which is the whole point.
+
+    eigenmode order 1  ->  eigenmode order 2   offset_eig
+    driven    order 1  ->  driven    order 2   offset_drv
+
+    offset_eig vs offset_drv  = PROBLEM TYPE, zero other differences
+    offset_eig vs E0g's 12.00 = the LOOP's contribution (E0g had no loop)
+    offset_drv vs R38's 24.54 = LOADING, at fixed problem type
+
+VERIFICATION   the order-2 solves of both types are compared against
+               physics.spectrum(). The loop perturbs, so agreement is expected
+               to a few MHz, not exactly.
+
+⚠️ NOTHING IS DISCARDED. Every solve's frequency is reported with its deviation
+from exact and the diagnostics behind its mode pick, whether it looks right or
+not. A script that drops a row makes its own criterion invisible — and criteria
+in this project have been mis-specified three times (a sub-noise linearity gate,
+a null control graded as a failure for passing, a degeneracy guard that watched
+frequency instead of character). A criterion that deletes its evidence cannot be
+caught being wrong. Flags go in a column; the row stays.
+FALSIFICATION  🔴 if offset_eig and offset_drv differ by ~2x on ONE MESH with
+               ONE geometry, the old R37 disagreement is real, survives at
+               order 2, and is a property of the two solvers rather than of the
+               old programme's setup. If they agree, R37 was an artifact and the
+               24.54/12.00 gap is entirely LOADING.
+
+==============================================================================
+  ONE mesh: 27,578 el, port 91, loop tilt 0.0° phi 36.0°
+
+  eigenmode order 1
+    solved in 4s — under MIN_SECONDS=30 but produced domain-E.csv, eig.csv, error-indicators.csv
+    picked 2.46786 from 8 modes; nearest-3 [2.46786, 2.4123, 2.49838]
+  eigenmode order 2
+    solved in 278s
+    picked 2.44648 from 8 modes; nearest-3 [2.44648, 2.43043, 2.49234]
+    ⚠️ wall conductivity from TEMPLATE — baselines unreadable ('wall.conductivity')
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+  driven order 1  band (2.415, 2.455) step 2e-05
+    solved in 18s — under MIN_SECONDS=30 but produced domain-E.csv, error-indicators.csv, port-I.csv, port-S.csv, port-V.csv
+    picked 2.44136 from 2001 samples; top-3 by stored energy [2.44136, 2.44134, 2.44138]
+    ⚠️ wall conductivity from TEMPLATE — baselines unreadable ('wall.conductivity')
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+  driven order 2  band (2.415, 2.455) step 2e-05
+    solved in 54s
+    picked 2.44670 from 2001 samples; top-3 by stored energy [2.4467, 2.44672, 2.44668]
+
+                 order 1     order 2   OFFSET MHz  ord2 vs exact    flag
+   eigenmode     2.46786     2.44648       -21.39           2.09        
+      driven     2.44136     2.44670         5.34           2.32        
+
+  ⚠️ the flag marks a row for the READER's attention. Nothing is withheld:
+     mode-pick diagnostics for every solve are in e0k.result.json.
+
+  exact TE011 (empty, no loop) = 2.44438 GHz
+
+  REFERENCE ROWS:
+    old  DRIVEN    LOADED   offset +24.54  (R38)
+    new  EIGENMODE EMPTY    offset +12.00  (E0g, no loop)
+
+  wrote e0k.result.json — NO VERDICT HERE
+EXIT=0

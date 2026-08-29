@@ -59,7 +59,7 @@ import physics as ph
 import solveconf
 import eigmodes
 import solvecost
-from e0_solver_vs_math import GEO, eigen_cfg, run
+from e0_solver_vs_math import GEO, eigen_cfg, run, volume_attrs
 from e0k2_anchor import design_point, wall_sigma
 from h3_loaded import drude, skin_depth, Z_FRAC, INNER_R, SECTORS
 
@@ -105,9 +105,10 @@ def attempt(label, a, L, sigma_w, exact, ne, plasma_h, target):
     print(f"    {m['tets']:,} tets, floor {floor:.3f} mm, "
           f"air/floor ratio {rec['size_ratio']:.0f}x", flush=True)
 
-    vols = sorted({v for k, v in attrs.items()
-                   if isinstance(v, int) and k not in ("wall", "port")}
-                  | set(attrs.get("air") or []))
+    # 🔴 was a local copy of the surface/volume rule. A `loop`
+    # SURFACE got classified as a VOLUME (2026-08-27) and
+    # Palace refused the config. One definition now.
+    vols = volume_attrs(m)
     c = eigen_cfg(tag, m, mesh=f"{tag}.msh", sigma=sigma_w,
                   n=N_MODES, target=target)
     c["Solver"]["Order"] = 2

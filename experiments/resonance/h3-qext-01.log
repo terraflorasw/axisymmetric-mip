@@ -1,0 +1,60 @@
+  sigma_wall=3.5e+07 S/m   (bound from baselines.json)
+  eigen: target=2.38 N=8 order 2 — PRIOR ART (h3_step3), not re-derived
+  🔑 NO MESH IS BUILT. Every solve binds an existing h3_driven mesh.
+
+  --- cold   mesh=h3-driven-00_cold.msh  tets=80621
+    h3-qext-01.27d25f58_cold_pec: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    h3-qext-01.27d25f58_cold_pec: solver order 2
+    plasma: NONE (cold) — eigen_cfg's eps=1 default IS the cavity h3_driven solved cold
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 784s
+    pec    f0=2.451490  Q=43,522.8  P_min=0.9997995696292108  (continuation -0.010 MHz, 4 in window)
+    🔑 h3-qext-01.27d25f58_cold_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3-qext-01.27d25f58_cold_lumped: solver order 2
+    plasma: NONE (cold) — eigen_cfg's eps=1 default IS the cavity h3_driven solved cold
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 792s
+    lumped f0=2.451488  Q=7,537.7  P_min=0.999796577350038  (continuation -0.012 MHz, 4 in window)
+    ✅ Q0=43,523  Q_L=7,538  Q_ext=9,117  beta=4.7740
+       driven dip implied 8,462 on THIS mesh -> +7.7%
+       h3_loopq eigen (NO torch) 9,231 -> -1.2%
+
+  --- anchor 7.9e18   mesh=h3-driven-00_n18p90.msh  tets=80621
+    h3-qext-01.27d25f58_n18p90_pec: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    h3-qext-01.27d25f58_n18p90_pec: solver order 2
+    plasma: eps=-1.456 sigma=2.175 S/m on attr 12
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    🔴 h3-qext-01.27d25f58_n18p90_pec: TIMED OUT after 2700s (0 NLEPS iterations) — rank TREE killed
+    🔴 pec: solve failed
+    🔑 h3-qext-01.27d25f58_n18p90_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3-qext-01.27d25f58_n18p90_lumped: solver order 2
+    plasma: eps=-1.456 sigma=2.175 S/m on attr 12
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    🔴 h3-qext-01.27d25f58_n18p90_lumped: TIMED OUT after 2700s (0 NLEPS iterations) — rank TREE killed
+    🔴 lumped: solve failed
+
+  --- 1e20   mesh=h3-driven-00_n20p00.msh  tets=80621
+    h3-qext-01.27d25f58_n20p00_pec: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    h3-qext-01.27d25f58_n20p00_pec: solver order 2
+    plasma: eps=-30.089 sigma=27.53 S/m on attr 12
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 1093s
+    pec    f0=2.482470  Q=163.2  P_min=0.9996393435488627  (continuation +0.070 MHz, 4 in window)
+    🔑 h3-qext-01.27d25f58_n20p00_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3-qext-01.27d25f58_n20p00_lumped: solver order 2
+    plasma: eps=-30.089 sigma=27.53 S/m on attr 12
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 1082s
+    lumped f0=2.482471  Q=160.5  P_min=0.9996360315978396  (continuation +0.071 MHz, 4 in window)
+    ✅ Q0=163  Q_L=160  Q_ext=9,729  beta=0.0168
+       driven dip implied 9,221 on THIS mesh -> +5.5%
+       h3_loopq eigen (NO torch) 9,231 -> +5.4%
+
+  wrote h3-qext-01.27d25f58.result.json
+EXIT=0

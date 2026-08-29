@@ -81,8 +81,52 @@ echo "== lint on the instance =="
 # the fix landed in the interpreter nobody runs.
 timeout 60 ssh -i "$K" $H "cd $R && source /opt/amip/env.sh && python3 preflight.py $RIG"
 
+# 🔴 DO NOT LAUNCH INTO A CLOSING TERMINATION WINDOW.
+# 2026-08-28: a spot notice was issued at 00:28:51Z for termination at 00:30:46Z.
+# I diagnosed a stagnating case, killed it, edited the config and relaunched at
+# ~00:30 — into the last seconds of that window. The rig died before its first
+# solve, and the whole cycle (kill, reconfigure, sync, lint, launch) was spent on
+# a machine that was already condemned.
+# 🔑 AWS publishes the notice ~2 minutes ahead at IMDS. `ops/spotwatch.sh` reads
+# it to RECORD interruptions; this reads the same endpoint to REFUSE a launch.
+# Same source, different consumer — no second way of asking.
+echo "== refuse if this instance is already condemned =="
+# 🔴 KEY ON THE HTTP STATUS, NOT THE BODY. With no notice pending IMDS returns a
+# 404 whose body is an HTML page — not an empty string — so a substring test on
+# the body is a coin flip on whether some word happens to appear in boilerplate.
+# `ops/spotwatch.sh` already keys on the code; this uses the same rule so there
+# is one way of asking, not two.  200 = notice pending, 404 = clear.
+_CODE=$(timeout 20 ssh -i "$K" -o ConnectTimeout=10 $H '
+  T=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" \
+      -H "X-aws-ec2-metadata-token-ttl-seconds: 60" --max-time 3 2>/dev/null)
+  curl -s -o /tmp/.spotnotice.$$ -w "%{http_code}" --max-time 3 \
+      -H "X-aws-ec2-metadata-token: ${T:-}" \
+      "http://169.254.169.254/latest/meta-data/spot/instance-action" 2>/dev/null
+  echo " $(cat /tmp/.spotnotice.$$ 2>/dev/null | tr -d "\n")"
+  rm -f /tmp/.spotnotice.$$' 2>/dev/null)
+if [ "${_CODE%% *}" = "200" ]; then
+  echo "  🔴 SPOT INTERRUPTION NOTICE ALREADY PENDING on this instance:"
+  echo "     ${_CODE#* }"
+  echo "     REFUSING to launch — it will die mid-solve. On 2026-08-28 a notice"
+  echo "     was issued at 00:28:51Z for termination at 00:30:46Z and a relaunch"
+  echo "     went in at ~00:30, dying before its first solve."
+  echo "     Start a new instance, set ops/env.sh, NOSYNC=1 ops/go ops/mount.sh."
+  exit 4
+fi
+echo "  no pending notice (IMDS ${_CODE%% *})"
+
 echo "== launch (detached, journalled) =="
 timeout 60 ssh -i "$K" $H \
   "cd $R && nohup bash -c 'source /opt/amip/env.sh && PALACE_RANKS=$RANKS RUN=$TAG python3 -u $RIG $SLUG_ARG > $TAG.log 2>&1; echo EXIT=\$? >> $TAG.log' >/dev/null 2>&1 & sleep 3; echo '  launched $RIG at $RANKS ranks'"
-echo "  watch:  ops/go ops/status.sh"
+# 🔴 THIS SAID `watch: ops/go ops/status.sh` UNTIL 2026-08-27. status.sh is a
+# SNAPSHOT — it answers "is anything running right now", not "tell me when a
+# case lands". Pointing at it here is how launches ended up POLLED instead of
+# watched, which CLAUDE.md forbids for exactly this reason. Name the watch.
+if [ -n "$SLUG_ARG" ]; then
+  echo "  watch:  ops/watch.sh $SLUG        <- do this, and do NOT pipe it"
+  echo "          progress is mirrored to $SLUG.watch.log regardless"
+else
+  echo "  🔴 no slug — there is nothing to watch BY NAME. Relaunch with one."
+fi
+echo "  snapshot: ops/go ops/status.sh   (is anything running — not a watch)"
 echo "  fetch:  ops/go ops/fetch.sh"

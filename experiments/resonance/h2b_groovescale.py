@@ -51,7 +51,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import eigmodes
 import physics as ph
 import solveconf
-from e0_solver_vs_math import GEO, eigen_cfg, run
+from e0_solver_vs_math import GEO, eigen_cfg, run, volume_attrs
 from scipy.optimize import brentq
 
 TAG = "h2b"
@@ -203,9 +203,10 @@ def groove_slater(tag):
     g = (meta.get("attributes") or {}).get("groove")
     if g is None:
         return None
-    vols = sorted({v for k, v in meta["attributes"].items()
-                   if isinstance(v, int) and k not in ("wall", "port")}
-                  | set(meta["attributes"].get("air") or []))
+    # 🔴 was a local copy of the surface/volume rule. A `loop`
+    # SURFACE got classified as a VOLUME (2026-08-27) and
+    # Palace refused the config. One definition now.
+    vols = volume_attrs(meta)
     if g not in vols:
         return None
     idx = 10 + vols.index(g)          # eigen_cfg's numbering

@@ -69,7 +69,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import solveconf
 import eigmodes
-from e0_solver_vs_math import GEO, eigen_cfg, run
+from e0_solver_vs_math import GEO, eigen_cfg, run, volume_attrs
 from e0k2_anchor import design_point, wall_sigma, LOOP_PHI, LOOP_RW, LOOP_GAP
 from h3_loaded import SECTORS, CAP_R_FRAC
 from azimuthal import order as az_order
@@ -157,9 +157,10 @@ def build(tag, dT, a0, L0, rec):
 def solve(mesh_tag, out_tag, meta, sigma, port_bc, a, seed, rec):
     attrs = meta["attributes"]
     bins = sector_bins(meta)
-    vols = sorted({v for k, v in attrs.items()
-                   if isinstance(v, int) and k not in ("wall", "port")}
-                  | set(attrs.get("air") or []))
+    # 🔴 was a local copy of the surface/volume rule — one of
+    # NINE. A `loop` SURFACE got classified as a VOLUME and
+    # Palace refused the config (2026-08-27). One definition.
+    vols = volume_attrs(meta)
     # 🔴 MESH tag and OUTPUT tag are SEPARATE. One mesh per temperature is
     # solved TWICE (pec, lumped), so the output tag must differ while the mesh
     # tag must not. Conflating them cost a launch: build wrote h3_hot_0.msh,

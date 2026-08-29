@@ -1,0 +1,135 @@
+H3's HOT leg — the cavity at operating wall temperature, NO plasma.
+
+🔴 WHY THIS EXISTS. H3 asks for sustainment across **COLD / HOT / LOADED**. Cold
+and loaded are measured; **HOT never has been.** Nothing in the tree scales
+dimensions for temperature, and the only "hot" string in a result file is a
+mislabelled plasma density — the exact confusion GLOSSARY was written to stop.
+
+🔑 GLOSSARY: **HOT is THERMAL, not a plasma density.** Cavity already operating —
+hot walls, hot gas, **NO PLASMA**. It is the RE-IGNITION state.
+⚠️ **Do NOT restate GLOSSARY's "the regime that decides whether the instrument
+restarts itself".** That is emphasis, not a finding — a hot cavity can be allowed
+to cool, or cooled harder. **The real consequence is that the control loop needs
+a temperature input**, which turns thermal detuning into a computed offset.
+
+## What changes with wall temperature, and it splits cleanly
+
+  FREQUENCY — every state. Pure geometry: aluminium expands, f ~ 1/length, so
+              df/f = -alpha*dT exactly. This rig TESTS that the mesher and
+              solver reproduce it; it is not new physics.
+  MATCH     — UNLOADED ONLY. Wall sigma falls with T, so Q0 and beta fall.
+              ⚠️ LOADED, the plasma is 275x the wall loss: Q0 158.0 -> 157.8 at
+              +100 K. Loaded beta belongs to the plasma. **That is why this rig
+              has NO plasma** — the hot effect on the match lives entirely here.
+
+🔴 A DISCREPANCY THIS RIG CANNOT SETTLE, SO IT REPORTS BOTH.
+GLOSSARY states **Q x 0.78 at +100 K**. E0 validated **Q ~ sqrt(sigma)** to four
+decimals, and standard aluminium (alpha_R = 4.29e-3 /K) gives sigma x0.700 ->
+**Q x0.837**. The record's 0.78 requires alpha_R = 6.44e-3 /K, **~1.5x
+aluminium**. **sigma is an INPUT here, so the solve cannot arbitrate** — it can
+only confirm Q follows sqrt(sigma) from whatever sigma it is given.
+✅ This rig uses the defensible **4.29e-3** and prints both predictions.
+**Someone must decide where 0.78 came from.**
+
+🔴 EIGEN ONLY (§7c). Eigen PAIRS per temperature — port_bc "pec" for Q0 (no port
+loss) and "lumped" for Q_L — so beta comes from
+1/Q_ext = 1/Q_L - 1/Q0 with **no |S11|, no fit, no branch decision** (§7x).
+
+VERIFICATION
+  V1  🔑 dT = 0 MUST reproduce `h3_loopq`'s 11x8 cell: Q0 43,422, Q_ext 9,231,
+      beta 4.704, f0 2.451633. Same mesh style, same settings. **If dT=0 does
+      not reproduce, nothing else in the sweep means anything.**
+  V2  df/f must equal **-alpha*dT** (alpha = 23.1e-6/K) to within mesh jitter.
+      This is a GEOMETRY identity — it tests that scaling reached the mesh, not
+      the physics. -5.65 MHz at +100 K, -11.27 at +200 K.
+  V3  Q0 ratio must equal **sqrt(sigma ratio)** — E0's validated law. x0.837 at
+      +100 K, x0.734 at +200 K.
+  V4  purity must stay high. Thermal scaling is uniform, so the mode shape
+      should be untouched; a purity change would mean the scaling broke
+      something.
+FALSIFICATION
+  🔴 F1  if df/f != -alpha*dT, the dimensions did not scale as intended and
+         every row is suspect. **Check the mesh sidecar before believing any Q.**
+  🔴 F2  if Q0 does not follow sqrt(sigma), either E0's law fails here or sigma
+         did not reach the solver. Both are instrument faults, not findings.
+  🔴 F3  if beta moves less than Q0 does, Q_ext is scaling too — the loop
+         expands with the cavity. Report Q_ext(dT); do not assume it is fixed.
+         ⚠️ ASSUMPTION: that Q_ext is dominated by geometry that scales
+         uniformly. The loop, the gap and the cavity all expand together, so
+         first order this should nearly cancel in beta. **Measured, not assumed.**
+
+==============================================================================
+  cold baseline: a=88.0045 L=115.4158  sigma=3.5e+07 S/m
+  alpha=2.31e-05/K (expansion)   alpha_R=0.00429/K (resistivity)
+  ⚠️ GLOSSARY's 'Q x0.78 at +100 K' needs alpha_R=0.00644/K — ~1.5x aluminium. Using the standard value and reporting both.
+
+  --- wall T = 293.1 K (20 C), i.e. dT = +0 K   🔑 V1 ANCHOR (must reproduce h3_loopq)
+    a=88.0045 L=115.4158  groove [5.0, 10.0]  sigma=3.5e+07  tets=43,685
+    h3_hot_0_pec: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    h3_hot_0_pec: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 443s
+       pec: 2.451633  Q=   43,422  P>=0.9997 spread=0.0003  (continuation -0.000 MHz)
+    🔑 h3_hot_0_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3_hot_0_lumped: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 433s
+    lumped: 2.451631  Q=    7,613  P>=0.9997 spread=0.0003  (continuation -0.002 MHz)
+    -> f0=2.451633  Q0=   43,422  Q_ext=    9,231  beta=4.704
+  --- wall T = 393.1 K (120 C), i.e. dT = +100 K
+    a=88.2078 L=115.6824  groove [5.01155, 10.0231]  sigma=2.449e+07  tets=43,717
+    h3_hot_100_pec: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    h3_hot_100_pec: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5.01155 x 10.0231 mm (in mesh)
+    solved in 455s
+       pec: 2.445935  Q=   36,374  P>=0.9998 spread=0.0002  (continuation -0.048 MHz)
+    🔑 h3_hot_100_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3_hot_100_lumped: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5.01155 x 10.0231 mm (in mesh)
+    solved in 453s
+    lumped: 2.445934  Q=    7,339  P>=0.9998 spread=0.0002  (continuation -0.049 MHz)
+    -> f0=2.445935  Q0=   36,374  Q_ext=    9,194  beta=3.956
+  --- wall T = 493.1 K (220 C), i.e. dT = +200 K
+    a=88.4111 L=115.9490  groove [5.023100000000001, 10.046200000000002]  sigma=1.884e+07  tets=44,018
+    h3_hot_200_pec: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    h3_hot_200_pec: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5.0231 x 10.0462 mm (in mesh)
+    solved in 407s
+       pec: 2.440206  Q=   31,938  P>=0.9997 spread=0.0002  (continuation -0.152 MHz)
+    🔑 h3_hot_200_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3_hot_200_lumped: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5.0231 x 10.0462 mm (in mesh)
+    solved in 403s
+    lumped: 2.440205  Q=    7,160  P>=0.9997 spread=0.0002  (continuation -0.154 MHz)
+    -> f0=2.440206  Q0=   31,938  Q_ext=    9,229  beta=3.461
+
+==============================================================================
+  V1 f0           2.4516 vs h3_loopq       2.4516  ->  0.00% ✅
+  V1 Q0      43,421.6088 vs h3_loopq  43,422.0000  ->  0.00% ✅
+  V1 Q_ext    9,231.3567 vs h3_loopq   9,231.0000  ->  0.00% ✅
+  V1 beta         4.7037 vs h3_loopq       4.7040  ->  0.01% ✅
+
+      dT     f0 GHz   df MHz        Q0    Q_ext    beta    VSWR    P_min
+      +0   2.451633     0.00    43,422    9,231   4.704     4.7   0.9997
+    +100   2.445935    -5.70    36,374    9,194   3.956     4.0   0.9998
+    +200   2.440206   -11.43    31,938    9,229   3.461     3.5   0.9997
+
+  V2 dT+100: df -5.70 vs -alpha*dT -5.66 MHz -> 0.034 ✅
+  V3 dT+100: Q0 x0.8377 vs sqrt(sigma) x0.8365 -> 0.14% ✅
+     ⚠️ the record's 0.78-at-100K would predict x0.7799 — UNRESOLVED, sigma is an input
+  F3 dT+100: Q_ext x0.9960, Q0 x0.8377 -> beta x0.8411   (Q_ext nearly fixed)
+  V2 dT+200: df -11.43 vs -alpha*dT -11.33 MHz -> 0.100 ✅
+  V3 dT+200: Q0 x0.7355 vs sqrt(sigma) x0.7336 -> 0.26% ✅
+     ⚠️ the record's 0.78-at-100K would predict x0.6611 — UNRESOLVED, sigma is an input
+  F3 dT+200: Q_ext x0.9997, Q0 x0.7355 -> beta x0.7357   (Q_ext nearly fixed)
+
+  V4 worst purity spread 0.0003 at dT+0 ✅ thermal scaling leaves the mode shape alone
+
+  result -> h3_hot.result.json
+EXIT=0
