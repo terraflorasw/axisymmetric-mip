@@ -1,0 +1,63 @@
+E0 — how far is this solver from mathematics?
+
+NOT "verify the instrument". Put a NUMBER on the disagreement between this
+solver and the closed form, on the one case where the closed form is complete.
+Nothing here licenses anything; it bounds how much a later disagreement may be
+attributed to the solver rather than to the model.
+
+VERIFICATION  physics.spectrum(103.70, 88.53) — exact for PEC walls.
+FALSIFICATION chi'_01 = chi_11 IDENTICALLY, so the TE011/TM111 splitting has a
+              true value of EXACTLY ZERO. Any splitting reported is pure
+              numerical symmetry breaking. This is a stronger probe than
+              rotation or translation: those have zero true CHANGE in one
+              quantity; this has zero true DIFFERENCE between two things the
+              solver must report separately.
+
+⚠️ KNOWN DEVIATION FROM THE IDEAL REFERENCE, stated rather than hidden.
+`geometry.py` cannot delete the outer torch shell — `--no-torch` sets its
+permittivity to 1.0 and `--torch-tube 0,w` is refused by a guard. So the cavity
+is a right circular cylinder containing a VACUUM-FILLED SHELL: electromagnetically
+empty, but carrying internal mesh surfaces that the closed form knows nothing
+about. `--no-inner` removes two of the three tubes. The residual is itself
+informative — it is the mesh's response to physics-free internal boundaries —
+but it means a small disagreement is EXPECTED and must not be read as solver error.
+
+🔴 THREE PREVIOUS ATTEMPTS AT THIS BENCHMARK FAILED ON THE GEOMETRY, NOT THE
+SOLVER: a viewport left on; a flag (`--viewport 0`) that could not turn it off
+because 0 is falsy; and two volume attributes left with no material at all. Each
+time the disagreement looked like a solver fault. The gates below are written as
+COMPLETENESS ASSERTIONS rather than lists of things to exclude, because a list
+maintained by hand is the same failure as a name maintained by hand.
+
+==============================================================================
+VERIFICATION REFERENCE — physics.py, no simulation:
+    TM010  1.106485 GHz
+    TM110  1.763008 GHz
+    TE111  1.893272 GHz
+    TM011  2.022654 GHz
+    TE211  2.200375 GHz
+    TM210  2.362953 GHz
+    TE011  2.444385 GHz
+    TM111  2.444385 GHz
+    TM020  2.539846 GHz
+    TM211  2.906952 GHz
+    TE121  2.980652 GHz
+  FALSIFIER: exact degeneracies [('TE011', 'TM111')] — true splitting identically 0
+
+MESHING
+  e0fine: sf 0.96, 83,322 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+  e0coarse: sf 0.96, 69,959 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+  ✅ meshes genuinely differ: fine 83,322 tets (h_air 15.30 mm) vs coarse 69,959 tets (h_air 24.47 mm)
+
+EIGENMODE, PEC — the case the closed form describes
+    e0fine: solver order 2
+    solved in 227s
+    e0coarse: solver order 2
+    solved in 200s
+
+EIGENMODE, finite-conductivity wall — same mesh, only the BC changes.
+  This is the like-for-like partner for a driven solve (old R37).
+    e0cond: solver order 2
+    solved in 1065s
+
+  wrote e0.result.json — NO VERDICT HERE

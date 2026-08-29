@@ -85,7 +85,7 @@ import azimuthal
 # DESIGN numbers, so it needs the cavity being built — groove 5x10 (H2).
 # Every result this rig produced before 2026-08-23 was groove-free and is
 # DISCARDED; see CONVENTIONS §7f.
-from e0_solver_vs_math import GEO_DESIGN as GEO, eigen_cfg, run
+from e0_solver_vs_math import GEO_DESIGN as GEO, eigen_cfg, run, volume_attrs
 from e0k2_anchor import design_point, wall_sigma
 from e0k2_azim import sector_bins, read_sector_energy
 from h3_loaded import drude, Z_FRAC, EIGEN_TARGET, SECTORS
@@ -216,9 +216,10 @@ def main():
         m = solveconf.load_meta(f"{tag}.msh")
         attrs = m["attributes"]
         bins = sector_bins(m)
-        vols = sorted({v for k, v in attrs.items()
-                       if isinstance(v, int) and k not in ("wall", "port")}
-                      | set(attrs.get("air") or []))
+        # 🔴 was a local copy of the surface/volume rule — one of
+        # NINE. A `loop` SURFACE got classified as a VOLUME and
+        # Palace refused the config (2026-08-27). One definition.
+        vols = volume_attrs(m)
         c = eigen_cfg(tag, m, mesh=f"{tag}.msh", sigma=sigma_w,
                       n=N_MODES, target=EIGEN_TARGET)
         c["Solver"]["Order"] = 2

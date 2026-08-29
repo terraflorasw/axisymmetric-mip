@@ -1,0 +1,117 @@
+>> /opt/amip/envs/emsim/bin/mpirun -n 32 /opt/amip/palace/bin/palace-x86_64.bin h3-ld8tol-01.a10fa427_8x8_barrel_g2-0.5_pec.json
+
+_____________     _______
+_____   __   \____ __   /____ ____________
+____   /_/  /  __ ` /  /  __ ` /  ___/  _ \
+___   _____/  /_/  /  /  /_/  /  /__/  ___/
+  /__/     \___,__/__/\___,__/\_____\_____/
+
+Git changeset ID: v0.17.0-293-g3c83b9db0
+Running with 32 MPI processes, 1 OpenMP thread
+Device configuration: omp,cpu
+Memory configuration: host-std
+libCEED backend: /cpu/self/xsmm/blocked
+
+Added 28 duplicate vertices for interior boundaries in the mesh
+Added 42 duplicate boundary elements for interior boundaries in the mesh
+Added 17293 boundary elements for material interfaces to the mesh
+
+Characteristic length and time scales:
+ Lc = 1.974e-01 m, tc = 6.585e-01 ns
+Finished partitioning mesh into 32 subdomains
+
+Mesh curvature order: 2
+Mesh bounding box:
+ (Xmin, Ymin, Zmin) = (-8.800e-02, -8.800e-02, -9.871e-02) m
+ (Xmax, Ymax, Zmax) = (+8.800e-02, +8.800e-02, +9.871e-02) m
+
+Parallel Mesh Stats:
+
+                minimum     average     maximum       total
+ vertices           254         454         689       14538
+ edges             1905        2959        3593       94689
+ faces             3329        4900        5229      156812
+ elements          1676        2395        2467       76660
+ neighbors            3           7          15
+
+            minimum     maximum
+ h      0.000688701    0.172694
+ kappa      1.02062     91.3635
+
+Estimated current per-rank memory usage is: Min. 32.9M, Max. 96.7M, Avg. 35.4M, Total 1.1G
+Estimated current per-node memory usage is: Min. 1.1G, Max. 1.1G, Avg. 1.1G, Total 1.1G
+
+Configuring Robin finite conductivity BC at attributes:
+ 90: σ = 3.500e+07 S/m, n = (-0.1,+0.2,-1.0)
+ 92: σ = 5.800e+07 S/m, n = (+0.1,-0.1,+1.0)
+
+Configuring Dirichlet PEC BC at attributes:
+ 91
+
+Assembling system matrices, number of global unknowns:
+ H1 (p = 2): 109227, ND (p = 2): 503002, RT (p = 2): 700416
+ Operator assembly level: Partial
+ Mesh geometries:
+  Tetrahedron: P = 20, Q = 14 (quadrature order = 4)
+
+Configuring SLEPc eigenvalue solver:
+ Scaling γ = 3.143e+01, δ = 3.511e-07
+ Configuring divergence-free projection
+ Using random starting vector
+ Shift-and-invert σ = 2.380e+00 GHz (9.847e+00)
+
+Assembling multigrid hierarchy:
+ Level 0 (p = 1): 94689 unknowns
+ Level 1 (p = 2): 503002 unknowns
+ Level 0 (auxiliary) (p = 1): 14538 unknowns
+ Level 1 (auxiliary) (p = 2): 109227 unknowns
+
+#PETSc Option Table entries:
+-eps_monitor # (source: code)
+#End of PETSc Option Table entries
+
+  Residual norms for GMRES solve
+  0 (restart 0) KSP residual norm 8.707804e-01
+  1 (restart 0) KSP residual norm 3.801753e-01
+  2 (restart 0) KSP residual norm 1.690766e-01
+  3 (restart 0) KSP residual norm 9.169130e-02
+  4 (restart 0) KSP residual norm 7.545332e-02
+  5 (restart 0) KSP residual norm 6.105021e-02
+  6 (restart 0) KSP residual norm 3.685267e-02
+  7 (restart 0) KSP residual norm 1.923611e-02
+  8 (restart 0) KSP residual norm 1.207547e-02
+  9 (restart 0) KSP residual norm 7.619738e-03
+ 10 (restart 0) KSP residual norm 2.863258e-03
+ 11 (restart 0) KSP residual norm 8.648330e-04
+ 12 (restart 0) KSP residual norm 5.257210e-04
+ 13 (restart 0) KSP residual norm 4.728702e-04
+ 14 (restart 0) KSP residual norm 3.739547e-04
+ 15 (restart 0) KSP residual norm 2.838496e-04
+ 16 (restart 0) KSP residual norm 2.615381e-04
+ 17 (restart 0) KSP residual norm 2.148357e-04
+ 18 (restart 0) KSP residual norm 1.201201e-04
+ 19 (restart 0) KSP residual norm 9.187435e-05
+ 20 (restart 0) KSP residual norm 7.773019e-05
+ 21 (restart 0) KSP residual norm 6.638984e-05
+ 22 (restart 0) KSP residual norm 5.802988e-05
+ 23 (restart 0) KSP residual norm 4.982208e-05
+ 24 (restart 0) KSP residual norm 4.008904e-05
+ 25 (restart 0) KSP residual norm 3.167998e-05
+ 26 (restart 0) KSP residual norm 2.569725e-05
+ 27 (restart 0) KSP residual norm 2.112316e-05
+ 28 (restart 0) KSP residual norm 1.774519e-05
+ 29 (restart 0) KSP residual norm 1.469164e-05
+ 30 (restart 0) KSP residual norm 1.227391e-05
+ 31 (restart 0) KSP residual norm 1.024310e-05
+ 32 (restart 0) KSP residual norm 8.558753e-06
+ 33 (restart 0) KSP residual norm 7.313681e-06
+ 34 (restart 0) KSP residual norm 6.163452e-06
+ 35 (restart 0) KSP residual norm 5.104284e-06
+ 36 (restart 0) KSP residual norm 4.135786e-06
+ 37 (restart 0) KSP residual norm 3.288770e-06
+ 38 (restart 0) KSP residual norm 2.650988e-06
+ 39 (restart 0) KSP residual norm 2.119104e-06
+ 40 (restart 0) KSP residual norm 1.667318e-06
+ 41 (restart 0) KSP residual norm 1.337445e-06
+ 42 (restart 0) KSP residual norm 1.069143e-06
+ 43 (restart 0) KSP residual norm 8.720556e-07

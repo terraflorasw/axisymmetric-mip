@@ -1,0 +1,83 @@
+H1 — which aspect ratio? Separation is analytic; Q is the missing axis.
+
+Rival separation over D/L is a closed-form max-min (physics.py, no solver): a
+single optimum at D/L 1.525, candidate B at 74% of it, candidate A at 23%, with
+poles at TM012 (D/L 1.0964), TM210 (~2.20) and TM020 (~2.50).
+
+What that cannot say is what each aspect ratio costs in Q — and LOD runs through
+delivered power, which runs through Q. E0q made Q trustworthy (Q ∝ σ^0.5 to four
+decimals), so this measures the second axis.
+
+BARE CAVITY. No torch, no viewport, no filter, no loop. An axisymmetric cavity
+keeps TE0n and TM0n from hybridising, which is what made E1b uninterpretable.
+TE011 is pinned to 2.45 GHz at every point by solving for the radius.
+
+VERIFICATION, both declared before the run:
+  1. each mesh must reproduce physics.spectrum() — validates the mesh per shape.
+  2. the D/L 2.332 point must reproduce E0q's TE011 Q of 36,548 (measured at
+     D/L 2.343) to within a few percent. A sweep that cannot hit a number it has
+     already measured is not measuring what it claims.
+
+FALSIFICATION:
+  🔴 TE011's Q below TM111's at any point. TE011 is the low-loss mode — no
+     end-cap surface current at all — so a crossover means the mode
+     identification is wrong, not that the physics changed.
+  🔴 Q non-monotonic in a way that tracks mesh element count rather than D/L,
+     which would mean we are measuring discretisation, not the cavity.
+
+⚠️ Q is trustworthy in RATIO, not absolutely: physics.py refuses wall_Q and that
+refusal stands. Comparisons ACROSS this sweep are the product; any single Q is an
+upper bound on a real electropolished surface.
+
+==============================================================================
+
+  D/L 1.200: a=83.163 L=138.60  37,903 tets (sf 1.5), solving 8 modes near TE011
+    h1_1p2: solver order 2
+    solved in 143s
+    mesh vs exact max|Δ| 0.870 MHz   TE011 Q 46,220  TM111 Q 21,961  (by Q)
+
+  D/L 1.350: a=85.288 L=126.35  35,287 tets (sf 1.5), solving 8 modes near TE011
+    h1_1p35: solver order 2
+    solved in 124s
+    mesh vs exact max|Δ| 1.002 MHz   TE011 Q 45,547  TM111 Q 21,081  (by Q)
+
+  D/L 1.446: a=86.748 L=119.98  33,754 tets (sf 1.5), solving 8 modes near TE011
+    h1_1p446: solver order 2
+    solved in 132s
+    mesh vs exact max|Δ| 0.884 MHz   TE011 Q 44,993  TM111 Q 20,602  (by Q)
+
+  D/L 1.525: a=88.005 L=115.42  32,531 tets (sf 1.5), solving 8 modes near TE011
+    h1_1p525: solver order 2
+    solved in 144s
+    mesh vs exact max|Δ| 1.029 MHz   TE011 Q 44,384  TM111 Q 20,256  (by Q)
+
+  D/L 1.700: a=90.956 L=107.01  30,583 tets (sf 1.5), solving 8 modes near TE011
+    h1_1p7: solver order 2
+    solved in 113s
+    mesh vs exact max|Δ| 1.712 MHz   TE011 Q 42,823  TM111 Q 19,586  (by Q)
+
+  D/L 2.000: a=96.497 L=96.50  27,978 tets (sf 1.5), solving 8 modes near TE011
+    h1_2p0: solver order 2
+    solved in 89s
+    mesh vs exact max|Δ| 1.239 MHz   TE011 Q 39,736  TM111 Q 18,713  (by Q)
+
+  D/L 2.332: a=103.236 L=88.54  25,876 tets (sf 1.5), solving 8 modes near TE011
+    h1_2p332: solver order 2
+    solved in 135s
+    mesh vs exact max|Δ| 1.078 MHz   TE011 Q 36,308  TM111 Q 18,037  (by Q)
+
+==============================================================================
+     D/L    a mm    L mm     tets   TE011 Q   TM111 Q  Q ratio   rival  sep MHz
+   1.200   83.16  138.60   37,903    46,220    21,961     2.10   TE112     42.9
+   1.350   85.29  126.35   35,287    45,547    21,081     2.16   TE112    136.6
+   1.446   86.75  119.98   33,754    44,993    20,602     2.18   TE112    246.1
+   1.525   88.00  115.42   32,531    44,384    20,256     2.19   TE112    332.7
+   1.700   90.96  107.01   30,583    42,823    19,586     2.19   TM210    244.0
+   2.000   96.50   96.50   27,978    39,736    18,713     2.12   TM210     89.3
+   2.332  103.24   88.54   25,876    36,308    18,037     2.01   TM210     76.4
+
+  ✅ TE011 Q exceeds TM111 Q at every point, as the low-loss mode must
+  cross-check vs E0q (D/L 2.343): 36,308 vs 36,548 — -0.7%
+
+  wrote h1.result.json — NO VERDICT HERE
+EXIT=0

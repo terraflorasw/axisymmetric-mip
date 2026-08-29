@@ -101,7 +101,7 @@ there for cavity reasons anyway:**
   ✅ Band margin went the other way: **17.6 → 41 MHz.**
 - ✅✅ **COUPLER — ANSWERED 2026-08-25, and the answer is LARGE.** The loop
   was never designed; it has now been swept across mount, flange and series
-  gap. **Q_ext 8,716 → 322 measured, a 27× lever, on a copper gap.** The 4.2×
+  gap. **Q_ext 8,716 → 322 measured, a 27× lever, on a machined gap.** The 4.2×
   this document calls "an open question" is comfortably exceeded, and **β = 1
   (84×) is no longer obviously out of reach** — it is 3.1× away. 🔴 **The
   remaining question is not CAN it, but SHOULD it: see the cold/loaded trade

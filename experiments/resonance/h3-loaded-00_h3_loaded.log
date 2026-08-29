@@ -1,0 +1,125 @@
+H3 — what plasma does TE011 sustain? A 2-D map, not a point.
+
+🔑 POSED AS A REQUIREMENT, NOT AN ASSUMPTION. H3 depends on the torch, because
+the torch confines the gas and so sets the plasma's shape — and the torch
+geometry is ASSUMED and Argon-derived (the Fassel torch; no Nitrogen-optimised
+geometry exists). The dependence is FOURTH POWER: TE011's E_phi is ZERO on axis
+and grows LINEARLY from it, so energy ~ E^2 * area ~ R^4. Going 2 -> 8.5 mm in
+plasma radius is 319x in coupled energy. Answering "can TE011 sustain THE
+plasma" against an inherited torch would produce an arbitrary number.
+
+So this sweeps the plasma geometry and returns a MAP. That inverts the
+dependency:
+
+    was:  torch  ->  plasma shape  ->  H3
+    now:  H3  ->  plasma requirement  ->  TORCH SPECIFICATION
+
+and it is decisive either way: if NO point on the map couples usefully, TE011
+operation is dead INDEPENDENTLY of the torch; if some region does, that region
+IS the specification handed to torch design.
+
+## The plasma model: Drude, with BOTH parameters from one electron density
+
+Palace is a pure electrodynamics solver — no fluid module, no Townsend
+avalanche, no thermal transport. A plasma is a static volume of lossy dielectric.
+The cold-plasma Drude model gives the complex permittivity, and Palace forms
+eps_r - j*sigma/(w*eps0), so BOTH inputs come from the same n_e:
+
+    wp^2 = n_e e^2 / (eps0 m_e)
+    Permittivity  = 1 - wp^2/(w^2 + nu^2)
+    Conductivity  = eps0 * wp^2 * nu / (w^2 + nu^2)
+
+🔴 IT IS AN ERROR TO SET Permittivity = 1.0 AND A PLASMA CONDUCTIVITY. They are
+both functions of the SAME n_e. The common shortcut "nu >> w so eps ~ 1" needs
+wp^2 << nu^2, and that is NOT satisfied here: at 1 atm nu ~ 1e11 while wp is
+7.5e10 to 3.4e12 over this sweep, so wp is COMPARABLE TO OR ABOVE nu and eps_eff
+runs from +0.69 down to -310. The plasma is OVERDENSE (wp/w = 5..220).
+
+⚠️ Negative permittivity is physical — it is what makes a plasma reflective.
+The n_e sweep runs LOW TO HIGH so the eps > 0 regime is entered first and any
+failure has a visible onset rather than appearing as a wall.
+
+## Why skin depth is the real story
+
+At sigma = 10 S/m the skin depth is 3.2 mm — comparable to the plasma radius.
+Above ~100 S/m the field is excluded entirely. **Absorption is NON-MONOTONIC in
+n_e**: it rises, peaks, then FALLS as the plasma shields itself. A sweep confined
+to a few S/m sits entirely on the rising side and misses both the peak and the
+shielded regime. Hence log spacing over four decades.
+
+## 🔴 DRIVEN, not eigenmode — measured, not chosen
+
+The first attempt used EIGENMODE because it is cheap (155-882 s) and returns Q
+directly. It stalled at **nconv = 0 after 65 minutes** on the WEAKEST point of
+the grid: a bulk lossy volume (tan-delta ~ 3) puts strong frequency dependence
+into the OPERATOR, where the wall's surface impedance was only a boundary term,
+and NLEPS cannot do it. `run()` now REFUSES that combination outright.
+
+Driven has no NLEPS and therefore no convergence cliff. It costs ~2,500-2,900 s
+per point against eigen's 155-882 s, which is why this starts as a CORNER PROBE
+rather than the full 16-point grid — measure the magnitude before committing
+half a day (CONVENTIONS §5).
+
+⚠️ Driven needs a PORT, so the coupling loop is present and contributes its own
+perturbation — measured at 32% of Q. eta is therefore referenced to the bare
+cavity **WITH THE SAME LOOP** (29,854, port-resolved), never to the 44,384 empty
+figure. H3's answer includes the probe, and that is stated rather than hidden.
+
+⚠️ beta is NOT mesh-converged (43% for a 1.25x refinement) and is not used as a
+result here. Q0 = Q_L(1+beta) IS converged to 0.12% because beta and Q_L
+compensate — that is the quantity eta is built from.
+
+## What is measured, per point, from ONE driven solve
+
+    f0           frequency pull — the tuning-loop question
+    Q_L          loaded linewidth, hence tuning BANDWIDTH
+    Q0 = Q_L(1+beta)   the converged quantity
+    eta          = 1 - Q0/Q_bare_with_loop, the FRACTION OF POWER reaching the
+                 plasma rather than the walls. This is what LOD needs.
+    A2/A0        azimuthal order of the DRIVEN field at the dip — does the mode
+                 remain TE011 (m=0) at all?
+    p_elec[12]   the plasma region's own energy share, measured not inferred
+
+🔴 WHAT THIS RIG DOES **NOT** DO. It does not decide whether the plasma is
+self-consistent — whether the absorbed power maintains the n_e that defines it.
+That needs a fluid/thermal model Palace does not have. Saying otherwise would be
+the same error as claiming a cold-cavity field predicts a lit one.
+
+VERIFICATION
+  V1  at the LOWEST n_e the perturbation must be small: the mode stays m=0, f
+      within a few MHz of 2.45, and eta near ZERO — i.e. Q0 near the
+      bare-with-loop 29,854, NOT the empty 44,384. If the weakest plasma already
+      destroys the mode, the model or the mesh is wrong, not the physics.
+      ⚠️ RESTATED for the driven rig. The eigen-era version of V1 referenced
+      44,384 and would have been wrong by the loop's own 32%. A declared
+      criterion has to be re-read when the model underneath it changes —
+      V3 of e0k2_azim was scored a failure for exactly this reason.
+  V2  mode identity by CONTINUATION where it applies. ⚠️ The driven rig
+      identifies each dip by its own AZIMUTHAL ORDER, which is absolute and
+      needs no reference — so continuation is a cross-check here, not the
+      mechanism. That is a strengthening: E1b failed because it had only
+      relative matching.
+FALSIFICATION
+  🔴 F1  if TE011's azimuthal order is lost (A2/A0 leaves the m=0 regime), the
+         mode is no longer TE011 and every number past that point is about
+         something else. Report the onset; do not carry the label forward.
+  🔴 F2  if eta stays below 0.5 across the WHOLE grid, TE011 spends most of its
+         power heating the walls rather than the plasma at every geometry tested
+         — a torch-proof negative for the TE-only architecture.
+
+==============================================================================
+  cavity a=88.0045 L=115.4158  wall 3.5e+07 S/m
+  reference Q_bare WITH LOOP = 29,854  (the empty-cavity 44,384 would overstate eta by the loop's own 32%)
+  plasma: solid column (ri=0.0), z = -46.17..46.17 mm
+  driven band +-60 MHz around 2.45000 GHz (loading pulls DOWN; qfit REFUSES if the 3 dB points fall outside rather than guessing)
+
+    ne (m^-3)    eps_eff  sigma S/m   skin mm
+        1e+18      0.689       0.28     19.38
+        1e+21   -309.894     275.27      0.61
+
+
+  --- R=2.0 mm, ne=1e+18  (eps=0.689, sigma=0.28 S/m, skin=19.38 mm)
+    67,782 tets, plasma attr 12 -> energy index 18
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+EXIT=143

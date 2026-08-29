@@ -48,7 +48,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import physics as ph
 import solveconf
-from e0_solver_vs_math import GEO, eigen_cfg, run
+from e0_solver_vs_math import GEO, eigen_cfg, run, volume_attrs
 from e0k2_anchor import design_point, wall_sigma
 from h3_loaded import drude, SECTORS, Z_FRAC, INNER_R, PLASMA_H, EIGEN_TARGET
 
@@ -86,9 +86,10 @@ def main():
     attrs = m["attributes"]
     print(f"  {m['tets']:,} tets, plasma attr {attrs.get('plasma')}", flush=True)
 
-    vols = sorted({v for k, v in attrs.items()
-                   if isinstance(v, int) and k not in ("wall", "port")}
-                  | set(attrs.get("air") or []))
+    # 🔴 was a local copy of the surface/volume rule. A `loop`
+    # SURFACE got classified as a VOLUME (2026-08-27) and
+    # Palace refused the config. One definition now.
+    vols = volume_attrs(m)
     c = eigen_cfg(TAG, m, mesh=f"{TAG}.msh", sigma=sigma_w, n=N_MODES,
                   target=EIGEN_TARGET)
     c["Solver"]["Order"] = 2

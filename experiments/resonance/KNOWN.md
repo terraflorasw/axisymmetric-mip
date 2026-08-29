@@ -777,6 +777,57 @@ harder. **HOT is a parameter to read, not a barrier.**
 σ, two or three temperatures to check the coefficients are linear. **Cheap, and
 it closes H3.**
 
+## ✅✅✅ FIELD MEASURED — ARCING IS SAFE, AND CAVITY-ONLY IGNITION IS IMPOSSIBLE (2026-08-26)
+
+`h3-field-01`, stamp `ec784cbc`. Named probes in the series gap and the torch
+bore, design cavity, gap 2.25 mm. **The case reproduces `h3-groove-gap-01`
+exactly** (Q₀ 26,628, Q_ext 308) — the new measurement rides on a verified solve.
+✅ **The probes validate against closed form to 0.6 %**: E_φ ∝ J₁(k_c r) predicts
+E(8.5)/E(4.25) = 1.974; measured 1.987.
+
+### ✅ ARCING: 7.4× MARGIN. The wide-gap capacitor is buildable.
+
+| | |
+|---|---|
+| series gap at 1 kW | **0.520 MV/m** |
+| air breakdown at 2.25 mm | 3.85 MV/m |
+| **margin** | **7.4×** ✅ |
+
+🔑 My circuit estimate spanned **0.96–12.8 MV/m** — safe to arcing across the
+plausible capacitance range — and could not settle it. The measurement did.
+
+### 🔴 CAVITY-ONLY IGNITION DOES NOT EXIST — 13× SHORT AT BEST
+
+Bore field **0.020 MV/m** at 1 kW against N₂ breakdown of ~3 MV/m. Scaling by
+√Q to configurations we do not even have:
+
+| configuration | cold Q | E bore | short by |
+|---|---:|---:|---:|
+| this capacitor loop (measured) | 304 | 0.020 | 150× |
+| plain loop | 7,318 | 0.098 | 31× |
+| critically coupled cold | 21,630 | 0.169 | 18× |
+| **no port at all (unreachable)** | 43,259 | **0.239** | **13×** |
+
+🔴 **Even the physically impossible best case is 13× short in FIELD**, and
+E ∝ √P, so closing it needs **158× the power — 0.2 MW against a 1 kW source.**
+Not marginal, not fixable with more power. ✅ Survives a factor 2–3 uncertainty
+in the breakdown threshold, the only soft number in it.
+⚠️ **CONFIRMATION, NOT NEWS** (user, 2026-08-26): unassisted ignition was
+already believed impossible. This is an independent angle on it, with a number.
+
+### 🔑 WHAT IT SETTLES — item 7's target
+
+`../ignition-options/` recorded the decision as conditional: *cavity ignition →
+minimax loop; striker → β = 1 loaded.* **The striker branch is now measured.**
+- ✅ **ITEM 7'S TARGET IS β = 1 LOADED.** The cold-coupling constraint does not
+  bind, because cold coupling was never going to ignite anything.
+- ⚠️ **The 2026-08-25 correction ("we were optimising the wrong objective")
+  stands in PRINCIPLE and is VOID in practice** — Q_ext really does serve two
+  states 265× apart, but only one of them has to work.
+- ⚠️ **The TWO-LOOP architecture loses most of its motivation.** It existed to
+  serve both states; only one needs serving. It may still earn its place for
+  ignition robustness, which is `../ignition-options/`'s question, not this one.
+
 ## 🔑 GROOVE × LOOP-GAP — NOT SEPARABLE OPTIMISATION PARAMETERS (2026-08-26)
 
 `h3-groove-gap-01`, stamp `2ec5f088`. Design cavity, barrel mount, 176 mm² loop.
@@ -911,8 +962,8 @@ vacuum-torch value, and which mount the design uses is item 7's open question.
 | restore-03 | "no modes" | **non-manifold mesh** — cap holes fused one full cylinder into EVERY wedge at `sectors=5` (CONVENTIONS §7bn) |
 | restore-04 | — | ✅ |
 
-🔑 **A disabled feature hides its own bugs, and enabling it years later looks
-like the ENABLING broke something.** Three independent defects surfaced the
+🔑 **A disabled feature hides its own bugs, and enabling it later looks like
+the ENABLING broke something.** Three independent defects surfaced the
 moment the torch came back. **Doing this before more sweeps was the right call**
 — every one of them would otherwise have corrupted a measurement silently.
 
@@ -1016,7 +1067,9 @@ delivered 27×.
 
 🔑 **A matched cavity would remove the magnitude tuner entirely**, not merely
 make it purchasable. That is a different design conclusion from "buy a 3-stub
-tuner", and it rests on a **copper gap in one loop leg.**
+tuner", and it rests on a **machined gap in one loop leg.**
+⚠️ The loop's
+MATERIAL is NOT DECLARED (NEXT.md 7d.A) — do not describe it as copper.
 
 ### 🔴 THE OPTIMUM IS STILL NOT BRACKETED — THIRD GRID IN A ROW
 
@@ -1111,6 +1164,115 @@ prediction is offered for where. Two attempts to place a grid ahead of the
 measurement failed today. `h3-loop-gap2-02` extends until Q_ext turns back up
 **or** purity crosses F2, whichever comes first.
 
+## ✅ MEASURED — Q_ext HAS AN INTERIOR MINIMUM NEAR λ/4 (2026-08-27)
+
+⚠️ **THIS HEADING FIRST READ "λ/4 CONFIRMED", IN THIS SESSION, AND THAT WAS WRONG.**
+*"Nothing about this is known, because we haven't falsified anything"* — user,
+2026-08-27. **Surviving a falsifier is not confirmation.** What is established
+below is a MEASUREMENT and ONE FALSIFICATION. λ/4 is a hypothesis that has not
+yet been killed, on one span, in one slice. It is not knowledge.
+
+`h3-lambda4-02`, stamp `2fe70896`. **DRIVEN**, cold (ne = 0), barrel mount,
+lw = 8 mm, port gap 0.3, series gap 0.5, bore 2–8.5 mm, groove 5×10, D/L 1.525.
+Four leg depths. The unwound conductor is **L = 2·ld + (2·lw − port gap) −
+series gap**, derived from the meshed geometry, so ld carries **twice** the
+leverage of any gap — which is why the earlier gap sweep could not test this.
+
+| ld mm | L_unwound | L/(λ/4) | Q_L | VSWR | **Q_ext** | Q₀ | branch |
+|---:|---:|---:|---:|---:|---:|---:|---|
+| 5 | 25.20 | 0.824 | 1,283 | 30.8 | **1,325** | 40,861 | OVER |
+| **8** | **31.20** | **1.021** | 355 | 93.9 | **359** | 33,704 | OVER |
+| 11 *(control)* | 37.20 | 1.218 | 1,103 | 35.2 | **1,135** | 39,982 | OVER |
+| 14 | 43.20 | 1.414 | 1,926 | 19.8 | **2,024** | 40,087 | OVER |
+
+### ✅ WHAT IS MEASURED
+
+**Q_ext has an interior minimum on this span, at L = 31.20 mm = 1.021 λ/4**
+(λ/4 = 30.59 mm at the measured f₀), spread **5.6×** across 18 mm of conductor.
+That is the observation, and it is the only thing here that is not inference.
+
+### ✅ WHAT IS FALSIFIED — one thing, and it was declared before the run
+
+The config declared: *"A capacitance/area picture predicts beta to rise
+MONOTONICALLY with loop area and never turn."* **It turned.** 🔴 **The
+monotonic-area prediction is DEAD**, killed by a test written down before the
+data existed. That is the one result here that meets this programme's bar.
+
+### ⚠️ WHAT IS **NOT** ESTABLISHED
+
+- 🔴 **λ/4 is NOT confirmed.** It survived two pre-declared falsifiers (β is
+  neither flat nor monotonic) on **one span, cold, at one lw / gap / bore / mount**.
+  A hypothesis that has not been killed is not a hypothesis that is true.
+- 🔴 **"The coupler is a quarter-wave resonator" is NOT established.** The
+  minimum lands within 2 % of λ/4, which is consistent with that reading and
+  with other readings not yet excluded. **One coincidence at one frequency is
+  not a mechanism** — nothing here varied f₀ and watched the minimum move,
+  which is the test that would separate them.
+- ⚠️ **The minimum is bracketed, not located.** ld = 8 is the smallest of four
+  samples 3 mm apart; the true minimum is somewhere in ld ≈ 5–11.
+- ⚠️ **Q₀'s variation across the four points is not interpreted.** 33,704 at
+  ld = 8 vs ~40,000 elsewhere is where β ≈ 94 makes the extraction worst
+  conditioned. Do not read it as a physical trend.
+
+### 🔴 THE COUPLING BRANCH — read this before quoting any Q₀ above
+
+`fit` returns the **UNDERCOUPLED** root β = (1−|S11|)/(1+|S11|); the overcoupled
+root is its reciprocal, and **|S11| alone cannot tell them apart** — both give a
+shallow dip. These cold barrel cases are strongly OVERcoupled, so the rig's
+printed β and Q₀ are the wrong root. Reading them as Q₀ gives 359 and 1,325 and
+produced a false *"the rig is broken"* alarm on a healthy run.
+
+🔑 **The discriminator is external and COLD-ONLY:** with no plasma, Q₀ must be
+the cavity's own cold Q₀ (43,523), and the two roots sit ~30× apart. ⚠️ **It does
+NOT apply loaded** — at the anchored density Q₀ ≈ 105, so the same test would
+pick OVERcoupled for a genuinely undercoupled case. `resolve_branch()` refuses
+to resolve a loaded point rather than guess.
+🔑 **Q_ext is robust on either root** — Q_ext = Q_L·(1+β_undercoupled), i.e. Q_L
+to within a few percent. **Q₀ is the fragile number here, not Q_ext.** The
+Q₀ = 33,704 at ld = 8 is the least reliable of the four (β ≈ 94, the most
+ill-conditioned point).
+
+### ✅ THE CONTROL REPRODUCES A PRIOR **EIGEN** MEASUREMENT — three ways
+
+ld = 11 is the design loop, measured before by `h3-loop-seriesc-01` and
+`h3-loop-gap2-01/02` at the same barrel/gap2 = 0.5:
+
+| | this run (driven) | prior (eigen) | apart |
+|---|---:|---:|---:|
+| Q_ext | 1,135 | 1,143 | **0.7 %** |
+| Q₀ | 39,982 | 40,147 | **0.4 %** |
+| β | 35.24 | 35.14 | **0.3 %** |
+
+🔑 **This is a second eigen↔driven cross-check** (the first was E3 case E), and
+it simultaneously **validates the branch resolution** — on the undercoupled root
+this point would read Q_ext ≈ 39,930, nowhere near 1,143.
+
+⚠️ **Design implication, NOT a decision.** The minimax target for a fixed loop is
+Q_ext ≈ √(Q₀cold·Q₀loaded); ld = 14 already sits at 2,024. **Reaching the minimax
+by LEG DEPTH alone, with no capacitor, looks available** — but the numbers being
+combined come from different slices (Q₀loaded is from a cap-mounted vacuum-torch
+run) and the target itself is blocked on `../ignition-options/` (NEXT.md item 7
+step 1). **Do not adopt a leg depth from this line.**
+
+### 🔴 THE RECORD WAS REPAIRED — what was lost
+
+`h3_driven`'s loop axis built every case tag **without the swept variable**, so
+all four cases wrote to ONE mesh, ONE `.meta.json` and ONE postpro directory, and
+`ld` was recorded in no field. **The solves are unaffected** — `build_mesh`
+regenerates unconditionally, so each case solved its own geometry — but:
+
+- ✅ **Each point is BOUND TO ITS ld BY ARTEFACT, not by array order.**
+  `verify_ld_tets.py` re-meshed each ld through the same `build_mesh` and
+  reproduced every point's recorded tet count **exactly and uniquely**
+  (125,853 / 123,949 / 123,987 / 124,438). §7bm is satisfied by measurement.
+- 🔴 **The per-case `.msh`, `.meta.json` and S11 CSVs for ld = 5, 8, 11 were
+  overwritten in place and are GONE.** Only ld = 14's survive. The fits above
+  were computed from the CSVs while they existed.
+- ⚠️ **The mesh sidecar does not record the loop SIZE.** `geometry_mm` carries
+  `loop_cap_r`, `loop_mount`, `loop_gap2`, `loop_phi_deg`, `loop_tilt_deg`,
+  `loop_flange_r` — **but not [ld, lw]**. So the artefact this programme relies
+  on to discharge exactly this burden could not have done it here.
+
 ## ✅✅✅ ITEM 7 STEP 2 — THE SERIES CAPACITOR WORKS. Q_ext 8,716 → 1,143 (2026-08-25)
 
 `h3-loop-seriesc-01`, stamp `8e2dce21`. Eigen `port_bc` pairs, barrel mount,
@@ -1156,7 +1318,7 @@ most able to hybridise TE011.
 
 🔑 **`../control-loop/` requirement 1 — "a magnitude-matching approach that
 survives 39–42 A at 2.45 GHz", flagged 🔴 UNSOLVED, no verified option — is
-addressed by a COPPER GAP.** That programme calls a 3-stub tuner *comfortable*
+addressed by A MACHINED GAP.** That programme calls a 3-stub tuner *comfortable*
 at VSWR 20, and the design bore now lands at **10.9 with no bore change**.
 🔑 **It also DECOUPLES the tuner question from the bore**, so
 `../torch-geometry/`'s flow/residency trade no longer has to carry the match.

@@ -1,0 +1,122 @@
+H4 (seed) — can the field GRAB a thermal kernel, and does its PLACEMENT decide it?
+
+🔑 H4 IS ALREADY OPEN. TM ignition was discarded 2026-08-22 on two measured legs
+and AUXILIARY IGNITION was adopted; the mechanism died, the question did not.
+This rig addresses H4 "Still to check" item 2 — does a conductor perturb TE011,
+and where must it sit — and adds the part H4 did not have: a RADIUS-RESOLVED
+answer.
+
+⚠️ H4 ALREADY SETTLES ONE THING I GOT LOOSE. It records that seeding "does NOT
+lower the field required for net ionisation, which is set by E/N" — seeds remove
+the statistical delay only. So for N2 the mechanism is the THERMAL KERNEL (hot
+channel -> N falls -> E/N rises), not seed electrons. Argon is different because
+its THRESHOLD is lower, not because seeding helps.
+
+🔴 AND IT PUTS ONE H4 SENTENCE UNDER TENSION. H4 argues an on-axis igniter is
+"nearly invisible" to TE011 (0.079% of mode energy on axis) and calls this the
+geometry inverting in our favour. True for the ELECTRODE. But the KERNEL inherits
+the electrode's position, and a kernel in the field null is one the mode cannot
+grab — measured coupling ratio wall:axis is predicted at 279x. H4's adopted
+answer (external spark through the quartz, as ICP does) already puts the kernel
+at large r, so the CONCLUSION stands; the REASON needs to be coupling, not just
+electrode erosion. This rig measures that ratio.
+
+N2 arc ignition matters because it removes an argon line from a field instrument.
+Breakdown is NOT the obstacle: a 1 atm N2 spark reaches 10-20 kK, where E/N is
+106-593 Td across r=3-8.5 mm against a ~100-150 Td threshold. The open question
+is HANDOVER — when the arc stops, can the 2.45 GHz field deposit power fast
+enough to hold the channel before it recombines?
+
+## Why placement should dominate
+
+Absorbed power goes as integral of sigma|E|^2, and TE011's E_phi VANISHES ON
+AXIS. Relative to a seed at r=0.5 mm, the same seed absorbs:
+
+    r=2 mm   16x        r=6 mm  142x
+    r=4 mm   64x        r=7 mm  192x        r=8.5 mm  279x
+
+If that holds, the igniter electrode must sit near the OUTER TUBE. An on-axis
+seed sits in the field null and cannot be grabbed however hot the spark is.
+
+⚠️ THOSE ARE RATIOS OF AN ANALYTIC MODE PROFILE, NOT MEASUREMENTS. Extrapolating
+h3_eigen's eta=0.078 (0.5 mm on-axis column) across two decades of coupling is
+exactly the arithmetic-instead-of-simulation shortcut that produced two
+retractions today. This rig measures the ratio instead.
+
+## What the instrument can and cannot say (CONVENTIONS §6c)
+
+Palace's domain-E.csv reports per-domain ENERGY, not dissipated power, so eta
+comes from the Q difference: eta = 1 - Q/Q_BARE. Measured Q reproducibility is
+0.13-1.7%, so **eta below ~2% is not resolvable** and must be reported as "below
+the floor", never as a value.
+
+At the other end eta SATURATES at 1. A wall-adjacent seed at ne=1e20 is predicted
+to saturate, which is itself the handover answer (it grabs essentially all the
+power) but makes the RATIO unmeasurable there. So the weak-seed row at ne=1e18
+exists to put both members of a matched pair inside the resolvable band.
+
+VERIFICATION
+  V1  every point identifies TE011 by AZIMUTHAL ORDER (m=0), never by max-Q.
+  V2  Q_BARE is h3_eigen's 44,384, reproduced twice. Any point whose Q EXCEEDS
+      Q_BARE is unphysical (negative absorption) and is reported as a failure,
+      not clipped to zero.
+FALSIFICATION
+  🔴 F1  if a WALL seed does not couple far more than an AXIS seed of the same
+         volume and density, the placement argument is wrong and the igniter
+         electrode position does not matter. This is the whole point.
+  🔴 F2  if BOTH members of a matched pair saturate (eta > 0.98) or BOTH sit
+         below the 2% floor, that pair measures nothing — report it as
+         uninformative rather than quoting a ratio built from two blurs.
+  🔴 F3  if azimuthal order leaves m=0 the mode is not TE011; report the onset.
+
+==============================================================================
+  cavity a=88.0045 L=115.4158  Q_bare=44,384  P_ref=1000 W
+  eta floor 0.02 (Q reproducibility), saturation 0.98
+
+  --- axis-strong: ri=0.0 ro=1.0 mm, z=+-5.0 mm, ne=1e+20 (eps=-30.089 sigma=27.5, plasma_h=0.400)
+    h4_seed_axis_strong: solver order 2
+    solved in 129s
+    f=2.450473 (+0.47 MHz)  Q=34,611  lw=0.07 MHz
+    power density 7.01e+09 W/m^3   |E|peak 2.18e+04 V/m   eta=0.2202  A2/A0=0.0005
+  --- wall-strong: ri=6.0 ro=8.5 mm, z=+-5.0 mm, ne=1e+20 (eps=-30.089 sigma=27.5, plasma_h=0.625)
+    h4_seed_wall_strong: solver order 2
+    solved in 202s
+    f=2.460443 (+10.44 MHz)  Q=299  lw=8.24 MHz
+    power density 8.72e+08 W/m^3   |E|peak 6.58e+03 V/m   eta=0.9933  A2/A0=0.0001
+  --- axis-weak: ri=0.0 ro=2.0 mm, z=+-5.0 mm, ne=1e+20 (eps=-30.089 sigma=27.5, plasma_h=0.500)
+    h4_seed_axis_weak: solver order 2
+    solved in 102s
+    f=2.450545 (+0.54 MHz)  Q=9,051  lw=0.27 MHz
+    power density 6.33e+09 W/m^3   |E|peak 2.11e+04 V/m   eta=0.7961  A2/A0=0.0005
+  --- wall-weak: ri=7.0 ro=8.5 mm, z=+-5.0 mm, ne=1e+18 (eps=0.689 sigma=0.275, plasma_h=0.400)
+    h4_seed_wall_weak: solver order 2
+    🔴 h4_seed_wall_weak: TIMED OUT after 900s (0 NLEPS iterations) — rank TREE killed
+    REPORTED.
+  --- wall-tiny: ri=6.0 ro=8.5 mm, z=+-2.0 mm, ne=1e+20 (eps=-30.089 sigma=27.5, plasma_h=0.625)
+    h4_seed_wall_tiny: solver order 2
+    solved in 183s
+    f=2.455944 (+5.94 MHz)  Q=360  lw=6.82 MHz
+    power density 2.18e+09 W/m^3   |E|peak 1.08e+04 V/m   eta=0.9919  A2/A0=0.0001
+  --- axis-tiny: ri=0.0 ro=1.0 mm, z=+-2.0 mm, ne=1e+20 (eps=-30.089 sigma=27.5, plasma_h=0.400)
+    h4_seed_axis_tiny: solver order 2
+    solved in 394s
+    f=2.450565 (+0.56 MHz)  Q=39,828  lw=0.06 MHz
+    power density 8.17e+09 W/m^3   |E|peak 2.34e+04 V/m   eta=0.1027  A2/A0=0.0005
+
+==============================================================================
+           case    ri    ro   z+-       ne        Q      eta         band      W/m^3
+    axis-strong   0.0   1.0   5.0    1e+20   34,611   0.2202   resolvable   7.01e+09
+    wall-strong   6.0   8.5   5.0    1e+20      299   0.9933    saturated   8.72e+08
+      axis-weak   0.0   2.0   5.0    1e+20    9,051   0.7961   resolvable   6.33e+09
+      wall-weak   🔴 h4_seed_wall_weak: TIMED OUT after 900s (0 NLEPS ite
+      wall-tiny   6.0   8.5   2.0    1e+20      360   0.9919    saturated   2.18e+09
+      axis-tiny   0.0   1.0   2.0    1e+20   39,828   0.1027   resolvable   8.17e+09
+
+  F1 axis-strong vs wall-strong: wall couples 0x per unit volume  (wall SATURATED — this is a LOWER BOUND, not a value)
+     🔴 F1 FIRES — placement does NOT decide coupling; the igniter position argument is wrong
+  F1 axis-weak vs wall-weak: ⚠️ NOT TESTED — a member is missing
+  F1 axis-tiny vs wall-tiny: wall couples 0x per unit volume  (wall SATURATED — this is a LOWER BOUND, not a value)
+     🔴 F1 FIRES — placement does NOT decide coupling; the igniter position argument is wrong
+
+  wrote h4_seed.result.json
+EXIT=0

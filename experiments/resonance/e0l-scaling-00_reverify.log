@@ -1,0 +1,25 @@
+E0l — how many ranks per solve? Measured, after months of assertion.
+
+I have repeatedly claimed this workload is memory-bandwidth-bound and never
+measured it. On a 32-core c7a that claim decides how the machine is used:
+
+    bandwidth-bound  -> more ranks per solve buys little; run MANY solves at 4
+    core-bound       -> few big solves scale, and fan-out is less important
+
+TWO QUESTIONS, one run:
+
+1. SPEED     wall time vs rank count on one fixed mesh and config.
+2. 🔑 ANSWER does the rank count CHANGE THE RESULT? MPI partitions the domain,
+             so the floating-point summation order differs. E0e proved
+             determinism at FIXED ranks; this asks whether ranks themselves are
+             a variable that has to be controlled. If TE011 moves with -np, then
+             every comparison in this project must hold rank count fixed, and
+             the acceptance test's exact match with the laptop was partly luck.
+
+VERIFICATION   physics.spectrum() — every rank count must land at the same
+               distance from the closed form.
+FALSIFICATION  if TE011 shifts by more than the ~1.2 MHz mesh floor across rank
+               counts, rank count is a hidden variable and prior comparisons
+               need re-reading.
+
+==============================================================================

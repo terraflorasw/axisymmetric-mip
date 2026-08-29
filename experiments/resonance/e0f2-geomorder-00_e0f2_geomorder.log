@@ -1,0 +1,96 @@
+E0f2 — E0f re-run at SOLVER ORDER 2, testing an ANALYTIC faceting prediction.
+
+E0f held the solver at order 1 throughout, "so that only the geometry varies".
+E0g then showed order-1 solver error is 12-17 MHz and MODE-DEPENDENT BY 40x —
+larger than the geometric effect E0f was resolving, and varying between the modes
+it compared. Two of E0f's conclusions rest on that contaminated baseline:
+
+    "geometric order 2->3 changes nothing (0.01 MHz)"   -> plateau, or masked?
+    "an inscribed polygon would read high (signs were   -> mixed signs are
+     mixed)"                                               exactly what a
+                                                           mode-dependent 12-17
+                                                           MHz error produces
+
+Neither is refuted. Neither is established. This re-runs the same representation
+study with the field basis no longer the dominant error.
+
+🔑 AND IT NOW HAS A NUMBER TO HIT, not just a direction. physics.faceting_shift_mhz
+predicts the geometric-order-1 error with NO SIMULATION IN IT: a straight-sided
+mesh inscribes the true cylinder, the equal-area radius of an N-gon is
+sqrt((N/2pi) sin(2pi/N)), and frequency responds only through the radial share of
+f^2. The prediction is computed HERE from each mesh's ACTUAL applied element size
+(meta sizing_mm.air), not from a nominal one.
+
+PREDICTION, DECLARED BEFORE THE RUN
+    geometric order 1   Δ POSITIVE, and within ~50% of faceting_shift_mhz
+                        per mode. TM020 should move ~2x TE011, because TE011's
+                        radial share is 0.52 and TM020's is 1.0.
+    geometric order 2   |Δ| far smaller
+    geometric order 3   no further improvement (E0f's plateau, now uncontaminated)
+
+🔴 FALSIFIERS
+    1. order-1 Δ NEGATIVE on the low modes -> the inscribed-polygon model is
+       wrong, and E0f's "signs were mixed" was not contamination after all.
+    2. order-1 Δ positive but off by >3x -> the model has the right sign and the
+       wrong magnitude; the equal-area assumption is the first suspect.
+    3. order 2 and 3 differing by more than the 8 kHz mesher floor (E0kp) ->
+       geometric order 2 is NOT converged and E0f's plateau was real but
+       misread.
+
+⚠️ Geometric order 1 meshes are BIT-REPRODUCIBLE (E0m), so that side of this
+comparison carries zero mesher jitter. Orders 2 and 3 carry the ~8 kHz floor
+E0kp measured — negligible against everything here.
+
+VERIFICATION   physics.spectrum(), exact, plus the faceting prediction above.
+FALSIFICATION  the exactly-degenerate TE011/TM111 splitting, true value 0.
+
+==============================================================================
+  e0f2_o1: sf 0.96, 83,322 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    sha 67dd7d25dfe9  mesh_order 1  h_air 15.30 mm
+  e0f2_o2: sf 0.96, 83,322 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    sha 1195a1bba104  mesh_order 2  h_air 15.30 mm
+  e0f2_o3: sf 0.96, 83,322 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+    sha 9ec8cc3cd2e3  mesh_order 3  h_air 15.30 mm
+  ✅ 3 distinct meshes
+
+  ANALYTIC PREDICTION for geometric order 1, from h_air=15.30 mm (N≈42.6 facets):
+      TM010     +2.01 MHz  (radial share 1.000)
+      TM110     +3.20 MHz  (radial share 1.000)
+      TE111     +0.69 MHz  (radial share 0.200)
+      TM011     +1.10 MHz  (radial share 0.299)
+      TE011     +2.30 MHz  (radial share 0.520)
+      TM020     +4.60 MHz  (radial share 1.000)
+
+  e0f2_o1: solver order 2
+    solved in 226s
+  e0f2_o2: solver order 2
+    solved in 227s
+  e0f2_o3: solver order 2
+    solved in 228s
+
+Δ from EXACT, MHz — SOLVER ORDER 2, size factor fixed
+
+   mode      exact     geom 1     geom 2     geom 3   predicted  o1/pred
+  TM010    1.10649      1.455      0.005      0.008        2.01     0.73
+  TM110    1.76301      2.309      0.022      0.030        3.20     0.72
+  TE111    1.89327      0.504      0.065      0.062        0.69     0.73
+  TM011    2.02265      0.811      0.073      0.071        1.10     0.74
+  TE211    2.20037      1.175      0.134      0.126           —        —
+  TM210    2.36295      3.188      0.095      0.104           —        —
+  TE011    2.44438      1.664      0.058      0.059        2.30     0.72
+  TM111    2.44438          —          —          —           —        —
+  TM020    2.53985      3.570      0.223      0.249        4.60     0.78
+  TM211    2.90695      2.601      0.143      0.147           —        —
+  TE121    2.98065     -2.345      0.361      0.370           —        —
+
+                       83,322     83,322     83,322   elements
+
+  🔑 TE011/TM111 splitting, true value EXACTLY 0:
+    geometric order 1:     0.045 MHz
+    geometric order 2:     0.014 MHz
+    geometric order 3:     0.014 MHz
+
+  geometric order 2 vs 3: worst |Δ| = 25.9 kHz (mesher floor is 8 kHz, E0kp)
+
+  wrote e0f2.result.json — NO VERDICT HERE
+EXIT=0

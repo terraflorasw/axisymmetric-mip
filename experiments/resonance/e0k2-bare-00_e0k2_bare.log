@@ -1,0 +1,78 @@
+E0k2-bare — TE011's Q with NO coupling loop, so the probe's cost is measurable.
+
+🔴 WHY. E0k2 measured Q0 ~ 29,000 for the cavity WITH an 11x8 mm cap loop, and
+two independent routes (driven linewidth, eigenvalue) agreed on it to 5.4%. But
+the bare-cavity TE011 Q0 in the record is 44,384 — so the loop appears to cost
+~32% of Q while shifting the frequency only 0.40 MHz.
+
+🔑 THAT IS NOT A CONTRADICTION, IT IS A DISTINCTION NOBODY HAD MEASURED.
+Frequency is a VOLUME integral; Q is a SURFACE-CURRENT integral. An obstacle at
+a current maximum can be negligible in the first and dominant in the second. The
+cap loop sits at r = 0.4805a, exactly where TE011's H_r — and therefore its cap
+current — peaks. V3 tested the frequency perturbation and passing it said
+NOTHING about the quantity being anchored.
+
+⚠️ The loop is PEC in the eigenmode solve, so whatever it costs is NOT its own
+conductor loss. It is the loop distorting the mode and crowding current onto the
+finite-conductivity wall beside it.
+
+This rig removes the loop and changes nothing else: same geometry flags, same
+wall from baselines.json, same solver order, same window. The difference IS the
+probe's cost.
+
+VERIFICATION
+  V1  TE011 must be identified by Q, not by frequency. Without a loop the
+      cavity is axisymmetric and TE011/TM111 are EXACTLY degenerate, so
+      frequency cannot separate them and Q is the only discriminator that works.
+  V2  TE011 Q must EXCEED TM111 Q (H1's falsifier), and the TM111 pair's two
+      polarisations must have near-equal Q — they are one mode in two
+      orientations.
+  V3  TE011 must land within a few hundred kHz of 2.45 GHz. This geometry is
+      constructed to put it there, so a miss means the mesh or the flags, not
+      the physics.
+
+FALSIFICATION
+  🔴 F1  if bare Q0 comes back near 29,000 rather than ~44,000, the loop is NOT
+         what depressed it and the 44,384 in the record is wrong for this
+         geometry. Either way the anchor's interpretation changes, and this
+         number is the one that decides which.
+  🔴 F2  if TE011 Q < TM111 Q the identification is inverted and NO Q is
+         reported — the same guard that fired on the cap-loop solve.
+
+==============================================================================
+  design point (H1, DERIVED): a=88.0045 mm  L=115.4158 mm
+  wall: 3.5e+07 S/m from baselines.json
+  NO loop, NO groove — the only difference from e0k2
+
+  32,531 tets, 1 sector(s), port attr None (expect None — no loop)
+    e0k2_bare: solver order 2
+    solved in 164s
+
+  6 modes:
+    f=2.450115  Q=20,259
+    f=2.450150  Q=20,254
+    f=2.450856  Q=44,384
+    f=2.622865  Q=24,326
+    f=2.622986  Q=24,327
+    f=2.783797  Q=28,955
+
+  TE011 = 2.450856 GHz   Q = 44,384   (how=Q)
+  TM111 = 2.450133 GHz   Q = 20,256
+  degeneracy split 0.7235 MHz (closed form: EXACTLY 0)
+  pair polarisation split 0.0357 MHz
+
+  DECLARED CRITERIA
+    V2 TE011 Q > TM111 Q: 44,384 vs 20,256 ✅
+       q_margin 2.191  pair_q_ratio 1.000 (want ~1: one mode, two orientations)
+    V3 TE011 within 0.856 MHz of 2.45000 🔴 check the mesh and the flags
+
+  ======================================================================
+  BARE TE011 Q0 = 44,384
+    record (INSTRUMENT, this geometry) : 44,384
+    with the 11x8 cap loop (e0k2)      : 30,020
+    -> the loop costs +32.4% of Q
+       F1: if that is small, the loop is NOT what depressed Q and
+       the 44,384 in the record does not describe this geometry.
+
+  wrote e0k2_bare.result.json
+EXIT=0

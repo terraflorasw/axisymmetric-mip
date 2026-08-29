@@ -98,7 +98,7 @@ import eigmodes
 import values
 import solveconf
 import journal
-from e0_solver_vs_math import GEO, eigen_cfg, run
+from e0_solver_vs_math import GEO, eigen_cfg, run, volume_attrs
 
 TAG = "e0k2"
 # 🔑 BOUND, NOT LITERAL (7bl). This same number lived here AND in h2_groove.py,
@@ -194,7 +194,7 @@ def wall_sigma():
             f"programme's absolute Q went 34% wrong once already.")
 
 
-def shared_energy_list(attrs):
+def shared_energy_list(meta):
     """ONE definition of 'signature', used by BOTH solves.
 
     🔴 eigen_cfg numbers its regions 1 then 10+i; solveconf.driven uses 1 then
@@ -202,9 +202,12 @@ def shared_energy_list(attrs):
     would not line up and a signature comparison between the two would be
     silently meaningless. Build it once, inject it into both.
     """
-    vols = sorted({v for k, v in attrs.items()
-                   if isinstance(v, int) and k not in ("wall", "port")}
-                  | set(attrs.get("air") or []))
+    # 🔴 TAKES `meta`, NOT `attrs`, SINCE 2026-08-27 — and that is the point.
+    # An attrs dict cannot say which of its entries are SURFACES; only the
+    # sidecar can. Passing attrs is what let a `loop` surface be counted as a
+    # volume in twenty places across this repo.
+    attrs = meta["attributes"]
+    vols = volume_attrs(meta)
     return [{"Index": 1, "Attributes": [attrs["bore"]]}] + \
            [{"Index": 10 + i, "Attributes": [v]} for i, v in enumerate(vols)]
 
@@ -400,7 +403,7 @@ def main():
             sized.append({"tag": tag, "ld": ld, "lw": lw, "area": area,
                           "error": str(e)})
             continue
-        energy = shared_energy_list(m["attributes"])
+        energy = shared_energy_list(m)
         td = f"{tag}_drv"
         cd, _meta, dropped = solveconf.driven(f"{tag}.msh", td, band,
                                               step=FREQ_STEP, order=2)

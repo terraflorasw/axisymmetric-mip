@@ -86,7 +86,7 @@ def solve_case(tag, a, L, cap_r, sectors, sf, sigma, exact, fmin, band):
             print(f"    {line.strip()}", flush=True)
     m = solveconf.load_meta(f"{tag}.msh")
     bins = sector_bins(m)
-    en = shared_energy_list(m["attributes"])
+    en = shared_energy_list(m)
     print(f"    {m['tets']:,} tets, {len(bins)} azimuthal bins, floor "
           f"{(m.get('sizing_mm') or {}).get('min'):.3f} mm", flush=True)
     if len(bins) != sectors:

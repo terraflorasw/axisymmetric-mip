@@ -117,5 +117,13 @@ Retrieve it only to follow a citation:
 
 - Instance address lives in `ops/env.sh` — one line. Never hardcode it.
 - `ops/go <script>` is the only way to run things; it lints and syncs first.
-- `ops/go ops/remote.sh <rig.py> 32` launches a rig on the instance.
-- Long solves: watch, do not poll. The rig appends `EXIT=` when done.
+- `ops/go ops/remote.sh <rig.py> 32 <slug>` — **pass the slug.** Without one the
+  log is named for the RIG, so a re-run overwrites it, and there is nothing to
+  watch by name.
+- Long solves: **`ops/watch.sh <slug>`** — watch, do not poll. The rig appends
+  `EXIT=` when done.
+  🔴 **Do NOT pipe it into `tail`/`head`/anything buffering** — they hold their
+  input until EOF, so a live watch emits nothing until the run ends. It is
+  survivable (every line is mirrored to `<slug>.watch.log`) but the point of a
+  watch is to watch. `ops/status.sh` is a SNAPSHOT, not a watch. See §7bq — the
+  watcher has failed four times, never the same way twice.

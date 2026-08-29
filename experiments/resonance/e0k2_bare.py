@@ -79,7 +79,7 @@ def main():
     fmin = exact - 0.20
     c = eigen_cfg(TAG, m, mesh=f"{TAG}.msh", sigma=sigma, n=N_MODES, target=fmin)
     c["Solver"]["Order"] = 2
-    c["Domains"]["Postprocessing"]["Energy"] = shared_energy_list(attrs)
+    c["Domains"]["Postprocessing"]["Energy"] = shared_energy_list(m)
     # 🔴 no loop means no port attribute to short. Asserting it rather than
     # silently skipping: a port here would mean the mesh is not what we asked for.
     if attrs.get("port") is not None:

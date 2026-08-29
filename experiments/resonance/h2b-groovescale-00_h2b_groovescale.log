@@ -1,0 +1,49 @@
+H2b — is the groove characterisable by a RATIO, so it transfers?
+
+H2 measured the depth sweep at D/L 1.525, gw = 5 mm, and refuted my stub model in
+the useful regime:
+
+    d = 10 mm -> TM111 -64.25 MHz, TE011 +0.014 MHz, Q -0.3%
+    d = 20 mm -> TM111 -110.77 MHz, TE011 -0.002 MHz, Q -0.04%
+    d >= 27 mm -> the slot RESONATES, hybridises with the cavity, Q craters to
+                  ~3,000 and the mode identification fails outright.
+
+Ratio 10->20 mm was 1.72x. tan(beta d) predicts 2.93x, so it is NOT stub-limited
+down here; lambda/4 is the depth to AVOID, not to target. 2.00x is what the slot
+VOLUME FRACTION predicts, and 1.72 is nearer that:
+
+    eta = 4 * gw * gd / (a * L)        slot volume / cavity volume
+
+⚠️ TWO POINTS CANNOT ESTABLISH A SCALING LAW. eta is a hypothesis read off a
+1.72-vs-2.00 comparison, and this rig exists to test it rather than adopt it.
+
+THREE QUESTIONS, all in the shallow (non-resonant) regime:
+
+  PRODUCT    same eta, different (gw, gd). If eta governs, a 2x25 slot equals a
+             5x10 slot and the 2D search collapses to ONE parameter — plus
+             freedom to machine narrow-deep or wide-shallow.
+  EXPONENT   eta series at fixed width. Is it eta^1, or the eta^0.78 that two
+             points hint at?
+  TRANSFER   same eta at D/L 1.35 / 1.525 / 1.90. Volume fraction normalises for
+             cavity SIZE, but the perturbation acts through TM111's cap CURRENT
+             at the corner, which volume does not capture. This is the question
+             that decides whether the ratio survives adding a torch and
+             viewports.
+
+VERIFICATION   each D/L has its own gd=0 control, so every shift is measured
+               against the same geometry ungrooved.
+FALSIFICATION  🔴 equal-eta cases differing by more than ~15% -> eta is not the
+               governing group and width/depth are not interchangeable.
+               🔴 transfer cases differing across D/L -> the ratio does not
+               normalise, and a corner-current factor is needed.
+
+🔑 Q GUARD. A mode with Q far below the ungrooved TE011 is a lossy SLOT
+resonance, not the cavity mode — that is how H2's deep points were silently
+mis-identified while reporting confident splittings. Any point whose Q falls
+below half the control is flagged and excluded from the fit, not quietly used.
+
+==============================================================================
+  H2B_ONLY set — running 6 of 11 cases: ['prod-narrow', 'prod-wide', 'control-1.35', 'xfer-1.35', 'control-1.90', 'xfer-1.90']
+  (the others are already solved; postpro/ holds their data and h2b_analyse.py reads all of them together)
+
+    h2b_prod_narrow: solver order 2

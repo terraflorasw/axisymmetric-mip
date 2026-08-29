@@ -101,7 +101,7 @@ def main():
             c = eigen_cfg(tag, m, mesh=str(msh), sigma=sigma,
                           n=N_MODES, target=fmin, port_bc="pec")
             c["Solver"]["Order"] = 2
-            c["Domains"]["Postprocessing"]["Energy"] = shared_energy_list(attrs)
+            c["Domains"]["Postprocessing"]["Energy"] = shared_energy_list(m)
             c["Boundaries"]["PEC"] = {"Attributes": [attrs["port"]]}
             for mat in c["Domains"]["Materials"]:
                 for k, want in (("Permittivity", 1.0), ("LossTan", 0.0),

@@ -133,6 +133,52 @@ set).
 we can resolve without a lot of sweeps."*** Correct — and a cold eigen solve on
 the design cavity is now ~7 min at best, so a mechanism study is expensive.
 
+### 🔎 AMENDMENT 2026-08-27 — THE ld SWEEP GIVES THE GAP QUESTION A NEW AXIS
+
+**Nothing below is established.** It is parked because it is a reading of
+existing data, and a reading is not a falsification.
+
+✅ **The one new fact** (`h3-lambda4-02`, KNOWN.md): swept over 18 mm of
+conductor length, Q_ext **turns** — an interior minimum at L = 1.021 λ/4. The
+entry above was written when the only length axis available was the gap's
+1.9 mm, which could not have seen a turn.
+
+🔑 **The gap sweep was a length sweep too.** `L = 2·ld + (2·lw − port gap) −
+gap2`, so widening the series gap SHORTENS the conductor: gap2 0.5 → 2.25 walked
+L from 37.20 → 35.45 mm. Q_ext fell 1,143 → 322 over that walk.
+
+🔴 **BUT LENGTH ALONE DOES NOT EXPLAIN IT.** The two sweeps agree at their shared
+point (1,143 vs 1,135, 0.7 %) and diverge to **0.35×** at the far end. And the
+flange sweep moves Q_ext 1,143 → 3,079 at **constant L**. So the gap does
+something beyond shortening the conductor, exactly as this entry already said.
+
+🔴 **AND THE SERIES-LC READING IS ALREADY RETRACTED.** KNOWN.md § STEP 2: an
+`Q_ext ∝ R² + (X_L−X_C)²` fit over three flange points failed at **44 % residual**
+when the no-capacitor control was added. ⚠️ **I re-derived that same picture on
+2026-08-27 without searching for it** — the failure mode CLAUDE.md calls the most
+repeated in this record. It is recorded here so the next re-derivation is caught.
+
+⚠️ **One thing the ld sweep does change about the sign argument.** This entry
+reasons that widening the gap should WEAKEN coupling, assuming the loop is at
+cancellation at gap 0.5. The ld sweep puts the bare-wire minimum at **L ≈ 31.2 mm**,
+while ld = 11 / gap 0.5 sits at **37.2 mm** — i.e. NOT at the minimum. If the loop
+is net inductive there, "widen the gap → less C → more |X_C|" moves TOWARD
+cancellation, not away, and the measured direction stops being anomalous.
+🔴 **This is an inference from two sweeps at different slices (one eigen and
+torch-free, one driven with a torch), not a measurement, and the LC fit it leans
+on is the retracted one. Do not quote it.**
+
+### 🔬 THE FALSIFIER, IF THIS IS EVER UNPARKED
+
+At **ld = 8** the loop is already at the measured minimum with gap2 = 0.5. Any
+picture in which the gap and the length move the SAME resonance predicts that
+widening the gap there pushes Q_ext **UP** — the opposite of its behaviour at
+ld = 11. A picture in which "wider is always better" survives predicts it keeps
+falling. **Three cases on one axis separate them.**
+⚠️ **NOT QUEUED.** It is a mechanism study, and the standing user decision above
+still holds: *"probably not something we can resolve without a lot of sweeps."*
+The design does not need the mechanism — it needs a loop.
+
 ### ✅ QUEUED AS `h3-groove-gap-01` — and the BAR IS CLASSIFICATION, not mechanism
 
 **User, 2026-08-26: *"At the very least, we should be able to classify it as

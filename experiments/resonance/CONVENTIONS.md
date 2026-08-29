@@ -2713,7 +2713,7 @@ have found it.
 
 ⚠️ **Never seen because `GEO` ships `--chimney 0,41 --feed 0,41` — both OFF.**
 Same latent-bug shape as the torch permittivity: **a disabled feature hides its
-own bug, and enabling it years later looks like the ENABLING broke something.**
+own bug, and enabling it later looks like the ENABLING broke something.**
 
 ✅ **FIXED as one feature.** User: *"Isn't 'chimney' overwrought? It's just the
 hole in the end cap opposite the other torch-bottom hole."* R29 ("chimney") and
@@ -2737,6 +2737,137 @@ real design improvement, kept (`--torch-ext-top`) even though it fixed no bug.
 "your design has a degenerate junction."** Usually it is the former and nudging
 a dimension is right; it is worth ONE question first, because occasionally it is
 the latter and nudging hides it.
+
+## 7bo. 🔴 I DO NOT KNOW HOW MUCH TIME HAS PASSED — DO NOT NARRATE DURATIONS
+
+**User, 2026-08-26: *"the terminal ui doesn't give you accurate times at all.
+For example there have been instances of 'we've spent months' (its been a
+couple weeks) and 'the 2026 problem' (it was always 2026)."***
+
+🔑 **I confabulate elapsed time.** I see timestamps inside tool output, but I
+have no reliable sense of the interval between messages, between sessions, or
+since a piece of code was written — and I fill the gap with a plausible-sounding
+duration instead of leaving it blank.
+
+**Caught in the record, same day:**
+- **"enabling it years later"** — landed in KNOWN.md AND here, about a flag that
+  has existed for however long this programme has run. Weeks, not years. Fixed.
+- **"the 2026 attempt"** for R62 — everything in this project is 2026, so the
+  label distinguishes NOTHING while implying a different era. Use the R-number,
+  which is a real identifier.
+- **"this instance lasted roughly 4½ hours"** — stated one message before the
+  measurement arrived and said **2.18 hours**. I had estimated from a REMEMBERED
+  launch time. ⚠️ **The instrument that caught it was added, by me, in the
+  message immediately before.**
+
+### The rule
+
+- **Never state a duration that was not measured.** "Weeks", "months", "years
+  later", "all day", "recently" — if no timestamp supports it, leave it out.
+- **Prefer an identifier to a date.** R62, `h3-bore-01`, a stamp. Those are
+  exact and they distinguish; a year that every entry shares does not.
+- **Datestamp events, do not describe intervals.** `2026-08-26` is checkable;
+  "a while back" is invention.
+- ⚠️ **This is not the same as the extrapolation problem (§11, §7bn).** There I
+  read a real trend too early from real data. Here there is **no data at all**
+  and the number is manufactured — which is worse, and harder to notice,
+  because a fabricated duration reads exactly like a recalled one.
+
+🔑 **The general form: I am unreliable about elapsed time in the same way I am
+unreliable about un-run code.** Measure it, or say nothing.
+
+## 7bp. 🔴🔴 USELESS SOLVES COST FAR MORE THAN SPOT INTERRUPTIONS
+
+**User, 2026-08-27: *"useless solves have been more costly than spot
+interruptions by a pretty high ratio."*** ✅ **Measured, and it is about 7:1.**
+
+| | solve time |
+|---|---:|
+| logged total, one session | 28,561 s (7.9 h) |
+| **outright wasted** | **5,022 s** — `h3-quarterwave-01`: a timeout plus a bracket that could not answer |
+| **badly aimed** | **4,941 s** — the flange sweep, run entirely on the wrong side of the optimum |
+| measurable interruption loss | **1,424 s** — one `pec` re-solved three times before per-BC resume existed |
+
+⚠️ **Up to 35 % of solve time went to runs that could not answer, or answered a
+question I had mis-posed.** Twelve spot reclamations cost a small fraction of
+that, because **checkpointing already protects against interruption — nothing
+protects against a badly designed run.**
+
+### The five ways a run was made useless, all in one session
+
+| | failure | example |
+|---|---|---|
+| 1 | **the sweep does not span the governing variable** | `h3-quarterwave-01`: `gap` enters L only ONCE, so with `ld` fixed all three cases sat within 2 % of λ/4. 1.5 mm of range on the quantity under test |
+| 2 | **no control outside the expected effect** | same run: "no minimum" and "all three AT the minimum" would have looked identical |
+| 3 | **the instrument does not work in the regime** | lossy `lumped` eigen at β ≫ 1 — `pec` converged in 1,422 s, `lumped` burned 3,600 s and failed. The record ALREADY says driven is cheapest where eigen fails |
+| 4 | **the objective is wrong** | "minimise Q_ext" — Q_ext serves two states 265× apart |
+| 5 | **the grid is on the wrong side** | the flange sweep, chasing R62's target, which pointed away from the optimum |
+
+### ✅ THE PRE-LAUNCH CHECK — cheaper than any of the above
+
+Before `ops/go`, answer in the config's own provenance:
+
+1. **What is the governing variable, and how much of its RANGE does this sweep
+   cover?** Compute it. `h3-quarterwave-01` would have failed here in one line.
+2. **Is there a case OUTSIDE the expected effect?** A sweep entirely inside the
+   region of interest cannot distinguish signal from flat.
+3. **Does the instrument converge in this regime?** If a previous run in the
+   same regime took 3× as long, expect worse — and check whether the OTHER
+   solver is cheaper here.
+4. **What result would falsify the objective, not just the hypothesis?**
+
+🔑 **The rule: a run must be able to return a DIFFERENT answer depending on the
+physics. If every plausible outcome looks the same, the design is wrong and no
+amount of compute fixes it.**
+
+## 7bq. 🔴🔴 THE WATCHER HAS FAILED FOUR TIMES, AND NEVER THE SAME WAY TWICE
+
+⚠️ **This section exists because CONVENTIONS had NOTHING on it.** Every lesson
+below was written down — in `ops/watchrig.sh`'s header, where you only look if
+you already suspect the watcher. A recurring error recorded only inside the
+thing that fails is not recorded. Four failures, four causes:
+
+| # | date | cause | what it looked like |
+|---|---|---|---|
+| 1 | 2026-08-25 | `Monitor` + `tail -f` — no end condition | watch stayed armed on a run that finished 20 min earlier |
+| 2 | 2026-08-25 | `until grep EXIT=` — no per-case output | **silent for the whole run**; traded "never stops" for "says nothing" |
+| 3 | 2026-08-25 | poll interval too slow on failure | fired at :53 for a host that died at :49; **the user spoke at :52** |
+| 4 | 2026-08-27 | **the CALL SITE**: `ops/watchrig.sh … \| tail -60` | watch alive and matching; `tail` buffered every event until EOF |
+
+🔑 **ASK FOUR QUESTIONS OF ANY WATCH**, not the three the script's header had:
+
+1. what does it emit **per unit of progress**?
+2. what does it emit when the **JOB** ends?
+3. what does it emit when the **MACHINE** ends?
+4. 🔴 **can the CALLER silently discard the output?**
+
+**(4) is the one nothing inside the watcher can detect.** `tail`, `head`, and
+most filters buffer their whole input until EOF, so a correct, live, matching
+watcher produces nothing until it exits — indistinguishable from a dead one.
+⚠️ I made this mistake TWICE in one session and reasoned myself into it the
+first time ("that is the notify-on-completion behaviour I want" — it was not;
+the user wants per-case progress).
+
+✅ **THE FIX IS NOT "REMEMBER NOT TO PIPE IT."** Three of the four failures were
+fixed by remembering something, and a fourth arrived anyway. The watcher now
+**mirrors every line to `<slug>.watch.log`**, so a bad invocation is HARMLESS
+rather than forbidden, and progress is recoverable after the fact.
+
+    ops/watch.sh <slug>        # the only watch command that should be typed
+                               # derives the remote path; refuses a path arg
+                               # mirrors to <slug>.watch.log regardless
+
+🔴 **AND `ops/status.sh` IS NOT A WATCH.** It answers "is anything running right
+now" — a SNAPSHOT. `ops/remote.sh` printed `watch: ops/go ops/status.sh` after
+every launch until 2026-08-27, which is how launches ended up POLLED, against
+this repo's own rule. It now names `ops/watch.sh`.
+
+🔑 **THE GENERALISATION, and it is the shape of §7ap, §7bl and §7d as well:**
+the instrument keeps being fine and the way it is used keeps being wrong.
+**Prefer a fix that makes the wrong invocation harmless over one that requires
+remembering.** Tested: `ops/watchrig_test.sh` case 6 discards the watcher's
+stdout entirely and asserts the per-case and result lines still reach the
+mirror. 16 assertions, up from 12.
 
 ## 8. Land results in files, immediately
 

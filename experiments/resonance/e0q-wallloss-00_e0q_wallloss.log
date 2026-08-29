@@ -1,0 +1,101 @@
+E0q — is the LOSS model right? The one part of the instrument with no anchor.
+
+E0 characterises FREQUENCY well (0.058 MHz on TE011). It says nothing about Q,
+and Q is not incidental: LOD runs through delivered power, which runs through Q
+and coupling. Meanwhile every absolute Q in this programme was ~34% high because
+the wall was silver by template default for its entire life.
+
+🔑 AND WE CANNOT ANCHOR ABSOLUTE Q. physics.py refuses to supply wall_Q — "the
+TE011 expression is easy to misquote" — and that refusal stands. But we do not
+need it. For pure wall loss, Q depends on conductivity ONLY through the surface
+resistance, so
+
+        Q  ∝  sqrt(sigma)        EXACTLY, for every mode, with no geometry in it
+
+That is a law, not an approximation, and it is testable without ever writing down
+a Q formula. SAME MESH throughout, only the boundary conductivity changes, so
+discretisation cancels exactly (METHODOLOGY 2b).
+
+VERIFICATION   fit log Q against log sigma across four conductivities; the slope
+               must be 0.5 for EVERY mode, not just TE011. And the Al:Ag pair
+               must give physics.q_wall_ratio = 0.745356.
+FALSIFICATION  a slope away from 0.5 by more than solver tolerance means Palace's
+               impedance boundary condition does not scale as sqrt(sigma), and
+               every Q this instrument produces is untrustworthy in a way no
+               calibration constant can fix.
+
+⚠️ Reports the FREQUENCY shift with conductivity too, as a measurement only. A
+delta/2 wall-recession estimate came in 2-3x low with mode-dependent scatter
+(E0), so it is NOT used as a check here — recorded, not trusted.
+
+⚠️ PEC is not in the sweep: its Q is infinite and log(inf) is not a data point.
+The PEC solve is the frequency reference, and E0 already has it.
+
+==============================================================================
+  e0q: sf 0.96, 83,322 tets, volumes ['bore', 'torch', 'upstream', 'wall']
+  ONE mesh: 83,322 elements, sf 0.96
+
+    e0q_s1e07: solver order 2
+  sigma 1.00e+07 S/m
+    solved in 516s
+    14 modes, TE011-ish Q = 9,637
+    e0q_s2e07: solver order 2
+  sigma 2.00e+07 S/m
+    solved in 585s
+    14 modes, TE011-ish Q = 13,629
+    e0q_s4e07: solver order 2
+  sigma 3.50e+07 S/m
+    solved in 678s
+    14 modes, TE011-ish Q = 18,031
+    e0q_s6e07: solver order 2
+  sigma 6.30e+07 S/m
+    solved in 1041s
+    14 modes, TE011-ish Q = 24,198
+    e0q_s1e08: solver order 2
+  sigma 1.00e+08 S/m
+    solved in 814s
+    14 modes, TE011-ish Q = 30,489
+
+  Q vs sigma — slope of log Q against log sigma, must be 0.500
+
+   mode     f GHz     1.0e+07     2.0e+07     3.5e+07     6.3e+07     1.0e+08    slope   flag
+      0   1.10643       9,981      14,116      18,674      25,053      31,564   0.5000       
+      1   1.76296      12,596      17,811      23,571      31,622      39,814   0.4999       
+      2   1.76296      12,596      17,814      23,565      31,616      39,833   0.5000       
+      3   1.89325      11,371      16,081      21,272      28,539      35,956   0.5000       
+      4   1.89325      11,371      16,082      21,274      28,542      35,960   0.5000       
+      5   2.02261       8,764      12,394      16,396      21,997      27,714   0.5000       
+      6   2.20042      11,997      16,965      22,444      30,111      37,939   0.5000       
+      7   2.20042      11,997      16,966      22,444      30,112      37,937   0.5000       
+      8   2.36297      14,575      20,614      27,260      36,571      46,088   0.4999       
+      9   2.36298      14,573      20,610      27,264      36,579      46,086   0.5000       
+     10   2.44432       9,638      13,631      18,034      24,198      30,489   0.5002       
+     11   2.44433       9,637      13,629      18,031      24,197      30,489   0.5002       
+     12   2.44446      19,550      27,638      36,548      49,017      61,738   0.4994       
+     13   2.53998      15,106      21,366      28,261      37,916      47,765   0.5000       
+
+  Al:Ag ratio, predicted 0.745356 (physics.q_wall_ratio):
+    mode 0 (1.1065 GHz): 0.745367  ✅
+    mode 1 (1.7630 GHz): 0.745387  ✅
+    mode 2 (1.7630 GHz): 0.745354  ✅
+    mode 3 (1.8933 GHz): 0.745371  ✅
+    mode 4 (1.8933 GHz): 0.745355  ✅
+    mode 5 (2.0227 GHz): 0.745354  ✅
+    mode 6 (2.2005 GHz): 0.745353  ✅
+    mode 7 (2.2005 GHz): 0.745354  ✅
+    mode 8 (2.3630 GHz): 0.745387  ✅
+    mode 9 (2.3630 GHz): 0.745352  ✅
+    mode 10 (2.4444 GHz): 0.745276  ✅
+    mode 11 (2.4444 GHz): 0.745157  ✅
+    mode 12 (2.4445 GHz): 0.745633  ✅
+    mode 13 (2.5400 GHz): 0.745342  ✅
+
+  frequency vs conductivity (MEASUREMENT, not a check):
+    mode 0: 37.9 kHz across 1e+07..1e+08 S/m
+    mode 1: 47.8 kHz across 1e+07..1e+08 S/m
+    mode 2: 47.9 kHz across 1e+07..1e+08 S/m
+
+  ✅ every mode scales as sqrt(sigma) to within 0.01 in exponent
+
+  wrote e0q.result.json — NO VERDICT HERE
+EXIT=0

@@ -1,0 +1,69 @@
+H2 — the annular groove, against a formula rather than a search.
+
+The groove is a shorted stub. A radial surface current arriving at the
+barrel/end-cap corner sees the slot mouth with input impedance
+
+    Z_in = j Z0 tan(beta d),    beta = 2 pi / lambda,  lambda = 122.36 mm
+
+so d = lambda/4 = 30.59 mm is an OPEN circuit and blocks the current, and
+d = lambda/2 = 61.18 mm is a SHORT and the groove is invisible. Position of the
+resonance is set by DEPTH and is independent of width; width sets
+Z0 ~ eta*gw/(2*pi*a) and the Q cost. So this is a one-dimensional sweep around a
+predicted point, not a blind depth x width search.
+
+🔑 WHY IT DISCRIMINATES. TE011 has NO end-cap surface current at all: at the cap
+its H is purely axial (H_r ~ sin(pi z/L) -> 0 there), so n x H = 0. TM111 has
+radial cap current that must cross the slot. The groove attacks a current one
+mode has and the other does not.
+
+🔑 THE TARGET IS THE SOURCE BAND, NOT A LINEWIDTH. The LDMOS tunes 2.40-2.50 GHz.
+A rival outside that window cannot be excited at all, so TM111 needs >50 MHz of
+detuning, not the maximum the groove can deliver. lambda/4 is over-design; the
+product of this sweep is the MINIMUM depth that clears the band with margin, and
+what that costs in Q.
+
+VERIFICATION, declared before the run:
+  1. TE011 must barely move. It has no cap current, so a groove that shifts
+     TE011 as much as TM111 is not working by the claimed mechanism.
+  2. the TM111 shift must follow tan(2 pi d / lambda) — rising toward 30.59 mm.
+
+FALSIFICATION:
+  🔴 TE011 shifting comparably to TM111 -> the mechanism is wrong, whatever the
+     splitting does.
+  🔴 no inversion or roll-off past lambda/4 -> it is not behaving as a stub, and
+     the formula gives us nothing for choosing depth.
+
+⚠️ sf 1.5 deliberately. This measures a SHIFT of tens of MHz; E0j puts TE011 at
+~0.2 MHz on this mesh, i.e. <1% of the effect, and a depth sweep is a differential
+comparison where discretisation largely cancels (METHODOLOGY 2b).
+
+⚠️ Q here is an UPPER bound: physics.py refuses wall_Q, so Q is trustworthy in
+ratio across the sweep, not absolutely.
+
+==============================================================================
+  D/L 1.525: a=88.005 L=115.42, groove width 5.0 mm
+  lambda/4 = 30.59 mm, lambda/2 = 61.18 mm
+
+    h2_d0: solver order 2
+    solved in 173s
+    depth   0.00 mm  (0.000 lambda)  TE011 2.45086  TM111 2.45013  split    0.72 MHz  Q_TE 44,383
+    h2_d10: solver order 2
+    solved in 225s
+    depth  10.00 mm  (0.082 lambda)  TE011 2.45100  TM111 2.38675  split   64.25 MHz  Q_TE 44,256
+    h2_d20: solver order 2
+    solved in 223s
+    depth  20.00 mm  (0.163 lambda)  TE011 2.45084  TM111 2.34006  split  110.77 MHz  Q_TE 44,364
+    h2_d27: solver order 2
+    solved in 297s
+    depth  27.00 mm  (0.221 lambda)  TE011 2.29947  TM111 2.07661  split  222.86 MHz  Q_TE 3,295
+    h2_d31: solver order 2
+    solved in 274s
+    depth  30.59 mm  (0.250 lambda)  TE011 2.17077  TM111 1.98874  split  182.03 MHz  Q_TE 2,985
+    h2_d34: solver order 2
+    solved in 1260s
+    depth  34.00 mm  (0.278 lambda)  TE011 2.06306  TM111 1.94158  split  121.48 MHz  Q_TE 2,828
+    h2_d42: solver order 2
+    solved in 234s
+    depth  42.00 mm  (0.343 lambda)  TE011 2.01335  TM111 1.86270  split  150.65 MHz  Q_TE 8,730
+    h2_d52: solver order 2
+EXIT=143

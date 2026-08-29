@@ -1,0 +1,53 @@
+E0m — is THREADED meshing reproducible, and does it produce the SAME mesh?
+
+Meshing became the critical path once solves moved to 32 ranks (E1b: 10.6 min
+meshing vs 9.4 min solving). gmsh here IS built with OpenMP, and
+General.NumThreads has been 1 for every mesh this programme has ever built.
+
+Run on E0k's EXACT geometry, so that if the parallel mesh differs, e0kp can
+solve it and compare against E0k's serial-mesh numbers directly.
+
+TWO SEPARATE QUESTIONS, and a thread count must pass both to be adopted:
+
+  1. REPRODUCIBLE — repeats at the same thread count give an identical SHA-256.
+     A racing mesher would make "same mesh" mean "same command line", and the
+     whole error budget (METHODOLOGY 2b) rests on the stronger claim.
+  2. IDENTICAL TO SERIAL — threads=N gives the same mesh as threads=1. A count
+     can be perfectly repeatable and still produce a DIFFERENT mesh, which would
+     put the 1.3-3.3 MHz cross-mesh error on every comparison with existing
+     results.
+
+FALSIFICATION  any hash difference between repeats at one thread count rules
+               that count out outright. Passing (1) but failing (2) does NOT
+               rule it out — it means adoption is a MESH CHANGE and must be
+               re-baselined, which is what e0kp measures.
+
+⚠️ Tet COUNT is not the test. Two meshes can share a tet count and place nodes
+differently, and node placement is what the solver sees. Hash the file.
+
+==============================================================================
+  geometry: --radius 103.7 --length 88.53 --order 2 --sectors 1 --no-torch --no-inner --mode-filter 0 --viewport 0 --trap 0,0,0 --chimney 0,41 --feed 0,41 --loop 25.8,19.4,1.5,0.3 --loop-phi 36 --size-factor 1.5
+
+  threads=1   rep 0:     4.6s    27,578 tets  898c60ecf72a9dec
+  threads=1   rep 1:     4.7s    27,578 tets  84d775c0647e059d
+  threads=1   -> 🔴 NOT REPRODUCIBLE  best 4.6s
+
+  threads=8   rep 0:     5.0s    27,608 tets  d61bc9653dbdcdb2
+  threads=8   rep 1:     5.0s    27,626 tets  9fd97f0eaa83830e
+  threads=8   -> 🔴 NOT REPRODUCIBLE  best 5.0s
+
+  threads=32  rep 0:     5.2s    27,708 tets  fd769a36838c94eb
+  threads=32  rep 1:     4.7s    27,557 tets  14a6dbcbda46fae1
+  threads=32  -> 🔴 NOT REPRODUCIBLE  best 4.7s
+
+==============================================================================
+   threads    best s  speedup  reproducible  same as serial
+         1       4.6    1.00x            NO             yes
+         8       5.0    0.92x            NO              NO
+        32       4.7    0.96x            NO              NO
+
+  🔴 NOT reproducible at [1, 8, 32] — those counts are ruled out
+  ⚠️ threads=[8, 32] produce a DIFFERENT mesh from serial. Repeatable, but adopting one is a MESH CHANGE — run e0kp to measure whether it moves the physics.
+
+  wrote e0m.result.json — NO VERDICT HERE
+EXIT=0

@@ -1,0 +1,138 @@
+EIGEN + PURITY on the DESIGN cavity: what mode is at 2.4515, and is it TE011?
+
+🔴 WHY THIS RIG EXISTS. Driven and eigen disagree about the design cavity, and
+the disagreement is 11.5 MHz wide:
+
+  `h3_driven` cold locator, 2.40-2.52 GHz @ 25 kHz, ONE minimum:
+      2.451500 GHz, Q0 = 8,462, beta = 0.208, |S11| = -3.67 dB
+  `h3_cold` eigen (N=4, target 2.38) returned FOUR modes and NONE at 2.4515:
+      2.440003 (m_az=1, identification_uncertain) / 2.494440 / 2.606499 / 2.607352
+
+2.451500 is +0.939 MHz from the ANCHORED grooved-no-loop TE011 (2.450561,
+`h3_ladder` step 2, which reproduced H2 to 2.0%). So driven says the loop barely
+moves TE011. h3_cold says TE011 is 10.5 MHz lower. Both cannot be right.
+
+🔑 THREE CANDIDATE EXPLANATIONS, and this rig separates them BY CONSTRUCTION:
+  (a) SETTINGS — N=4 was too few / target 2.38 placed badly, and eigen simply
+      never returned the mode. Then 2.4515 is TE011 and h3_cold's list is short.
+  (b) MESH — h3_cold meshes GEO_DESIGN with `--no-torch` (no torch body, no
+      plasma region). h3_driven strips `--no-torch` and meshes a torch at
+      eps=1.0 AND a plasma annulus at eps=1.0. Electrically both are vacuum, so
+      this SHOULD NOT move a mode 11.5 MHz. If it does, that is the finding.
+  (c) NOT AN EIGENMODE — the driven dip is a feed/port artifact. Q ~ 8,500 and
+      beta = 0.208 argue against it, but it must be excluded by looking.
+
+⚠️ TWO STEPS, ONE VARIABLE. Both use IDENTICAL eigen settings; they differ ONLY
+in how the mesh is built. That is the whole design — it is why (a) and (b) can
+be told apart at all, and why N is NOT set to h3_cold's 4.
+
+🔴 EIGEN ONLY. CONVENTIONS §7c, "one rig, one solver": three failed launches and
+two silently wrong values came from one file switching solver. The driven half
+of this comparison is `h3_driven` and it has already run.
+
+🔑 NO SELECTION HEURISTIC. This rig does NOT pick "the TE011". It reports every
+mode in the window with f, Q, m_az, A2/A0 AND PURITY, and lets the reader see
+what is there. Selecting by "lowest A2/A0" is what produced the wrong answer
+that started this (§7u: h3_cold flagged `identification_uncertain: True` on that
+exact point and I supplied the confidence anyway).
+
+VERIFICATION
+  V1  the grooved-no-loop anchor is 2.450561 GHz (`h3_ladder` step 2, which
+      reproduced H2's TM111 shift to 2.0%). A mode within ~2 MHz of it, with
+      HIGH PURITY, is TE011 barely perturbed by the loop -> driven is right.
+  V2  the groove must be in BOTH meshes (sidecar `geometry_mm.groove` = 5,10).
+      A groove-free mesh here is a different cavity (KNOWN.md § THE FILTER).
+  V3  both steps must return a mode list that BRACKETS 2.4515 — i.e. at least
+      one mode below and one above. A list that stops short cannot say "absent".
+      🔴 If it does not bracket, this rig reports INCONCLUSIVE, not "no mode".
+FALSIFICATION
+  🔴 F1  if BOTH meshes show a high-purity mode at ~2.4515, explanation (a) is
+         confirmed: h3_cold's N=4 was too few, and 12,368 was never TE011's Q.
+  🔴 F2  if ONLY the driven-style mesh shows it, the torch/plasma REGIONS move a
+         mode 11.5 MHz while being electrically vacuum. That is a meshing
+         defect and it invalidates comparing any two rigs that differ this way.
+  🔴 F3  if NEITHER shows a mode near 2.4515, the driven dip is not an
+         eigenmode. Then `h3_driven`'s whole loaded series is measuring
+         something the eigen formulation does not contain, and its eta column
+         is suspect — report it and stop, do not rationalise.
+  🔴 F4  if the mode nearest 2.4515 has LOW purity (spread > 0.10), it is not
+         TE011 however well its frequency matches. Frequency agreement with an
+         anchor is necessary, not sufficient — that is exactly the reasoning
+         that produced the retracted -10.56 MHz story.
+
+==============================================================================
+  a=88.0045 L=115.4158   closed-form TE011 = 2.450000 GHz
+  loop 11x8 mm = 176 mm^2 (GLOSSARY: the second number is a HALF-width)
+  eigen: target=2.38, N=8 — IDENTICAL for both steps, so only the MESH differs
+  the question: is there a mode at 2.451500, and is it TE011?
+
+  --- mesh style: cold   port_bc: pec
+    groove in mesh: [5.0, 10.0]   tets=43,685
+    ⚠️ h3_step3_cold_pec: port 91 SHORTED on purpose (port_bc=pec) — the loop is a resonant ring, NOT the machine
+    h3_step3_cold_pec: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 440s
+    4 modes returned (2.3895 - 2.6067 GHz)
+         f GHz         Q   m    A2/A0    P_min   spread
+      2.389462    13,224   1   0.3016   0.6016   0.3982
+      2.451633    43,422   0   0.0023   0.9997   0.0003
+      2.606464    20,959   0   0.0005   0.0977   0.8808
+      2.606699    20,951   0   0.0005   0.0169   0.8141
+    nearest to the driven dip: 2.451633 (+0.133 MHz)
+      vs grooved-no-loop anchor 2.450561 -> +1.072 MHz (the loop's pull)
+    ✅ TE011 — P>=0.9997, spread 0.0003, +0.133 MHz from driven
+  --- mesh style: driven   port_bc: pec
+    ⚠️ mesh needed size-factor 1.42; REPORTED
+    groove in mesh: [5.0, 10.0]   tets=80,621
+    ⚠️ h3_step3_driven_pec: port 91 SHORTED on purpose (port_bc=pec) — the loop is a resonant ring, NOT the machine
+    h3_step3_driven_pec: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 775s
+    4 modes returned (2.3899 - 2.6064 GHz)
+         f GHz         Q   m    A2/A0    P_min   spread
+      2.389925    13,267   1   0.3016   0.6035   0.3955
+      2.451490    43,523   0   0.0024   0.9998   0.0002
+      2.606299    20,987   0   0.0004   0.0000   0.7506
+      2.606352    20,977   0   0.0006   0.1853   0.8147
+    nearest to the driven dip: 2.451490 (-0.010 MHz)
+      vs grooved-no-loop anchor 2.450561 -> +0.929 MHz (the loop's pull)
+    ✅ TE011 — P>=0.9998, spread 0.0002, -0.010 MHz from driven
+  --- mesh style: driven   port_bc: lumped
+    ⚠️ mesh needed size-factor 1.42; REPORTED
+    groove in mesh: [5.0, 10.0]   tets=80,621
+    🔑 h3_step3_driven_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3_step3_driven_lumped: solver order 2
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 778s
+    4 modes returned (2.3899 - 2.6064 GHz)
+         f GHz         Q   m    A2/A0    P_min   spread
+      2.389919     2,319   1   0.3015   0.6036   0.3954
+      2.451488     7,538   0   0.0023   0.9998   0.0002
+      2.606301    18,143   0   0.0003   0.0188   0.7189
+      2.606351    18,564   0   0.0006   0.1954   0.7677
+    nearest to the driven dip: 2.451488 (-0.012 MHz)
+      vs grooved-no-loop anchor 2.450561 -> +0.927 MHz (the loop's pull)
+    ✅ TE011 — P>=0.9998, spread 0.0002, -0.012 MHz from driven
+
+==============================================================================
+  cold/pec                        43,685 tets   nearest 2.451633 (+0.13 MHz)
+  driven/pec                      80,621 tets   nearest 2.451490 (-0.01 MHz)
+  driven/LUMPED (the machine)     80,621 tets   nearest 2.451488 (-0.01 MHz)
+
+  🔑 THE ANSWER THIS RIG WAS RERUN FOR:
+     driven (50 ohm, S11)      : 2.451500 GHz
+     eigen  (50 ohm, lumped)   : 2.451488 GHz (-0.012 MHz)
+     -> the two solvers AGREE ✅ — same cavity, same mode. §7v is confirmed and the 11.5 MHz
+        gap was ENTIRELY the port boundary condition.
+
+     🔑 TE011 PURITY IN THE OPERATING CONFIGURATION: P >= 0.9998, spread 0.0002
+        shorted-loop eigen said: P >= 0.9997, spread 0.0003  ⚠️ different cavity
+        grooved, NO loop        : P >= 0.9985, spread 0.0015 (ladder step 2, anchored)
+     ✅ THE LOOP DOES NOT DEGRADE TE011. The ~0.94 purity in the record is a
+        SHORTED-LOOP artifact and the TDS objection loses its premise.
+
+  result -> h3_step3.result.json
+EXIT=0

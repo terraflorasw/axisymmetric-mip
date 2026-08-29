@@ -1,0 +1,137 @@
+H3 probe — WHERE does the eigensolver stop converging on a lossy plasma?
+
+🔴 WHY THIS EXISTS. One eigen configuration stalled (nconv=0, 65 min) and I
+concluded "the eigenmode solver cannot handle a bulk lossy plasma" and wrote it
+into INSTRUMENT as measured fact. **That was n=1.** Palace supports lossy
+materials in eigenmode; the real question is whether THIS problem converges with
+THESE settings, and nothing was varied before the capability claim was made.
+
+🔑 AND EIGEN IS THE BETTER TOOL IF IT WORKS. H3 needs Q and f of the loaded
+cavity. Eigen gives both DIRECTLY — no port, no coupling model, 155-882 s.
+Driven gives them through a port that perturbs by 32% and via Q0 = Q_L(1+beta),
+dragging beta into a measurement beta would otherwise contaminate, at 8x the
+cost. Abandoning eigen on one failure gave up the better instrument without
+establishing it was unusable.
+
+## The design: vary ONE thing at a time from the configuration that failed
+
+    baseline    ne=1e18, R=2, plasma-h 0.4, target 2.15   — must reproduce the stall
+    coarse      plasma-h 1.0                              — tests the MESH RATIO
+    target      target 2.40 instead of 2.15               — tests the SHIFT
+    both        coarse + target                           — if either helps alone
+
+then, on whatever configuration works, sweep n_e to find the BOUNDARY:
+
+    1e15 .. 1e21, log — where does convergence actually stop?
+
+⚠️ `--plasma-h 0.4` forced a 0.32 mm mesh floor against a 15 mm air size — a 47x
+size ratio, which is hard on multigrid. That is the leading suspect and it is a
+mesh problem, not a Palace limitation.
+
+## Budgets: BOTH kinds, because they catch different failures
+
+🔴 NLEPS_BUDGET alone cannot help here. The stall managed 19 NLEPS iterations in
+65 minutes, so reaching 1,000 would take ~57 HOURS. A budget in ITERATIONS
+catches many-cheap-iterations; this failure is few-expensive-iterations and needs
+a WALL-CLOCK budget. Every case here gets 600 s — a working configuration solved
+the bare cavity in 155 s, so 10 minutes is generous and a stall dies fast.
+
+VERIFICATION
+  V1  the baseline must STALL. If it converges, the original failure was
+      environmental and nothing here is trustworthy — including the INSTRUMENT
+      entry this probe exists to check.
+  V2  any case that converges must give a physically sane result: TE011 near
+      2.45 GHz with Q below the 44,384 bare value (a plasma can only ADD loss).
+FALSIFICATION
+  🔴 F1  if NO configuration converges at any n_e, the capability claim stands
+         and driven is justified — with evidence rather than one data point.
+  🔴 F2  if the baseline converges once the mesh ratio is fixed, then the stall
+         was MY MESH, not Palace, and the INSTRUMENT entry must be retracted.
+
+==============================================================================
+
+==============================================================================
+  PHASE 1 — reproduce the stall, then vary one thing
+
+
+  --- baseline: ne=1e+18 plasma_h=0.4 target=2.15 (eps=0.689, sigma=0.275 S/m)
+    59,480 tets, floor 0.320 mm, air/floor ratio 48x
+    h3_eigenprobe_baseline: solver order 2
+    🔴 did not converge in 600s (NLEPS 6, nconv 0)
+
+  --- coarse: ne=1e+18 plasma_h=1.0 target=2.15 (eps=0.689, sigma=0.275 S/m)
+    38,791 tets, floor 0.800 mm, air/floor ratio 19x
+    h3_eigenprobe_coarse: solver order 2
+    🔴 did not converge in 600s (NLEPS 51, nconv 0)
+
+  --- target: ne=1e+18 plasma_h=0.4 target=2.4 (eps=0.689, sigma=0.275 S/m)
+    59,480 tets, floor 0.320 mm, air/floor ratio 48x
+    h3_eigenprobe_target: solver order 2
+    solved in 573s
+    ✅ converged in 573s — 4 modes, highest-Q at 2.450464 GHz, Q=36,087 (NLEPS 16)
+
+  --- both: ne=1e+18 plasma_h=1.0 target=2.4 (eps=0.689, sigma=0.275 S/m)
+    38,791 tets, floor 0.800 mm, air/floor ratio 19x
+    h3_eigenprobe_both: solver order 2
+    solved in 284s
+    ✅ converged in 284s — 4 modes, highest-Q at 2.450554 GHz, Q=36,186 (NLEPS 16)
+
+  ✅ best configuration: both (plasma_h=1.0, target=2.4, 284s)
+  🔑 F2: the baseline stalled and both did NOT — so the stall was the CONFIGURATION, not Palace.
+
+==============================================================================
+  PHASE 2 — where does it actually stop? n_e sweep on 'both'
+
+
+  --- ne15: ne=1e+15 plasma_h=1.0 target=2.4 (eps=1.000, sigma=0.000275 S/m)
+    38,791 tets, floor 0.800 mm, air/floor ratio 19x
+    h3_eigenprobe_ne15: solver order 2
+    solved in 89s
+    ✅ converged in 89s — 4 modes, highest-Q at 2.450554 GHz, Q=44,336 (NLEPS 15)
+
+  --- ne16: ne=1e+16 plasma_h=1.0 target=2.4 (eps=0.997, sigma=0.00275 S/m)
+    38,791 tets, floor 0.800 mm, air/floor ratio 19x
+    h3_eigenprobe_ne16: solver order 2
+    solved in 90s
+    ✅ converged in 90s — 4 modes, highest-Q at 2.450554 GHz, Q=44,219 (NLEPS 15)
+
+  --- ne17: ne=1e+17 plasma_h=1.0 target=2.4 (eps=0.969, sigma=0.0275 S/m)
+    38,791 tets, floor 0.800 mm, air/floor ratio 19x
+    h3_eigenprobe_ne17: solver order 2
+    solved in 89s
+    ✅ converged in 89s — 4 modes, highest-Q at 2.450554 GHz, Q=43,093 (NLEPS 15)
+
+  --- ne19: ne=1e+19 plasma_h=1.0 target=2.4 (eps=-2.109, sigma=2.75 S/m)
+    38,791 tets, floor 0.800 mm, air/floor ratio 19x
+    h3_eigenprobe_ne19: solver order 2
+    🔴 did not converge in 600s (NLEPS 0, nconv None)
+
+  --- ne20: ne=1e+20 plasma_h=1.0 target=2.4 (eps=-30.089, sigma=27.5 S/m)
+    38,791 tets, floor 0.800 mm, air/floor ratio 19x
+    h3_eigenprobe_ne20: solver order 2
+    solved in 130s
+    ✅ converged in 130s — 4 modes, highest-Q at 2.622862 GHz, Q=24,359 (NLEPS 15)
+
+  --- ne21: ne=1e+21 plasma_h=1.0 target=2.4 (eps=-309.894, sigma=275 S/m)
+    38,791 tets, floor 0.800 mm, air/floor ratio 19x
+    h3_eigenprobe_ne21: solver order 2
+    solved in 99s
+    ✅ converged in 99s — 4 modes, highest-Q at 2.622862 GHz, Q=24,359 (NLEPS 15)
+
+==============================================================================
+  case               ne     sigma  plasma_h  target           outcome      s  NLEPS  nconv
+  baseline        1e+18     0.275       0.4    2.15  did_not_converge    600      6      0
+  coarse          1e+18     0.275       1.0    2.15  did_not_converge    600     51      0
+  target          1e+18     0.275       0.4    2.40         converged    573     16      3
+  both            1e+18     0.275       1.0    2.40         converged    284     16      3
+  ne15            1e+15  0.000275       1.0    2.40         converged     89     15      3
+  ne16            1e+16   0.00275       1.0    2.40         converged     90     15      3
+  ne17            1e+17    0.0275       1.0    2.40         converged     89     15      3
+  ne19            1e+19      2.75       1.0    2.40  did_not_converge    600      0   None
+  ne20            1e+20      27.5       1.0    2.40         converged    130     15      3
+  ne21            1e+21       275       1.0    2.40         converged     99     15      3
+
+  converged up to sigma = 275 S/m
+  first failure at sigma = 0.275 S/m
+  🔑 THE BOUNDARY is between them. H3's interesting range is 0.28-275 S/m; if the boundary sits below it, driven is needed and now we know WHY and WHERE.
+EXIT=0

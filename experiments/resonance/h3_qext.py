@@ -58,7 +58,7 @@ import sys
 
 import eigmodes
 import slug as S
-from e0_solver_vs_math import eigen_cfg, run
+from e0_solver_vs_math import eigen_cfg, run, volume_attrs
 from e0k2_anchor import wall_sigma
 from h3_ladder import purity, PROBE_PHI_DEG, PROBE_R_FRAC
 from h3_loaded import drude   # 🔑 the SAME model h3_driven used to build these meshes
@@ -107,9 +107,10 @@ def solve_one(mesh_tag, meta, ne, port_bc, w, seed):
     """One eigen solve BOUND TO AN EXISTING MESH. Returns the picked mode."""
     tag = S.out(SLUG, mesh_tag.split("_", 1)[-1], port_bc)
     attrs = meta["attributes"]
-    vols = sorted({v for k, v in attrs.items()
-                   if isinstance(v, int) and k not in ("wall", "port")}
-                  | set(attrs.get("air") or []))
+    # 🔴 was a local copy of the surface/volume rule — one of
+    # NINE. A `loop` SURFACE got classified as a VOLUME and
+    # Palace refused the config (2026-08-27). One definition.
+    vols = volume_attrs(meta)
     # 🔴 mesh comes from the SIDECAR, never from `tag` -- GATE 5 exists for that.
     c = eigen_cfg(tag, meta, mesh=meta["mesh"], sigma=wall_sigma(),
                   n=N_MODES, target=EIGEN_TARGET, port_bc=port_bc)

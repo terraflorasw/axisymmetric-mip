@@ -1,0 +1,63 @@
+E0v — re-verify the E0 series at SOLVER ORDER 2.
+
+Six rigs took their solver order from a hardcoded default of 1. E0g later
+measured order-1 error at 12-17 MHz, MODE-DEPENDENT BY 40x. Their conclusions
+are therefore not refuted but NOT ESTABLISHED, exactly as E0f's was not until
+E0f2 re-ran it and found the conclusion right for contaminated reasons.
+
+This re-runs them with eigen_cfg's order now explicit (and announced in every
+log line, so it can never be silently inherited again).
+
+⚠️ ORDERING IS DELIBERATE. E0l times against e0fine.json, which E0 writes — so
+E0 must run FIRST or E0l would measure order-1 timings while claiming order 2.
+E0l runs LAST because it is by far the longest: 6 rank counts, and a 1-rank
+order-2 solve of the fine mesh is ~12x the 32-rank time.
+
+⚠️ NOTHING IS SKIPPED. A rig that fails is REPORTED with its exit code and log
+tail, and the sequence CONTINUES. A re-verification that silently drops the rig
+that broke would be worse than not running it.
+
+VERIFICATION   each rig re-states its own declared checks; this file only
+               establishes that every rig ran to completion at order 2.
+FALSIFICATION  per rig, in the rig. Here: a non-zero exit, or a result file that
+               did not change, means that rig was NOT re-verified.
+
+==============================================================================
+
+==============================================================================
+  e0_solver_vs_math.py  (writes e0fine.json that E0l needs)
+  ✅ rc=0 in 24.9 min, result file updated
+      
+        wrote e0.result.json — NO VERDICT HERE
+  (e0v.result.json updated, 1/6)
+
+==============================================================================
+  e0b_offset.py  (256mm translation)
+  ✅ rc=0 in 7.8 min, result file updated
+      
+        wrote e0b.result.json — NO VERDICT HERE
+  (e0v.result.json updated, 2/6)
+
+==============================================================================
+  e0c_rigid.py  (translation x rotation)
+  ✅ rc=0 in 23.4 min, result file updated
+      
+        wrote e0c.result.json — NO VERDICT HERE
+  (e0v.result.json updated, 3/6)
+
+==============================================================================
+  e0d_transverse.py  (transverse rotation axes)
+  ✅ rc=0 in 18.5 min, result file updated
+      
+        wrote e0d.result.json — NO VERDICT HERE
+  (e0v.result.json updated, 4/6)
+
+==============================================================================
+  e0e_nodeshift.py  (node-shift translation invariance)
+  ✅ rc=0 in 3.8 min, result file updated
+      
+        wrote e0e.result.json — NO VERDICT HERE
+  (e0v.result.json updated, 5/6)
+
+==============================================================================
+  e0l_scaling.py  (rank scaling — LONGEST, runs last)

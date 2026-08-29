@@ -84,7 +84,7 @@ def main():
             if "PORT refinement" in line:
                 print(f"    {line.strip()}", flush=True)
         m = solveconf.load_meta(f"{tag}.msh")
-        en = shared_energy_list(m["attributes"])
+        en = shared_energy_list(m)
         print(f"    {m['tets']:,} tets, floor "
               f"{(m.get('sizing_mm') or {}).get('min'):.3f} mm", flush=True)
 

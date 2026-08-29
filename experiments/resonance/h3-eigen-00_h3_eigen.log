@@ -1,0 +1,177 @@
+H3 (eigen) — power density and loaded Q vs plasma radius. The torch spec sheet.
+
+🔑 WHAT CHANGED, AND WHY. Earlier versions reported **eta**, the fraction of
+dissipated power reaching the plasma. Measured at ne=1e20: eta = 0.947 at R=2 mm
+and 0.991 at R=4 mm — 4.6% apart. **eta does not discriminate.** Over that same
+2x in radius:
+
+    power density   4.0x LOWER at 4 mm   -> sets TEMPERATURE, hence n_e
+    loaded Q        5.7x LOWER at 4 mm   -> sets the TUNING-LOOP bandwidth
+                                            (linewidth 1.03 -> 5.90 MHz)
+
+So the torch is NOT moot; eta was simply the wrong readout. This rig reports
+power density and loaded Q as PRIMARY, with eta demoted to a sanity check.
+
+⚠️ eta is only ~1 in the METAL-LIKE regime. At ne=1e18, R=2 mm it was 0.185, so
+in the marginal regime — exactly where sustaining is decided — it still
+discriminates. Both rows below are run for that reason.
+
+## Why a FINE sweep in R, not brackets
+
+Power density = eta * P / volume, and volume ~ R^2:
+  * small R: eta ~ R^4 (TE011's field grows linearly from the axis) -> ~ R^2, RISING
+  * large R: eta saturates near 1                                   -> ~ 1/R^2, FALLING
+
+**There is a maximum**, and a bracket cannot find a maximum. Measurement already
+shows it lies BELOW 4 mm — smaller than a crude analytic sketch suggested, which
+is why it is being measured.
+
+## Sampling: dimensionless, and clear of the unusable band
+
+CONVENTIONS §6d. PI_1 = wp/sqrt(w^2+nu^2) = sqrt(1 - Re eps_eff), transition at 1
+by construction. Measured eigen behaviour:
+
+    PI_1 = 0.02 .. 0.56   converges
+    PI_1 = 1.76           🔴 FAILS — the div-free projection runs on PCG, which
+                          needs a POSITIVE-DEFINITE operator, and eps_eff is
+                          indefinite near the crossing
+    PI_1 = 5.58 .. 17.6   converges
+
+So the two rows sit at **PI_1 = 0.56 (gas-like)** and **5.58 (metal-like)**,
+either side of a transition whose location the equations already give us. We do
+not need to FIND PI_1 = 1; we need behaviour on each side.
+
+🔴 EIGEN ONLY (CONVENTIONS §7c). The indefinite band needs driven, and that is a
+SEPARATE rig. Converting one file between solvers cost three failed launches and
+two silently wrong values.
+
+## What is measured
+
+    power density   eta * P_REF / V_plasma, at a stated reference input power
+    Q_loaded        and the linewidth it implies — the tuning-loop requirement
+    |E| in plasma   from POINT PROBES, renormalised to P_REF. Probes are the
+                    only route to field here: stored electric energy is ~eps|E|^2
+                    and goes NEGATIVE where eps_eff < 0 (measured: -3e-5)
+    eta             sanity check, not the answer
+    A2/A0           azimuthal order — is it still TE011 (m=0)?
+
+⚠️ NORMALISATION. Eigenmode fields carry arbitrary scale. Physical field comes
+from Q = w*W/P_diss, so W_target = P_REF*Q/w, and E scales as sqrt(W). W is taken
+as **2 x E_mag_total**, NOT E_elec + E_mag: magnetic energy is positive
+everywhere (mu is real), while electric energy is ill-defined in sign where
+eps_eff < 0.
+
+🔴 WHAT THIS DOES NOT DO. It does not close the loop from power density to
+temperature to n_e — that needs a thermal balance Palace does not have. It hands
+over W/m^3 and stops. Producing a temperature here would be the cold-cavity error
+again.
+
+VERIFICATION
+  V1  every point identifies TE011 by AZIMUTHAL ORDER (m=0) in 2.40-2.50, never
+      by max-Q: max-Q selects the 2.62 mode, which has almost no bore field and
+      came back IDENTICAL across a 10x density change.
+  V2  the R=2 mm, ne=1e20 point must reproduce Q = 2,369 (already measured
+      twice). A rebuilt rig that cannot reproduce a known point is not measuring.
+FALSIFICATION
+  🔴 F1  if power density is MONOTONIC across the whole R range, there is no
+         interior maximum and the range is wrong — extend it rather than
+         reporting an edge as an optimum.
+  🔴 F2  if azimuthal order leaves m=0, the mode is not TE011 and numbers past
+         that point describe something else. Report the onset.
+
+==============================================================================
+  cavity a=88.0045 L=115.4158  Q_bare=44,384  P_ref=1000 W
+  plasma column length 92.3 mm (z = +-0.4L)
+
+
+==============================================================================
+  ROW: metal-like  ne=1e+20  PI_1=5.58  eps=-30.089  sigma=27.5 S/m
+
+  --- R=0.5 mm (plasma_h=0.25)
+    h3_eigen_metal_r0p5: solver order 2
+    solved in 360s
+    f=2.450546 (+0.55 MHz)  Q=40,915  lw=0.06 MHz
+    power density 1.08e+09 W/m^3   |E|peak 1.18e+04 V/m   eta=0.0782  A2/A0=0.0004
+  --- R=0.75 mm (plasma_h=0.25)
+    h3_eigen_metal_r0p75: solver order 2
+    solved in 300s
+    f=2.450543 (+0.54 MHz)  Q=31,170  lw=0.08 MHz
+    power density 1.82e+09 W/m^3   |E|peak 1.54e+04 V/m   eta=0.2977  A2/A0=0.0001
+  --- R=1.0 mm (plasma_h=0.33)
+    🔴 mesh failed: ch critical value in pass 1 for measure(s): ScaledJac
+terminate called after throwing an instance of 'std::runtime_er
+    REPORTED.
+  --- R=1.5 mm (plasma_h=0.50)
+    h3_eigen_metal_r1p5: solver order 2
+    solved in 179s
+    f=2.450536 (+0.54 MHz)  Q=6,094  lw=0.40 MHz
+    power density 1.32e+09 W/m^3   |E|peak 1.32e+04 V/m   eta=0.8627  A2/A0=0.0002
+  --- R=2.0 mm (plasma_h=0.67)
+    h3_eigen_metal_r2: solver order 2
+    solved in 149s
+    f=2.450789 (+0.79 MHz)  Q=2,373  lw=1.03 MHz
+    power density 8.16e+08 W/m^3   |E|peak 1.05e+04 V/m   eta=0.9465  A2/A0=0.0002
+  --- R=3.0 mm (plasma_h=1.00)
+    h3_eigen_metal_r3: solver order 2
+    solved in 135s
+    f=2.452040 (+2.04 MHz)  Q=736  lw=3.33 MHz
+    power density 3.77e+08 W/m^3   |E|peak 7.26e+03 V/m   eta=0.9834  A2/A0=0.0001
+  --- R=4.0 mm (plasma_h=1.33)
+    h3_eigen_metal_r4: solver order 2
+    solved in 111s
+    f=2.454800 (+4.80 MHz)  Q=412  lw=5.96 MHz
+    power density 2.13e+08 W/m^3   |E|peak 5.76e+03 V/m   eta=0.9907  A2/A0=0.0001
+  --- R=6.0 mm (plasma_h=2.00)
+    h3_eigen_metal_r6: solver order 2
+    solved in 109s
+    f=2.464069 (+14.07 MHz)  Q=238  lw=10.36 MHz
+    power density 9.52e+07 W/m^3   |E|peak 4.32e+03 V/m   eta=0.9946  A2/A0=0.0001
+
+==============================================================================
+  ROW: gas-like  ne=1e+18  PI_1=0.56  eps=0.689  sigma=0.275 S/m
+
+  --- R=1.0 mm (plasma_h=0.33)
+    🔴 mesh failed: ch critical value in pass 1 for measure(s): ScaledJac
+terminate called after throwing an instance of 'std::runtime_er
+    REPORTED.
+  --- R=2.0 mm (plasma_h=0.67)
+    h3_eigen_gas-l_r2: solver order 2
+    solved in 375s
+    f=2.450541 (+0.54 MHz)  Q=35,876  lw=0.07 MHz
+    power density 1.65e+08 W/m^3   |E|peak 4.44e+04 V/m   eta=0.1917  A2/A0=0.0004
+  --- R=4.0 mm (plasma_h=1.33)
+    h3_eigen_gas-l_r4: solver order 2
+    solved in 534s
+    f=2.450499 (+0.50 MHz)  Q=9,914  lw=0.25 MHz
+    power density 1.67e+08 W/m^3   |E|peak 4.71e+04 V/m   eta=0.7766  A2/A0=0.0001
+  --- R=8.0 mm (plasma_h=2.67)
+    h3_eigen_gas-l_r8: solver order 2
+    🔴 h3_eigen_gas-l_r8: TIMED OUT after 900s (7 NLEPS iterations) — rank TREE killed
+    REPORTED.
+  --- R=16.0 mm (plasma_h=5.33)
+    h3_eigen_gas-l_r16: solver order 2
+    🔴 h3_eigen_gas-l_r16: TIMED OUT after 900s (33 NLEPS iterations) — rank TREE killed
+    REPORTED.
+
+==============================================================================
+          row   R mm        Q   lw MHz   power density    |E| V/m     eta
+   metal-like   0.50   40,915     0.06        1.08e+09   1.18e+04  0.0782
+   metal-like   0.75   31,170     0.08        1.82e+09   1.54e+04  0.2977
+   metal-like   1.00   🔴 mesh failed: ch critical value in pass 1 for
+   metal-like   1.50    6,094     0.40        1.32e+09   1.32e+04  0.8627
+   metal-like   2.00    2,373     1.03        8.16e+08   1.05e+04  0.9465
+   metal-like   3.00      736     3.33        3.77e+08   7.26e+03  0.9834
+   metal-like   4.00      412     5.96        2.13e+08   5.76e+03  0.9907
+   metal-like   6.00      238    10.36        9.52e+07   4.32e+03  0.9946
+     gas-like   1.00   🔴 mesh failed: ch critical value in pass 1 for
+     gas-like   2.00   35,876     0.07        1.65e+08   4.44e+04  0.1917
+     gas-like   4.00    9,914     0.25        1.67e+08   4.71e+04  0.7766
+     gas-like   8.00   🔴 h3_eigen_gas-l_r8: TIMED OUT after 900s (7 N
+     gas-like  16.00   🔴 h3_eigen_gas-l_r16: TIMED OUT after 900s (33
+
+  metal-like: power density peaks at R = 0.75 mm (1.82e+09 W/m^3)
+    F1 interior maximum: ✅ found — the range brackets it
+    loaded linewidth spans 0.06 to 10.36 MHz — the tuning-loop requirement across this range
+
+  wrote h3_eigen.result.json
+EXIT=0

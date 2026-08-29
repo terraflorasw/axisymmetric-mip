@@ -1,0 +1,80 @@
+E0k2-betacause — is the residual beta spread SYMMETRY or CONVERGENCE?
+
+🔴 WHERE THIS STANDS. Resolving the lumped port (2 -> 42 elements, R112) cut the
+beta spread between two meshes of identical geometry from 64.1% to 44.2%, and
+improved Q0-vs-eigen to 1.1%. But V1 wanted <= 10%, F1 fired, and the declared
+response was: the port was not the cause, look elsewhere, do NOT re-fit.
+
+TWO CANDIDATES, and they are separable by construction:
+
+  SYMMETRY    the sector partition imposes C_n symmetry on the mesh; the
+              unpartitioned mesh imposes none. The mode is ~35% hybridised
+              TE011/TM111, and hybridisation is driven by symmetry breaking, so
+              different partitions may produce genuinely different MIXTURES.
+  CONVERGENCE beta has never had a mesh convergence study. Every mesh figure in
+              INSTRUMENT is for FREQUENCY (mesh-to-mesh <= 21 kHz); nothing
+              establishes that beta is converged at sf = 1.5.
+
+THE DESIGN. Three points, two comparisons, one variable changed each time:
+
+  5 sectors @ sf 1.5    ALREADY SOLVED, beta = 0.4081        (reused, not re-run)
+  9 sectors @ sf 1.5    changes SYMMETRY only    (C5 -> C9)
+  5 sectors @ sf 1.2    changes RESOLUTION only  (finer mesh, same partition)
+
+🔑 Both new cases carry AZIMUTHAL BINS, so A2/A0 — the hybridisation fraction —
+is measurable on all three. If the mixture differs, that is a direct measurement
+of the symmetry mechanism rather than an inference about it.
+
+⚠️ The 1-sector mesh CANNOT be compared this way: with one bin there is no
+azimuthal information at all. That is why it is excluded here — the diagnostic
+requires the very feature under suspicion.
+
+VERIFICATION / FALSIFICATION — declared as a 2x2, so no outcome is unfalsifiable
+  V1  beta(5 @1.5) vs beta(9 @1.5) within 10%  -> partition is NOT the variable
+  V2  beta(5 @1.5) vs beta(5 @1.2) within 10%  -> resolution is NOT the variable
+
+  V1 pass, V2 fail -> 🔴 CONVERGENCE. beta is not converged at sf 1.5 and every
+                        beta in the record needs a resolution study.
+  V1 fail, V2 pass -> 🔴 SYMMETRY. The mesh partition changes the mode mixture;
+                        beta is only comparable within one partition.
+  both fail        -> 🔴 BOTH, or a third cause. Report; do not choose.
+  both pass        -> 🔴 the 1-SECTOR mesh is the outlier and the question
+                        becomes why an unpartitioned mesh differs at all.
+
+⚠️ Do NOT adopt a mechanism this rig does not distinguish. Two plausible
+mechanisms have already been adopted early in this programme and both were wrong.
+
+==============================================================================
+  reusing 5sec@1.5: beta = 0.4081 (from e0k2_portfix_s5, not re-solved)
+
+
+==============================================================================
+  9sec@1.5  (9 sectors, sf 1.5)
+    🔴 e0k2_betacause_9sec_1p5: mesh failed — nts/resonance/geometry.py", line 842, in build
+    gmsh.model.addPhysicalGroup(3, sorted(up_v), tag=TAG_UPSTREAM,
+  File "/opt/amip/envs/emsim/lib/python3.12/site-packages/gmsh.py", line 985, in addPhysicalGroup
+    raise Exception(logger.getLastError())
+Exception: Physical volume 11 already exists
+
+    REPORTED, not skipped.
+
+==============================================================================
+  5sec@1.2  (5 sectors, sf 1.2)
+    PORT refinement: 0.120 mm within 1.5 mm of the port gap (floor now 0.096 mm)
+    74,297 tets, 5 azimuthal bins, floor 0.096 mm
+    e0k2_betacause_5sec_1p2_eig: solver order 2
+    solved in 882s
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    solved in 2867s
+    beta=0.2320  Q_L=23,817  |S11|min=-4.105 dB
+    Q0_driven=29,344 vs eigen 31,832 -> 7.8%
+    A2/A0: driven 0.1006  eigen 0.1014
+
+==============================================================================
+  case          sectors    sf     beta  vs 5@1.5  A2/A0 eig
+  5sec@1.5            5   1.5   0.4081         —     0.1087
+  5sec@1.2            5   1.2   0.2320     43.1%     0.1014
+
+  🔴 a case is missing — the 2x2 cannot be resolved. REPORTED.
+EXIT=0

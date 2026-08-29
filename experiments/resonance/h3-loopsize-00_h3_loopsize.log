@@ -1,0 +1,136 @@
+H3 (loop sizing) — size the coupling loop for the LOADED cavity.
+
+🔴 WHY NOW, AND NOT BEFORE. OPTIMIZER §3b said "beta and Q_ext have NO CONSUMER
+until H3" because Q_ext must be sized to Q0 LOADED and Q0 loaded was unknown. It
+is now measured: **Q0 = 80-360 across ne = 1e18-1e20** on the r=2.0-8.5 mm
+annulus. There is a target to match.
+
+🔴 AND THE CURRENT LOOP IS A 13x POWER PENALTY. Measured on the loaded cavity,
+the 11x8 cap loop gives **beta = 0.0201**:
+
+    beta=0.0201  ->  |S11| = 0.9606  ->  92.3% REFLECTED, 7.7% absorbed
+    beta=1       ->  |S11| = 0       ->   0%  reflected, 100% absorbed
+
+A loop tuned to read a Q=44,000 empty cavity is hopelessly undercoupled to a
+Q=163 one — 272x less Q0, and beta = Q0/Q_ext falls with it. This is not a
+subtlety; it is most of the source power.
+
+⚠️ The OLD loop sizing sweep is VOID: it was run on the EMPTY cavity and its
+beta is not mesh-converged (43% for a 1.25x refinement). This rig re-derives on
+the LOADED mesh, which is the case that matters — CONVENTIONS §6.
+
+## Committed prediction (stated BEFORE the solve)
+
+beta ~ (loop area)^2 for a small loop. From beta = 0.0201 at 176 mm^2:
+
+     d x hw    area     predicted beta
+     11x8       176        0.020   (the measured anchor)
+     16x12      384        0.096
+     22x16      704        0.322
+     28x20     1120        0.814
+     34x24     1632        1.728
+
+so **critical coupling near 1,200 mm^2**, about 7x the present area.
+
+🔴 The area^2 law is a SMALL-LOOP approximation and these loops are not small —
+34x24 spans r = 18-66 mm in an 88 mm cavity. **I expect it to break, and the
+point of the sweep is to find where.** A prediction I expect to fail is still
+worth committing: it makes the failure legible.
+
+VERIFICATION
+  V1  the 11x8 case must reproduce the measured beta = 0.0201 within 20% and
+      f0 = 2.4824 GHz within 1 MHz. Same geometry, same density, same rig family.
+  V2  every case identifies TE011 by CONTINUATION from the previous loop size,
+      never by depth — a large loop couples strongly to the 2.6232 GHz mode.
+FALSIFICATION
+  🔴 F1  if beta at 1120 mm^2 is not within 2x of the predicted 0.814, the
+         area^2 model does not hold on the loaded cavity. Report the measured
+         exponent; do NOT refit and present it as the prior.
+  🔴 F2  if f0 leaves 2.40-2.50 GHz at any loop size, that loop is not usable —
+         the coupler would drag the cavity out of the LDMOS band.
+  🔴 F3  if eta FALLS as the loop grows, the loop's own conductor loss is
+         becoming comparable to the plasma's absorption, and eta stops meaning
+         "power into the plasma". Report the onset — it bounds usable loop size
+         independently of beta.
+
+⚠️ SHARES h3_driven's ANALYSIS, duplicates only the DRIVER (§7c).
+⚠️ eta here uses Q_BARE = 44,384, the NO-LOOP empty value, so a large lossy loop
+inflates apparent absorption. That is F3's subject, not a bug — but do not quote
+eta from this rig as "power into the plasma" without reading F3.
+
+==============================================================================
+  cavity a=88.0045 L=115.4158   cap loop at r=42.29 mm (the H_r peak)
+  plasma r=2.0-8.5 mm  ne=1e+20  eps=-30.089  sigma=27.53 S/m
+  anchor: beta=0.0201 at 176 mm^2 (h3_driven)
+      d x hw    area  pred beta          r span
+        11x8     176      0.020    34.3-50.3 mm
+       16x12     384      0.096    30.3-54.3 mm
+       22x16     704      0.322    26.3-58.3 mm
+       28x20    1120      0.814    22.3-62.3 mm
+       34x24    1632      1.728    18.3-66.3 mm
+
+  --- loop 11x8 mm, area 176 mm^2 (predicted beta 0.020)
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    solved in 237s
+    3 local minima: 2.4472@-1.28dB  2.4824@-0.35dB  2.6232@-6.13dB
+    f0=2.482400 (+0.00 MHz)  |S11|=-0.35 dB  beta=0.0201 (pred 0.020)  Q0=139  eta=0.9969
+  --- loop 16x12 mm, area 384 mm^2 (predicted beta 0.096)
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    solved in 260s
+    3 local minima: 2.4494@-1.98dB  2.4832@-0.32dB  2.6234@-0.69dB
+    f0=2.483200 (+0.80 MHz)  |S11|=-0.32 dB  beta=0.0181 (pred 0.096)  Q0=154  eta=0.9965
+  --- loop 22x16 mm, area 704 mm^2 (predicted beta 0.322)
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    solved in 246s
+    2 local minima: 2.4508@-3.37dB  2.6226@-2.75dB
+    🔴 F2/continuation BROKE: nearest to 2.4832 is 2.4508 (-32.4 MHz). A large loop couples hard to the 2.6232 mode; NOT following it.
+  --- loop 28x20 mm, area 1120 mm^2 (predicted beta 0.814)
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    solved in 248s
+    4 local minima: 2.4428@-13.45dB  2.4812@-0.69dB  2.5800@-0.11dB  2.6160@-1.88dB
+    f0=2.481200 (-2.00 MHz)  |S11|=-0.69 dB  beta=0.0396 (pred 0.814)  Q0=106  eta=0.9976
+  --- loop 34x24 mm, area 1632 mm^2 (predicted beta 1.728)
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    solved in 307s
+    3 local minima: 2.3794@-4.17dB  2.4762@-1.17dB  2.5834@-3.70dB
+    f0=2.476200 (-5.00 MHz)  |S11|=-1.17 dB  beta=0.0674 (pred 1.728)  Q0=54  eta=0.9988
+
+==============================================================================
+       loop    area    f0 GHz  |S11|dB     beta    pred    Q_ext     eta  refl%
+       11x8     176    2.4824    -0.35   0.0201   0.020     6930  0.9969   92.3
+      16x12     384    2.4832    -0.32   0.0181   0.096     8499  0.9965   93.0
+      22x16     704   🔴 F2/continuation BROKE: nearest to 2.4832
+      28x20    1120    2.4812    -0.69   0.0396   0.814     2670  0.9976   85.3
+      34x24    1632    2.4762    -1.17   0.0674   1.728      797  0.9988   76.3
+
+  V1 176 mm^2: beta=0.0201 vs measured 0.0201 -> 0.1% ✅
+  F1 1120 mm^2: beta=0.040 vs predicted 0.814 -> 0.05x 🔴 FIRES — area^2 does NOT hold on the loaded cavity
+  measured exponent over 176-1632 mm^2: beta ~ area^0.54  (the small-loop model says 2.00)
+  F2 ✅ every loop keeps f0 inside 2.40-2.50
+  F3 ✅ eta does not fall as the loop grows — loop conductor loss stays small against the plasma
+
+  🔑 CLOSEST TO CRITICAL COUPLING: 34x24 mm (1632 mm^2), beta=0.067, 76.3% reflected  (vs 92.3% at the present 176 mm^2)
+  ⚠️ the best point is the LARGEST loop sampled and it is still undercoupled — beta is still rising at the edge of the range (§1). The optimum is NOT bracketed; extend the sweep or accept that a matching network must make up the rest.
+
+  wrote h3_loopsize.result.json
+EXIT=0

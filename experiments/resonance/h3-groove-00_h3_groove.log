@@ -1,0 +1,135 @@
+H3 (groove) — does the mode filter make TE011 the mode the TUNER picks?
+
+🔴 TWO THINGS THIS RIG EXISTS FOR, and the first is an omission.
+
+**1. EVERY LOADED SOLVE IN THIS PROGRAMME RAN WITHOUT THE GROOVE.**
+H3, H6, the sapphire point and the loop sizing all carry `groove = [0.0, 0.0]`
+in their sidecars, while the DESIGN specifies H2's groove frozen at **5 x 10 mm**.
+The loaded programme measured a cavity that is not the one being built. Nothing
+measured is wrong; its SCOPE was never stated.
+
+⚠️ **`--mode-filter 0` in GEO is CORRECT and is not the omission.** That flag is
+the QUARTZ ANNULUS, a superseded device; the groove replaced it. Two distinct
+parts share the phrase "mode filter" in this tree — `--mode-filter <thickness>`
+(quartz annulus, retired) and `--groove <w,depth>` (the annular slot, current).
+Reading `--mode-filter 0` as "the filter is off" is wrong: the current filter has
+its own flag, and THAT is the one nobody passed.
+
+**2. THE TUNER PICKS THE DEEPEST IN-BAND DIP, AND IT IS NOT TE011.** Loaded at
+ne=1e20, in 2.40-2.50 GHz, without the groove:
+
+    11x8   2.4472 @ -1.28 dB   vs TE011 2.4824 @ -0.35 dB
+    28x20  2.4428 @ -13.45 dB  vs TE011 2.4812 @ -0.69 dB
+
+An LDMOS tuner minimising reflected power locks to the 2.44 mode every time. It
+heats the plasma well (eta = 0.9947-0.9956) so it is not a loss channel — but
+its SYMMETRY is unknown, and the whole TE-only architecture rests on E being
+AZIMUTHAL so a high-TDS sample has no axial path to short.
+
+## 🔑 The groove is a SYMMETRY DIAGNOSTIC, not just a filter
+
+H2 measured the mechanism: an annular slot runs PARALLEL to TE011's azimuthal
+cap current and CUTS the radial component every TM mode has. Cold, at gd=20:
+TE011 moved -0.0 MHz / -0% Q while TM010 moved -32.8 MHz (-40% Q) and TM011
+-113.8 MHz (-59% Q).
+
+So the groove answers the open question without an eigen solve:
+
+    groove barely touches 2.44  -> azimuthal cap current, TE-like, SAFE from TDS
+    groove damps/moves 2.44     -> radial cap current, TM-like, would have been a
+                                   trap the tuner walked into
+
+Either outcome is decisive, which is what makes it worth running.
+
+## Committed predictions (stated BEFORE the solve)
+
+    TE011        moves < 1 MHz, Q cost < 1%     (H2 cold: 14 kHz, -0.3%, at 5x10)
+    2.44 mode    UNKNOWN — this is the measurement
+
+🔴 F1  if the groove does NOT change which dip is deepest in band, the annular
+       filter cannot protect the tuner from the 2.44 mode. Report it; the fix is
+       then a different filter or a different coupling, not a bigger groove.
+🔴 F2  if TE011 moves more than 1 MHz or loses more than 1% of Q, the groove
+       behaves differently UNDER LOAD than H2 measured it cold, and H2's frozen
+       5x10 is not transferable to the loaded cavity.
+🔴 F3  if the groove pushes any mode INTO 2.40-2.50 that was outside it, the
+       filter has created a new tuner target. Check 2.6232 in particular.
+
+VERIFICATION
+  V1  the groove=off cases must reproduce h3_loopsize exactly (same geometry,
+      same density) — 2.4824/-0.35 dB at 11x8, 2.4812/-0.69 dB at 28x20.
+  V2  every case reports ALL in-band minima with eta, not just the selected one:
+      the question is about ORDERING, so a rig that reports one dip cannot
+      answer it.
+
+⚠️ SHARES h3_driven's analysis; duplicates only the driver (§7c).
+
+==============================================================================
+  loaded ne=1e+20, plasma r=2.0-8.5 mm; groove 5 x 10 mm (H2's frozen design)
+  tuner band 2.4-2.5 GHz — a tuner locks to the DEEPEST dip in here
+
+  --- loop 11x8, groove OFF
+    groove in mesh: [0.0, 0.0] ✅
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    solved in 237s
+      2.4472 @   -1.28 dB  beta=0.0735  eta=0.9947  net=25.4%  ← IN BAND
+      2.4824 @   -0.35 dB  beta=0.0201  eta=0.9969  net=7.7%  ← IN BAND
+      2.6232 @   -6.13 dB  beta=0.3390  eta=0.8022  net=60.7%
+  --- loop 11x8, groove ON
+    ⚠️ mesh needed size-factor 1.42; REPORTED
+    groove in mesh: [5.0, 10.0] ✅
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    solved in 279s
+      2.3836 @   -1.37 dB  beta=0.0787  eta=0.9945  net=26.9%
+      2.4824 @   -0.30 dB  beta=0.0171  eta=0.9964  net=6.6%  ← IN BAND
+      2.6064 @   -1.74 dB  beta=0.0999  eta=0.8924  net=29.5%
+  --- loop 28x20, groove OFF
+    groove in mesh: [0.0, 0.0] ✅
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    solved in 248s
+      2.4428 @  -13.45 dB  beta=0.6495  eta=0.9956  net=95.1%  ← IN BAND
+      2.4812 @   -0.69 dB  beta=0.0396  eta=0.9976  net=14.6%  ← IN BAND
+      2.5800 @   -0.11 dB  beta=0.0063  (width n/a)
+      2.6160 @   -1.88 dB  beta=0.1080  eta=0.9828  net=34.6%
+  --- loop 28x20, groove ON
+    groove in mesh: [5.0, 10.0] ✅
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-30.089, sigma=27.53 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    solved in 272s
+      2.3896 @   -9.50 dB  beta=0.4983  eta=0.9949  net=88.3%
+      2.4684 @   -5.10 dB  beta=0.2853  eta=0.9960  net=68.8%  ← IN BAND
+      2.5976 @   -2.19 dB  beta=0.1251  eta=0.9873  net=39.0%
+
+==============================================================================
+
+  LOOP 11x8
+    groove OFF: tuner locks to 2.4472 @ -1.28 dB (net 25.4%)   TE011 is 2.4824 @ -0.35 dB (net 7.7%)
+    groove ON : tuner locks to 2.4824 @ -0.30 dB (net 6.6%)  ✅ that IS TE011
+    F2 TE011 moved +0.00 MHz with the groove ✅ (H2 cold: 14 kHz)
+    F1 ✅ the groove MAKES TE011 the tuner's target
+    🔑 SYMMETRY READ-OUT: the 2.44 mode moved +nan MHz — a groove-BLIND mode has azimuthal cap current (TE-like, safe from TDS); a groove-SENSITIVE one is TM-like.
+
+  LOOP 28x20
+    groove OFF: tuner locks to 2.4428 @ -13.45 dB (net 95.1%)   TE011 is 2.4812 @ -0.69 dB (net 14.6%)
+    groove ON : tuner locks to 2.4684 @ -5.10 dB (net 68.8%)  ✅ that IS TE011
+    F2 TE011 moved -12.80 MHz with the groove 🔴 FIRES — the groove behaves differently UNDER LOAD than H2 measured it cold; 5x10 is not transferable
+    F1 ✅ the groove MAKES TE011 the tuner's target
+    🔑 SYMMETRY READ-OUT: the 2.44 mode moved +nan MHz — a groove-BLIND mode has azimuthal cap current (TE-like, safe from TDS); a groove-SENSITIVE one is TM-like.
+
+  wrote h3_groove.result.json
+EXIT=0
