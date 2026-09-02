@@ -623,3 +623,35 @@ that fails and one whose result file did not change, rather than skipping either
 `physics.py`, `eigmodes.py`, `cachetest.py` and `condcheck.py` have self-tests;
 run them first — `physics.py`'s caught two hand-typed reference values on its
 first run, and `eigmodes.py`'s caught the Q discriminator firing on PEC noise.
+
+## 🔴 A CURVED LUMPED-PORT FACE IS NOT AN OPTION (2026-08-30)
+
+Palace's `UniformElementData` compares a lumped element's bounding-box length
+against its projected length and refuses a mismatch:
+
+    Verification failed: (proj_l < rel_tol * l || std::abs(l - proj_l) < rel_tol * l)
+     --> Bounding box discovered length (...) should match projected length (...)
+     ... lumpedelement.cpp:107
+
+For an annular-sector face on a loop at wall radius R, conductor half-width rc,
+port half-width fraction pw, the inner and outer arcs differ by
+`(2*pw*rc * 2psi)` against a gap arc of `R * 2psi`, so the mismatch is
+
+    2 * pw * rc / R          — INDEPENDENT of the gap width
+
+**MEASURED, both REJECTED:** 1.048% at pw = 0.9, 0.249% at pw = 0.2125 —
+exactly proportional, so the model is right and the tolerance is tighter than
+0.25%, NOT the 1% the message's `rel_tol` suggests. Reaching ~0.1% would need a
+face ~42 um wide on a 2 mm conductor.
+
+✅ **Use a FLAT rectangle, inset to the INNER radius's offset** so it never
+overhangs the conductor's angular end faces. A flat face sized at the MEAN
+radius overhangs by ~1.6 um, which makes slivers and a PLC self-intersection.
+Inset, the worst case is ~1.6 um SHORT at the outer edge (1.1% of the half-gap),
+it meshes clean, and Palace accepts it.
+
+⚠️ **Acceptance is not drive.** `e0k2_anchor` records a face inset by 2%
+floating, driving nothing, and returning S11 varying 0.036 dB with NO error
+raised. Confirm Q_ext is finite and well below Q0 before trusting a grid. For
+the azimuthal reference geometry that check passed: Q0 43,744 -> Q_L 9,154.
+

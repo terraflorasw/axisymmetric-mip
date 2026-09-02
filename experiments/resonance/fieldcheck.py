@@ -90,7 +90,14 @@ def report(sl, p_watt=1000.0):
         # [ld, lw]. That is NEXT.md's fourth debt; until it is paid this one
         # value is bound from baselines rather than from the artefact, which is
         # weaker (mesh-is-what-you-ordered) and is flagged in the output.
-        gaps = {"series_gap": pt.get("mesh_gap2_mm") or 0.0,
+        # 🔑 wall_gap is the AZIMUTHAL loop's conductor-to-wall clearance. It
+        # is not a fixed design value like the series and port gaps — it VARIES
+        # WITH h, which is the axis being swept — so it comes from the mesh
+        # sidecar per case, never from baselines. ⚠️ It is also the one gap the
+        # rectangular family has no equivalent of, and the reason the arc has an
+        # arc risk at all: at h = 2 mm with a 1 mm wire the clearance is 1.0 mm.
+        gaps = {"wall_gap": pt.get("mesh_clearance_mm") or 0.0,
+                "series_gap": pt.get("mesh_gap2_mm") or 0.0,
                 "port_gap": pt.get("mesh_port_gap_mm")
                 # 🔴 allow_tentative, SAID OUT LOUD as the store demands.
                 # `loop.gap.mm` = 0.3 has NO PROVENANCE — "geometry.py default,

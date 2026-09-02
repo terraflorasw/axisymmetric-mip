@@ -1,0 +1,132 @@
+H3 loop-size sweep — Q0, Q_ext and beta per loop, by EIGEN PAIRS. No fitting.
+
+🔑 WHAT THIS MEASURES, AND WHY IT NEEDS TWO SOLVES PER LOOP.
+For each loop size, solve the SAME mesh twice and take the difference:
+
+    Q0  = eigen, port_bc="pec"      gap shorted -> no port loss -> UNLOADED Q
+    Q_L = eigen, port_bc="lumped"   real 50 ohm load           -> LOADED Q
+    1/Q_ext = 1/Q_L - 1/Q0     ->     beta = Q0 / Q_ext
+
+**No |S11|, no dip depth, no Lorentzian, no phase, no branch decision.** That is
+the whole point: every previous attempt at beta in this programme went through
+the |S11| depth, which is identical for beta and 1/beta (§7x), and the branch
+FLIPS with loading so no single choice is safe.
+
+🔴 THE DECLARED OPEN QUESTION THIS EXISTS TO SETTLE. `e0k2_sizeq` was built to
+explain a DRIVEN anomaly and its own eigen half is now void (open loop gap,
+§7v). The anomaly itself is still unexplained:
+
+    driven Q0 = 20,005 / 24,920 / 28,387 / 30,112
+    for areas =     35 /     82 /    176 /    384 mm^2
+
+**Smaller loops apparently costing MORE Q, monotonically, against a bare-cavity
+44,384.** That is backwards: a smaller obstacle should perturb less.
+⚠️ **Driven has a REAL port, so the open gap does NOT explain it.** The branch
+error might; blended fits might; both untested. **Do not record it as explained
+by the audit** — this rig measures Q0 per loop size a way that cannot have
+either defect, and the answer is whatever it is.
+
+🔴🔴 THE CLAIM BELOW -- "Q_ext is set by loop geometry, not by the load" -- IS
+FALSE BY ~9%, established 2026-08-25. h3_driven's measured
+S11 dip implies Q_ext ~8,100-8,600 from cold through 3e19 and 9,221 at 1e20.
+✅ SETTLED. Refitting those sweeps with INTERPOLATED 3 dB edges (CONVENTIONS
+7bh) makes the COLD driven value agree with the eigen pair to 0.78% (9,045 vs
+9,117) -- which validates the fit -- and then Q_ext dips to 8,194 at ne=1e19 and
+recovers to 9,322 at 1e20. A ~9% LOAD DEPENDENCE, not a geometry artefact.
+⚠️ beta(ne) = Q0(ne)/Q_ext is therefore a ~9% approximation, not an identity.
+⚠️ ALSO: this file's V1_ANCHOR says Q_ext = 9,117 (h3_step3) while the sweep at
+11x8 returns 9,231, and h3_driven hardcodes Q_EXT_MEASURED = 9,231. Two values,
+~1.25% apart, and their mesh styles are NOT documented in either place.
+
+🔑 AND IT GIVES THE OPTIMISER ITS COUPLING AXIS. Q_ext is set by loop geometry
+and is nearly independent of the plasma, so ONE eigen pair per loop size serves
+every density. beta(ne) is then Q0(ne)/Q_ext — **matching to beta=1 becomes a
+LOOP-SIZE choice made against a chosen operating density**, which is a design
+knob the programme has never been able to state quantitatively.
+
+⚠️ SIZES ARE e0k2_sizeq'S, DELIBERATELY. Same four loops, so the comparison is
+direct rather than interpolated.
+⚠️ GLOSSARY: the second number is a HALF-width. Area = ld * 2 * lw.
+
+🔴 EIGEN ONLY (§7c, one rig one solver). The driven half of this comparison is
+`h3_driven` and it has already run.
+
+VERIFICATION
+  V1  🔑 THE INTERNAL ANCHOR: at 11x8 this rig must reproduce `h3_step3`:
+      Q0 = 43,523, Q_L = 7,538, Q_ext = 9,117, beta = 4.77. Same mesh style,
+      same settings, same BCs. **If 11x8 does not reproduce, nothing else in
+      the sweep means anything** — check that FIRST.
+  V2  the groove must be 5x10 in every mesh except the declared control.
+  V3  TE011 identified by CONTINUATION from the anchored grooved-no-loop
+      2.450561 GHz, and reported WITH purity. Never by lowest A2/A0 (§7u).
+  V4  Q0 -> 44,414 (grooved, no loop) as area -> 0. That is what "a smaller
+      obstacle perturbs less" MEANS, and it is the only external anchor here.
+FALSIFICATION
+  🔴 F1  if eigen Q0 RISES with loop area — reproducing the driven trend — the
+         backwards behaviour is REAL and physical, and both the branch and the
+         blend explanations are dead. Report it; do not explain it away.
+         ⚠️ ASSUMPTION: that the driven anomaly and this Q0 are the same
+         quantity. They are both "unloaded Q of TE011", but if TE011 is
+         misidentified at some loop size they are not comparable at all — which
+         is why V3 demands purity on every reported mode.
+  🔴 F2  if purity degrades with loop area (spread rising above ~0.02), the loop
+         DOES hybridise TE011 beyond some size, and 11x8 merely sits below it.
+         **That is a hard design constraint, not a curiosity** — it would bound
+         loop size independently of coupling.
+  🔴 F3  if beta crosses 1 inside the swept range, the critically-coupled loop
+         size is MEASURED, not estimated. Report which side each size falls on.
+  🔴 F4  if the no-groove control's Q0 differs from its grooved twin by more
+         than ~2%, groove and loop INTERACT and the OPTIMIZER may not treat them
+         as independent axes (§2b).
+
+==============================================================================
+  a=88.0045 L=115.4158   grooved-no-loop anchor: 2.450561 GHz, Q0=44,414
+  eigen: target=2.38, N=8, order 2 — h3_step3's validated settings
+  18 case(s) x 2 port BC(s) ('pec', 'lumped') = 36 solves
+
+  --- loop AZIM h=2 arc=10.2 = 21 mm^2  (strip 5x1)  unwound=13.90 mm  clearance=1.50 mm  grooved
+    🔴 loop_azim h MISMATCH: meshed 2.5, requested 2
+  --- loop AZIM h=2 arc=12.24 = 25 mm^2  (strip 5x1)  unwound=15.94 mm  clearance=1.50 mm  grooved
+    🔴 loop_azim h MISMATCH: meshed 2.5, requested 2
+  --- loop AZIM h=2 arc=14.2 = 29 mm^2  (strip 5x1)  unwound=17.90 mm  clearance=1.50 mm  grooved
+    🔴 loop_azim h MISMATCH: meshed 2.5, requested 2
+  --- loop AZIM h=2 arc=10.2 = 21 mm^2  (strip 2x1)  unwound=13.90 mm  clearance=1.50 mm  grooved
+    🔴 loop_azim h MISMATCH: meshed 2.5, requested 2
+  --- loop AZIM h=2 arc=12.24 = 25 mm^2  (strip 2x1)  unwound=15.94 mm  clearance=1.50 mm  grooved
+    🔴 loop_azim h MISMATCH: meshed 2.5, requested 2
+  --- loop AZIM h=2 arc=14.2 = 29 mm^2  (strip 2x1)  unwound=17.90 mm  clearance=1.50 mm  grooved
+      ⚠️ mesh needed size-factor 1.58, 7 chords; REPORTED
+    🔴 loop_azim h MISMATCH: meshed 2.5, requested 2
+  --- loop AZIM h=2 arc=10.2 = 21 mm^2  (strip 3x1)  unwound=13.90 mm  clearance=1.50 mm  grooved
+    🔴 loop_azim h MISMATCH: meshed 2.5, requested 2
+  --- loop AZIM h=2 arc=12.24 = 25 mm^2  (strip 3x1)  unwound=15.94 mm  clearance=1.50 mm  grooved
+    🔴 loop_azim h MISMATCH: meshed 2.5, requested 2
+  --- loop AZIM h=2 arc=14.2 = 29 mm^2  (strip 3x1)  unwound=17.90 mm  clearance=1.50 mm  grooved
+    🔴 loop_azim h MISMATCH: meshed 2.5, requested 2
+  --- loop AZIM h=2 arc=10.2 = 21 mm^2  (strip 8x1)  unwound=13.90 mm  clearance=1.50 mm  grooved
+    🔴 loop_azim h MISMATCH: meshed 2.5, requested 2
+  --- loop AZIM h=2 arc=12.24 = 25 mm^2  (strip 8x1)  unwound=15.94 mm  clearance=1.50 mm  grooved
+    🔴 loop_azim h MISMATCH: meshed 2.5, requested 2
+  --- loop AZIM h=2 arc=14.2 = 29 mm^2  (strip 8x1)  unwound=17.90 mm  clearance=1.50 mm  grooved
+    🔴 loop_azim h MISMATCH: meshed 2.5, requested 2
+  --- loop AZIM h=2 arc=10.2 = 21 mm^2  (strip 5x0.5)  unwound=13.90 mm  clearance=1.75 mm  grooved
+    🔴 loop_azim h MISMATCH: meshed 2.25, requested 2
+  --- loop AZIM h=2 arc=12.24 = 25 mm^2  (strip 5x0.5)  unwound=15.94 mm  clearance=1.75 mm  grooved
+    🔴 loop_azim h MISMATCH: meshed 2.25, requested 2
+  --- loop AZIM h=2 arc=14.2 = 29 mm^2  (strip 5x0.5)  unwound=17.90 mm  clearance=1.75 mm  grooved
+    🔴 loop_azim h MISMATCH: meshed 2.25, requested 2
+  --- loop AZIM h=2 arc=10.2 = 21 mm^2  (strip 5x0.25)  unwound=13.90 mm  clearance=1.88 mm  grooved
+    🔴 loop_azim h MISMATCH: meshed 2.125, requested 2
+  --- loop AZIM h=2 arc=12.24 = 25 mm^2  (strip 5x0.25)  unwound=15.94 mm  clearance=1.88 mm  grooved
+    🔴 loop_azim h MISMATCH: meshed 2.125, requested 2
+  --- loop AZIM h=2 arc=14.2 = 29 mm^2  (strip 5x0.25)  unwound=17.90 mm  clearance=1.88 mm  grooved
+    🔴 loop_azim h MISMATCH: meshed 2.125, requested 2
+
+==============================================================================
+  🔴 V1 CANNOT BE CHECKED — the 11x8 anchor case did not complete.
+     NOTHING IN THIS SWEEP IS QUOTABLE.
+
+  ⚠️ F4 not evaluable — need both the control and its grooved twin.
+
+  result -> h3-azimwidth-01.4673ce36.result.json
+EXIT=0

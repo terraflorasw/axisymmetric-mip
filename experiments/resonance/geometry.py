@@ -36,6 +36,10 @@ import os
 import pathlib
 import shutil
 import sys
+
+_COAX_PHI = 0.0        # set by build() when a coax hole is made
+_COAX_MOUTH = None     # (r_mouth, r_hole, r_inner) for the wave port
+_PORT_FACE_MM = None   # set by build() when an azimuthal port face is made
 import time
 
 import gmsh
@@ -121,9 +125,21 @@ P = dict(
     # its normal is z-hat and it links H_z -> the TE011 operating mode.
     # A series gap at the far side carries the lumped port.
     loop_d=0.0,             # radial depth (m); 0 disables the loop
+    port_pw=None,           # port-face radial half-width, as a multiple of the
+                            # conductor radius. In P for cache correctness.
+    arc_chords=None,        # AZIMUTHAL: number of straight chords in the arc.
+                            # In P so the MESH CACHE keys on it — different
+                            # counts are different geometry.
     loop_strip=None,        # (axial, radial) m: rectangular conductor. The
                             # AXIAL dimension is the wide one, so the broad face
                             # is parallel to the wall. None = round wire.
+    loop_hole=None,         # (r_hole, stub_len) m: COAX ENTRY. A radial
+                            # clearance tube through the barrel wall at the
+                            # FEED leg's azimuth. The leg passes through it as
+                            # the coax inner conductor; the tube wall is the
+                            # outer. None = the leg is trimmed at the wall and
+                            # grounded, which is what every run before
+                            # 2026-09-01 did.
     loop_azim=None,         # (h, arc LENGTH) m: AZIMUTHAL loop — an arc at
                             # r = a - h in the z=0 plane, closed to the wall by
                             # two radial legs. None = the radial loop.
@@ -428,6 +444,15 @@ def build(p: dict, out: str, msh_order: int) -> None:
     port_face = None
     gap2_centre = None
     port_centre = None
+    # 🔑 STANDOFF -> CENTRELINE, HERE, where the cross-section is known.
+    # The INPUT is the stud height (the wall gap); the conductor grows AWAY
+    # from the wall, so the gap is invariant under thickness. Everything
+    # downstream still speaks centreline, so this is the only conversion.
+    _sto = p.get("loop_azim_standoff")
+    if _sto:
+        _st = p.get("loop_strip")
+        _thalf = (_st[1] / 2.0) if _st else p["loop_rw"]
+        p["loop_azim"] = (float(_sto[0]) + _thalf, float(_sto[1]))
     _azim = p.get("loop_azim")
     if _azim:
         # --- AZIMUTHAL loop, 2026-08-29 ------------------------------------
@@ -461,9 +486,15 @@ def build(p: dict, out: str, msh_order: int) -> None:
                      "already a capacitance that varies with h; a second one "
                      "confounds the axis being swept")
         _R = a - _h
-        if _R <= lrw or _h <= lrw:
-            sys.exit(f"ERROR: --loop-azim h={_h*1e3:.2f} mm leaves no clearance "
-                     f"for a wire of radius {lrw*1e3:.2f} mm")
+        _thalf = (_strip[1] / 2.0) if _strip else lrw
+        _clear = _h - _thalf
+        if _R <= _thalf or _clear <= 0:
+            sys.exit(f"ERROR: standoff {_clear*1e3:.3f} mm leaves the conductor "
+                     f"touching or inside the wall (centreline {_h*1e3:.2f} mm, "
+                     f"conductor half-extent {_thalf*1e3:.2f} mm)")
+        print(f"  AZIM: standoff {_clear*1e3:.3f} mm (the WALL GAP) + conductor "
+              f"half-extent {_thalf*1e3:.3f} mm -> centreline {_h*1e3:.3f} mm",
+              flush=True)
         # 🔑 ARC LENGTH -> ANGLE HERE, not in the caller. The angle depends on
         # R = a - h, so specifying an ANGLE would couple h and L; specifying a
         # LENGTH keeps them independent, which is the point of the sweep.
@@ -479,52 +510,190 @@ def build(p: dict, out: str, msh_order: int) -> None:
         segs = []
         _out = _h + 2.0e-3          # legs reach outside; the cut trims them
 
+        # 🔴 TORUS ARC + ANGULAR GAP — the only construction measured to
+        # produce a VALID mesh. The alternatives, and why they are not here:
+        #   · torus + FLAT SLAB gap: flat faces meeting a curved tube produced
+        #     inverted order-2 elements (ScaledJac -1.6) and the high-order
+        #     optimiser ground indefinitely.
+        #   · POLYLINE chords + flat slab: completed, but Palace/MFEM refused
+        #     the result outright — "MFEM abort: STable3D::operator()" — on BOTH
+        #     port BCs, so the mesh itself was malformed.
+        # ⚠️ I changed the ARC and the GAP at the same time and then chased
+        # failures across both for hours. One variable at a time.
+        # 🔴 KNOWN LIMITATION: the gap faces are planes at +-psi, so the port
+        # face spanning them is an annular SECTOR, and Palace's lumped port
+        # requires a FLAT element ("bounding box discovered length should match
+        # projected length"). pec solves; lumped does not. Q_ext therefore
+        # needs the port face fixed — that is the open problem, on a mesh that
+        # is otherwise known good.
         def _arc_seg(angle):
             """One arc segment spanning [0, angle], round wire or strip."""
             if not _strip:
                 return (3, occ.addTorus(0.0, 0.0, 0.0, _R, lrw, -1, angle))
             _w, _t = _strip                    # axial (wide), radial (thin)
-            # a rectangle in the r-z plane at phi = 0, then swept about z.
-            # ⚠️ AXIAL IS THE WIDE ONE so the broad face lies parallel to the
-            # wall — that is the whole point of the strip, and swapping them
-            # would face the thin edge at the wall instead.
             _r = occ.addRectangle(_R - _t / 2.0, -_w / 2.0, 0.0, _t, _w)
             occ.rotate([(2, _r)], 0, 0, 0, 1, 0, 0, math.pi / 2.0)
             _rev = occ.revolve([(2, _r)], 0, 0, 0, 0, 0, 1, angle)
             return next((d, t) for d, t in _rev if d == 3)
 
-        def _leg(ang):
-            """One radial leg at azimuth `ang`, round wire or strip."""
+        def _leg(ang, extra=0.0):
+            """One radial leg at azimuth `ang`, round wire or strip.
+
+            `extra` lengthens it OUTWARD so a feed leg can run through a coax
+            clearance tube instead of being trimmed at the wall."""
+            # 🔴 START THE LEG *INSIDE* THE ARC, not on its centreline.
+            # Butting them at r = R makes the two solids meet TANGENTIALLY, and
+            # tangent contacts are where OCC's booleans go marginal: removing
+            # the fuse fixed h = 3 mm and broke h = 5 mm, the failure simply
+            # MOVING rather than going away. Overlapping by one conductor
+            # radius makes the intersection transverse and the boolean robust.
+            # 🔴 OVERLAP RADIALLY, so use the RADIAL dimension. This was
+            # max(_strip), which for a 5x1 strip is the AXIAL 5 mm — the legs
+            # then jutted 5 mm inward past the arc, adding conductor that is
+            # not part of the loop (measured: 323 mm^2 of surface where the
+            # design demands 225). The arc is only _strip[1] thick radially, so
+            # that much overlap penetrates it fully and no more.
+            _ov = (_strip[1] if _strip else lrw)
+            _r0 = _R - _ov
+            _reach = _out + _ov + extra
             if not _strip:
                 return (3, occ.addCylinder(
-                    _R * math.cos(ang), _R * math.sin(ang), 0.0,
-                    _out * math.cos(ang), _out * math.sin(ang), 0.0, lrw))
+                    _r0 * math.cos(ang), _r0 * math.sin(ang), 0.0,
+                    _reach * math.cos(ang),
+                    _reach * math.sin(ang), 0.0, lrw))
             _w, _t = _strip
-            _b = occ.addBox(_R, -_t / 2.0, -_w / 2.0, _out, _t, _w)
+            _b = occ.addBox(_r0, -_t / 2.0, -_w / 2.0, _reach, _t, _w)
             occ.rotate([(3, _b)], 0, 0, 0, 0, 0, 1, ang)
             return (3, _b)
 
-        # two arc segments, leaving the port gap centred at phi = 0
+        # 🔴 THE GAP IS A FLAT SLOT, NOT AN ANGULAR SECTOR — and it has to be.
+        # First version built two arc segments ending at +-psi, so the gap faces
+        # were planes normal to phi-hat at two DIFFERENT angles and the port
+        # face had to be an annular sector to match them. Palace then refused
+        # the lumped port:
+        #   Verification failed: bounding box length 1.5518e-03 should match
+        #   projected length 1.5357e-03  (palace::UniformElementData)
+        # — a lumped port element must be FLAT, and a curved one is 1.05% out.
+        # ✅ Build the arc whole and cut a PARALLEL-SIDED slab out of it at
+        # phi = 0. The gap faces are then parallel planes, a flat rectangle
+        # spans them exactly, and it is also how a real gap would be machined.
         for _sgn in (+1.0, -1.0):
             _seg = _arc_seg(_th - _psi)
             occ.rotate([_seg], 0, 0, 0, 0, 0, 1, _psi if _sgn > 0 else -_th)
             segs.append(_seg)
+        if lg <= 0:
+            # 🔑 ONE ARC, NOT TWO HALVES FUSED. With no gap the two halves meet
+            # exactly at phi = 0 and the fuse leaves a degenerate seam there:
+            # gmsh's high-order optimiser then grinds with rel decr ~0.999 and
+            # never converges (measured 2026-08-31, two size factors). Build
+            # the whole arc as a single solid instead — there is no gap to cut.
+            for _d, _t2 in segs:
+                occ.remove([(_d, _t2)], recursive=True)
+            segs = [_arc_seg(2.0 * _th)]
+            occ.rotate(segs, 0, 0, 0, 0, 0, 1, -_th)
+        # 🔑 COAX ENTRY. Without a hole BOTH legs are trimmed at the wall and
+        # grounded, and the loop is driven at a mid-arc gap — the topology
+        # every run before 2026-09-01 used. With a hole, the FEED leg (-theta)
+        # runs on through a radial clearance tube as the coax INNER conductor
+        # and the tube wall is the OUTER. Same circuit class either way (a
+        # series-fed loop returning through the wall); it moves the source
+        # ~26 deg around a lambda/6.8 loop, and puts the port reference plane
+        # AT THE WALL where VSWR is actually measured.
+        _hole = p.get("loop_hole")
+        _feed_ang = -_th                     # the leg that goes through
         for _sgn in (+1.0, -1.0):
-            segs.append(_leg(_sgn * _th))
-        wire = occ.fuse([segs[0]], segs[1:])[0]
+            if _hole and _sgn < 0:
+                _rh, _stub = _hole
+                if _rh <= (_strip[1] / 2.0 if _strip else lrw):
+                    sys.exit(f"ERROR: --loop-hole radius {_rh*1e3:.2f} mm does "
+                             f"not clear the conductor "
+                             f"{(_strip[1]/2 if _strip else lrw)*1e3:.2f} mm — "
+                             f"the inner conductor would short to the tube.")
+                segs.append(_leg(_sgn * _th, extra=_stub + 1.0e-3))
+            else:
+                segs.append(_leg(_sgn * _th))
+
         if p["loop_phi"]:
-            occ.rotate(wire, 0, 0, 0, 0, 0, 1, p["loop_phi"])
+            occ.rotate(segs, 0, 0, 0, 0, 0, 1, p["loop_phi"])
+
+        if _hole:
+            # the tube is VACUUM: it EXTENDS the domain outward through the
+            # wall, so it is FUSED into the wedge that contains it, not cut.
+            _rh, _stub = _hole
+            _ha = (p["loop_phi"] + _feed_ang) % (2.0 * math.pi)
+            _wsp = 2.0 * math.pi / ns
+            _k = int(_ha / _wsp)
+            # 🔴 REFUSE a tube straddling a sector boundary: it would have to be
+            # fused into two wedges and OCC leaves a non-manifold seam there
+            # (the chimney/feed hazard, CONVENTIONS 7bn).
+            _margin = math.asin(min(1.0, _rh / a)) * 1.5
+            _off = _ha - _k * _wsp
+            if _off < _margin or (_wsp - _off) < _margin:
+                sys.exit(f"ERROR: --loop-hole at phi={math.degrees(_ha):.2f} deg "
+                         f"is within {math.degrees(_margin):.2f} deg of a sector "
+                         f"boundary ({ns} sectors). Rotate with --loop-phi.")
+            _r0 = a - 1.5e-3                 # start INSIDE so the fuse is transverse
+            _len = _stub + 1.5e-3
+            _tube = occ.addCylinder(_r0 * math.cos(_ha), _r0 * math.sin(_ha), 0.0,
+                                    _len * math.cos(_ha), _len * math.sin(_ha),
+                                    0.0, _rh)
+            _fused, _ = occ.fuse([wedges[_k]], [(3, _tube)],
+                                 removeObject=True, removeTool=True)
+            if len(_fused) != 1:
+                sys.exit(f"ERROR: coax tube fused into {len(_fused)} solids, "
+                         f"expected 1 — the wedge is no longer simply connected.")
+            wedges[_k] = _fused[0]
+            globals()["_COAX_PHI"] = _ha
+            print(f"  COAX HOLE: r={_rh*1e3:.2f} mm, stub {_stub*1e3:.2f} mm "
+                  f"outside the wall at phi={math.degrees(_ha):.2f} deg "
+                  f"(sector {_k} of {ns}); feed leg runs through it",
+                  flush=True)
+            # 🔑 THE PORT MOVES TO THE COAX MOUTH. An annulus at the stub's
+            # outer end, inner conductor (the leg) to outer (the tube). This
+            # puts the reference plane AT THE WALL, which is where VSWR is
+            # actually measured — the mid-arc gap referenced it to a plane
+            # floating inside the cavity.
+            # 🔴 A LUMPED PORT CANNOT DESCRIBE THIS. Palace's cylindrical
+            # coordinate system is about the GLOBAL z axis (configfile.cpp
+            # ParseStringAsDirection: 'r' -> CYLINDRICAL), but this coax enters
+            # through the BARREL, so its inner->outer field lies in the
+            # theta-z plane. Use a WAVE PORT, which solves the port's own modal
+            # field and needs no direction. Driven only — wave ports are
+            # frequency-dependent, so Q0 still comes from eigen with this face
+            # shorted (port_bc="pec").
+            if lg > 0:
+                sys.exit("ERROR: --loop-hole drives at the coax mouth, so the "
+                         "arc must be CONTINUOUS. Pass gap=0 in --loop "
+                         "(a mid-arc gap AND a coax feed is two drives).")
+            # 🔴 DO NOT INSERT A FACE HERE. The stub mouth is ALREADY a
+            # boundary of the domain; adding a coincident annulus as a fragment
+            # tool gave Palace
+            #   Verification failed: ((e1 >= 0 && e2 >= 0) ||
+            #                         face_to_be.find(f) == face_to_be.end())
+            # — a face marked as a boundary element that is not one. A LUMPED
+            # port wants an INTERIOR face bridging a gap, so inserting is right
+            # there; a WAVE port wants the domain's real EXTERIOR boundary, so
+            # it must be IDENTIFIED among the exterior faces, like wall and
+            # loop already are. Done below, after the boolean settles.
+            _rin = (_strip[1] / 2.0) if _strip else lrw
+            globals()["_PORT_FACE_MM"] = [2 * _rh * 1e3, 2 * _rin * 1e3]
+            globals()["_COAX_MOUTH"] = (a + _stub, _rh, _rin)
+            # 🔑 NO FRAGMENT TOOL for a coax port — the mouth is identified
+            # among the exterior faces further down. `pf` must still be BOUND,
+            # because `port_face = pf` runs unconditionally below and neither
+            # the `lg > 0` branch nor the `elif not _hole` branch fires here.
+            pf = None
+            print(f"  COAX PORT: annulus at r={(a+_stub)*1e3:.2f} mm, "
+                  f"inner {_rin*1e3:.2f} -> outer {_rh*1e3:.2f} mm "
+                  f"(Z0 = {59.96*math.log(_rh/_rin):.1f} ohm in air). "
+                  f"⚠️ WAVE PORT only — a lumped port cannot orient this.",
+                  flush=True)
         cut_w = []
         for wdg in wedges:
-            res, _ = occ.cut([wdg], wire, removeObject=True, removeTool=False)
+            res, _ = occ.cut([wdg], segs, removeObject=True, removeTool=False)
             cut_w.extend(res)
         wedges = cut_w
-        occ.remove(wire, recursive=True)
-        # 🔑 THE PORT FACE IS THE BARREL'S, WITH xi -> R. At phi = 0 the arc's
-        # wire runs along y exactly as the barrel crossbar does, so the same
-        # rectangle and the same "+Y" Direction apply — and the sidecar's
-        # port_direction = Rz(phi).(0, cos tilt, sin tilt) is phi-hat, which is
-        # along this conductor at the gap. Nothing about the port changes.
+        occ.remove(segs, recursive=True)
         # 🔴 THE PORT FACE MUST BE AN ANNULAR SECTOR, NOT A RECTANGLE.
         # First attempt reused the barrel's flat rectangle with xi -> R. The
         # barrel's gap is a STRAIGHT segment, so a rectangle spans it exactly;
@@ -538,15 +707,78 @@ def build(p: dict, out: str, msh_order: int) -> None:
         # luck on marginal geometry, not correctness.
         # ✅ Sweep a RADIAL SEGMENT through the gap angle instead, so the face
         # is the gap, exactly, by construction.
-        _pw = (0.9 * _strip[1]) if _strip else (0.9 * lrw)
-        _ln = occ.addLine(occ.addPoint(_R - _pw, 0.0, 0.0),
-                          occ.addPoint(_R + _pw, 0.0, 0.0))
-        occ.rotate([(1, _ln)], 0, 0, 0, 0, 0, 1, -_psi)
-        pf = next(t for d, t in
-                  occ.revolve([(1, _ln)], 0, 0, 0, 0, 0, 1, 2.0 * _psi)
-                  if d == 2)
-        if p["loop_phi"]:
-            occ.rotate([(2, pf)], 0, 0, 0, 0, 0, 1, p["loop_phi"])
+        # ✅ FLAT rectangle spanning the flat slot, exactly as the barrel loop
+        # does — same construction, same "+Y" Direction, and phi-hat is along
+        # the conductor here just as it is along the barrel's crossbar.
+        # 🔴 THE PORT FACE MUST BE FLAT, AND NO SECTOR WIDTH WILL DO.
+        # Palace's lumped element compares its bounding-box length against its
+        # projection. For an annular sector the mismatch is
+        #     (2*pw*rc * 2psi) / (R * 2psi) = 2*pw*rc / R
+        # — independent of the gap. MEASURED: 1.048% at pw = 0.9, and 0.249% at
+        # pw = 0.2125, i.e. exactly proportional. BOTH REJECTED, so the
+        # tolerance is tighter than 0.25% and reaching ~0.1% would need a face
+        # 42 um wide on a 2 mm conductor. The sector is out.
+        # ✅ FLAT rectangle instead, inset to the INNER radius's offset so it
+        # never overhangs the conductor's angular end faces. The first flat
+        # attempt used lg/2 at the mean radius and overhung by ~1.6 um at the
+        # outer edge — slivers, and a PLC self-intersection. Inset it and the
+        # worst case is being ~3 um SHORT at the outer edge, ~1% of the gap.
+        # ⚠️ e0k2_anchor warns that a face inset by 2% "floats, drives nothing
+        # and S11 comes back varying 0.036 dB with no error raised". 1% is
+        # inside that, but it is the thing to check first if S11 looks flat.
+        # 🔴 HALF-EXTENT IN BOTH BRANCHES. This was `_strip[1]` — the strip's
+        # FULL radial thickness — beside `lrw`, a wire RADIUS. Same factor,
+        # different quantity: the wire's face landed at 0.9x its half-extent
+        # (inside) and EVERY strip's at 1.8x (overshooting into vacuum).
+        # MEASURED 2026-08-30, strip 5x1, standoff 2.0, arc 12.24, face
+        # half-width as a multiple of the conductor's half-extent:
+        #     1.8x (overshoot) -> Q_L 29,465 -> beta 0.487
+        #     0.9x (inside)    -> Q_L 13,826 -> beta 2.169
+        #     0.4x (inside)    -> Q_L 11,508 -> beta 2.807
+        # 4.5x across the overshoot boundary, 1.29x well inside it. The
+        # overshoot is the artefact; it made strips look ~8x weaker than wires
+        # when the matched-face figure is ~1.7x.
+        _rc_p = ((_strip[1] / 2.0) if _strip else lrw)   # conductor half-extent
+        _pw = (p.get("port_pw") or 0.9) * _rc_p
+        # 🔑 FAIL-CLOSED ON OVERSHOOT. A face wider than the conductor drives
+        # vacuum and silently dilutes the coupling — no warning, plausible
+        # numbers, self-consistent across a whole sweep. This guard is the one
+        # that would have caught it.
+        if _pw > _rc_p * 1.0000001:
+            sys.exit(f"ERROR: port face half-width {_pw*1e3:.4f} mm exceeds the "
+                     f"conductor half-extent {_rc_p*1e3:.4f} mm. The face would "
+                     f"drive VACUUM beyond the conductor, which dilutes Q_ext "
+                     f"without any error being raised (measured 4.5x in beta). "
+                     f"Use port_pw <= 1.0.")
+        # 🔑 gap = 0 MEANS NO PORT — A CLOSED RING. Asked for 2026-08-31 when
+        # the question became "what are Q0 and f0 of the LOADED cavity with an
+        # azimuthal loop in it", not "what is beta". With no gap there is no
+        # port face, no feed topology to choose, no coupling branch to resolve
+        # and no face-width sensitivity: the loop is simply a conductor the
+        # mode has to live with. eigen_cfg(port_bc=None) is then legal, because
+        # the mesh carries no port attribute.
+        # ⚠️ _psi = lg/(2R) is 0 here, so the old code built a ZERO-HEIGHT
+        # rectangle — a degenerate face, not an absent one.
+        if lg > 0:
+            _half = (_R - _pw) * _psi      # inner-radius offset: never overhangs
+            pf = occ.addRectangle(_R - _pw, -_half, 0.0, 2.0 * _pw, 2.0 * _half)
+            globals()["_PORT_FACE_MM"] = [2 * _pw * 1e3, 2 * _half * 1e3]
+            print(f"  PORT face: FLAT, {2*_pw*1e3:.2f} x {2*_half*1e3:.4f} mm, "
+                  f"inset {(_R*_psi - _half)*1e6:.2f} um at the outer edge "
+                  f"({100*(_R*_psi - _half)/(lg/2):.1f}% of the half-gap)",
+                  flush=True)
+            if p["loop_phi"]:
+                occ.rotate([(2, pf)], 0, 0, 0, 0, 0, 1, p["loop_phi"])
+        elif not _hole:
+            pf = None
+            globals()["_PORT_FACE_MM"] = None
+            print("  AZIM: loop_gap = 0 — CLOSED RING, no port face, no port "
+                  "attribute. Use eigen port_bc=None.", flush=True)
+        # 🔴 else: a COAX HOLE already built the port face (an annulus at the
+        # stub mouth) further up, and `pf` must survive. Without this guard the
+        # `lg == 0` branch nulled it, `port_face = pf` below took None, and the
+        # mesh came out with NO PORT — while still reporting
+        # surface_attributes ['wall','port','loop'], so it looked fine.
         port_face = pf
         _c, _s = math.cos(p["loop_phi"]), math.sin(p["loop_phi"])
         port_centre = (_R * _c, _R * _s, 0.0)
@@ -1161,25 +1393,91 @@ def build(p: dict, out: str, msh_order: int) -> None:
     # plane. The CAP loop's legs are AXIAL, so its z-extent is ld, not 2*lrw,
     # and the rule does not transfer — that case keeps the old behaviour and
     # SAYS SO rather than silently mis-tagging.
+    # ---- CONDUCTOR CENTRELINE, sampled ------------------------------------
+    # 🔴 THE z-EXTENT RULE WAS NOT TOPOLOGY-INVARIANT. It was measured on the
+    # radial family, where every conductor face is a cylinder or a disc and its
+    # bounding box is exactly 2*lrw tall. A TORUS is split differently by OCC,
+    # and the same rule found 10 faces / 142.4 mm^2 at h = 5 mm but only
+    # 5 / 58.6 at h = 3 — half the conductor silently left in the wall
+    # attribute and modelled as aluminium, which is the exact failure the
+    # 2026-08-27 split exists to prevent.
+    # ✅ A face belongs to the conductor iff its CENTROID lies within the
+    # conductor's own cross-section of the centreline PATH — which we know
+    # exactly, because we just built it. That cannot depend on how OCC chooses
+    # to subdivide a surface.
+    # 🔑 And it is safe against the wall: the barrel survives as ONE large face
+    # per sector (~15,000 mm^2) whose centroid is nowhere near the loop, even
+    # though the leg centrelines pass through it.
+    def _centreline():
+        """Sampled points along the conductor centreline, cavity frame."""
+        step = 0.25e-3
+        pts = []
+        if p.get("loop_azim"):
+            _hh, _al = float(p["loop_azim"][0]), float(p["loop_azim"][1])
+            _RR = a - _hh
+            _tt = _al / (2.0 * _RR)
+            n = max(2, int(_al / step))
+            for i in range(n + 1):                       # the arc
+                th = -_tt + 2.0 * _tt * i / n
+                pts.append((_RR * math.cos(th), _RR * math.sin(th), 0.0))
+            # ⚠️ SAMPLE WHAT WAS BUILT, NOT WHAT WAS INTENDED. The legs start
+            # one radial thickness INSIDE the arc (see _leg) so the boolean is
+            # transverse; the path has to include that or the area check
+            # compares the built surface against a shorter conductor.
+            _ovp = (p["loop_strip"][1] if p.get("loop_strip") else p["loop_rw"])
+            m = max(2, int((_hh + 2.0e-3 + _ovp) / step))
+            for sgn in (+1.0, -1.0):                     # the two legs
+                th = sgn * _tt
+                for j in range(m + 1):
+                    r = (_RR - _ovp) + (_hh + 2.0e-3 + _ovp) * j / m
+                    pts.append((r * math.cos(th), r * math.sin(th), 0.0))
+        elif ld > 0 and lcr <= 0:                        # radial, barrel
+            xo_, xi_ = a + 2.0e-3, a - ld
+            n = max(2, int(abs(xo_ - xi_) / step))
+            for yy in (-lw, +lw):                        # the two legs
+                for j in range(n + 1):
+                    pts.append((xo_ + (xi_ - xo_) * j / n, yy, 0.0))
+            m = max(2, int(2.0 * lw / step))
+            for j in range(m + 1):                       # the crossbar
+                pts.append((xi_, -lw + 2.0 * lw * j / m, 0.0))
+        else:
+            return None
+        c_, s_ = math.cos(p["loop_phi"]), math.sin(p["loop_phi"])
+        return [(x * c_ - y * s_, x * s_ + y * c_, z) for x, y, z in pts]
+
     loop_faces = []
     # 🔴 THE RULE KEYS ON THE CONDUCTOR'S AXIAL HEIGHT, WHICH IS NOT ALWAYS
     # 2*lrw. A 5x1 mm strip lying broad-face-to-the-wall is 5 mm tall in z, so
     # the round-wire assumption would MISS its faces, drop them back into the
     # wall attribute, and model the coupler as aluminium again — silently
     # undoing the 2026-08-27 split for the one topology it was extended for.
-    _rw = ((p["loop_strip"][0] / 2.0) if p.get("loop_strip")
-           else p["loop_rw"])
     # ⚠️ AZIMUTHAL LOOPS HAVE ld = 0. The z-extent rule still holds — the arc
     # lies in the z = 0 plane with a circular cross-section, so its faces are
     # 2*lrw tall with centroid at z = 0, exactly like the barrel's. But the
     # GUARD said `ld > 0`, which would have silently sent the arc back into the
     # wall attribute and modelled it as aluminium again.
-    if (ld > 0 or p.get("loop_azim")) and lcr <= 0:
-        _tol = 0.05 * _rw
+    _path = _centreline()
+    if _path is not None:
+        # half the conductor's largest cross-section dimension, plus a margin
+        _reff = (0.5 * math.hypot(*p["loop_strip"]) if p.get("loop_strip")
+                 else p["loop_rw"])
+        _near = _reff * 1.25
+        # 🔴 AND AN AREA CAP, because proximity ALONE is not enough. The barrel
+        # survives as one face per sector whose CENTROID sits at r = 82.3 mm,
+        # phi = 36 deg — and the loop is deliberately placed at the sector
+        # centre, so at h = 5 mm (R = 83) that centroid falls 0.7 mm from the
+        # arc's centreline and the barrel was swallowed whole: 15,111 mm^2
+        # tagged as conductor against 140 expected. The conductor's faces are
+        # ALL small by construction; nothing else about them is.
+        _inside0 = [q for q in _path if math.hypot(q[0], q[1]) <= a]
+        _per0 = (2.0 * (p["loop_strip"][0] + p["loop_strip"][1])
+                 if p.get("loop_strip") else 2.0 * math.pi * p["loop_rw"])
+        _cap = 3.0 * len(_inside0) * 0.25e-3 * _per0      # 3x the whole conductor
         for t in pec:
-            bb = gmsh.model.getBoundingBox(2, t)
-            if (abs((bb[5] - bb[2]) - 2.0 * _rw) <= _tol
-                    and abs(0.5 * (bb[5] + bb[2])) <= _rw):
+            if gmsh.model.occ.getMass(2, t) > _cap:
+                continue
+            com = gmsh.model.occ.getCenterOfMass(2, t)
+            if min(math.dist(com, q) for q in _path) <= _near:
                 loop_faces.append(t)
         if not loop_faces:
             sys.exit("ERROR: the loop-surface split found NO faces. The wire is "
@@ -1191,7 +1489,38 @@ def build(p: dict, out: str, msh_order: int) -> None:
               "the barrel mount only.\n"
               "     The loop is tagged as WALL and will be modelled as "
               "ALUMINIUM, not copper.")
-    wall_faces = [t for t in pec if t not in set(loop_faces)]
+    # 🔑 COAX WAVE PORT: find the stub mouth among the EXTERIOR faces. Its
+    # centroid sits on the coax axis at r = a + stub, and its area is the
+    # annulus between the hole and the inner conductor.
+    if _COAX_MOUTH is not None:
+        _rm, _rh_m, _rin_m = _COAX_MOUTH
+        _want_a = math.pi * (_rh_m ** 2 - _rin_m ** 2)
+        _cands = []
+        for t in pec:
+            com = gmsh.model.occ.getCenterOfMass(2, t)
+            _d = math.hypot(com[0] - _rm * math.cos(_COAX_PHI),
+                            com[1] - _rm * math.sin(_COAX_PHI))
+            if _d < _rh_m and abs(com[2]) < _rh_m:
+                _cands.append((t, gmsh.model.occ.getMass(2, t), _d))
+        _hit = [(t, ar) for t, ar, _ in _cands
+                if 0.7 * _want_a <= ar <= 1.4 * _want_a]
+        if len(_hit) != 1:
+            sys.exit(f"ERROR: coax mouth not uniquely identified — wanted one "
+                     f"exterior face of ~{_want_a*1e6:.2f} mm^2 near the stub "
+                     f"mouth, found {len(_hit)} of {len(_cands)} nearby "
+                     f"candidates: {[(t, round(ar*1e6,3)) for t,ar,_ in _cands]}")
+        port_v = {_hit[0][0]}
+        print(f"  COAX MOUTH: exterior face {_hit[0][0]}, "
+              f"{_hit[0][1]*1e6:.2f} mm^2 (annulus wants {_want_a*1e6:.2f}) "
+              f"-> attribute {TAG_PORT}, WAVE PORT")
+    # 🔴 AND IT MUST NOT ALSO BE WALL. Every exterior face lands in `wall`
+    # unless excluded, so tagging the mouth as `port` too put TWO boundary
+    # elements on one face and Palace refused the mesh:
+    #   "A non-periodic face cannot have multiple boundary elements!"
+    # (geodata.cpp GetFaceToBdrElementMap). A LUMPED port never hits this — its
+    # face is interior, so it was never in `pec` to begin with.
+    wall_faces = [t for t in pec
+                  if t not in set(loop_faces) and t not in port_v]
     gmsh.model.addPhysicalGroup(2, wall_faces, tag=TAG_WALL, name="wall")
     if loop_faces:
         gmsh.model.addPhysicalGroup(2, sorted(loop_faces), tag=TAG_LOOP,
@@ -1199,15 +1528,41 @@ def build(p: dict, out: str, msh_order: int) -> None:
         _la = sum(gmsh.model.occ.getMass(2, t) for t in loop_faces) * 1e6
         _wa = sum(gmsh.model.occ.getMass(2, t) for t in wall_faces) * 1e6
         _pa = sum(gmsh.model.occ.getMass(2, t) for t in pec) * 1e6
-        # 🔴 THE PARTITION MUST BE EXACT. If wall + loop != the original
-        # exterior area, a face was dropped or double-counted and some of the
-        # cavity is now unbounded — Palace would apply its natural BC there and
-        # produce the localised junk this file already records at Q ~ 3e8.
-        if abs(_wa + _la - _pa) > 1e-6 * max(_pa, 1.0):
-            sys.exit(f"ERROR: wall+loop area {_wa + _la:.6f} != exterior "
+        # 🔴 THE PARTITION MUST BE EXACT. If the classes do not sum to the
+        # original exterior area, a face was dropped or double-counted and some
+        # of the cavity is now unbounded — Palace would apply its natural BC
+        # there and produce the localised junk this file records at Q ~ 3e8.
+        # 🔑 A COAX PORT IS A THIRD EXTERIOR CLASS. Until 2026-09-02 the port
+        # was always an INTERIOR face (a lumped port bridging a gap), so
+        # wall+loop covered everything. The coax mouth is an exterior face, so
+        # it must be counted here — this guard caught its omission immediately,
+        # the discrepancy being exactly the mouth's 13.477 mm^2.
+        _pta = sum(gmsh.model.occ.getMass(2, t) for t in port_v
+                   if t in set(pec)) * 1e6
+        if abs(_wa + _la + _pta - _pa) > 1e-6 * max(_pa, 1.0):
+            sys.exit(f"ERROR: wall+loop+port area {_wa + _la + _pta:.6f} "
+                     f"(wall {_wa:.3f} + loop {_la:.3f} + port {_pta:.3f}) "
+                     f"!= exterior "
                      f"{_pa:.6f} mm^2 — the split is not a partition.")
+        # 🔴 CHECK THE AREA AGAINST WHAT THE CONDUCTOR MUST HAVE. Face COUNT
+        # is not a check — OCC may legitimately split a surface any number of
+        # ways. Area is invariant, and it is what would have caught h = 3
+        # returning 58.6 mm^2 where the geometry demands ~113.
+        _inside = [q for q in _path if math.hypot(q[0], q[1]) <= a]
+        _plen = len(_inside) * 0.25e-3
+        _per = (2.0 * (p["loop_strip"][0] + p["loop_strip"][1])
+                if p.get("loop_strip") else 2.0 * math.pi * p["loop_rw"])
+        _want = _plen * _per * 1e6
+        if not (0.6 * _want <= _la <= 1.6 * _want):
+            sys.exit(
+                f"ERROR: the loop surface is {_la:.1f} mm^2 but the conductor "
+                f"path ({_plen*1e3:.1f} mm inside the cavity, perimeter "
+                f"{_per*1e3:.2f} mm) demands ~{_want:.1f} mm^2.\n"
+                f"  🔑 Face identification has missed part of the conductor, or "
+                f"taken part of the wall. Re-run with --dump-faces.")
         print(f"  loop: {len(loop_faces)} face(s) -> attribute {TAG_LOOP}, "
-              f"{_la:.1f} mm^2 (wall keeps {len(wall_faces)}, {_wa:.1f} mm^2)")
+              f"{_la:.1f} mm^2 (want ~{_want:.1f}); wall keeps "
+              f"{len(wall_faces)}, {_wa:.1f} mm^2")
     if port_v:
         gmsh.model.addPhysicalGroup(2, sorted(port_v), tag=TAG_PORT, name="port")
         print(f"  port face(s) {sorted(port_v)} -> attribute {TAG_PORT}")
@@ -1262,9 +1617,28 @@ def build(p: dict, out: str, msh_order: int) -> None:
     # S11 curve and track whatever the actual coupling was — four driven-vs-eigen
     # comparisons agreed to 4.9-8.8% throughout. What was never trustworthy is
     # beta as a DESIGN quantity: "what coupling will this loop give?"
-    h_gap = (p["loop_gap"] / 2.5) if (ld > 0 and p["loop_gap"] > 0) else 0.0
+    # ⚠️ `ld > 0` IS A RADIAL-TOPOLOGY ASSUMPTION, and it is the third one this
+    # file made. An azimuthal loop has ld = 0, so this left h_gap at zero, the
+    # port ball was never created, and the conductor got NO local refinement —
+    # cavity-scale elements around a 1 mm wire. The slivers that produced would
+    # not curve at order 2, and gmsh's high-order optimiser ground through
+    # "finalized after 200 iterations, because the maximum number of steps was
+    # taken" indefinitely. The radial control converges in 19 iterations.
+    h_gap = (p["loop_gap"] / 2.5
+             if ((ld > 0 or p.get("loop_azim")) and p["loop_gap"] > 0) else 0.0)
     if h_gap:
         h_min = min(h_min, h_gap * 0.8)
+    # 🔑 THE COAX ANNULUS NEEDS ITS OWN FLOOR. h_gap keys on loop_gap, which is
+    # exactly ZERO for a coax feed (the arc is continuous), so the 1.3 mm-wide
+    # annular channel got NO refinement and gmsh's high-order optimiser thrashed
+    # — rel decr 1.033, objective RISING, same signature as the seamed ring.
+    _hole_p = p.get("loop_hole")
+    h_coax = 0.0
+    if _hole_p:
+        _rin_p = (p["loop_strip"][1] / 2.0 if p.get("loop_strip")
+                  else p["loop_rw"])
+        h_coax = (_hole_p[0] - _rin_p) / 3.0     # 3 elements across the gap
+        h_min = min(h_min, h_coax * 0.8)
     gmsh.option.setNumber("Mesh.MeshSizeMin", h_min)
     gmsh.option.setNumber("Mesh.MeshSizeFactor", p.get("size_factor", 1.0))
     gmsh.option.setNumber("Mesh.MeshSizeMax", h_air)
@@ -1317,6 +1691,36 @@ def build(p: dict, out: str, msh_order: int) -> None:
         print(f"  plasma refinement: {p['plasma_h']*1e3:.2f} mm inside "
               f"r<{p['pl_ro']*1e3:.1f}, z {p['pl_zlo']*1e3:.1f}.."
               f"{p['pl_zhi']*1e3:.1f}")
+    # 🔑 REFINE THE WHOLE COAX CHANNEL. h_gap keys on loop_gap, which is ZERO
+    # for a coax feed (the arc is continuous), so the 1.3 mm annular channel got
+    # no refinement at all and gmsh's high-order optimiser thrashed — rel decr
+    # 1.033, objective RISING, the same signature as the seamed ring.
+    # ⚠️ CHAINED onto `bg` with a Min, like every other field here. A first
+    # attempt appended to a `fields` list that does not exist, and named the
+    # field `cyl` — which is the PLASMA field's name a few lines above.
+    if _hole_p:
+        _rh_p, _stub_p = _hole_p
+        _r0p, _r1p = a - 2.0e-3, a + _stub_p + 1.0e-3
+        ccyl = gmsh.model.mesh.field.add("Cylinder")
+        gmsh.model.mesh.field.setNumber(ccyl, "Radius", _rh_p * 1.4)
+        gmsh.model.mesh.field.setNumber(ccyl, "VIn", h_coax)
+        gmsh.model.mesh.field.setNumber(ccyl, "VOut", h_air)
+        gmsh.model.mesh.field.setNumber(ccyl, "XCenter",
+                                        0.5 * (_r0p + _r1p) * math.cos(_COAX_PHI))
+        gmsh.model.mesh.field.setNumber(ccyl, "YCenter",
+                                        0.5 * (_r0p + _r1p) * math.sin(_COAX_PHI))
+        gmsh.model.mesh.field.setNumber(ccyl, "ZCenter", 0.0)
+        gmsh.model.mesh.field.setNumber(ccyl, "XAxis",
+                                        (_r1p - _r0p) * math.cos(_COAX_PHI))
+        gmsh.model.mesh.field.setNumber(ccyl, "YAxis",
+                                        (_r1p - _r0p) * math.sin(_COAX_PHI))
+        gmsh.model.mesh.field.setNumber(ccyl, "ZAxis", 0.0)
+        mnc = gmsh.model.mesh.field.add("Min")
+        gmsh.model.mesh.field.setNumbers(mnc, "FieldsList", [bg, ccyl])
+        bg = mnc
+        print(f"  COAX MESH: {h_coax*1e3:.4f} mm elements in a "
+              f"{_rh_p*1.4*1e3:.2f} mm cylinder along the stub", flush=True)
+
     # R62: a Ball of fine elements around the capacitor gap. Small radius, so
     # the cost is local: the field must resolve the gap, not the whole loop.
     if h_gap2 and gap2_centre is not None:
@@ -1342,6 +1746,16 @@ def build(p: dict, out: str, msh_order: int) -> None:
     # port stays at 2 elements no matter what the floor is.
     if h_gap and port_centre is not None:
         pball = gmsh.model.mesh.field.add("Ball")
+        # ⚠️ WIDER FOR AN AZIMUTHAL LOOP. Its gap is a flat slot cut through a
+        # CURVED tube, so flat faces meet a curved surface right where the mesh
+        # is finest. At 1.5*rw the transition was abrupt enough to produce
+        # INVERTED order-2 elements (ScaledJac < 0) that the high-order
+        # optimiser could not untangle — rel decr 1e-298 over 100 iterations.
+        # A radial loop's gap is a flat slot through a STRAIGHT bar and does not
+        # have the problem, which is why 1.5 was enough there.
+        # ⚠️ 4.0 was added to grade the FLAT-SLOT gap, a construction that is
+        # no longer here — and it costs: a 4x radius of 0.12 mm elements took
+        # h = 2 mm from 20 s to over 90. The angular gap does not need it.
         _rp = 1.5 * p["loop_rw"]
         gmsh.model.mesh.field.setNumber(pball, "Radius", _rp)
         gmsh.model.mesh.field.setNumber(pball, "Thickness", 2.0 * p["loop_rw"])
@@ -1355,6 +1769,49 @@ def build(p: dict, out: str, msh_order: int) -> None:
         bg = mnp
         print(f"  PORT refinement: {h_gap*1e3:.3f} mm within {_rp*1e3:.1f} mm "
               f"of the port gap (floor now {h_min*1e3:.3f} mm)")
+    # 🔴 REFINE ALONG THE WHOLE ARC, NOT JUST AT THE PORT.
+    # The port ball is a single sphere of radius 1.5*rw at the gap. That covers
+    # a radial loop's crossbar, which is short and straight — but an azimuthal
+    # arc runs +-8.5 mm away from the port, so nearly all of the conductor sat
+    # in cavity-scale elements. Balls along the centreline, overlapping, so the
+    # whole wire is resolved.
+    _az = p.get("loop_azim")
+    if _az:
+        _hh, _al = float(_az[0]), float(_az[1])
+        _RR = a - _hh
+        _rc = ((p["loop_strip"][0] / 2.0) if p.get("loop_strip")
+               else p["loop_rw"])
+        _vin = _rc / 2.0                    # resolve the conductor itself
+        _rad = 2.0 * _rc
+        _n = max(5, int(math.ceil(_al / _rad)) + 1)   # overlapping cover
+        _pts = []
+        for _i in range(_n):                # along the arc
+            _t = -_al / (2.0 * _RR) + _i * (_al / _RR) / (_n - 1)
+            _pts.append((_RR * math.cos(_t), _RR * math.sin(_t), 0.0))
+        for _sgn in (+1.0, -1.0):           # and out along each leg
+            _t = _sgn * _al / (2.0 * _RR)
+            for _k in range(1, 4):
+                _r = _RR + _k * (_hh / 3.0)
+                _pts.append((_r * math.cos(_t), _r * math.sin(_t), 0.0))
+        _flds = []
+        for _x, _y, _z in _pts:
+            _c, _s2 = math.cos(p["loop_phi"]), math.sin(p["loop_phi"])
+            _xr, _yr = _x * _c - _y * _s2, _x * _s2 + _y * _c
+            _b = gmsh.model.mesh.field.add("Ball")
+            gmsh.model.mesh.field.setNumber(_b, "Radius", _rad)
+            gmsh.model.mesh.field.setNumber(_b, "Thickness", 2.0 * _rad)
+            gmsh.model.mesh.field.setNumber(_b, "VIn", _vin)
+            gmsh.model.mesh.field.setNumber(_b, "VOut", h_air)
+            gmsh.model.mesh.field.setNumber(_b, "XCenter", _xr)
+            gmsh.model.mesh.field.setNumber(_b, "YCenter", _yr)
+            gmsh.model.mesh.field.setNumber(_b, "ZCenter", _z)
+            _flds.append(_b)
+        _mn = gmsh.model.mesh.field.add("Min")
+        gmsh.model.mesh.field.setNumbers(_mn, "FieldsList", [bg] + _flds)
+        bg = _mn
+        h_min = min(h_min, _vin * 0.8)
+        print(f"  ARC refinement: {_vin*1e3:.3f} mm within {_rad*1e3:.1f} mm of "
+              f"{len(_pts)} points along the conductor")
     gmsh.model.mesh.field.setAsBackgroundMesh(bg)
 
     def set_pts(tags, h):
@@ -1473,11 +1930,24 @@ def build(p: dict, out: str, msh_order: int) -> None:
         # reaches the solver by default", enumerated surfaces with the same
         # tuple and so was blind to exactly the attribute it needed to catch.
         # A list that must be remembered is not a mechanism. This is.
-        "surface_attributes": ["wall", "port", "loop"],
+        # 🔴 REFLECT THE MESH, DO NOT ASSERT A CONSTANT. This was the literal
+        # ["wall","port","loop"] regardless of what was built, so a mesh with
+        # NO port face still advertised one — and `volume_attrs()` trusts this
+        # list to tell surfaces from volumes, so a config could reference a
+        # non-existent attribute 91. Caught 2026-09-02 on the first coax mesh,
+        # which really did come out with only groups 90 and 92.
+        # 🔴 KEY ON port_v, THE THING ACTUALLY TAGGED. `port_face` is the
+        # fragment TOOL and is None for a coax feed, whose port is identified
+        # among the exterior faces instead — keying on it would have reported
+        # no port for a mesh that has one, the mirror of the bug this replaced.
+        "surface_attributes": (["wall"]
+                               + (["port"] if port_v else [])
+                               + ["loop"]),
         "threads": max(1, int(p.get("threads", 1))),
         "port_direction": [-math.sin(lp) * math.cos(lt),
                            math.cos(lp) * math.cos(lt),
-                           math.sin(lt)] if p["loop_d"] > 0 else None,
+                           math.sin(lt)] if (p["loop_d"] > 0
+                                             or p.get("loop_azim")) else None,
         "loop_phi_deg": math.degrees(lp),
         "loop_tilt_deg": math.degrees(lt),
         "sectors": ns,
@@ -1556,12 +2026,41 @@ def build(p: dict, out: str, msh_order: int) -> None:
                             - ((p["loop_strip"][1] / 2.0) if p.get("loop_strip")
                                else p["loop_rw"])) * 1e3]
                           if p.get("loop_azim") else None),
+            # 🔑 NAMED, because the positional list above has been read wrong.
+            # Its [0] is the CENTRELINE height; before 2026-08-30 that was also
+            # what the --loop-azim INPUT meant, so wall clearance moved with
+            # conductor thickness and wire/strip were never compared at the
+            # same wall distance. The input is now the STANDOFF. Never infer
+            # which one an "h" is — read these two fields.
+            "loop_azim_standoff_mm": ((p["loop_azim"][0]
+                                       - ((p["loop_strip"][1] / 2.0)
+                                          if p.get("loop_strip")
+                                          else p["loop_rw"])) * 1e3
+                                      if p.get("loop_azim") else None),
+            "loop_azim_centreline_mm": (p["loop_azim"][0] * 1e3
+                                        if p.get("loop_azim") else None),
+            # 🔑 THE PORT FACE, RECORDED. Q_ext depends on it strongly (4.5x
+            # across the overshoot boundary), and it was NOT in the sidecar
+            # while nine strip cases were measured against it.
+            # 🔑 the coax, so solveconf can tell a wave port from a lumped one
+            "loop_hole_mm": ([p["loop_hole"][0] * 1e3, p["loop_hole"][1] * 1e3]
+                             if p.get("loop_hole") else None),
+            "port_pw": (p.get("port_pw") or 0.9),
+            "port_face_mm": _PORT_FACE_MM,
             # [axial_mm, radial_mm] or None for a round wire
             "loop_strip": ([p["loop_strip"][0] * 1e3, p["loop_strip"][1] * 1e3]
                            if p.get("loop_strip") else None),
+            "arc_chords": p.get("arc_chords"),
             "plasma_h": p["plasma_h"] * 1e3,
             "loop_cap_r": p["loop_cap_r"] * 1e3,
-            "loop_mount": "cap" if p["loop_cap_r"] > 0 else "barrel",
+            # 🔑 THREE MOUNTS NOW. This was a two-way cap/barrel choice, so an
+            # azimuthal loop reported itself as "barrel" and h3_loopq's
+            # mesh-is-what-you-ordered guard correctly refused the run:
+            # "MOUNT MISMATCH: meshed 'barrel', requested 'azim'". The guard was
+            # right; the sidecar was the thing that could not describe what it
+            # had built.
+            "loop_mount": ("azim" if p.get("loop_azim")
+                           else "cap" if p["loop_cap_r"] > 0 else "barrel"),
             "loop_gap2": p["loop_gap2"] * 1e3,
             "loop_flange_r": p["loop_flange_r"] * 1e3,
         },
@@ -1826,7 +2325,31 @@ if __name__ == "__main__":
     ap.add_argument("--groove", type=str, default=None,
                     help="R54: w,depth in mm — circumferential mode-filter "
                          "groove at the cap/barrel corner, both end caps")
-    ap.add_argument("--loop-azim", default=None, metavar="h_mm,arc_mm",
+    # 🔴 --loop-azim WAS CENTRELINE HEIGHT AND IS NOW REFUSED (2026-08-30).
+    # It is kept ONLY so an old config fails loudly instead of silently meaning
+    # something new. Renaming rather than redefining is the lesson of the
+    # groove omission, where a stale label rode a renumbering onto a live
+    # result and 31 rigs measured the wrong cavity.
+    ap.add_argument("--loop-azim", default=None, metavar="REFUSED",
+                    help="🔴 REFUSED. h was the conductor CENTRELINE height, so "
+                         "wall clearance was h - t/2 and MOVED with conductor "
+                         "thickness — wire and strip were never compared at the "
+                         "same wall distance. Use --loop-azim-standoff, whose "
+                         "first value is the STUD HEIGHT (the wall gap itself). "
+                         "To convert an old value: standoff = h - t/2, i.e. "
+                         "h - rw for a round wire, h - radial/2 for a strip.")
+    ap.add_argument("--loop-hole", default=None, metavar="r_mm,stub_mm",
+                    help="COAX ENTRY: a radial clearance tube of radius r_mm "
+                         "through the barrel wall at the FEED leg's azimuth, "
+                         "extending stub_mm outside. The leg passes through as "
+                         "the inner conductor. Without it the leg is trimmed "
+                         "at the wall and grounded — a mid-arc-driven loop, "
+                         "which is what every run before 2026-09-01 used. "
+                         "🔑 Same circuit class (series-fed loop returning "
+                         "through the wall); it moves the source ~26 deg "
+                         "around a lambda/6.8 loop and puts the port reference "
+                         "plane AT THE WALL, where VSWR is actually measured.")
+    ap.add_argument("--loop-azim-standoff", default=None, metavar="standoff_mm,arc_mm",
                     help="AZIMUTHAL loop: an arc of length arc_mm at "
                          "r = a - h_mm, closed to the wall by two radial legs. "
                          "🔑 ARC LENGTH, not angle — that is what makes h and L "
@@ -1942,14 +2465,33 @@ if __name__ == "__main__":
     # never runs — the same "declared with no consumer" shape as
     # loop.conductivity.s_per_m. Adding the argparse entry is half the change.
     P["dump_faces"] = a.dump_faces
+    P["arc_chords"] = (int(os.environ["AMIP_ARC_CHORDS"])
+                       if os.environ.get("AMIP_ARC_CHORDS") else None)
+    P["port_pw"] = (float(os.environ["AMIP_PORT_PW"])
+                    if os.environ.get("AMIP_PORT_PW") else None)
     if a.loop_azim:
-        _hh, _aa = (float(x) for x in a.loop_azim.split(","))
-        # (h, ARC LENGTH) — both metres. Independent by construction.
-        P["loop_azim"] = (_hh * 1e-3, _aa * 1e-3)
+        sys.exit(
+            "ERROR: --loop-azim is REFUSED. Its h was the conductor CENTRELINE "
+            "height, so the wall clearance was h - t/2 and changed with "
+            "conductor thickness — a wire and a strip at the same h sat at "
+            "DIFFERENT wall distances, which confounded every cross-section "
+            "comparison made before 2026-08-30.\n"
+            "  Use --loop-azim-standoff, whose first value is the STUD HEIGHT, "
+            "i.e. the wall gap itself; the conductor then grows AWAY from the "
+            "wall and the gap is invariant under thickness.\n"
+            "  Convert: standoff = h - rw (round wire) or h - radial/2 (strip).")
+    if a.loop_azim_standoff:
+        _hh, _aa = (float(x) for x in a.loop_azim_standoff.split(","))
+        # 🔑 (STANDOFF, ARC LENGTH) — both metres. The standoff is the WALL GAP;
+        # the centreline is derived downstream as standoff + t/2, so wall
+        # distance is invariant under conductor cross-section BY CONSTRUCTION.
+        P["loop_azim_standoff"] = (_hh * 1e-3, _aa * 1e-3)
         # the arc IS the loop, so a radial depth would be a second one
         P["loop_d"] = 0.0
     P["loop_strip"] = (tuple(float(x) * 1e-3 for x in a.loop_strip.split(","))
                        if a.loop_strip else None)
+    P["loop_hole"] = (tuple(float(x) * 1e-3 for x in a.loop_hole.split(","))
+                      if a.loop_hole else None)
     P["ho_optimize"] = a.ho_optimize
     if a.radius is not None:
         P["cav_r"] = a.radius * 1e-3

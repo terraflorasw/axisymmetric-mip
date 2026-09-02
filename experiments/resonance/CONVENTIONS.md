@@ -2958,3 +2958,102 @@ enough points to fit an exponent.
   when a spot reclamation changed it.
 - **Apertures default ON.** `--viewport` and `--trap` were live in E1b because
   R98 changed a default. Gate them explicitly, as `e0_solver_vs_math` does.
+
+### 🔴 palace -np N, NEVER `mpirun -n N palace` (2026-08-30)
+
+`/opt/amip/palace/bin/palace` is a WRAPPER SCRIPT that calls `prterun` itself.
+
+    ✅ palace -np 32 cfg.json        # one 32-rank solve      -> 33 processes
+    🔴 mpirun -n 32 palace cfg.json  # 32 copies of the WRAPPER, each starting
+                                     # its own `prterun -n 1` -> 128 processes,
+                                     # 32 duplicate 1-rank solves of the SAME
+                                     # problem, ~2% CPU each
+
+**It does not error and the answer is not wrong** — it is 32x the work for one
+result, and on a busy box it starves whatever else is running. Seen because the
+user noticed 64 processes at ~2% CPU. The rigs have always been right
+(`ops/watch.sh` shows `palace -np 32`); only hand-run ad-hoc solves had this.
+
+### 🔴 AN SSH CLIENT TIMEOUT DOES NOT STOP THE REMOTE WORK
+
+A `timeout N ssh ... 'mpirun ...'` that hits N kills the LOCAL client. The
+remote process is reparented to init and keeps running and keeps burning the
+box. Relaunching then STACKS a second copy on the first.
+
+    ✅ find them:  ps -eo pid,ppid,etime,args | awk '$2==1'
+    ✅ launch long ad-hoc work as:  setsid nohup script.sh >log 2>&1 </dev/null &
+       then RECORD the pid, because that is the only handle you will have
+    🔴 do not pkill -f a pattern that also matches your own command — that is
+       the exit-144 trap (see [background-job-recipe])
+
+### 🔴 COUNT THE RANKS BEFORE AND AFTER EVERY AD-HOC LAUNCH (2026-08-30)
+
+Twice in one session a stale remote job kept solving while a new one started,
+giving 64 ranks on 32 cores — each at ~2% CPU, everything half speed. Both
+times the kill MISSED because it matched a name that had since changed
+(`portsweep` did not match `psweep.sh`; the pattern also has to not match the
+killing command itself, which is the exit-144/255 trap).
+
+    ✅ ALWAYS, as the last line of a launch:
+         ps -eo comm | grep -c '^palace-x86'      # expect 32, not 64
+    ✅ select processes by COMM, never by argv — argv matching can hit your own
+       shell, because your command text contains the pattern you are grepping
+    ✅ walk PPID to the tree root to decide what to kill, so a NEW job survives
+       while the STALE one dies:
+         root=$p; while pp=$(ps -o ppid= -p $root); [ "$pp" != 1 ]; do root=$pp; done
+    🔴 the user found both of these by noticing CPU-per-process. Nothing
+       errored, nothing logged, and the results were CORRECT — just 2x slow.
+
+### 🔴 `grep -c ... || echo 0` BREAKS EVERY POLL LOOP (2026-08-31)
+
+`grep -c` PRINTS `0` and EXITS 1 when it matches nothing. So
+
+    R=$(ssh host 'grep -ac "DONE" file || echo 0')     # 🔴 R = "0\n0"
+    [ "$R" != "0" ] && break                           # fires IMMEDIATELY
+
+Every wait loop written this way returns on the first iteration. Symptom: a
+poll that should take 9 minutes comes back in seconds, and the elapsed time of
+a long-running remote process looks like it RESET — which reads as "the job
+restarted" and sent this session chasing a phantom twice.
+
+    ✅ R=$(ssh host 'grep -ac "DONE" file 2>/dev/null | head -1')
+       — capture stdout, ignore the exit code, force one line
+    ✅ verify a suspected restart with TWO TIMESTAMPED samples before believing
+       it: `date; ps -eo etime,comm | grep proc; sleep 45; date; ...`
+       Elapsed advancing by the sleep interval means it never restarted.
+
+### 🔴 NEVER `rsync.sh >/dev/null` — A DYING INSTANCE FAILS IT SILENTLY (2026-09-02)
+
+The sync that should have carried the WavePort and `loop_hole_mm` changes ran
+while the spot was already being reclaimed. Its output went to /dev/null, the
+command reported success, and the next instance came up with the volume holding
+the PREVIOUS code. The symptom was a sidecar field reading `None` for a
+parameter that is set unconditionally — i.e. it looked like a CODE bug, and the
+first instinct was to go debug code that was already correct.
+
+    ✅ ( cd ../../.. && bash rsync.sh 2>&1 | tail -4 )     # see the byte count
+    ✅ after any sync that matters, ASSERT on the far side:
+         ssh $H 'grep -c "<a token from the change>" <file>'
+       A grep that returns 0 is the whole diagnosis.
+    🔴 The mesh cache keys on geometry.py's SHA, so an unsynced edit ALSO means
+       the cache silently serves meshes built by the OLD code.
+
+### 🔴 DO NOT TRUNCATE AN ERROR MESSAGE YOU HAVE NOT UNDERSTOOD (2026-09-02)
+
+Palace refused a wave-port mesh twice. Both times the message was grepped with
+`[^I]{0,110}`, which cut it at:
+
+    Verification failed: ((e1 >= 0 && e2 >= 0) || face_to_be.find(f) == ...
+
+The next clause was the entire diagnosis:
+
+    "A non-periodic face (288) cannot have multiple boundary elements!
+     Attributes: 91 90"
+
+— the coax mouth was in BOTH the port and wall physical groups. One face, two
+boundary elements. Chasing it instead cost a rebuild of the port face on a
+wrong theory (that inserting a coincident face was the problem).
+
+    ✅ read the WHOLE message once, then grep
+    ✅ Palace/MFEM messages name the offending ENTITY and ATTRIBUTES — that is
+       usually the answer, not a hint

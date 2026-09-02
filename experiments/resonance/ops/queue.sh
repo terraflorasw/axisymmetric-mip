@@ -21,6 +21,12 @@
 # which reads as success. A truncated batch that announces completion is worse
 # than one that crashes. It now also counts what it ran and says so.
 #
+# 🔴 QUEUE.log AND QUEUE.list ARE GITIGNORED, DELIBERATELY. They are remote
+# run-state living inside a tree that `rsync.sh` pushes wholesale. `fetch.sh`
+# pulls `*.log`, so QUEUE.log came down to the working copy, and every later
+# sync pushed that stale copy back over the RUNNING queue's record. Ignoring
+# them keeps rsync's hands off. Do not "fix" this by fetching them.
+#
 # 🔑 EVERY SLUG KEEPS ITS OWN LOG, so `ops/watch.sh <slug>` works unchanged, per
 # entry, exactly as for a single launch. The queue itself also logs to
 # QUEUE.log so you can see where it got to overnight.
