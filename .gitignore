@@ -64,3 +64,16 @@ meshcache/
 #   *_p.log     solver convergence diagnostics
 #   *.log       rig logs carry the criteria DECLARED BEFORE each run — a
 #               re-run cannot reproduce a prediction, only a measurement
+
+# 🔴 ops/queue.sh's OWN STATE — remote, not a rig log, and NOT synced.
+# `rsync.sh` pushes everything not ignored here, and `ops/fetch.sh` pulls
+# `*.log`. So QUEUE.log came down to the working tree and every subsequent sync
+# pushed the STALE copy back over the RUNNING queue's record — silently erasing
+# the entry it was in the middle of. Observed 2026-08-29: h3-aspect-02 was
+# running while QUEUE.log's last line still read "QUEUE DONE ran 1/1" for the
+# previous batch.
+# ⚠️ QUEUE.list survives the same treatment only by luck: rsync replaces via a
+# temp-and-rename, so a driver holding it open on fd 3 keeps reading the old
+# inode. Do not rely on that.
+experiments/resonance/QUEUE.log
+experiments/resonance/QUEUE.list

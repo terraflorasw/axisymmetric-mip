@@ -1,0 +1,218 @@
+H3 loop-size sweep — Q0, Q_ext and beta per loop, by EIGEN PAIRS. No fitting.
+
+🔑 WHAT THIS MEASURES, AND WHY IT NEEDS TWO SOLVES PER LOOP.
+For each loop size, solve the SAME mesh twice and take the difference:
+
+    Q0  = eigen, port_bc="pec"      gap shorted -> no port loss -> UNLOADED Q
+    Q_L = eigen, port_bc="lumped"   real 50 ohm load           -> LOADED Q
+    1/Q_ext = 1/Q_L - 1/Q0     ->     beta = Q0 / Q_ext
+
+**No |S11|, no dip depth, no Lorentzian, no phase, no branch decision.** That is
+the whole point: every previous attempt at beta in this programme went through
+the |S11| depth, which is identical for beta and 1/beta (§7x), and the branch
+FLIPS with loading so no single choice is safe.
+
+🔴 THE DECLARED OPEN QUESTION THIS EXISTS TO SETTLE. `e0k2_sizeq` was built to
+explain a DRIVEN anomaly and its own eigen half is now void (open loop gap,
+§7v). The anomaly itself is still unexplained:
+
+    driven Q0 = 20,005 / 24,920 / 28,387 / 30,112
+    for areas =     35 /     82 /    176 /    384 mm^2
+
+**Smaller loops apparently costing MORE Q, monotonically, against a bare-cavity
+44,384.** That is backwards: a smaller obstacle should perturb less.
+⚠️ **Driven has a REAL port, so the open gap does NOT explain it.** The branch
+error might; blended fits might; both untested. **Do not record it as explained
+by the audit** — this rig measures Q0 per loop size a way that cannot have
+either defect, and the answer is whatever it is.
+
+🔴🔴 THE CLAIM BELOW -- "Q_ext is set by loop geometry, not by the load" -- IS
+FALSE BY ~9%, established 2026-08-25. h3_driven's measured
+S11 dip implies Q_ext ~8,100-8,600 from cold through 3e19 and 9,221 at 1e20.
+✅ SETTLED. Refitting those sweeps with INTERPOLATED 3 dB edges (CONVENTIONS
+7bh) makes the COLD driven value agree with the eigen pair to 0.78% (9,045 vs
+9,117) -- which validates the fit -- and then Q_ext dips to 8,194 at ne=1e19 and
+recovers to 9,322 at 1e20. A ~9% LOAD DEPENDENCE, not a geometry artefact.
+⚠️ beta(ne) = Q0(ne)/Q_ext is therefore a ~9% approximation, not an identity.
+⚠️ ALSO: this file's V1_ANCHOR says Q_ext = 9,117 (h3_step3) while the sweep at
+11x8 returns 9,231, and h3_driven hardcodes Q_EXT_MEASURED = 9,231. Two values,
+~1.25% apart, and their mesh styles are NOT documented in either place.
+
+🔑 AND IT GIVES THE OPTIMISER ITS COUPLING AXIS. Q_ext is set by loop geometry
+and is nearly independent of the plasma, so ONE eigen pair per loop size serves
+every density. beta(ne) is then Q0(ne)/Q_ext — **matching to beta=1 becomes a
+LOOP-SIZE choice made against a chosen operating density**, which is a design
+knob the programme has never been able to state quantitatively.
+
+⚠️ SIZES ARE e0k2_sizeq'S, DELIBERATELY. Same four loops, so the comparison is
+direct rather than interpolated.
+⚠️ GLOSSARY: the second number is a HALF-width. Area = ld * 2 * lw.
+
+🔴 EIGEN ONLY (§7c, one rig one solver). The driven half of this comparison is
+`h3_driven` and it has already run.
+
+VERIFICATION
+  V1  🔑 THE INTERNAL ANCHOR: at 11x8 this rig must reproduce `h3_step3`:
+      Q0 = 43,523, Q_L = 7,538, Q_ext = 9,117, beta = 4.77. Same mesh style,
+      same settings, same BCs. **If 11x8 does not reproduce, nothing else in
+      the sweep means anything** — check that FIRST.
+  V2  the groove must be 5x10 in every mesh except the declared control.
+  V3  TE011 identified by CONTINUATION from the anchored grooved-no-loop
+      2.450561 GHz, and reported WITH purity. Never by lowest A2/A0 (§7u).
+  V4  Q0 -> 44,414 (grooved, no loop) as area -> 0. That is what "a smaller
+      obstacle perturbs less" MEANS, and it is the only external anchor here.
+FALSIFICATION
+  🔴 F1  if eigen Q0 RISES with loop area — reproducing the driven trend — the
+         backwards behaviour is REAL and physical, and both the branch and the
+         blend explanations are dead. Report it; do not explain it away.
+         ⚠️ ASSUMPTION: that the driven anomaly and this Q0 are the same
+         quantity. They are both "unloaded Q of TE011", but if TE011 is
+         misidentified at some loop size they are not comparable at all — which
+         is why V3 demands purity on every reported mode.
+  🔴 F2  if purity degrades with loop area (spread rising above ~0.02), the loop
+         DOES hybridise TE011 beyond some size, and 11x8 merely sits below it.
+         **That is a hard design constraint, not a curiosity** — it would bound
+         loop size independently of coupling.
+  🔴 F3  if beta crosses 1 inside the swept range, the critically-coupled loop
+         size is MEASURED, not estimated. Report which side each size falls on.
+  🔴 F4  if the no-groove control's Q0 differs from its grooved twin by more
+         than ~2%, groove and loop INTERACT and the OPTIMIZER may not treat them
+         as independent axes (§2b).
+
+==============================================================================
+  a=88.0045 L=115.4158   grooved-no-loop anchor: 2.450561 GHz, Q0=44,414
+  eigen: target=2.38, N=8, order 2 — h3_step3's validated settings
+  6 case(s) x 2 port BC(s) ('pec', 'lumped') = 12 solves
+
+  --- loop AZIM h=2 arc=10.2 = 21 mm^2  (strip 5x1)  unwound=13.90 mm  clearance=1.50 mm  grooved
+    h3-azim-01.71364f1e_azim_h2_L10.2_strip5x1_pec: loop 5.8e+07 S/m on attribute 92 (wall 3.5e+07)
+    h3-azim-01.71364f1e_azim_h2_L10.2_strip5x1_pec: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    h3-azim-01.71364f1e_azim_h2_L10.2_strip5x1_pec: solver order 2
+    torch: eps=9.39 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 579s
+      probes: arc_mid=28.2  bore_edge=122  bore_mid=62.2  leg_mid=11  port_gap=280  wall_gap=31.3
+       pec: TE011 2.439239  Q=   43,832  P>=0.9999  spread=0.0001   (continuation -11.322 MHz)
+    h3-azim-01.71364f1e_azim_h2_L10.2_strip5x1_lumped: loop 5.8e+07 S/m on attribute 92 (wall 3.5e+07)
+    🔑 h3-azim-01.71364f1e_azim_h2_L10.2_strip5x1_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3-azim-01.71364f1e_azim_h2_L10.2_strip5x1_lumped: solver order 2
+    torch: eps=9.39 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 572s
+      probes: arc_mid=28.1  bore_edge=122  bore_mid=62.2  leg_mid=11  port_gap=216  wall_gap=31
+    lumped: TE011 2.439240  Q=   38,829  P>=0.9999  spread=0.0001   (continuation -11.321 MHz)
+    -> Q0=   43,832  Q_L=  38,829  Q_ext=  340,158  beta=  0.129  undercoupled
+  --- loop AZIM h=2 arc=12.24 = 25 mm^2  (strip 5x1)  unwound=15.94 mm  clearance=1.50 mm  grooved
+    h3-azim-01.71364f1e_azim_h2_L12.24_strip5x1_pec: loop 5.8e+07 S/m on attribute 92 (wall 3.5e+07)
+    h3-azim-01.71364f1e_azim_h2_L12.24_strip5x1_pec: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    h3-azim-01.71364f1e_azim_h2_L12.24_strip5x1_pec: solver order 2
+    torch: eps=9.39 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 527s
+      probes: arc_mid=27.7  bore_edge=123  bore_mid=62.1  leg_mid=10.7  port_gap=374  wall_gap=43.8
+       pec: TE011 2.439202  Q=   43,705  P>=1.0000  spread=0.0000   (continuation -11.359 MHz)
+    h3-azim-01.71364f1e_azim_h2_L12.24_strip5x1_lumped: loop 5.8e+07 S/m on attribute 92 (wall 3.5e+07)
+    🔑 h3-azim-01.71364f1e_azim_h2_L12.24_strip5x1_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3-azim-01.71364f1e_azim_h2_L12.24_strip5x1_lumped: solver order 2
+    torch: eps=9.39 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 579s
+      probes: arc_mid=27.5  bore_edge=123  bore_mid=62.1  leg_mid=10.7  port_gap=413  wall_gap=43.3
+    lumped: TE011 2.439204  Q=   35,558  P>=1.0000  spread=0.0000   (continuation -11.357 MHz)
+    -> Q0=   43,705  Q_L=  35,558  Q_ext=  190,750  beta=  0.229  undercoupled
+  --- loop AZIM h=2 arc=14.2 = 29 mm^2  (strip 5x1)  unwound=17.90 mm  clearance=1.50 mm  grooved
+    h3-azim-01.71364f1e_azim_h2_L14.2_strip5x1_pec: loop 5.8e+07 S/m on attribute 92 (wall 3.5e+07)
+    h3-azim-01.71364f1e_azim_h2_L14.2_strip5x1_pec: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    h3-azim-01.71364f1e_azim_h2_L14.2_strip5x1_pec: solver order 2
+    torch: eps=9.39 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 568s
+      probes: arc_mid=33.7  bore_edge=122  bore_mid=62.1  leg_mid=10.5  port_gap=508  wall_gap=57.5
+       pec: TE011 2.439170  Q=   43,561  P>=1.0000  spread=0.0000   (continuation -11.391 MHz)
+    h3-azim-01.71364f1e_azim_h2_L14.2_strip5x1_lumped: loop 5.8e+07 S/m on attribute 92 (wall 3.5e+07)
+    🔑 h3-azim-01.71364f1e_azim_h2_L14.2_strip5x1_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3-azim-01.71364f1e_azim_h2_L14.2_strip5x1_lumped: solver order 2
+    torch: eps=9.39 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 584s
+      probes: arc_mid=33.4  bore_edge=122  bore_mid=62.1  leg_mid=10.5  port_gap=367  wall_gap=56.7
+    lumped: TE011 2.439173  Q=   31,789  P>=1.0000  spread=0.0000   (continuation -11.388 MHz)
+    -> Q0=   43,561  Q_L=  31,789  Q_ext=  117,634  beta=  0.370  undercoupled
+  --- loop AZIM h=3 arc=10.2 = 31 mm^2  (strip 5x1)  unwound=15.90 mm  clearance=2.50 mm  grooved
+    h3-azim-01.71364f1e_azim_h3_L10.2_strip5x1_pec: loop 5.8e+07 S/m on attribute 92 (wall 3.5e+07)
+    h3-azim-01.71364f1e_azim_h3_L10.2_strip5x1_pec: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    h3-azim-01.71364f1e_azim_h3_L10.2_strip5x1_pec: solver order 2
+    torch: eps=9.39 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 525s
+      probes: arc_mid=46.3  bore_edge=122  bore_mid=62.1  leg_mid=14.8  port_gap=579  wall_gap=38.5
+       pec: TE011 2.439182  Q=   43,648  P>=1.0000  spread=0.0000   (continuation -11.379 MHz)
+    h3-azim-01.71364f1e_azim_h3_L10.2_strip5x1_lumped: loop 5.8e+07 S/m on attribute 92 (wall 3.5e+07)
+    🔑 h3-azim-01.71364f1e_azim_h3_L10.2_strip5x1_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3-azim-01.71364f1e_azim_h3_L10.2_strip5x1_lumped: solver order 2
+    torch: eps=9.39 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 578s
+      probes: arc_mid=45.7  bore_edge=122  bore_mid=62.1  leg_mid=14.9  port_gap=596  wall_gap=38
+    lumped: TE011 2.439186  Q=   29,713  P>=1.0000  spread=0.0000   (continuation -11.375 MHz)
+    -> Q0=   43,648  Q_L=  29,713  Q_ext=   93,071  beta=  0.469  undercoupled
+  --- loop AZIM h=3 arc=12.24 = 37 mm^2  (strip 5x1)  unwound=17.94 mm  clearance=2.50 mm  grooved
+    h3-azim-01.71364f1e_azim_h3_L12.24_strip5x1_pec: loop 5.8e+07 S/m on attribute 92 (wall 3.5e+07)
+    h3-azim-01.71364f1e_azim_h3_L12.24_strip5x1_pec: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    h3-azim-01.71364f1e_azim_h3_L12.24_strip5x1_pec: solver order 2
+    torch: eps=9.39 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 526s
+      probes: arc_mid=55.7  bore_edge=122  bore_mid=62.1  leg_mid=13.9  port_gap=915  wall_gap=54
+       pec: TE011 2.439102  Q=   43,378  P>=1.0000  spread=0.0000   (continuation -11.459 MHz)
+    h3-azim-01.71364f1e_azim_h3_L12.24_strip5x1_lumped: loop 5.8e+07 S/m on attribute 92 (wall 3.5e+07)
+    🔑 h3-azim-01.71364f1e_azim_h3_L12.24_strip5x1_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3-azim-01.71364f1e_azim_h3_L12.24_strip5x1_lumped: solver order 2
+    torch: eps=9.39 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 529s
+      probes: arc_mid=54.7  bore_edge=122  bore_mid=62.1  leg_mid=14.1  port_gap=1.83e+03  wall_gap=52.9
+    lumped: TE011 2.439110  Q=   22,645  P>=1.0000  spread=0.0000   (continuation -11.451 MHz)
+    -> Q0=   43,378  Q_L=  22,645  Q_ext=   47,379  beta=  0.916  undercoupled
+  --- loop AZIM h=3 arc=14.2 = 43 mm^2  (strip 5x1)  unwound=19.90 mm  clearance=2.50 mm  grooved
+    h3-azim-01.71364f1e_azim_h3_L14.2_strip5x1_pec: loop 5.8e+07 S/m on attribute 92 (wall 3.5e+07)
+    h3-azim-01.71364f1e_azim_h3_L14.2_strip5x1_pec: port 91 gap SHORTED (port_bc=pec) — loop is a closed ring, resonant far above band; Q excludes port loss
+    h3-azim-01.71364f1e_azim_h3_L14.2_strip5x1_pec: solver order 2
+    torch: eps=9.39 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 2202s
+      probes: arc_mid=72.2  bore_edge=122  bore_mid=61.9  leg_mid=11.9  port_gap=636  wall_gap=78.1
+       pec: TE011 2.438951  Q=   42,917  P>=1.0000  spread=0.0000   (continuation -11.610 MHz)
+    h3-azim-01.71364f1e_azim_h3_L14.2_strip5x1_lumped: loop 5.8e+07 S/m on attribute 92 (wall 3.5e+07)
+    🔑 h3-azim-01.71364f1e_azim_h3_L14.2_strip5x1_lumped: port 91 terminated in 50 ohm (port_bc=lumped) — the OPERATING configuration. Q is LOADED.
+    h3-azim-01.71364f1e_azim_h3_L14.2_strip5x1_lumped: solver order 2
+    torch: eps=9.39 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 603s
+      probes: arc_mid=70.3  bore_edge=122  bore_mid=61.9  leg_mid=12.3  port_gap=803  wall_gap=75.9
+    lumped: TE011 2.438968  Q=   16,108  P>=1.0000  spread=0.0000   (continuation -11.593 MHz)
+    -> Q0=   42,917  Q_L=  16,108  Q_ext=   25,787  beta=  1.664  OVERCOUPLED
+
+==============================================================================
+  🔴 V1 CANNOT BE CHECKED — the 11x8 anchor case did not complete.
+     NOTHING IN THIS SWEEP IS QUOTABLE.
+
+       loop   area        Q0     Q_ext     beta        branch    P_min   spread
+  azim_h2_L10.2_strip5x1      0    43,832   340,158    0.129  undercoupled   0.9999   0.0001
+  azim_h2_L12.24_strip5x1      0    43,705   190,750    0.229  undercoupled   1.0000   0.0000
+  azim_h2_L14.2_strip5x1      0    43,561   117,634    0.370  undercoupled   1.0000   0.0000
+  azim_h3_L10.2_strip5x1      0    43,648    93,071    0.469  undercoupled   1.0000   0.0000
+  azim_h3_L12.24_strip5x1      0    43,378    47,379    0.916  undercoupled   1.0000   0.0000
+  azim_h3_L14.2_strip5x1      0    42,917    25,787    1.664   OVERCOUPLED   1.0000   0.0000
+       none      0    44,414         —        —             —   0.9985   0.0015   <- anchored, no loop
+
+  ⚠️ Q0 is NOT monotonic in loop area. Neither the driven trend nor its reverse.
+     Report the numbers; do not fit a law to four non-monotonic points.
+  V4 smallest loop (0 mm^2) Q0=43,832 vs no-loop 44,414 -> -1.3%  ✅
+  F2 worst purity spread 0.0001 at azim_h2_L10.2_strip5x1 ✅ no loop size hybridises TE011
+  🔑 F3 — beta CROSSES 1 between 0 and 0 mm^2. **Critical coupling is MEASURED**, not estimated.
+
+  ⚠️ F4 not evaluable — need both the control and its grooved twin.
+
+  result -> h3-azim-01.71364f1e.result.json
+EXIT=0

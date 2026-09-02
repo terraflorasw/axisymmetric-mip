@@ -301,6 +301,15 @@ def build_mesh(tag, a, L, zlo, zhi, eps_p, sig_p, rec, ri=None, ro=None, _ld_ove
     _LW = float(PRM.get("loop_lw", LOOP_LW))
     _MOUNT = PRM.get("loop_mount", "cap")
     _G2 = float(PRM.get("loop_gap2", 0.0))
+    # 🔑 AZIMUTHAL MOUNT, added 2026-08-30 for the LOADED pivot. Conventions
+    # mirrored EXACTLY from h3_loopq.build_mesh — h and arc are INDEPENDENT and
+    # geometry.py takes the arc LENGTH, deriving the angle from R = a - h,
+    # because a fixed angle at different h is a different length.
+    # ⚠️ A STRIP IS A CROSS-SECTION, NOT A MOUNT — it applies to any topology.
+    _AZIM = PRM.get("loop_azim")            # [h_mm, arc_mm]
+    _STRIP = PRM.get("loop_strip")          # [axial_mm, radial_mm]
+    if _MOUNT == "azim" and not _AZIM:
+        raise SystemExit("loop_mount='azim' requires loop_azim [h_mm, arc_mm]")
     args = ([x for x in GEO if x != "--no-torch"]
             + ["--radius", f"{a:.6f}", "--length", f"{L:.6f}",
                "--sectors", str(SECTORS),
@@ -315,19 +324,47 @@ def build_mesh(tag, a, L, zlo, zhi, eps_p, sig_p, rec, ri=None, ro=None, _ld_ove
                # mount on the CAP at CAP_R_FRAC*a, and V1/V2 compare against
                # their numbers. Omitting it silently changes what is measured.
                "--loop-phi", LOOP_PHI]
-            + ([] if _MOUNT == "barrel"
+            + (["--loop-azim-standoff",
+                f"{float(_AZIM[0]):g},{float(_AZIM[1]):g}"]
+               if _MOUNT == "azim" else
+               [] if _MOUNT == "barrel"
                else ["--loop-cap", f"{CAP_R_FRAC * a:.4f}"])
+            + (["--loop-strip",
+                f"{float(_STRIP[0]):g},{float(_STRIP[1]):g}"] if _STRIP else [])
             + ([f"--loop-gap2", f"{_G2:g}"] if _G2 else []))
-    for sf in SIZE_FACTORS:
-        r = subprocess.run([sys.executable, "geometry.py", "--out", f"{tag}.msh",
-                            "--size-factor", sf] + args,
-                           capture_output=True, text=True)
-        if not r.returncode and pathlib.Path(f"{tag}.msh").exists():
-            rec["size_factor"] = sf
-            if sf != SIZE_FACTORS[0]:
-                print(f"    ⚠️ mesh needed size-factor {sf}; REPORTED", flush=True)
-            return solveconf.load_meta(f"{tag}.msh")
-        rec["_last_mesh_err"] = (r.stdout + r.stderr)[-200:]
+    if _G2 and _MOUNT != "barrel":
+        raise SystemExit("loop_gap2 requires loop_mount='barrel' (geometry.py:427)")
+    if _MOUNT == "azim":
+        # 🔑 loop_azim[0] IS THE STANDOFF (the wall gap), not the centreline.
+        _thalf = (float(_STRIP[1]) / 2.0) if _STRIP else LOOP_RW
+        _cl = float(_AZIM[0]) + _thalf
+        rec.update({"mount": "azim", "standoff_mm": float(_AZIM[0]),
+                    "centreline_mm": _cl, "arc_mm": float(_AZIM[1]),
+                    "unwound_mm": float(_AZIM[1]) - LOOP_GAP + 2*_cl,
+                    "strip_mm": list(_STRIP) if _STRIP else None})
+    # 🔴 AZIMUTHAL LOOPS ALSO RETRY OVER THE ARC'S CHORD COUNT — no single count
+    # works for all h, and which one fails moves with every parameter change
+    # (h3_loopq.build_mesh carries the measured table). RECORD what worked: a
+    # run that cannot say which geometry it built cannot be compared.
+    _chords = (7, 3, 9, 5, 11) if _MOUNT == "azim" else (None,)
+    for nc in _chords:
+        _env = dict(os.environ)
+        if nc is not None:
+            _env["AMIP_ARC_CHORDS"] = str(nc)
+        for sf in SIZE_FACTORS:
+            r = subprocess.run([sys.executable, "geometry.py", "--out",
+                                f"{tag}.msh", "--size-factor", sf] + args,
+                               capture_output=True, text=True, env=_env)
+            if not r.returncode and pathlib.Path(f"{tag}.msh").exists():
+                rec["size_factor"] = sf
+                if nc is not None:
+                    rec["arc_chords"] = nc
+                if sf != SIZE_FACTORS[0] or (nc is not None and nc != _chords[0]):
+                    print(f"    ⚠️ mesh needed size-factor {sf}"
+                          + (f", {nc} chords" if nc is not None else "")
+                          + "; REPORTED", flush=True)
+                return solveconf.load_meta(f"{tag}.msh")
+            rec["_last_mesh_err"] = (r.stdout + r.stderr)[-200:]
     return None
 
 
@@ -965,9 +1002,21 @@ def _report(out):
                 if _axis_now == "annulus" else f"  {p['ne']:>9.1e}")
         eta = f"{p['eta']:>9.4f}" if p.get("eta") is not None else f"{'—':>9}"
         q0 = p.get("Q0", f.get("Q0"))
-        print(f"{lead}{p['eps']:>9.3f}{f['f0']:>11.4f}"
-              f"{f['linewidth_mhz']:>9.2f}{f['Q_L']:>8.0f}{f['beta']:>8.4f}"
-              f"{q0:>7.0f}{eta}{flag}")
+        # 🔴 A FIT CAN HAVE f0 AND DEPTH BUT NO WIDTH. If the 3 dB walk runs
+        # off the band or turns at a competing feature, `linewidth_mhz`, `Q_L`
+        # and `beta` are simply ABSENT — and this line used to KeyError, which
+        # killed the whole report and lost the summary of a run that HAD
+        # located both dips (2026-08-31, azimuthal loaded: cold 2.450325 at
+        # -16.29 dB, loaded 2.455755 at -4.13 dB, +5.43 MHz pull, all recorded
+        # in the result file and none of it printed). Print what exists.
+        def _n(key, w, fmt):
+            v = f.get(key)
+            return f"{v:>{w}{fmt}}" if isinstance(v, (int, float)) else f"{'—':>{w}}"
+        print(f"{lead}{p['eps']:>9.3f}" + _n('f0', 11, '.4f')
+              + _n('linewidth_mhz', 9, '.2f') + _n('Q_L', 8, '.0f')
+              + _n('beta', 8, '.4f')
+              + (f"{q0:>7.0f}" if isinstance(q0, (int, float)) else f"{'—':>7}")
+              + eta + flag)
     # 🔴 KEY ON A SUCCESSFUL FIT, NOT ON eta. The cold reference case has
     # eta=None BY DESIGN — it is the denominator, not a scored point — so
     # keying on eta silently dropped it and the summary reported the anchor

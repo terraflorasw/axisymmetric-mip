@@ -259,7 +259,10 @@ def case_name(rec):
             # raised KeyError instead of contributing "". The legacy default
             # case list (LOOPS, used when a config supplies no `cases`) has no
             # mount, so that path could not have named a single case.
-            + (f"_{rec['mount']}" if rec.get("mount") else "")
+            # ⚠️ AND an azimuthal head ALREADY starts with "azim", so
+            # appending the mount gave "azim_h3_L12.24_wire_azim".
+            + (f"_{rec['mount']}"
+               if rec.get("mount") and not head.startswith(rec["mount"]) else "")
             + (f"_g2-{rec['gap2']:g}" if rec.get("gap2") else "")
             + (f"_fl-{rec['flange']:g}" if rec.get("flange") else "")
             + rec.get("name_suffix", ""))
@@ -295,13 +298,22 @@ def build(tag, ld, lw, a, L, grooved, rec):
         # two radial legs. h and arc are INDEPENDENT — geometry.py takes the arc
         # LENGTH and derives the angle from R = a - h, because a fixed angle at
         # different h is a different length.
-        _h = float(rec.get("h", AZIM_H))
+        # 🔑 `h` IS NOW THE STANDOFF — the stud height, i.e. the WALL GAP.
+        # It was the conductor CENTRELINE height until 2026-08-30, so clearance
+        # was h - t/2 and MOVED with cross-section: a wire and a strip at the
+        # same h sat at different wall distances, confounding every
+        # cross-section comparison. geometry.py now derives the centreline as
+        # standoff + t/2, so the wall gap is invariant under thickness.
+        _sto = float(rec.get("h", AZIM_H))
         _arc = float(rec.get("arc", AZIM_ARC))
-        args += ["--loop-azim", f"{_h:g},{_arc:g}"]
-        rec.update({"h_mm": _h, "arc_mm": _arc,
-                    "unwound_mm": _arc - float(rec.get("gap", LOOP_GAP)) + 2*_h,
-                    "clearance_mm": _h - (float(_strip[1]) / 2.0 if _strip
-                                          else float(rec.get("rw", LOOP_RW))),
+        _thalf = (float(_strip[1]) / 2.0 if _strip
+                  else float(rec.get("rw", LOOP_RW)))
+        args += ["--loop-azim-standoff", f"{_sto:g},{_arc:g}"]
+        rec.update({"standoff_mm": _sto, "centreline_mm": _sto + _thalf,
+                    "arc_mm": _arc,
+                    "unwound_mm": (_arc - float(rec.get("gap", LOOP_GAP))
+                                   + 2 * (_sto + _thalf)),
+                    "clearance_mm": _sto,
                     "strip_mm": list(_strip) if _strip else None})
     elif mount == "cap":
         args += ["--loop-cap", f"{rec.get('cap_r_frac', CAP_R_FRAC) * a:.4f}"]
@@ -314,17 +326,35 @@ def build(tag, ld, lw, a, L, grooved, rec):
         args += ["--loop-gap2", f"{rec['gap2']:g}"]
         if rec.get("flange"):
             args += ["--loop-flange", f"{rec['flange']:g}"]
-    for sf in ("1.5", "1.42", "1.58"):
-        r = subprocess.run([sys.executable, "geometry.py", "--out", f"{tag}.msh",
-                            "--size-factor", sf] + args,
-                           capture_output=True, text=True)
-        if not r.returncode and pathlib.Path(f"{tag}.msh").exists():
-            rec["size_factor"] = sf
-            if sf != "1.5":
-                print(f"      ⚠️ mesh needed size-factor {sf}; REPORTED",
-                      flush=True)
-            return solveconf.load_meta(f"{tag}.msh")
-        rec["_err"] = (r.stdout + r.stderr)[-200:]
+    # 🔴 AZIMUTHAL LOOPS ALSO RETRY OVER THE ARC'S CHORD COUNT.
+    # Measured 2026-08-30, same arc length, only h differing:
+    #     h = 2 mm  builds at 3 and 7 chords
+    #     h = 3 mm  SEGFAULTS at 3 and 5, builds at 7 and 9
+    #     h = 4 mm  builds at 3, PLC-fails at 7, 9 and 11
+    # No single count works for all three, and which one fails moves with every
+    # parameter change — that is OCC going marginal at particular coincidences,
+    # not a defect in the construction. So treat it exactly as the mesher's
+    # size factor is already treated: try, and RECORD what worked, because a
+    # run that cannot say which geometry it built cannot be compared.
+    _chords = ((7, 3, 9, 5, 11) if rec.get("mount") == "azim" else (None,))
+    for nc in _chords:
+        _env = dict(os.environ)
+        if nc is not None:
+            _env["AMIP_ARC_CHORDS"] = str(nc)
+        for sf in ("1.5", "1.42", "1.58"):
+            r = subprocess.run([sys.executable, "geometry.py", "--out",
+                                f"{tag}.msh", "--size-factor", sf] + args,
+                               capture_output=True, text=True, env=_env)
+            if not r.returncode and pathlib.Path(f"{tag}.msh").exists():
+                rec["size_factor"] = sf
+                if nc is not None:
+                    rec["arc_chords"] = nc
+                if sf != "1.5" or (nc is not None and nc != _chords[0]):
+                    print(f"      ⚠️ mesh needed size-factor {sf}"
+                          + (f", {nc} chords" if nc is not None else "")
+                          + "; REPORTED", flush=True)
+                return solveconf.load_meta(f"{tag}.msh")
+            rec["_err"] = (r.stdout + r.stderr)[-200:]
     return None
 
 
@@ -403,7 +433,45 @@ def solve_one(tag, meta, sigma_w, port_bc, rec):
     # ⚠️ So they are NEAR-FIELD probes beside the conductor, not on it, and the
     # +y/-y pair is the controlled comparison: same x, same offset, same
     # radius — one beside intact wire, one beside the broken leg.
-    if _ld > 0:
+    if rec.get("mount") == "azim":
+        # 🔑 AZIMUTHAL PROBES — the point of the run is HOW THIS TOPOLOGY
+        # DIFFERS, not just what Q_ext it reaches. rho = |E|/(c|B|) is what
+        # separates magnetic from electric coupling, and the radial family's
+        # probes are computed from ld and lw, which an arc does not have.
+        # Positions mirror the radial set so the two are comparable:
+        #   arc_mid   — beside the arc, cavity side. The analogue of
+        #               `leg_intact`: conductor running ALONG the wall current
+        #               (K = H_z phi-hat), where the radial legs run ACROSS it.
+        #   wall_gap  — in the clearance BETWEEN conductor and wall. 🔴 NEW and
+        #               specific to this topology: it is the capacitance that
+        #               varies with h, and it is the arc risk. Nothing in the
+        #               radial family has an equivalent.
+        #   leg_mid   — beside a radial leg, so the arc and the leg can be
+        #               compared WITHIN one loop.
+        #   port_gap  — the gap itself, as for the radial loop.
+        # 🔴 EVERY PROBE BELOW NEEDS THE CENTRELINE, NOT THE STANDOFF.
+        # `rec["h"]` is the STANDOFF (the wall gap) since 2026-08-30; the arc
+        # sits at r = a - centreline, and wall_gap/leg_mid are positioned
+        # relative to that. Using the standoff here would put the wall_gap
+        # probe INSIDE the conductor.
+        _sto2 = float(rec.get("h", AZIM_H))
+        _arcmm = float(rec.get("arc", AZIM_ARC))
+        _st2 = rec.get("strip", LOOP_STRIP)
+        _rc2 = (float(_st2[1]) / 2.0) if _st2 else float(rec.get("rw", LOOP_RW))
+        _hh = _sto2 + _rc2                       # centreline height above wall
+        _RR = a_mm - _hh
+        _th2 = _arcmm / (2.0 * _RR)
+        _psi2 = float(rec.get("gap", LOOP_GAP)) / (2.0 * _RR)
+        _mid = 0.5 * (_psi2 + _th2)              # middle of one arc segment
+        _off2 = _rc2 + 1.0
+        for _nm, _r, _ang in (
+                ("arc_mid",  _RR - _off2, _mid),
+                ("wall_gap", _RR + 0.5 * (_rc2 + _hh), _mid),
+                ("leg_mid",  _RR + _hh / 2.0, _th2 + _off2 / (_RR + _hh / 2.0)),
+                ("port_gap", _RR, 0.0)):
+            _ax, _ay = _loop_xy(_r * math.cos(_ang), _r * math.sin(_ang))
+            _named.append((_nm, _ax, _ay, 0.0))
+    elif _ld > 0:
         _off = float(rec.get("rw", LOOP_RW)) + 1.0
         for _nm, _yy in (("leg_intact", +(_lw + _off)),
                          ("leg_broken", -(_lw + _off))):
@@ -667,7 +735,25 @@ def main():
                   flush=True)
             save(out)
             continue
-        print(f"  --- loop {ld:g}x{lw:g} = {area:.0f} mm^2"
+        # 🔑 DESCRIBE THE LOOP THAT WAS BUILT. An arc has no ld/lw, so this
+        # printed "loop 0x0 = 0 mm^2" — a banner describing nothing is worse
+        # than none when 18 cases scroll past.
+        if rec.get("mount") == "azim":
+            # 🔑 `h` IS THE STANDOFF (the wall gap). The enclosed area and the
+            # unwound length are set by the CENTRELINE = standoff + t/2.
+            _bsto = float(rec.get("h", AZIM_H)); _ba = float(rec.get("arc", AZIM_ARC))
+            _bst = rec.get("strip", LOOP_STRIP)
+            _brc = (float(_bst[1]) / 2.0) if _bst else float(rec.get("rw", LOOP_RW))
+            _bh = _bsto + _brc
+            _bR = a - _bh
+            print(f"  --- loop AZIM standoff={_bsto:g} arc={_ba:g} = "
+                  f"{0.5 * (_ba / _bR) * (a * a - _bR * _bR):.0f} mm^2"
+                  f"  ({'strip %gx%g' % tuple(_bst) if _bst else 'wire'})"
+                  f"  unwound={_ba - float(rec.get('gap', LOOP_GAP)) + 2 * _bh:.2f}"
+                  f" mm  centreline={_bh:.3f} mm"
+                  f"  {'grooved' if grooved else 'NO GROOVE'}", flush=True)
+        else:
+            print(f"  --- loop {ld:g}x{lw:g} = {area:.0f} mm^2"
               f"  mount={rec.get('mount', 'cap')}"
               + (f"  gap2={rec['gap2']:g} flange={rec.get('flange', 0):g}"
                  if rec.get("gap2") else "")
@@ -742,6 +828,48 @@ def main():
                     break
             if rec.get("error"):
                 break
+            # 🔑 THE AZIMUTHAL GEOMETRY, BOUND FROM THE MESH. The sidecar
+            # records loop_azim = [h, arc, arc_deg, unwound, clearance], all
+            # DERIVED where the geometry was built. Bind the clearance from
+            # there rather than recomputing it here: it is the width of the
+            # conductor-to-wall gap, so it sets that gap's breakdown limit, and
+            # `mesh-is-what-you-ordered` says the limit must come from the
+            # artefact, not from the request that may not have been honoured.
+            if rec.get("mount") == "azim":
+                _az = (meta.get("geometry_mm") or {}).get("loop_azim")
+                if not _az:
+                    rec["error"] = ("mesh has no geometry_mm.loop_azim — it was "
+                                    "not built as an azimuthal loop")
+                    print(f"    🔴 {rec['error']}", flush=True)
+                    break
+                # 🔑 BIND THE STANDOFF FROM ITS NAMED FIELD, not from the
+                # positional list. _az[0] is the CENTRELINE; the request is a
+                # STANDOFF, and comparing the two is how this guard fired on
+                # all 18 cases when the parameterisation changed. The named
+                # field exists so nothing has to infer which "h" it is holding.
+                _gm = meta.get("geometry_mm") or {}
+                _msto = _gm.get("loop_azim_standoff_mm")
+                if _msto is None:
+                    rec["error"] = ("mesh sidecar has no "
+                                    "loop_azim_standoff_mm — it predates the "
+                                    "standoff parameterisation (2026-08-30) "
+                                    "and its 'h' is a CENTRELINE height")
+                    print(f"    🔴 {rec['error']}", flush=True)
+                    break
+                _wh, _wa = float(rec.get("h", AZIM_H)), float(rec.get("arc", AZIM_ARC))
+                for _k, _got, _want in (("standoff", float(_msto), _wh),
+                                        ("arc", float(_az[1]), _wa)):
+                    if abs(_got - _want) > 1e-6:
+                        rec["error"] = (f"loop_azim {_k} MISMATCH: meshed "
+                                        f"{_got:g}, requested {_want:g}")
+                        print(f"    🔴 {rec['error']}", flush=True)
+                        break
+                if rec.get("error"):
+                    break
+                rec["mesh_azim_mm"] = list(_az)
+                rec["mesh_clearance_mm"] = float(_msto)   # standoff IS the gap
+                rec["mesh_centreline_mm"] = float(_az[0])
+                rec["mesh_unwound_mm"] = float(_az[3])
             g = (meta.get("geometry_mm") or {}).get("groove") or [0, 0]
             # 🔑 from the single source, never a literal. The groove omission
             # (31 rigs on the wrong cavity) began as a frozen value that lived

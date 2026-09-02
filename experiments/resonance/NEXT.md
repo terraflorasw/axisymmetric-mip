@@ -519,6 +519,144 @@ loaded VSWR 83 → 3.1 bought cold ignition power 556 W → 45 W. **The minimax
 fixed loop is Q_ext ≈ 1,700 (VSWR ~16 in both states) — roughly where the gap
 sweep STARTED.**
 
+### ✅ MEASURED — THE AZIMUTHAL LOOP COUPLES ~10x LESS (2026-08-30)
+
+**FIRST azimuthal Q_ext ever measured.** Reference geometry, h = 3 mm,
+L(arc) = 12.24 mm, 1 mm wire, grooved, unwound 17.94 mm, clearance 2.00 mm.
+Slug `h3-azim-01`, stamp `9e60089f`.
+
+    pec     Q0    = 43,744   f0 = 2.439429   P>=1.0000  spread 0.0000
+    lumped  Q_L   =  9,154   Q_ext = 11,576  beta = 3.779   OVERCOUPLED
+
+⚠️ **PROVENANCE IS THE WATCH-LOG MIRROR, not the artefact.** The host was
+reclaimed mid-grid; `h3-azim-01.9e60089f.result.json` is on the EBS volume and
+has never been fetched. Numbers above are from `h3-azim-01.watch.log`. Re-fetch
+and reconcile before this is cited anywhere.
+
+**Against the rectangular barrel loop (13x6, `h3-aspect-02`): beta 36.8 -> 3.78.**
+User: *"Already at that VSWR, it's workable."*
+
+⚠️ **THE COMPARISON CROSSES RUNS.** The rectangular figure is from a DIFFERENT
+aspect-ratio cavity, and the `-01`/`-02` offset is still unresolved and parked.
+The ~10x gap is far larger than that offset so the DIRECTION holds, but the
+ratio is not a measurement until both are on one cavity. See
+[epoch comparisons are not measurements].
+
+🔑 **The null hypothesis below is REFUTED.** It argued a topology could only move
+VSWR through Q_ext, and predicted no benefit. Q_ext is exactly where it moved:
+1,097 -> 11,576. The reasoning was right; the prediction of "no benefit" was
+wrong, because it assumed the two topologies reach comparable loop areas at
+comparable coupling. They do not — the azimuthal loop sits where it barely
+perturbs the mode (P >= 1.0000, spread 0.0000, Q0 cost 0.75% vs 6-12%), so it
+extracts far less energy for the same conductor length.
+
+### ✅ MEASURED — beta ∝ AREA^4, and critical coupling is BRACKETED (2026-08-30)
+
+Azimuthal wire loops, slug `h3-azim-01` stamp `9e60089f`, all P >= 0.9999.
+Area = L x h. Q0 is flat at 43,744-43,937 across all four, so the loop barely
+perturbs the mode and every difference is in Q_ext.
+
+    h   L(arc)  A/mm^2   Q_ext     beta     VSWR
+    2   10.2      21    112,004   0.392     2.55   undercoupled
+    2   12.24     25     62,800   0.699     1.43   undercoupled
+    2   14.2      29     31,111   1.410     1.41   OVERCOUPLED
+    3   12.24     37     11,576   3.779     3.78   OVERCOUPLED
+
+🔴 **SUPERSEDED — "area governs" HOLDS ONLY FOR h <= 3 mm.** See the
+h=4 swap test below. Area^4 fits 6 points to <10% and then fails by 29%.
+
+🔴🔴 **RETRACTED 2026-08-30 — THE SATURATION WAS THE WRONG VARIABLE.**
+*User: "I also worry that h is mis-characterized. The distance to wall should be
+the dominant term, so a thicker wire or strip has the same wall distance. h
+should just be the height of the stud that the strip/wire sits on."*
+
+`h` was the conductor CENTRELINE height; wall clearance was `h - t/2`, so it
+moved with conductor thickness. Re-fitting the SAME wire data at L = 10.2
+against CLEARANCE instead:
+
+    vs centreline h (what was fitted) : 3.89 then 2.99   -> 23% apart
+    vs CLEARANCE (the stud height)    : 2.27 then 2.12   ->  7% apart
+
+**There is no saturation.** Centreline height and wall distance differ by a
+fixed offset, so a power law in one cannot be a power law in the other — the
+"saturation" is the residual of fitting the wrong variable. ⚠️ This also
+retracts what was built on it: **"buy coupling with L, not h" is withdrawn.**
+Both are live levers; L simply has the steeper exponent (3.87 vs ~2.2).
+
+🔴 **AND WIRE-vs-STRIP WAS NEVER AT MATCHED WALL DISTANCE.** clearance = h-t/2,
+so at every h the 5x1 strip sat 0.5 mm FURTHER out than the 1 mm wire —
+systematically. The 3.0-4.0x ratio is confounded with that offset and must not
+be quoted as a cross-section effect until re-measured at matched clearance.
+
+⚠️ SUPERSEDED, kept for the record — the original claim:
+🔑 **beta ∝ L^3.88 x f(h), and f SATURATES above h = 3 mm:**
+
+    L-exponent at h=2 .......... 3.87     rock steady
+    L-exponent at h=3 .......... 3.89
+    h-exponent, L=10.2, 2->3 ... 3.89
+    h-exponent, L=10.2, 3->4 ... 2.99     <-- saturates
+
+✅ **THE h=4 SWAP TEST IS WHAT CAUGHT IT.** h=4/L=10.2 (A=42) vs h=3/L=14.2
+(A=43): near-identical area, beta 4.486 vs 6.872 — 1.53x apart. Area alone
+cannot produce that. Area^4 predicted 6.29, MEASURED 4.486, 29% low, against
+residuals of 4-9% on every earlier point.
+
+🔑 **Why A^4 looked so good first:** while both exponents sit near 3.9,
+L^3.9 h^3.9 = (Lh)^3.9 ~ A^4. Area was NEVER the governing variable — it was a
+coincidence of the two exponents matching inside h = 2-3, and it dies as soon
+as height leaves that band. [epoch comparisons are not measurements] applies to
+laws too: a fit that works over a narrow span is not a mechanism.
+
+⚠️ Physical reading, UNVERIFIED: the loop stops gaining flux once it reaches
+out of the strong near-wall H field. That is a ceiling on HEIGHT but not on
+azimuthal run. **Buy coupling with L, not h.**
+
+✅ The beta = 1 design point (h=2, L~13.4 mm) is INSIDE the validated band and
+is unaffected — both exponents are ~3.88 there.
+
+
+✅ **THE CONTROL DECIDED IT, OUT OF SAMPLE.** h=2/L=14.2 (unwound 17.90 mm) and
+h=3/L=12.24 (unwound 17.94 mm) are the SAME conductor length split differently.
+Unwound length predicted beta = 3.78; area^4 predicted 1.42. **MEASURED 1.410.**
+Area governs; unwound length does not. This is why L and h were made
+independent — the two hypotheses were 2.7x apart and one case separated them.
+
+🔴 **I GOT THIS WRONG TWICE FIRST, and both are worth keeping:**
+1. Predicted beta ∝ A² (textbook magnetic loop, flux ∝ area, beta ∝ flux²) —
+   predicted 1.2 for the 21 mm² case, MEASURED 0.392.
+2. Then fit L-only and h-only exponents from 2-point pairs (3.2 and 4.2),
+   concluded "not a function of area at all, beta ∝ L^3.2 h^4.2". **REFUTED by
+   the control**, which lands on the single-variable area^4 curve. Those pair
+   exponents were local curvature in 2-point fits, not real anisotropy.
+⚠️ A^4 is DOUBLE the textbook exponent and is so far EMPIRICAL ONLY — no
+mechanism. Do not extrapolate outside 21-37 mm² on it.
+
+🔑 **DESIGN POINT: beta = 1 at A ~ 26.8 mm^2** — at h=2, L ~ 13.38 mm;
+at h=3, L ~ 8.92 mm. VSWR = 1. Interpolated on the A^4 fit, NOT measured;
+the bracket around it IS measured (0.699 at 25, 1.410 at 29).
+
+**Rectangular barrel 13x6 on `h3-aspect-02` was beta 36.8 / VSWR ~37.**
+User on the first azimuthal point: *"Already at that VSWR, it's workable."*
+
+### ⏳ OPEN — h=4 row, and the 9 strip cases
+
+### ⏳ OPEN — does beta reach 1, and what sets it
+
+18-case grid launched, 1 complete, host reclaimed at case 2 of 18.
+Grid: L in {10.2, 12.24, 14.2} mm x h in {2,3,4} mm x {1 mm wire, 5x1 strip}.
+L and h are INDEPENDENT (unwound = L + 2h - gap), so the L+2h = 18.24 diagonal
+is an internal control on whether unwound length alone predicts Q_ext.
+
+🔎 **PREDICTION, UNTESTED:** if beta scales as loop area squared, h=2/L=10.2 at
+21 mm² against this 37 mm² gives beta ~ 3.78 x (21/37)² ~ 1.2, i.e. near
+critical. That case was solving when the host died. It is a sharp, falsifiable
+number — record what it actually returns, do not quietly drop it.
+
+⚠️ **A dead spot on a SATURDAY is a first** — every prior reclamation was a
+weekday. Do not assume weekend capacity is safe.
+
+---
+
 ### 🔎 QUEUED — THE AZIMUTHAL LOOP, and the question is VSWR (2026-08-28)
 
 **User: *"the other loop option: one that runs azimuthally along the wall at the
@@ -813,3 +951,732 @@ requirement in `../control-loop/`.
 - **`eigen_cfg` now REFUSES** a looped mesh without an explicit `port_bc`
   (GATE 4) and a mesh the sidecar does not describe (GATE 5). Neither is
   optional; both cost a launch to learn.
+
+### 🔧 AFTER THE AZIMUTHAL GRID — two resume inefficiencies (2026-08-30)
+
+Both seen recovering `h3-azim-01` from the Saturday reclamation. Neither is
+wrong, both waste time on every resume:
+
+1. **Resume is per-CASE, not per-solve.** Case 2's `pec` had completed (it was
+   the newest entry in postpro) but its `lumped` had not, so the whole case
+   re-ran and a ~10 min pec was recomputed. Key the resume on the solve, not
+   the case.
+2. **The mesh-retry ladder is not memoised.** Case 2 needed size-factor 1.42
+   and 7 chords. The winning mesh is cached, but the rig re-walks the ladder
+   from the default and FAILED attempts are not cached, so it repeats the
+   failures before reaching the cached winner. Record the winning
+   `(size_factor, chords)` per case in the result and try it FIRST on resume.
+
+⚠️ Not done during the run: the rig shells out to `geometry.py` per case and
+editing it mid-run is what cost 6 of 16 grid points. See [frozen is not removed].
+
+### ⚠️ EIGEN CANNOT ANSWER THE IMPEDANCE QUESTION (2026-08-30)
+
+**User: *"Can we even test impedance with PEC?"*** — the loop is NOT PEC (the
+A-queue removed it): wall attr 90 = 3.5e7 aluminium, loop attr 92 = 5.8e7
+copper, port attr 91 = 50 ohm LumpedPort. Conductor loss IS modelled.
+
+🔴 **But the limit is the SOLVER, not the material.** An eigen solve with a
+lumped port returns Q_ext — a coupling MAGNITUDE. There is no complex Z in that
+output. R + jX against 50 ohm, and whether the loop's reactance cancels or adds,
+has no representation in it.
+
+- ✅ the 6 strip cases CAN answer: does cross-section change coupling strength,
+  and does it shift the prefactor of the beta ∝ L^3.88 law
+- 🔴 they CANNOT answer: does a 5x1 strip MATCH 50 ohm better than a 1 mm wire
+
+Same point from the other side: KNOWN records that **|S11| cannot distinguish
+beta from 1/beta**, resolved by `e0k2_anchor.branch_from_phase`. Magnitude is
+not enough; PHASE carries the impedance information.
+
+### 🔴 REFUTED-AND-REPLACED — a strip changes the EXPONENT, not a prefactor (2026-08-30)
+
+Azimuthal, h = 2, grooved, slug `h3-azim-01` stamp `71364f1e`. Same h, same
+arc, same enclosed area to the conductor centreline — only the cross-section
+differs (1 mm round wire vs 5x1 mm strip, wide face parallel to the wall):
+
+    L        wire beta   strip beta   ratio
+    10.2      0.392       0.129       3.04
+    12.24     0.699       0.229       3.05
+
+Predicted the second from the first at a constant 3.04x: 191,000 vs MEASURED
+Q_ext 190,750 — **0.1%**. So the cross-section factor is SEPARABLE from the
+geometry: it moves the PREFACTOR and leaves the L^3.88 exponent untouched.
+
+🔴🔴 **THE THIRD POINT REFUTED ALL OF THAT, ONE CASE LATER.**
+
+    L        wire beta   strip beta   ratio
+    10.2      0.392       0.129       3.04
+    12.24     0.699       0.229       3.05
+    14.2      1.410       0.370       3.81   <-- predicted 0.464, 20% off
+
+**The ratio is NOT constant in L.** The two conductors have DIFFERENT
+EXPONENTS, measured over the same 10.2 -> 14.2 span at h = 2:
+
+    1 mm round wire ... beta ∝ L^3.87
+    5x1 mm strip ...... beta ∝ L^3.19
+
+Cross-section changes the SHAPE of the law, not a multiplier on it. The 0.1%
+"confirmation" at L=12.24 was two points agreeing on a line, which any two
+points do.
+
+🔑 **THE SAME ERROR TWICE, ONE LEVEL APART.** The user objected that one WIDTH
+cannot establish a width response. It then turned out two LENGTHS could not
+establish the L response either — a constant extrapolated from the minimum
+number of points that can produce one. [epoch comparisons are not measurements]
+has a sibling: **a fit through N points does not survive point N+1 unless N was
+chosen to test it, not to produce it.**
+
+🔴 **SCOPE — ONE WIDTH, AND NOW NOT EVEN A CLEAN RATIO.** *User: "Independent at 5mm width. We would
+have to try different widths to ascertain 'the strip divides beta by 3.04 at
+every size'."* I called this a "3x knob on coupling", which claims a RESPONSE
+CURVE from a single sampled point. Two conductors give ONE ratio.
+
+    ✅ established: a 5x1 strip couples WEAKER than a 1 mm wire at every
+       (h, L) measured — 3.0x to 3.8x — and the mode stays clean (P >= 0.9999)
+    ✅ established: the two cross-sections obey DIFFERENT L-exponents,
+       3.87 (wire) vs 3.19 (strip), over 10.2-14.2 mm at h = 2
+    🔴 NOT established: any constant ratio; how either exponent varies with
+       WIDTH; that the strip exponent is stable outside this span; that a
+       thicker ROUND wire moves coupling the other way at all
+
+➡️ To earn the knob, sweep WIDTH at fixed h and L — e.g. 2x1, 3x1, 5x1, 8x1
+against the 1 mm wire, one geometry, one variable. Cheap: h=2 cases solve fast
+and the arcs {10.2, 12.24, 14.2} are known to mesh.
+
+### 🔴 CORRECTION — THE MINIMAX IS NOT THE TARGET (2026-08-30)
+
+**User: *"The minimax loop is not an accepted solution, so it's not appropriate
+to make claims like 'we need more coupling to reach Q_ext ~ 2,100'. We've found
+Beta = 1 unloaded, we're looking for Beta = 1 loaded."***
+
+🔑 I quoted the minimax as the objective. It is not one — and KNOWN marks that
+very line **"Design implication, NOT a decision ... Do not adopt a leg depth
+from this line."** I adopted a target from a line that says not to. The minimax
+is what a SINGLE fixed coupler is reduced to (VSWR ~20 in both states); the
+DUAL-LOOP plan exists precisely so that compromise is not needed.
+
+**The objective is beta = 1 in EACH state, with a coupler for each:**
+
+    beta = 1 COLD   ✅ bracketed — h=2, L ~ 13.4 mm (Q_ext ~ Q0cold ~ 43,700)
+    beta = 1 LOADED ⏳ OPEN — needs Q_ext ~ Q0loaded, and Q0loaded is UNMEASURED
+
+⚠️ **The scale of the loaded ask is not small.** If Q0loaded is order 100-200,
+beta = 1 loaded wants Q_ext of the same order — **30-60x below the smallest
+Q_ext this programme has measured (6,362)**. Running beta ∝ L^3.88 backwards
+puts that near L ~ 37 mm at h=3, area ~111 mm², far outside the validated
+10.2-14.2 band and into the range where **F2** asks whether purity degrades with
+loop area. Whether an azimuthal loop can get there without hybridising TE011 is
+GENUINELY OPEN. Do not assume the extrapolation holds — it already broke once,
+at h=4.
+
+🔑 **Measure Q0loaded FIRST.** Every number above is conditional on it.
+
+➡️ **Carry the impedance question into the DRIVEN rig**, which is needed for
+loaded work anyway (PRIOR ART: eigen with sapphire + plasma does not converge).
+
+### ✅ RE-MEASURED WITH A CORRECT PORT — the strip sweep (2026-08-31)
+
+Slug `h3-azimwidth-01` stamp `c1dffc3d`. ALL at **standoff 2.0 mm** (the WALL
+GAP, held fixed) and a port face of **0.9 x the conductor's HALF-EXTENT** — the
+same face-to-conductor ratio for every conductor, which is what the earlier data
+did not have.
+
+    conductor      10.2    12.24    14.2      L-exponent
+    wire (ref)    1.897    3.779   6.872       3.89
+    2x1           1.262    2.215   3.654       3.21
+    3x1             -      2.260   3.798          -
+    5x1           1.180    2.156   3.840       3.57
+    8x1           1.119    2.205   3.911       3.78
+    5x0.5         1.170    1.948   2.965       2.81
+    5x0.25        1.662      -       -            -
+
+🔑 **WIRE vs STRIP: 1.6-1.8x, not 7-8x.** At matched wall gap AND matched port
+ratio the round wire couples 1.61x (arc 10.2) to 1.79x (arc 14.2) more than a
+5x1 strip. Every larger figure this programme reported — 3.04, 4.13, 7.19, 7.89,
+8.54 — was the port face, not the conductor.
+
+🔑 **CROSS-SECTION ROTATES THE CURVE, IT DOES NOT SHIFT IT.** The L-exponent
+rises monotonically with conductor size in BOTH dimensions:
+
+    width  2 -> 5 -> 8 mm  :  3.21 -> 3.57 -> 3.78
+    thick  0.5 -> 1.0 mm   :  2.81 -> 3.57
+
+At any single arc the widths differ by only ~5%, which is near the mesh-to-mesh
+reproducibility, and the ordering even flips between arcs — because the curves
+CROSS near arc 12. ⚠️ A single-arc comparison cannot see this. Fit exponents.
+
+🔴 **THE 5x0.25 SERIES IS UNUSABLE — 1 of 3 points.** arc 12.24 TIMED OUT at
+7200 s; arc 14.2's pec continuation BROKE. The one point that landed (1.662)
+also breaks the thickness trend, sitting ABOVE both thicker strips rather than
+below. ⚠️ Its port face is ~0.225 mm across a ~0.12 mm gap element — two
+elements — which is the regime `e0k2_anchor` records a face floating in. **Do
+not quote 5x0.25.** If thin strips matter, refine the gap mesh first.
+
+⚠️ Also lost: 3x1 arc 10.2, pec continuation BROKE (nearest converged mode
++147.5 MHz, the 2.598-2.607 GHz cluster). 15 of 18 cases returned results; all
+three failures were REFUSALS, not mislabelled modes.
+
+🔑 **THE SOLVER STRUGGLES NEAREST beta = 1** — the L=13.0/13.4 wire cases, and
+both 5x0.25 failures. That is the most design-relevant point on the curve, and
+it is an argument for the DRIVEN solver on any near-critical geometry.
+
+### 🔴🔴 SUPERSEDED — THE PORT FACE DOMINATES Q_ext (2026-08-30)
+
+Strip 5x1, standoff 2.0, arc 12.24 — IDENTICAL geometry, identical mesh
+settings, identical solver settings. ONLY the port-face half-width changed:
+
+    pw    face      Q_L      implied Q_ext   implied beta
+    0.9   1.80 mm   29,465      ~90,000         0.49
+    0.45  0.90 mm   13,826      ~20,200         2.17
+
+🔴 **HALVING THE FACE CHANGES beta BY 4.5x.** A well-posed lumped port is
+INSENSITIVE to this. Q_ext is therefore set by an arbitrary modelling choice,
+not by the loop.
+
+**WHAT THIS INVALIDATES — every azimuthal COUPLING number:**
+  - beta ∝ A^4.07 and the "critical coupling at A ~ 26.7 mm^2" bracket
+  - the L-exponents (wire 3.87-3.89, strip 3.19-3.37)
+  - every wire-vs-strip ratio (3.0x, 4.1x, 7.2-8.5x matched-standoff)
+  - the 18-case `h3-azimwidth-01` sweep, and the 9 strip cases of `71364f1e`
+  - "VSWR 1.09 at h=3 L=12.24 strip", "beta = 1 bracketed"
+
+⚠️ **AND THE TWO FAMILIES SIT AT DIFFERENT POINTS ON THIS CURVE.** `_rc_p` is
+the wire's RADIUS but the strip's FULL thickness, so at the same factor the
+wire's face is INSET (0.9x its half-extent) and every strip's OVERSHOOTS
+(1.8x). Wire-vs-strip is thus not merely uncertain — it is a comparison across
+a steep artefact.
+
+✅ **WHAT SURVIVES — everything from the `pec` solves**, where the gap is
+SHORTED and the face plays no part: Q0 (43,378-44,083 across the whole grid),
+mode purity (P >= 0.9999 throughout), f0, the 0.75% Q0 cost of an azimuthal
+loop vs 6-12% for the rectangular one, and the groove behaviour. The MODE work
+is intact. The COUPLING work is not.
+
+🔑 **THE FIX IS PHYSICAL, NOT NUMERICAL.** The face represents where a feed
+actually attaches, so its size is a DESIGN INPUT. It must come from the real
+connector cross-section, be declared in `baselines.json` like any other
+canonical value, and be held CONSTANT across every conductor — then all
+comparisons sit at one feed. `0.9 * _rc_p` is a factor times the conductor,
+which is why it silently differed between families.
+
+⚠️ Also open, and NOT the same question: the face is a flat rectangle in the
+**z = 0 plane** (radial x tangential). The conductor's cross-section at the gap
+is (radial x AXIAL). For a 5 mm-tall strip the face spans none of the axial
+extent. Whether that is right depends on how Palace integrates the lumped
+element and is NOT resolvable by argument — measure it.
+
+### 🔴 SUPERSEDED — the original suspicion, kept because it was right for the wrong reason
+
+Found 2026-08-30 while checking probe readings. In `geometry.py`:
+
+    _rc_p = (_strip[1] if _strip else lrw)
+    _pw   = 0.9 * _rc_p
+
+🔴 **THE TWO BRANCHES DO NOT MEAN THE SAME THING.** `lrw` is a wire RADIUS (a
+half-extent), so a wire gets a face inset to 90% of its conductor — the intent.
+`_strip[1]` is a strip's FULL radial thickness, so a 5x1 strip gets a face of
++-0.9 mm against a conductor of +-0.5 mm: it OVERSHOOTS by 0.4 mm per side.
+
+⚠️ Separately, the face is a flat rectangle in the **z = 0 plane** spanning
+radial x tangential. That was validated on a ROUND WIRE. A 5 mm-tall strip
+extends +-2.5 mm in z and the face does not.
+
+**Consequence: every strip beta may carry a systematic port error** — the nine
+cases of `h3-azim-01` stamp `71364f1e` (beta 0.129-1.664) and the 18 of
+`h3-azimwidth-01`. They are SELF-CONSISTENT and the mode is clean
+(P >= 0.9999), which is why nothing flagged it.
+
+✅ **DECISIVE TEST, and it is cheap.** `AMIP_PORT_PW` is already a hashed
+parameter. **A correct port gives Q_ext INSENSITIVE to reasonable changes in
+face width.** Sweep it on ONE strip case — e.g. 0.4 / 0.6 / 0.9 — at fixed
+geometry:
+  - Q_ext flat  -> the face is fine, strip results stand
+  - Q_ext moves -> the strip betas need re-deriving, and the wire/strip ratio
+    is an instrument artefact rather than a cross-section effect
+
+🔑 Do this BEFORE quoting any wire-vs-strip ratio, including the
+matched-standoff series A now running — which was specifically built to make
+that ratio meaningful.
+
+### 🔴 LOADED, FIRST ATTEMPT — Q0loaded STILL UNMEASURED (2026-08-31)
+
+Slug `h3-azimload-01` stamp `b593113a`, driven, azimuthal wire loop at standoff
+2.0 / arc 12.24 (the reference coupler). ne = 0 then 7.9e18.
+
+✅ **WHAT LANDED, and it does not depend on the coupling model:**
+
+    cold    f0 = 2.450325 GHz   dip -16.29 dB   (selected by CONTINUATION)
+    loaded  f0 = 2.455755 GHz   dip  -4.13 dB
+    LOADED PULL = +5.43 MHz
+
+⚠️ Compare the DISCARDED groove-free value of +31.6 MHz — this is 6x smaller.
+Continuation also correctly rejected a DEEPER feature at 2.6048 GHz (-22.10 dB)
+as not-the-mode, which is exactly the trap `h3_sapphire` fell into.
+
+🔴 **THE COLD CROSS-CHECK FAILED — and it was there to catch this.**
+
+    driven cold, dip -16.29 dB -> beta = 0.734 (under) or 1.362 (over)
+    eigen  cold, SAME mesh     -> beta = 3.779
+    eigen's beta would give a -4.71 dB dip; driven measured -16.29 dB
+
+🔴🔴 **CORRECTED — THE TWO RUNS ARE DIFFERENT CAVITIES, and the solvers are
+not in disagreement at all.** From the mesh sidecars:
+
+    eigen  (h3_loopq azim grid) : torch_material = [9.39, 3.5e-05]  SAPPHIRE
+    driven (h3_azimload cold)   : torch_material = [1.0,  3.5e-05]  VACUUM
+
+That is the whole 11 MHz f0 offset (2.4394 vs 2.4503) and a different field at
+the loop, hence a different beta. Each rig is right for its own purpose — the
+driven rig meshes a VACUUM torch for its cold reference BY DESIGN — but the two
+numbers were never comparable. ⚠️ I wrote "same geometry, same mesh, same port
+face" here without checking the sidecars, and then built a port-face hypothesis
+on top of it. [epoch comparisons are not measurements], again, and this time I
+had the artefacts on disk that would have shown it in one command.
+
+✅ The loop itself was built correctly in BOTH: loop_mount azim, standoff 2.0,
+centreline 3.0, port_face 1.80 mm. (The driven mesh tag says `ld11` — that is
+unused radial-loop defaults leaking into the NAME, not the geometry.)
+
+🔴 **AND SO THE OBVIOUS SHORTCUT IS ALSO VOID.** Q0loaded = beta x Q_ext (with
+Q_ext taken as cold and geometric) gives ~2,700 — but it inherits beta from the
+method that just failed validation, and Q_ext from the port face that is not
+physically anchored. Do NOT quote 2,700.
+
+🔴 **THE PORT-FACE HYPOTHESIS WAS WRONG HERE** (it is still a real effect on
+Q_ext — 4.5x across the overshoot boundary — but both runs used the SAME face,
+so it cannot produce a difference BETWEEN them).
+
+⚠️ **AND THE PRESCRIPTION IT CAME WITH WAS WRONG TOO.** "Pin the face to the
+real connector cross-section and declare it in baselines.json" treats a
+MODELLING artefact as a design parameter. A lumped port is a surface impedance
+Z_s = R*W/L over the face; what matters is how much of the conductor's actual
+current it intercepts. In a real build the coupling is set by the loop's FLUX
+LINKAGE, not by the connector aperture. ➡️ The face should BE the conductor's
+cross-section at the gap, and the right check is CONVERGENCE toward that — not
+a connector dimension.
+
+➡️ **The real next step:** run the eigen azimuthal case on a VACUUM-torch
+cavity so eigen and driven can be compared like with like. Until then there is
+no evidence the two solvers disagree.
+
+⚠️ Why the width failed, for whoever retries: the loaded dip is only 4.13 dB
+deep, so the 3 dB points sit ~1.1 dB above a nearly flat baseline, and the
+high-side walk turned at 2.4652 GHz on competing structure. A shallow dip on a
+sloping baseline cannot give a linewidth. Isolate the mode with a band centred
+on it, or drive harder toward beta = 1 so the dip deepens.
+
+✅ FIXED: `_report` KeyError'd on a fit with no `linewidth_mhz`, killing the
+summary of a run whose result file held BOTH located dips. It now prints what
+exists and dashes what does not.
+
+### 🔴 THE FEED TOPOLOGY WAS NEVER CHOSEN (2026-08-31)
+
+**User: *"Doesn't picking the adapter type seem premature at this point, when we
+haven't established anything else about how the coupler enters the cavity, or
+how it's connected to the cavity on the far side from the inlet?"*** — yes, and
+asking for SMA/N-type was doubly wrong, because the same message called the
+port face a modelling convenience. Both cannot be true.
+
+**WHAT THE MODEL ACTUALLY BUILDS** (geometry.py, azimuthal mount):
+
+    wall --leg--  quarter-arc --GAP--  quarter-arc  --leg-- wall
+                                ^ port face, mid-arc at phi = 0
+
+Both legs are galvanically joined to the wall; a 0.3 mm gap is cut at the
+CENTRE of the arc and the port bridges it. Verified against the mesh: for the
+2x1 strip at standoff 2.0 the port spans r 85.0545-85.9546 inside a conductor
+at 85.0045-86.0045, 2 mm inside the wall at 88.0045.
+
+🔴 **NOBODY CHOSE THIS.** It was inherited from the radial loop, where the gap
+sits mid-crossbar for its own reasons. A coax-fed loop normally grounds the
+outer conductor AT THE WALL PENETRATION, with the inner conductor forming the
+loop — so the driven gap is at the ENTRY, not mid-arc.
+
+🔴 **DOWNGRADED 2026-09-01 — I OVERSTATED THIS.** *User: "Why can't the coupler
+simply enter through a hole? As opposed to specifying every detail about the
+adapter."* Right: it is ONE geometric decision, not a shopping list.
+
+✅ **THE MINIMAL REALISTIC FEED, and it needs no connector model:**
+    coax OUTER grounds at a HOLE in the wall; INNER passes through and becomes
+    one leg; the loop runs round; the FAR leg grounds to the wall. A lumped
+    port across the hole still terminates in 50 ohm. Coax dimensions matter
+    only if you later want the connector's own reactance.
+
+🔑 **AND IT IS THE SAME CIRCUIT CLASS AS WHAT IS ALREADY BUILT** — a series-fed
+loop returning through the wall. The only difference is WHERE around the loop
+the source sits, and that is small:
+
+    unwound loop = 17.94 mm = 0.147 lambda = lambda/6.8
+    phase around the loop            = 53 deg
+    mid-arc vs entry feed shifts it  = ~26 deg
+
+**So the existing Q_ext numbers are NOT invalidated by this** — 26 deg is a
+perturbation, not a different circuit. It was wrong to call this a blocker or
+to rank it above the port face.
+
+➡️ **Worth doing anyway, and cheap:** put the hole in, drive at the entry, and
+compare Q_ext against the mid-arc model. That also puts the port REFERENCE
+PLANE at the wall, which is where VSWR would actually be measured — a real gain
+for the design deliverable, independent of how much the number moves.
+
+### ✅ COLD ANCHORED / 🔴 EIGEN STALLS ON PLASMA — closed-ring azimuthal loop (2026-08-31)
+
+**User: *"We're not trying to hit Beta = 1 loaded yet, so I don't think the
+0.3mm gap should be there at this point."*** ✅ Right, and it dissolves the port
+face, the feed topology and the coupling branch in one move. `port_bc="pec"`
+SHORTS the gap, so the loop is electrically a CLOSED RING — a conductor the
+mode must coexist with, nothing more. No new mesh needed: the driven run's own
+meshes were reused.
+
+✅ **COLD, closed ring, VACUUM torch, standoff 2.0 / arc 12.24 wire:**
+
+    f = 2.381453  Q = 13,094
+    f = 2.381793  Q = 13,107
+    f = 2.450751  Q = 43,875   <- TE011
+    f = 2.604939  Q = 20,994
+    f = 2.607576  Q = 20,577
+
+🔑 **AND IT VALIDATES DRIVEN AGAINST EIGEN AT LAST.** The driven sweep put its
+cold dip at 2.450325 GHz on THIS SAME MESH — **0.43 MHz apart, 0.017%**. The
+earlier apparent 3x disagreement was entirely the sapphire-vs-vacuum torch
+mismatch. The two solvers agree on this cavity. The 2.6049/2.6076 pair is the
+same competitor cluster driven saw at 2.6048.
+
+🔴 **LOADED: EIGEN DOES NOT CONVERGE.** ne = 7.9e18, plasma attr 12 at
+eps = -1.456, sigma = 2.1746 (the driven rig's own Drude values):
+
+    PCG solver did NOT converge in 1000 iterations (avg. reduction 9.987e-01)
+    Linear solver did not converge, norm(Ax-b)/norm(b) = 1.117e+00
+    nconv = 0
+
+⚠️ **THIS EXTENDS THE PRIOR ART, IT DOES NOT MERELY CONFIRM IT.** `h3_driven`
+records sapphire + plasma stalling and says *"neither ingredient alone fails"*.
+Here the torch is VACUUM (eps 1.0) and it stalls anyway, in the same
+PCG-stagnation mode `h3_eigenprobe` found. **The negative permittivity alone is
+sufficient.** Update the PRIOR ART line accordingly.
+
+🔴 **AND A TRAP THAT ALMOST PASSED SILENTLY.** The first loaded attempt returned
+eigenvalues IDENTICAL to cold to 6 figures — because `eigen_cfg` builds
+materials from the MESH SIDECAR, which does NOT carry the plasma's Drude
+permittivity (the RIG computes it from n_e). Every volume came out eps = 1.0,
+so the "loaded" solve was a COLD solve. This is R101's exact failure, and the
+guard that catches it lives in the RIG — bypassed by hand-rolling the solve.
+✅ The re-run carries an explicit fail-closed check: refuse if ne > 0 and the
+plasma attribute has eps = 1.0.
+
+➡️ **THE PATH LEFT FOR Q0 LOADED.** Eigen stalls; driven cannot fit a linewidth
+because the loaded dip is only 4.13 dB deep on a sloping baseline; and with the
+ring SHORTED there is no port to drive at all. The remaining route is ENERGY
+BALANCE from a driven solve: Q0 = omega * W_stored / P_dissipated, both of which
+Palace can report per domain (`Domains.Postprocessing.Energy` is already wired
+in h3_driven). That needs no linewidth and no port model.
+
+### 🔑 Q_L BY ENERGY BALANCE — and TE011 IS EXTINGUISHED AT THE ANCHOR DENSITY (2026-09-01)
+
+Computed from artefacts ALREADY on the volume — no new solve. Steady state on
+resonance: the port delivers exactly what the materials dissipate, so
+
+    Q_L = omega * W_stored / P_delivered      W = E_elec + E_mag (domain-E.csv)
+                                              P = 0.5*Re{V I*}  (port-V/I.csv)
+
+⚠️ This is Q_L, NOT Q0 — it includes the port. I mislabelled it first time.
+
+✅ **COLD, and it closes the coupling question without any |S11| branch:**
+
+    Q_L (driven, energy balance, port LIVE)   = 10,602   @ 2.450450
+    Q0  (eigen, ring SHORTED, same mesh)      = 43,875   @ 2.450751
+    ->  beta = Q0/Q_L - 1 = 3.14        Q_ext = Q0/beta = 13,977
+
+🔑 beta from TWO INDEPENDENT SOLVES, not from a dip depth — so the branch
+ambiguity that has dogged every driven number simply does not arise.
+⚠️ The two use different port BCs (shorted vs 50 ohm) and their f0 differs by
+300 kHz, so this beta is good to ~10%, not better.
+🔴 Note the dip-depth method gave 0.734 or 1.362 for the same case. NEITHER is
+3.14. **Dip depth is unreliable here; energy balance is not.**
+
+🔴🔴 **LOADED AT ne = 7.9e18: TE011 IS GONE.** Every local maximum of stored
+energy across 2.30-2.65 GHz:
+
+    f=2.45760  W=2.620e-10 J  (0.149% of peak)  |S11| -4.13 dB   <- TE011
+    f=2.60500  W=1.075e-07 J  ( 61%)            |S11| -21.67 dB
+    f=2.60600  W=1.761e-07 J  (100%)            |S11| -3.01 dB
+
+TE011's stored energy is **3,250x below its cold value** and its Q_L is **~3.6**.
+|S11| sits near -4 dB across the WHOLE band: ~60% of the drive is absorbed at
+every frequency. That is broadband absorption, not a resonance. The rig's
+"-4.13 dB dip" is the top of a featureless hump.
+
+🔑 **WHY, AND IT IS NOT A SOLVER ARTEFACT:**
+
+🔴 **CORRECTED 2026-09-01 — I QUOTED THE WRONG THRESHOLD.** First written as
+"106x over-dense" using the COLLISIONLESS critical density. That is a formula
+outside its domain (cf. the Q_ext = 165 error). With nu = 6.5*omega this plasma
+is COLLISION-DOMINATED and nu^2 beats omega^2 by 42x, so eps = 1 -
+wp^2/(omega^2 + nu^2) stays near 1 far above n_c:
+
+    collisionless n_c (wp = omega)   = 7.446e16 m^-3   <- NOT the threshold here
+    COLLISIONAL threshold (eps = 0)  = 3.217e18 m^-3   <- the real one
+    the programme's anchor           = 7.900e18 m^-3   = 2.5x over, NOT 106x
+
+✅ The anchor IS over-dense — eps = -1.456 is negative and the mode really is
+extinguished. Only the FACTOR was wrong, and it matters because it moves the
+interesting density range by two orders.
+
+    eps across density:  1e16 +0.997   3e17 +0.907   3e18 +0.067
+                         7.4e16 +0.977  1e18 +0.689   7.9e18 -1.456
+
+At 2.5x the collisional threshold the plasma is a lossy MIRROR: the field
+reaches ~1.9 mm into 6.5 mm of plasma, the bore is excluded, and TE011 — whose
+E_phi lives in the bore — cannot exist.
+
+➡️ **CONSEQUENCE: "Q0 loaded for TE011" is ill-posed at this density.** There is
+no mode to have a Q. The design question is not "how do I couple to a loaded
+TE011" but "at what density does TE011 still exist", which is exactly what
+`h3_loaded` was built to map: *"what plasma does TE011 sustain? A 2-D map, not
+a point."*
+
+➡️ **NEXT: sweep ne through 1e18-1e19**, where eps actually crosses zero.
+⚠️ NOT 1e16-1e17 — that was the mis-derived range, and the sweep launched on
+2026-09-01 (`h3-azimne-01`, stamp 4b8c220c) is mis-centred because of it: four
+of its nine points sit below 1.5e17 where eps > 0.95 and nothing happens, and
+those are the EXPENSIVE ones because driven cost scales with Q. It still
+brackets the transition with 1e18 / 3e18 / 7.9e18.
+Energy balance works on driven artefacts, needs no linewidth, no port branch
+and no eigen convergence, so it runs where both other methods failed.
+
+
+## 📋 PLAN FOR THE NEXT SESSION (written 2026-09-01, no instance up)
+
+The 2026-09-01 spot died ~04:00 local, mid-sweep. `h3-azimne-01` never reached
+its end-of-run fetch, so ITS RESULTS ARE ON THE EBS VOLUME AND NOT LOCAL.
+
+### 1. RECOVER FIRST — before launching anything (~10 min)
+
+    ops/env.sh -> new address
+    NOSYNC=1 ops/go ops/mount.sh
+    ops/go ops/fetch.sh
+    cd /opt/amip/repo/experiments/resonance && python3 /tmp/parse.py ...   # or:
+    grep -aE "^  --- ne|selected .* GHz" h3-azimne-01.log
+
+Cold + ne = 1e16 / 3e16 / 7.4e16 had completed before it died; more may have.
+**Extract Q_L for each completed density** with
+`ops/oneoff/qL_energy_balance.py <postpro_dir> <f0_ghz>`. The number to watch
+is stored energy as a FRACTION OF THE BAND PEAK: at 7.9e18 TE011 was 0.149%
+(gone); a surviving mode should be tens of percent.
+
+### 2. THEN the re-centred sweep — this is the real measurement
+
+eps crosses zero at 3.22e18, so the transition is 1e18-1e19, NOT 1e16-1e17:
+
+    ne=1.00e+18  eps=+0.6891
+    ne=1.80e+18  eps=+0.4404
+    ne=2.50e+18  eps=+0.2228
+    ne=3.20e+18  eps=+0.0051
+    ne=4.00e+18  eps=-0.2436
+    ne=5.50e+18  eps=-0.7099
+    ne=7.90e+18  eps=-1.4561
+    ne=1.20e+19  eps=-2.7307
+
+Eight points, all in the interesting band, and all CHEAPER than the ones the
+mis-centred sweep spent its time on (driven cost scales with Q; these have low
+Q). Reuse `baseline-h3-azimne-01.json` — change only `ne_grid`, and amend
+provenance so the stamp moves.
+⚠️ Cold (ne=0) MUST stay first and is mandatory: it is the continuation seed
+and the rig hard-exits without it. It is also the expensive point, so a
+reclamation during it loses the run.
+
+### 3. WHAT THE ANSWER LOOKS LIKE
+
+The density where TE011's stored-energy fraction collapses IS the design
+constraint — it says what plasma this cavity can actually run. That is
+`h3_loaded`'s original question ("what plasma does TE011 sustain? A 2-D map,
+not a point"), and the 7.9e18 anchor silently assumed it away.
+
+### 🔧 WORTH DOING, NOT BLOCKING — feed through a hole
+
+The model drives a mid-arc gap with both legs grounded (inherited from the
+radial loop). The buildable version is a HOLE in the wall: coax outer grounds
+there, inner becomes one leg, far leg grounds. Same circuit class — a series-fed
+loop returning through the wall — with the source moved ~26 deg around a
+lambda/6.8 loop. ⚠️ I first called this a blocker upstream of all coupling work;
+that was wrong. It is a modest perturbation, worth measuring by building both
+and comparing Q_ext, and it usefully puts the port reference plane at the wall
+where VSWR is actually measured.
+
+### ✅ INSTRUMENT STATUS, so nobody re-derives it
+
+    eigen  + plasma        🔴 STALLS (PCG stagnation, nconv=0) even at eps_torch=1
+    driven + 3 dB width    🔴 loaded dip 4.13 dB on a sloping baseline: unfittable
+    driven + dip depth     🔴 gave beta 0.734/1.362 where the truth was 3.14
+    driven + ENERGY BALANCE ✅ WORKS — Q_L = omega*W/P from artefacts it already writes
+    eigen  port_bc=pec     ✅ WORKS for Q0 (loop shorted = closed ring), COLD only
+
+### ✅✅ THE DENSITY SWEEP — TE011 HAS AN OPERATING POINT, AT ~3e16 NOT 7.9e18 (2026-09-01)
+
+`h3-azimne-01` stamp `4b8c220c` completed ALL 9 densities before the 04:00 spot
+death (it exited 1 on the V1/report step, but every postpro dir is on the
+volume). Azimuthal wire loop, standoff 2.0 / arc 12.24, vacuum torch.
+Q_L by ENERGY BALANCE — `ops/oneoff/qL_energy_balance.py`.
+
+     n_e (m^-3)   eps      f0 (GHz)   W/W_peak     Q_L     |S11|
+      0.00e+00  +1.000   2.450450   100.00%    10602   -4.29
+      1.00e+16  +0.997   2.450400   100.00%     9678   -8.71
+      3.00e+16  +0.991   2.450400   100.00%     6182   -8.47
+      7.40e+16  +0.977   2.450400   100.00%     2964   -7.47
+      1.50e+17  +0.953   2.450600    49.33%     1107   -4.65
+      3.00e+17  +0.907   2.450600    18.62%      441   -4.88
+      1.00e+18  +0.689   2.450800     2.41%       57   -4.41
+      3.00e+18  +0.067   2.452200     0.39%        9   -4.17
+      7.90e+18  -1.456   2.457600     0.15%        4   -4.13
+
+🔴 **THE MECHANISM IS ABSORPTION, NOT CUTOFF — my "over-dense mirror" was
+wrong.** Q_L is already down 3.6x at 7.4e16 and down to 57 at 1e18, where
+eps = +0.689 and the plasma is comfortably UNDER-dense. sigma rises linearly
+with n_e (0.0028 -> 2.175 S/m) and that is what kills the mode. Cutoff
+(eps < 0) only arrives at 7.9e18, long after TE011 has gone.
+
+🔑 **THE DESIGN NUMBER** — using the cold Q_ext = 13,977 as load-independent
+(Q0 = 43,875 from eigen with the ring SHORTED, Q_L = 10,602 from driven energy
+balance, same mesh):
+
+     n_e       Q0_loaded  beta    P_in->cav  eta_plasma  OVERALL to plasma
+     1.0e16      31465  2.2512      85.2%      28.3%       24.1%
+     3.0e16      11085  0.7931      98.7%      74.8%       73.8%  <- OPTIMUM
+     7.4e16       3762  0.2691      66.8%      91.4%       61.1%
+     1.5e17       1202  0.0860      29.2%      97.3%       28.4%
+     3.0e17        455  0.0326      12.2%      99.0%       12.1%
+     7.9e18          4  0.0003       0.1%     100.0%        0.1%  <- THE ANCHOR
+
+✅ **At n_e ~ 3e16 this loop puts 73.8% of INCIDENT power into the plasma at
+VSWR 1.3.** At the programme's assumed anchor it puts in 0.1% — a factor of 700.
+
+🔑 It is a genuine OPTIMUM, not a monotone: below it the plasma absorbs too
+little of what enters (eta 28% at 1e16); above it the cavity reflects nearly
+everything (12% enters at 3e17) because Q0 has collapsed far below Q_ext. The
+peak sits where beta passes through 1.
+
+⚠️ **THREE CAVEATS, none small:**
+  1. Q_ext assumed LOAD-INDEPENDENT (geometric). The whole beta column rests on it.
+  2. The plasma is a STATIC UNIFORM Drude annulus at r = 2-8.5 mm. This says
+     what the CAVITY wants, not what a real discharge will do — that is
+     `h3_loaded`'s map.
+  3. The optimum is a property of THIS loop's Q_ext = 13,977. A stronger
+     coupler moves it to higher density: matching at 3e17 needs Q_ext ~ 455,
+     about 30x stronger than anything the azimuthal family has reached (the
+     corrected sweep spanned Q_ext ~ 11,000-39,000).
+
+➡️ **THE FORK.** Either operate near 3e16 with the coupler we have, or build a
+~30x stronger coupler to reach 3e17. beta ∝ L^3.88 says that is L ~ 30 mm at
+h = 2 — a 2.4x extrapolation beyond the validated 10.2-14.2 mm band, and larger
+loops perturb the mode more. **Which fork depends on what density the plasma
+must run at, which is a PLASMA question, not a cavity one.**
+
+
+### 🔧 COAX FEED THROUGH A HOLE — BUILT AND VERIFIED IN GEOMETRY, NOT YET SOLVED (2026-09-02)
+
+*User: "Why can't the coupler simply enter through a hole?"* — implemented.
+`--loop-hole r_mm,stub_mm`. Default None reproduces every earlier run byte for
+byte (control checked: loop area 121.8 mm^2, unchanged).
+
+✅ **VERIFIED AGAINST THE MESH, not the sidecar:**
+
+    physical groups: (2,90) wall  (2,91) PORT  (2,92) loop
+    attr 91 : 210 nodes  r 96.0045..96.0321  z -2.2993..+2.2975
+    port_face_mm (outer,inner dia) = [4.6, 2.0]   tets 75,724
+
+The annulus sits at the stub mouth (r = a + 8 = 96.004 mm), outer 4.6 mm /
+inner 2.0 mm dia — the coax cross-section. The feed leg runs through to
+r = 96.01 (attr 92), and the stub's outer surface is at r = 96.03 (attr 90).
+
+🔑 **TWO NUMBERS THE PHYSICS CHOSE, NOT A CATALOGUE:**
+  - **hole radius 2.3 mm**, because Z0 = 59.96*ln(2.3/1.0) = **49.9 ohm** against
+    a 1 mm inner conductor in air. That is the whole "what connector" question.
+  - **the leg MUST pass through.** An empty 2.3 mm hole has a TE11 cutoff of
+    29.3 GHz — ~5 e-foldings of decay over an 8 mm stub, i.e. a dead end. With
+    the inner conductor it is a COAX, and TEM has no cutoff.
+
+✅ **THE HOLE IS ELECTRICALLY BENIGN.** Eigen with the face shorted:
+TE011 Q0 = 43,900 at 2.439396 vs ~43,800 without a hole — 0.2%. And MFEM loaded
+it, so the per-sector fuse is manifold (the chimney/feed hazard, 7bn).
+
+🔴 **A LUMPED PORT CANNOT DESCRIBE IT — from Palace's source, not a guess.**
+`configfile.cpp ParseStringAsDirection`: a string Direction "r" maps to
+CYLINDRICAL, but about the GLOBAL z axis. This coax enters through the BARREL,
+so its inner->outer field lies in the theta-z plane. Also
+`ParseElementData`: "Cannot specify CoordinateSystem with string Direction" —
+CoordinateSystem is only legal beside an ARRAY Direction.
+✅ Palace supports **WavePort** (mode_idx, d_offset, excitation, attributes),
+which solves the port's own modal field and needs no direction.
+⚠️ DRIVEN ONLY — wave ports are frequency-dependent. Q0 keeps coming from eigen
+with the face shorted (port_bc="pec"), which needs no port model at all.
+`solveconf.driven()` now emits a WavePort when the sidecar carries
+`loop_hole_mm`, and a LumpedPort otherwise.
+
+🔴 **NOT YET DONE: the end-to-end driven solve.** The spot died mid-test and it
+lived in /tmp, so nothing of it survives. **Next session: rebuild the coax mesh
+and run one driven sweep** — the open question is simply whether Palace accepts
+a WavePort on this annulus, and what Q_L it gives with the reference plane AT
+THE WALL, against the mid-arc-fed Q_ext = 13,977.
+
+### 🔴 A BUG CLASS THAT BIT THREE TIMES THIS SESSION — metadata asserting what the artefact lacks
+
+  1. `surface_attributes` was the literal `["wall","port","loop"]` regardless of
+     what was built, so the first coax mesh — which really had only groups 90
+     and 92 — still advertised a port. `volume_attrs()` TRUSTS that list to
+     tell surfaces from volumes, so a config could reference attribute 91 into
+     thin air. ✅ Now derived from whether a port face exists.
+  2. `loop_azim`'s first element silently changed meaning (centreline ->
+     standoff) while configs kept the old value.
+  3. `eigen_cfg` gave the plasma eps = 1.0 because the Drude values live in the
+     RIG, not the mesh — so a "loaded" solve was a COLD solve, identical to 6
+     figures.
+
+🔑 **All three were caught only because something downstream happened to look
+wrong.** Verify metadata against the ARTEFACT (`ops/oneoff/mesh_attr_extents.py`
+reads the mesh's real physical groups), never against what the writer intended.
+
+
+### 🔧 COAX WAVE PORT — FIVE FAULTS FIXED, THE SOLVE STILL UNTESTED (2026-09-02)
+
+The geometry is right and every guard passes; what has never run is Palace
+accepting the wave port. Two spots died mid-test, both times with the run in
+/tmp. **One driven sweep is all that is outstanding.**
+
+✅ **VERIFIED:** `COAX MOUTH: exterior face 288, 13.48 mm^2 (annulus wants
+13.48)` — the mouth is found by area to 4 significant figures.
+
+**The five faults, in the order they surfaced** (each hid the next):
+
+  1. **Silent rsync.** The sync carrying the WavePort code ran while the spot
+     was being reclaimed; output went to /dev/null so it "succeeded". The next
+     box came up with the OLD code and the mesh cache served OLD meshes. The
+     symptom — a sidecar field reading None for an unconditional parameter —
+     looked exactly like a code bug in code that was already correct.
+     ➡️ CONVENTIONS: never `rsync.sh >/dev/null`; assert on the far side.
+  2. **`driven()` returns a tuple**, not a dict — my test harness assumed dict.
+  3. **Inserted the port face.** A LUMPED port is an INTERIOR face you insert;
+     a WAVE port is an EXTERIOR boundary you IDENTIFY. Inserting a coincident
+     annulus was wrong — though this was NOT the cause of the Palace error, and
+     I rebuilt it on that wrong theory because I had truncated the message.
+     ➡️ CONVENTIONS: read the whole error before grepping it.
+  4. **The mouth was in BOTH `wall` and `port`.** Every exterior face lands in
+     `wall` unless excluded, so tagging it `port` too put two boundary elements
+     on one face: *"A non-periodic face (288) cannot have multiple boundary
+     elements! Attributes: 91 90"* — the message named the face AND both
+     attributes, i.e. the entire diagnosis, in the clause I had cut off.
+  5. **The area partition check.** wall+loop no longer covered the exterior,
+     because a coax port is a THIRD exterior class. ✅ This guard fired
+     immediately and exactly — the discrepancy was 13.477 mm^2, the mouth. It
+     now counts an exterior port.
+
+🔑 **THE ASYMMETRY WORTH KEEPING:** the three GEOMETRY guards (loop area,
+standoff/centreline, area partition) each caught their fault precisely and at
+once. The METADATA that asserted what the artefact contained caught nothing and
+caused three separate wrong turns. Guard on measurements of the artefact, not
+on declarations about it.
+
+➡️ **NEXT SESSION, first thing:** rebuild the coax mesh and run one driven
+sweep. `/tmp/wpt2.sh` is the recipe (kept as ops/oneoff/). The open question is
+only whether Palace accepts a WavePort on this annulus, and what Q_L it gives
+with the reference plane AT THE WALL, against the mid-arc-fed Q_ext = 13,977.

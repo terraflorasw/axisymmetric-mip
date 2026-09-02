@@ -64,11 +64,29 @@ def driven(mesh, tag, band, step=2e-5, order=1, materials=None,
     c["Solver"]["Driven"]["Samples"] = [{"Type": "Linear", "MinFreq": band[0],
                                          "MaxFreq": band[1], "FreqStep": step}]
 
-    if meta["port_direction"] is None:
-        raise ValueError(f"{meta['mesh']} has no coupling loop — a driven solve "
-                         "needs one")
-    c["Boundaries"]["LumpedPort"][0]["Direction"] = meta["port_direction"]
-    c["Boundaries"]["LumpedPort"][0]["Attributes"] = [attrs["port"]]
+    # 🔑 A COAX FEED NEEDS A WAVE PORT, NOT A LUMPED ONE. When the loop enters
+    # through a hole in the BARREL, the port face is an annulus whose
+    # inner->outer field lies in the theta-z plane. Palace's cylindrical
+    # coordinate system is about the GLOBAL z axis (configfile.cpp,
+    # ParseStringAsDirection: 'r' -> CYLINDRICAL), so no lumped Direction can
+    # describe it. A WavePort solves the port's own modal field and needs no
+    # direction — which is also why it is DRIVEN-only (wave ports are
+    # frequency-dependent). Q0 still comes from eigen with this face shorted.
+    _coax = (meta.get("geometry_mm") or {}).get("loop_hole_mm")
+    if _coax:
+        c["Boundaries"].pop("LumpedPort", None)
+        c["Boundaries"]["WavePort"] = [
+            {"Index": 1, "Attributes": [attrs["port"]], "Mode": 1,
+             "Offset": 0.0, "Excitation": True}]
+        print(f"    🔑 {tag}: COAX WAVE PORT on attribute {attrs['port']} "
+              f"(annulus {_coax[0]*2:.2f}/{_coax[1]*2:.2f} mm dia). The "
+              f"reference plane is AT THE WALL.", flush=True)
+    else:
+        if meta["port_direction"] is None:
+            raise ValueError(f"{meta['mesh']} has no coupling loop — a driven "
+                             "solve needs one")
+        c["Boundaries"]["LumpedPort"][0]["Direction"] = meta["port_direction"]
+        c["Boundaries"]["LumpedPort"][0]["Attributes"] = [attrs["port"]]
     c["Boundaries"]["Conductivity"][0]["Attributes"] = [attrs["wall"]]
     # R110: BIND THE WALL METAL FROM baselines.json, not from the template.
     # R58 adopted bare electropolished aluminium (3.5e7) on optical grounds and

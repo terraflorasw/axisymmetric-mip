@@ -1,0 +1,141 @@
+  ⚠️ eta SUPPRESSED: reference 43,523 is for a 11x8 CAP loop; this run meshes 11x8 azim. beta and Q_L are still valid — they come from the dip, not from Q_REF.
+H3/H6 (driven) — sustainment across the density gap eigen cannot enter.
+
+🔴 WHY THIS RIG EXISTS. Two open questions need the same thing:
+
+  H6  what is the minimum ne that still sustains? eta falls 0.947 (ne=1e20) ->
+      0.185 (1e18), and ne=1e19 has NO DATA — it failed in h3_loaded (mesh
+      ScaledJac) and in h3_eigenprobe (PCG stagnation, 92 non-convergences).
+      Mass loading from a real high-TDS sample pushes ne DOWN, into exactly
+      that gap. This gates H5.
+  sapphire  its loaded point does not converge in eigen either (eps +11.6
+      beside the plasma's -30.09).
+
+🔑 DRIVEN COST SCALES WITH Q, so it is cheapest exactly where eigen fails. The
+step must resolve the linewidth = f0/Q, so samples ~ Q. Calibrated on
+e0k2_c11x8_drv (16,000 samples / 1,542 s = 96 ms/sample):
+
+    empty cavity   Q=44,384  ->  ~24,000 samples  ~2,300 s
+    loaded plasma  Q=156     ->  ~126 samples     ~12 s
+
+⚠️ BUT THE GAP IS NOT THE LOADED REGIME. If eta at ne=1e19 is ~0.5 then
+Q ~ 22,000 and a +-40 MHz sweep is ~18,000 samples (~29 min) — per point. The
+cost is set by Q, which is THE UNKNOWN. So:
+
+## Two stages, and the second is sized by the first
+
+  COARSE  +-40 MHz, step 636 kHz (~126 samples, ~12 s). Finds WHERE the dip is.
+          Too coarse to fit Q; it is not asked to.
+  FINE    +-5 MHz about the located dip, step from the coarse dip's own width.
+          8x cheaper than a wide fine sweep because the band, not the step,
+          is what a located dip lets you shrink.
+
+🔴 EIGEN IS NOT AN OPTION HERE (CONVENTIONS §7c: one rig, one solver — this is
+the DRIVEN driver; h3_eigen and h3_superpose are the eigen ones). Driven has no
+NLEPS and no divergence-free projection, which is the specific machinery that
+stagnates at these permittivities.
+
+## The mode-identity hazard, and how it is handled
+
+🔴 A CAP LOOP CHANGES WHICH MODE IT READS. Small loops couple to a TM111
+polarisation and only reach TE011 above ~176 mm^2; the dip looks the same either
+way, so a driven sweep ALONE cannot tell you. This rig therefore:
+  - uses the 11x8 cap loop (176 mm^2, the measured TE011 branch), and
+  - VALIDATES against eigen at the two densities where eigen converges, before
+    trusting driven where it does not.
+⚠️ The band also protects: TM111 sits 332.7 MHz away, far outside +-40 MHz.
+
+VERIFICATION
+  🔴 V1 and V2 ARE SUSPENDED (2026-08-24). BOTH ANCHORS WERE GROOVE-FREE.
+      V1 was: reproduce h3_superpose's eigen f0=2.481566 / Q=163.
+      V2 was: reproduce h3_loaded's eigen eta=0.185 at ne=1e18.
+      h3_superpose and h3_loaded are discarded (KNOWN.md § THE FILTER), and
+      0.185 was ALSO the wrong geometry — a 2 mm solid column, not this
+      2.0-8.5 mm annulus, 17x the plasma.
+      🔑 Both would have PASSED against void numbers and printed green ticks.
+      ✅ TO RESTORE: loaded eigen at ne=1e20 and ne=1e18 on GEO_DESIGN.
+      ⚠️ UNTIL THEN THIS RIG IS UNVALIDATED AGAINST EIGEN. It reports its
+      numbers and says they are un-cross-checked. That is the honest state.
+      🔴 DO NOT re-point these at a convenient number to get a tick back.
+  V3  every case reports its coarse dip AND its fine fit; a fine band that does
+      not contain the coarse dip is a REFUSAL, not a silent re-centre.
+  V4  the continuation seed and Q_REF must come from ONE cavity: cold TE011
+      **2.451500 GHz / Q0 43,523**, groove 5x10 + loop 11x8 (`h3_step3`,
+      port terminated). ⚠️ This line once read "2.440003 / 12,368 (h3_ladder)" —
+      wrong numbers AND wrong provenance; both are retracted (§7v, §7s).
+      `check_eta_reference()` enforces the geometry half at startup.
+FALSIFICATION
+  🔴 F1  if eta at ne=1e19 is below 0.5, the sustaining margin is one decade or
+         less and mass loading is a hard constraint on the nebuliser. Report it.
+  🔴 F2  if driven ALSO fails to converge at eps ~ 0, the limitation is the
+         OPERATOR and not the eigen formulation — no solver in this toolchain
+         answers H6. Say so; do not reach for a third solver.
+  🔴 F3  if the coupling branch is AMBIGUOUS the fit refuses rather than
+         guessing beta; Q_L still stands and is reported alone.
+
+==============================================================================
+  cavity a=88.0045 L=115.4158  Q_ref(groove 5x10 + loop 11x8)=43,523
+    eta reference: h3_step3 eigen, port_bc=pec (direct Q0, no port loss); cross-checked by h3_loopq at 43,422 on the cold-style mesh
+  SWEEP AXIS: density, annulus 2.0-8.5 mm
+  plasma r=2.0-8.5 mm  z=+-0.4L   cap loop 11.0x8.0 mm (TE011 branch)
+  ONE wide sweep 2.3-2.65 GHz @ 200 kHz (1,750 samples per case)
+  selection: CONTINUATION from the unloaded TE011, seeded at 2.451500 GHz (MEASURED cold TE011, not the analytic 2.4500); NOT the global minimum
+  guards: dip >0.05 dB, >2.0 MHz from a band edge, continuation step <25 MHz, 3 dB walk stops at the turning point between features
+
+  coupling forecast (beta = Q0/Q_ext, Q_ext ~ 9,231 from e0k2's 11x8 loop):
+         eta       Q0     beta   |S11|min
+      0.2000   34,818   3.7719     -4.72dB
+      0.5000   21,762   2.3574     -7.87dB
+      0.9000    4,352   0.4715     -8.89dB
+      0.9900      435   0.0471     -0.82dB
+      0.9990       44   0.0047     -0.08dB   🔴 too shallow to fit
+    ⚠️ the ne=1e20 end is where driven is WEAKEST and eigen already works; the gap is where driven is strongest.
+
+  --- COLD (ne=0, plasma region = vacuum) — THE ANCHOR CASE
+      must reproduce eigen: f0=2.451500 GHz, Q0=43,523
+      LOCATOR sweep 2.400-2.520 GHz @ 25 kHz (4,800 samples)
+      brackets grooved-no-loop 2.450561 (ANCHORED) and both h3_cold candidates 2.440003 / 2.494440
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    loop: 5.8e+07 S/m on attribute 92 (wall is 3.5e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=+1.000, sigma=0 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 704s
+    1 local minima: 2.4503@-16.29dB
+    🔑 deepest cold dip: 2.450325 GHz @ -16.29 dB
+       vs h3_cold eigen 2.451500 -> -1.175 MHz
+       vs ladder grooved-no-loop 2.450561 -> -0.236 MHz  (the loop's pull)
+    selected 2.450315 GHz (-0.01 MHz from expected 2.4503) — by CONTINUATION, not depth
+    ⚠️ only 12 samples across the 3 dB width — width is under-resolved, Q_L is indicative only
+    🔑 ETA REFERENCE: Q0=43,523 (eigen, port shorted — direct)
+       driven-derived here: 70,353  (62% apart)  — CROSS-CHECK; ill-conditioned when overcoupled
+       branch here: OVERCOUPLED  beta=7.621  (error amplification 8.6x)
+    f0=2.450325 GHz  lw=0.30 MHz  Q_L=8,160  beta=0.7342  Q0=70,353  eta=— (reference case)
+  --- ne=7.9e+18  eps=-1.456  sigma=2.175 S/m
+    wall: 3.5e+07 S/m from baselines (template said 6.3e+07)
+    loop: 5.8e+07 S/m on attribute 92 (wall is 3.5e+07)
+    torch: eps=1.0 tand=3.5e-05 (from mesh sidecar)
+    ⚠️ template materials not in this mesh (benign): ['brake (attribute 8 absent — --brake 0)']
+    plasma: attr 12, eps=-1.456, sigma=2.175 S/m (verified in the solved config)
+    torch: eps=1.0 (bound from mesh sidecar)
+    groove: 5 x 10 mm (in mesh)
+    solved in 574s
+    2 local minima: 2.4558@-4.13dB  2.6048@-22.10dB
+    selected 2.455755 GHz (+5.43 MHz from expected 2.4503) — by CONTINUATION, not depth
+    🔴 wide: 3 dB width not measurable (low: reached the band edge; high: turned at 2.4652 GHz before reaching 3 dB)
+
+==============================================================================
+         ne      eps     f0 GHz   lw MHz     Q_L    beta     Q0      eta
+    0.0e+00    1.000     2.4503     0.30    8160  0.7342  70353        —  1-sided(high)
+Traceback (most recent call last):
+  File "/opt/amip/repo/experiments/resonance/h3_driven.py", line 1294, in <module>
+    main()
+  File "/opt/amip/repo/experiments/resonance/h3_driven.py", line 933, in main
+    _report(out)
+  File "/opt/amip/repo/experiments/resonance/h3_driven.py", line 1006, in _report
+    f"{f['linewidth_mhz']:>9.2f}{f['Q_L']:>8.0f}{f['beta']:>8.4f}"
+       ~^^^^^^^^^^^^^^^^^
+KeyError: 'linewidth_mhz'
+EXIT=1
