@@ -57,6 +57,35 @@ build:** what does this architecture BUY over an iris or an inductive coupler?
 there is a claim here (efficiency, tuning range, cost, robustness to sample
 loading), a tolerance study should be scoped to protect it.
 
+### 🔑 RECOVERED 2026-09-07 — the ignition and flow session that was killed mid-reply
+
+An API safeguard false positive (`[bio]`) killed the session at 02:44 with
+nothing written. **It is now landed, and nothing needs re-deriving to read it:**
+
+- `../ignition-options/STARTER-FLUID.md` — option 4 evaluated. Potassium acetate
+  through the existing nebuliser deposits its own susceptor (amorphous carbon,
+  volumetric absorber at 2.45 GHz) and its own seed. Drops the ignition bar
+  ~2,100 K. 🔴 Cold-start bootstrap unevidenced in OUR torch; the settling
+  experiment is a domestic microwave, not a solve.
+- `../torch-geometry/README.md` § THE FLOW SPLIT — **~12 slm in three streams at
+  1 kW**, superseding the flat 20. Two derived claims WITHDRAWN there.
+
+**The one EM item it generated, and it is cheap:** give the driven rig
+**amorphous carbon's** (ε, σ) as the bore inclusion instead of a plasma's, and
+read the watts landing in the deposit per bore diameter. Same rig, vacuum-class
+cost. ⚠️ Answers absorption only, not temperature rise.
+
+⚠️ **And a second EM route nobody has costed:** the grape paper measures **19×
+field enhancement from a 0.5 mm dielectric gap.** Our bore is 150× short in field
+at 1 kW. A deliberate dielectric feature in the torch is an ignition route that
+is pure EM and therefore measurable here.
+
+🔴 **Corrections that must not be re-imported:** VSWR 102 is superseded (it is a
+point on a parametric σ sweep, not a state the machine occupies — the plain
+barrel loop's band is VSWR 1.3–3.1 across σ 0.008–0.04, a window the gas passes
+THROUGH). The "operating point is an outcome / ~4,530 K" balance is VOID — it
+used LTE Saha where the record says n_e is kinetics-limited.
+
 ### ⏸️ PARKED — THE AZIMUTHAL RESONANT PEAK (opened 2026-09-07)
 
 **Do not chase this.** It is a narrow, well-posed bug on an *alternative* coupler,

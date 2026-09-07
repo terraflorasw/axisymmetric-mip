@@ -47,7 +47,7 @@ matters depends entirely on whether ignition needs the cavity at all.
 | 1 | **Cavity-only** — drive cold and let the field break the gas down | needs the cold match to be decent, i.e. the minimax loop. **The E-field required for N₂ breakdown at 1 atm has not been computed** and may be unreachable at any VSWR |
 | 2 | **Mechanical striker** — a retractable electrode | `geometry.py` already has `--striker h,r_tip,r_ring`, so the EM effect IS modellable. Moving parts near the torch |
 | 3 | **Tesla coil / HV spark**, external | standard on ICP; adds an HV supply and its EMI |
-| 4 | **Seed gas / easier-ionised species** at start | changes the plasma chemistry `../spectroscopy/` cares about |
+| **4** | 🔑 **STARTER FLUID — a consumable liquid seed through the existing nebuliser** | ✅ **EVALUATED 2026-09-07 — see `STARTER-FLUID.md`.** No longer one unevaluated row: potassium acetate at ~0.1–0.5 M, decomposing to K₂CO₃ + amorphous carbon, supplies BOTH the susceptor and the seed, then is flushed. **Drops the ignition bar ~2,100 K** and needs no ignition hardware at all. 🔴 The cold-start bootstrap is still unevidenced in OUR torch |
 | 5 | **Reduced pressure at start** | Paschen minimum is far easier; needs a pump and a pressure ramp |
 | 6 | **Tuner-assisted** — re-match cold, then track to loaded | ⚠️ **this is the 400× swing `../control-loop/` already calls its hardest problem**, not a free option |
 | **7** | 🔑 **TWO LOOPS** — one sized for cold, one for loaded | **STATED by the user 2026-08-25.** Breaks the constraint instead of trading against it. See below — the most promising option listed, and the only one that gives coupling.beta = 1 in **both** states |

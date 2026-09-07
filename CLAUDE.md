@@ -37,9 +37,12 @@ and **must never enter version control**. So:
                                       GENERATOR collide. Opened 2026-08-25.
                                       🔑 gas flow is a PRODUCT constraint:
                                       10-12 L/min = quiet bench compressor,
-                                      20+ = utility room. The programme
-                                      assumes 20. ⏸️ No modelling: the
-                                      standing decision is standard Fassel
+                                      20+ = utility room. ⚠️ THE FLAT "20"
+                                      IS STALE — user 2026-09-07 targets ~12
+                                      slm in THREE streams (10 shell / 1
+                                      intermediate / 1 injector) at 1 kW. See
+                                      torch-geometry § THE FLOW SPLIT. ⏸️ No
+                                      modelling: standing decision is Fassel
       soil-testing/  amip/         <- sibling programmes, not this repo
 
 ⚠️ **`experiments/waveguide/` and `experiments/ignition/` were REMOVED**

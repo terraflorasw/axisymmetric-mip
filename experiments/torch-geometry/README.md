@@ -113,3 +113,117 @@ Inherits `../resonance/CONVENTIONS.md`. The ones that bite here:
 - **§11** — two points cannot establish a scaling law. The bore extrapolation
   uses a **measured** local exponent (n = 0.884) from three points, and the
   benchtop bore sits **between** measured points rather than beyond them.
+
+---
+
+# 🔑 THE FLOW SPLIT AND THE 1 kW TARGET — STATED, user 2026-09-07
+
+🔴 **RECONSTRUCTED, NOT RE-VERIFIED.** Recovered from transcript
+`75028922-144d-4f1c-9680-d77f8f82457d`, 2026-09-07 02:37–02:45, after an API
+safeguard false positive killed the session before anything was written. The
+STATED lines are the user's verbatim; the DERIVED arithmetic has not been
+re-run.
+
+## STATED — the target, and it is three streams, not one
+
+> *"I would like to target a lower slm than 20. Preferably 10, because that can
+> be met by only a quiet compressor running on 120/15."*
+>
+> 🔑 *"Careful not to conflate flows. For the heat-dissipating shell around the
+> inside of the outer torch wall, we want about 10 slm. The intermediate is just
+> to push the plasma off the tip of the injector, so that it doesn't melt (1 slm,
+> say). Then the injector with aerosol, say another 1 slm."*
+>
+> *"And we're targeting 1 kW."*
+
+| stream | slm | job |
+|---|---:|---|
+| outer / coolant shell | **10.0** | cools the outer tube wall; a boundary layer that **stays cool** |
+| intermediate / auxiliary | **1.0** | pushes the plasma off the injector tip so it does not melt |
+| injector / nebuliser | **1.0** | carries the aerosol — **and the starter fluid** |
+| **total** | **~12** | |
+
+✅ **This supersedes the flat "20 slm" the programme has been assuming.** That
+number is now stale in at least three places: this repo's `CLAUDE.md`
+(*"The programme assumes 20"*), `../spectroscopy/README.md` (marked ASSUMED,
+inherited from MP-AES/MICAP practice), and the residence-time table above, whose
+20 slm row is the reference the other rows are held equal to. ⚠️ **The tables
+above have NOT been recomputed against 12 slm in three streams.**
+
+## 🔴 WITHDRAWN — "20 slm exceeds a 1 kW source"
+
+A sensible-heat calculation gave 2.43 kW at 20 slm and 1.21 kW at 10 slm, and was
+presented as a power *floor* — i.e. that the flow target was a feasibility
+requirement, not a compressor convenience. 🔴 **It heated ALL the gas to 5245 K.
+The coolant shell's entire job is to not be heated.**
+
+| stream | slm | kW *if* it reached 5245 K |
+|---|---:|---:|
+| outer / coolant shell | 10.0 | 1.21 |
+| intermediate | 1.0 | 0.12 |
+| injector | 1.0 | 0.12 |
+
+**The bracket is six-fold: 0.24 kW if only the core streams are heated, 1.46 kW
+if everything is.** The withdrawn figure sat at the top of that bracket while
+being called a floor. **What the shell absorbs leaves as a WALL HEAT LOAD, not
+as enthalpy in the discharge — a different term in the energy balance entirely.**
+
+✅ **What survives, and is sharper:**
+
+- **The coolant shell is a thermal problem, not a plasma-power problem.** Its
+  10 slm sets how much heat can be pulled off the quartz. That is the number to
+  size wall load against — same class as the coupler thermals in
+  `../resonance/KNOWN.md` § COUPLER DISSIPATION, and it needs the same tool
+  Palace does not have.
+- **The core streams are only ~2 slm**, so the plasma's own enthalpy demand is
+  modest and far more comfortable against 1 kW than the withdrawn figure implied.
+- 🔑 **It helps ignition.** Convective quenching of the starter fluid's carbon
+  deposit is set by the **injector's ~1 slm**, not the shell's 10. The deposit
+  sits in a much gentler environment than a flat flow assumption suggests. See
+  `../ignition-options/STARTER-FLUID.md`.
+- **It reopens bore diameter from the other end.** At 10 slm through a 17 mm
+  Fassel bore the cold velocity is 0.73 m/s — low. Holding ICP-like velocities
+  means shrinking the bore. 🔑 **Flow and diameter are one decision, not two.**
+
+## 🔴 ALSO WITHDRAWN — the "operating point is an outcome" power balance
+
+A zero-D balance against the measured coupling map put the discharge at
+**~4,530 K**, concluding the plasma could not reach the anchored 5,245 K at 1 kW
+and that the MICAP-anchored n_e was therefore not our operating point.
+
+🔴 **VOID.** It used **LTE Saha** for n_e, which forces σ to 3.5 S/m and kills
+the coupling by construction. `../resonance/Q_LEDGER.md` already says n_e is
+**kinetics-limited, not LTE** — the densities that actually matter are 4.8e16 to
+1.2e18, one to two orders below Saha equilibrium. It also quoted **VSWR 102** as
+"at the anchored density" from the middle of an append-only ledger, ~80 lines
+above the section that supersedes it:
+
+> *"The plain loop's useful band (sigma 0.008–0.04, VSWR 1.3–3.1) is therefore a
+> window the gas passes THROUGH, not a point it must be held at."*
+
+✅ **What actually stands for the 1 kW target:** the plain barrel loop's useful
+band is **VSWR 1.3–3.1 across σ 0.008–0.04**, inside the tuner budget, and the
+gas sweeps through it while heating. **No VSWR 102, no coupling collapse, no
+series gap needed.** User, 2026-09-07: *"You're reading old numbers. VSWR = 102
+is nonsense."*
+
+⚠️ **§7bp / read-forward:** `Q_LEDGER.md` is append-only. Quoting from its middle
+imports premises the record has already dropped. This happened twice on
+2026-09-07.
+
+## ⚠️ THE MODEL CANNOT ANSWER FLOW QUESTIONS — flagged, and it was reached for twice
+
+Our EM model has **a single homogeneous plasma annulus at r = 2.0–8.5 mm and no
+stream structure at all** — no shell, no intermediate, no injector as distinct
+regions. Every Q and coupling number in the record is for that annulus. That is
+fine for coupling, since the EM only sees ε and σ. 🔴 **But it means the model
+cannot represent the radial gradient three streams create**, and it must not be
+reached for to answer flow questions. On 2026-09-07 it was, twice.
+
+## What this adds to "What would move this"
+
+| | | blocked on |
+|---|---|---|
+| 6 | **Does a N₂ MIP sustain at ~12 slm in three streams?** Residence falls to ~4 ms; the plasma may sit back into the torch or fail to stabilise | gas dynamics and torch design — **outside anything this programme models, and the constraint most likely to push back** |
+| 7 | **Wall heat load on the quartz at 10 slm shell flow** | needs a thermal tool Palace does not have — same gap as coupler thermals |
+| 8 | **Does a commercial N₂ MICAP run 15–20 slm?** If so it is not running on 1 kW, and the programme should know whether it has been implicitly assuming flow or power | literature; `../spectroscopy/` |
