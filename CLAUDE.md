@@ -73,12 +73,12 @@ Consequences worth knowing:
    day: `hot` is a THERMAL regime not a plasma density; two different parts are
    called "mode filter"; a Q is meaningless without saying which cavity.
 3. **`experiments/resonance/PLAN.md`** — the FIXED experiment list, **E0–E4**.
-4. **`experiments/resonance/CONVENTIONS.md`** — 🔴 **CANONICAL. ~490 lines, ~50
+4. **`experiments/resonance/CONVENTIONS.md`** — 🔴 **CANONICAL. ~650 lines, 69
    rules, read it in full.** Anything in the repo that contradicts it is STALE.
    Split 2026-09-04: it had reached 3,454 lines, 90% incident narrative, and at
    that size stopped being consulted — so its rules were re-discovered and
    re-appended. The narratives are now `INCIDENTS.md` (evidence, not canon).
-   ⚠️ Citations to §7a–§7ca still resolve: the ids live in `INCIDENTS.md`, the
+   ⚠️ Citations to §7a–§7ct still resolve: the ids live in `INCIDENTS.md`, the
    RULES are in CONVENTIONS §7.1–§7.7.
 
 ⚠️ **`FINDINGS.md` is NOT in the working tree.** It was removed 2026-08-23

@@ -11,7 +11,7 @@
 | **`PLAN.md`** | 🔑 **the FIXED experiment list, E0–E4. "It does not grow."** Each with V and F declared before any driver. Has a *Parked* section for surprises that **do not spawn runs** | **authority on what experiments EXIST**; some status lines stale (E1 was deleted 2026-08-21) |
 | `NEXT.md` | the queue only, no measurements | current |
 | `CONVENTIONS.md` | 🔴 **CANON** — the rules. Non-adherence = stale | current |
-| `INCIDENTS.md` | the 79 narratives behind them. Evidence, NOT canon | current |
+| `INCIDENTS.md` | the 97 narratives behind them. Evidence, NOT canon | current |
 | `Q_LEDGER.md` | every Q with its state/cavity/loop/density qualifiers | current |
 | `VERIFY.md` | the re-verification plan and its phases | current |
 | `HYPOTHESES.md` | H0–H5, the working question set | current |
@@ -1835,7 +1835,7 @@ model, and it interrupts cap currents whether or not it seals. But it is a
 COMPLETENESS item, **not an alarm**, and it ranks below the torch material: ε =
 11.6 vs ε = 1 in the CAVITY is a ~15 MHz frequency effect that certainly matters.
 
-## 🔴 THE TORCH ITSELF## 🔴 THE TORCH ITSELF — five rigs mesh it as VACUUM, three omit it entirely
+## 🔴 THE TORCH ITSELF — five rigs mesh it as VACUUM, three omit it entirely
 **Found 2026-08-24 while designing E3. Not yet quantified on the design cavity.**
 
 `geometry.py`'s default torch is **sapphire, ε = 11.6, tanδ = 3.5e-5**, and the
@@ -2289,218 +2289,12 @@ both exist.**
 ✅ **coupling.beta and VSWR are UNAFFECTED**: they come from the dip DEPTH, not the width.
 **VSWR 75–82 at the anchor stands.**
 
-### ⚠️ AND GEOMETRY-MATCHED IS NOT ENOUGH### ⚠️ AND GEOMETRY-MATCHED IS NOT ENOUGH — THE MESH MUST MATCH TOO
-
-`h3_step3` runs `cold` and `driven` styles to compare them, and meshes them at
-**different resolutions by design**: `size_factor` **1.5 vs 1.42**, giving
-**43,685 vs 80,621 tets**. **A comparison across those two carries a
-discretisation difference as well as a geometry one**, and neither is separable
-after the fact.
-
-### ✅ THE AUDIT — which comparisons in this record are actually matched
-
-| comparison | geometry | verdict |
-|---|---|---|
-| **E3 case E ↔ `h3_driven` @1e20** | both vacuum torch + plasma, 1e20 | ✅ **MATCHED** — the 70 kHz / 3.42 % agreement stands (⚠️ separately-built meshes) |
-| eigen Q_ext 9,231 ↔ driven ~8,400 | **no-torch vs vacuum-torch** | 🔴 **VOID** |
-| eigen cold Q₀ 43,422 ↔ driven re-fit 40,652 | **no-torch vs vacuum-torch** | 🔴 **VOID** — the "6.4 %" is not a method result |
-| `h3_loopq` 43,422 ↔ `h3_step3` 43,523 | both eigen, no-torch vs vacuum | ✅ a **geometry** delta within one solver |
-
-### ✅ MESH FINGERPRINTS — `h3_step3`'s "driven" style IS matched to `h3_driven`
-
-| | tets | size_factor | torch |
-|---|---:|---:|---|
-| `h3_driven_cold` / `_n18p90` / `_n20p00` | **80,621** | **1.42** | body, ε = 1 |
-| `h3_step3` **driven** style | **80,621** | **1.42** | body, ε = 1 |
-| `h3_step3` **cold** style | 43,685 | 1.50 | **none** |
-| `h3_loopq` | — | — | **none** (`GEO_DESIGN`) |
-
-🔑 **So the eigen number that is geometry- AND mesh-matched to every driven
-result is `h3_step3`'s driven-style pair — and `h3_loopq`'s `V1_ANCHOR` records
-it as Q_ext = 9,117**, not the 9,231 that `h3_driven` hardcodes.
-⚠️ **Which of `h3_step3`'s two styles produced 9,117 is NOT documented**, and its
-result file is stale (it still carries the retracted Q = 12,368 / f₀ = 2.440003).
-**Both eigen values, 9,117 and 9,231, sit ~8–9 % above the driven-implied 8,462**
-— so the gap does not hinge on which one, but it is still an inference.
-✅ **`h3_qext` measures it directly, on a mesh whose fingerprint is known.**
-
-## ✅✅ F1 ANSWERED — eigen and driven DO disagree, and the gap is in Q_L alone
-
-**`h3_qext`, 2026-08-25, cold, on the IDENTICAL mesh `h3_driven_cold.msh`
-(80,621 tets) — no geometry difference left to blame:**
-
-| | eigen pair | driven dip | gap |
-|---|---:|---:|---:|
-| Q₀ | 43,523 | 40,652 | −6.6 % |
-| **Q_L** | **7,538** | **7,004** | **−7.1 %** |
-| **coupling.beta** | **4.7740** | **4.8041** | **+0.6 %** ✅ |
-| Q_ext | **9,117** | 8,462 | −7.2 % |
-
-## ✅✅ RESOLVED 2026-08-25 — THE 7.7 % GAP WAS THE FIT, NOT THE SOLVERS
-
-**Refitting the SAME cold sweep with interpolated 3 dB crossings:**
-
-| fit | Q_L | Q₀ | Q_ext | vs eigen |
-|---|---:|---:|---:|---:|
-| grid edges (as shipped) | 7,004 | 40,654 | 8,462 | **−7.18 %** |
-| **interpolated edges** | **7,487** | **43,455** | **9,045** | **−0.78 %** |
-| **EIGEN pair** | 7,538 | 43,523 | 9,117 | — |
-
-🔑 **Q₀ agrees to 0.16 %, Q_L to 0.67 %, Q_ext to 0.78 %.** The eigen↔driven
-disagreement **was the 3 dB edges snapping to the sample grid** — not the
-solvers, and **not the sample count either.** ⚠️ **My first explanation ("14
-samples") was also wrong:** 1e20 gives 0.0 % at TEN samples and cold gives −0.8 %
-at SIX, once the edges interpolate. **Sample count bounds the error at ~2/N; it
-does not determine it.**
-✅ **`cavity.Q_ext.cold` = 9,117 stands, and now has an independent driven
-confirmation at 0.78 % instead of a 7.7 % contradiction.**
-
-🔑 **coupling.beta AGREES TO 0.6 %. THE ENTIRE DISAGREEMENT IS Q_L** — and Q_L is the 3 dB
-LINEWIDTH: **0.35 MHz sampled at 25 kHz, ~14 points across.** `h3_driven`'s own
-docstring calls its cold case a **LOCATOR** for exactly this reason. **So this
-is not a solver disagreement; it is a resolution limit on one side**, and it
-lands on the quantity most sensitive to it.
-✅ **Cold Q_ext = 9,117 (eigen) is the better number.** The driven 8,462 inherits
-a 7 % linewidth error.
-
-### ✅ AND IT REPRODUCES `h3_step3`'s V1_ANCHOR TO FOUR FIGURES
-
-**recorded** Q₀ = 43,523 · Q_L = 7,538 · Q_ext = 9,117 · coupling.beta = 4.774
-**measured** Q₀ = 43,523 · Q_L = 7,538 · Q_ext = 9,117 · coupling.beta = 4.7740
-
-🔑 **This settles a question `baselines.json` recorded as unanswered:** which of
-`h3_step3`'s two mesh styles produced 9,117. **The vacuum-torch one.** The
-registry entry now carries the reproduction as its verification.
-⚠️ **And it confirms `h3_driven` imports the wrong one** — it hardcodes 9,231,
-the NO-TORCH value, while meshing vacuum torch. **+1.25 %.**
-
-### 🔑 THE ANCHOR CASE IS THE REAL TEST, AND IT IS RUNNING NOW
-
-**Prediction, before the data:** at 7.9e18 the linewidth is **23.8 MHz** — 68×
-wider than cold, ~119 samples across at the same step. **If the cold gap is
-resolution, eigen and driven should agree closely at the anchor.** If a 7 % gap
-survives there, it is a genuine method difference and the cold case was not the
-explanation.
-
-🔑 **TO GET A REAL Q_ext, RUN THE EIGEN PAIR ON THE DRIVEN MESH.** `pec` and
-`lumped` on **the same `h3_driven_n*.msh` files that are already built** — no
-new geometry, no re-meshing, and it lands Q_ext at every density including the
-anchor. **Until then, quote coupling.beta from the DIP, which needs no Q_ext at all.**
-
-### 🔴 But the DESIGN torch is a real offset, and NO eigen anchor has ever used it
-
-- **Q₀: 43,523 (vacuum) → 44,387 (sapphire) = +2.0 %.** **`Q_REF`, the η
-  reference every driven point is normalised against, is ~2 % low**, and §7c has
-  already caught that constant being wrong four times.
-- **f₀: −13.87 MHz.** Every eigen f₀ in the record — the ladder, the margins,
-  H1's aspect work, H2's groove validation — is **high by about that**.
-- 🔑 **And so is everything I measured today.** The anchor run fixed the
-  DENSITY; it is still a vacuum-torch cavity. **f₀ = 2.4586 becomes ≈ 2.4447**,
-  and the 41.4 MHz band margin becomes ≈ 55 MHz — *better*, but not what is
-  written down.
-- ✅ **coupling.beta and VSWR should barely move** — they are ratios, and the torch changes
-  Q₀ by 2 %.
-
-🔑 **THE FIX IS ONE LINE AND A RE-RUN, NOT AN INVESTIGATION:** `GEO_DESIGN` must
-drop `--no-torch` and carry `--torch-material 11.6,3.5e-05`. ⚠️ **Do not patch it
-silently** — it invalidates every stored f₀, so it belongs with the restoration
-(apertures, chimney) as one geometry change, measured once.
-
-## ✅✅ THE OPERATING POINT IS MEASURED — 2026-08-25, first time ever
-
-📎 **`baseline-h3-driven-anchor-01.json`** · results `h3-driven-anchor-01.result.json`
-*(the config records the question, the bindings, and three caveats — including
-that it binds `cavity.Q_ext.cold` at `mesh=no_torch` while meshing `vacuum_torch`.
-`slug.py --check` verifies this citation resolves in both directions.)*
-
-**`h3_driven`, 9-point grid. The anchored band 7.3–8.6e18 was never on any grid
-before this run.** Centre point **n_e = 7.9e18, ε = −1.456**:
-
-| | **MEASURED** | previously in the record | |
-|---|---:|---:|---|
-| **f₀** | **2.4586** | 2.4824 (at 1e20) | |
-| **Q₀** | **104** | 109 *(interpolated)* | ✅ interpolation was sound |
-| **Q_L** | **103** | 155 (at 1e20) | |
-| **linewidth** | **23.8 MHz** | 16.0 MHz (at 1e20) | ✅ **1.5× WIDER** |
-| **η** | **0.9976** | — | flat 0.9864→0.9976, **does not discriminate** |
-
-### 🔑 THREE CORRECTIONS, ALL FAVOURABLE TO `../control-loop/`
-
-1. 🔑 **IGNITION SLEW IS 4.4× SMALLER.** Cold 2.4515 → lit **2.4586** is
-   **+7.1 MHz**, not the **+30.9 MHz** the source spec was built on (which
-   assumed 1e20). **The frequency loop has to chase a quarter of what was
-   specified.**
-2. ✅ **THE LOADED RESONANCE IS WIDER, NOT NARROWER** — 23.8 MHz against the
-   assumed 16.0, because Q_L is 103 not 155. **Easier to sit on.**
-3. ✅ **BAND MARGIN 41.4 MHz** to the 2.5 GHz edge, versus 17.6 MHz at 1e20.
-
-### ✅ THE FULL BAND — and the ANCHOR'S OWN UNCERTAINTY BARELY MATTERS
-
-**MICAP's 5220–5270 K maps to n_e 7.3–8.6e18. All three solved:**
-
-| n_e | ε_r | f₀ | **slew** | width | Q_L | Q₀ | η |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| 7.3e18 | −1.270 | 2.4578 | **+6.3** | 23.0 | 107 | 108 | 0.9975 |
-| **7.9e18** | **−1.456** | **2.4586** | **+7.1** | **23.8** | **103** | **104** | **0.9976** |
-| 8.6e18 | −1.674 | 2.4594 | **+7.9** | 25.0 | 98 | 99 | 0.9977 |
-
-🔑 **THE WHOLE 50 K SPREAD MOVES f₀ BY 1.6 MHz, SLEW BY 1.6 MHz, AND VSWR BY
-~9 %.** ✅ **This retires a worry `../spectroscopy/` raised explicitly** — that
-n_e moves *"two decades per ~1,500 K"* and *"a 500 K error is 5–10× in n_e"*.
-**True in general, and irrelevant here:** MICAP's quoted spread is 50 K, not
-500 K, and the design is flat across it. **The anchor does not need to be
-tighter than it already is.**
-⚠️ Unchanged: this is the LTE lower bound. Non-LTE puts n_e higher, and the
-trend above shows that direction costs VSWR (75 → 82 across the band).
-
-### ✅ VSWR IS NOW SETTLED — and it is BETTER than the record says
-
-**The two coupling.beta estimates differed 13 %. Resolved by deriving Q_ext from the dip
-alone, with no imported constant:  Q_ext = Q_L(1+coupling.beta_dip)/coupling.beta_dip.**
-
-| n_e | Q_L | coupling.beta_dip | **Q_ext implied** | vs cold 9,231 |
-|---|---:|---:|---:|---:|
-| 1e18 | 557 | 0.0704 | 8,478 | −8.2 % |
-| 3e18 | 208 | 0.0257 | 8,304 | −10.0 % |
-| **7.3e18** | 107 | 0.0133 | **8,150** | **−11.7 %** |
-| **7.9e18** | 103 | 0.0127 | **8,221** | **−10.9 %** |
-| **8.6e18** | 98 | 0.0122 | **8,162** | **−11.6 %** |
-| 1e19 | 92 | 0.0114 | 8,118 | −12.1 % |
-| 3e19 | 95 | 0.0112 | 8,625 | −6.6 % |
-| 1e20 | 155 | 0.0171 | **9,225** | **−0.1 %** |
-
-⚠️ **I FIRST READ THIS AS "Q_ext FALLS ~11 % UNDER LOAD". THAT WAS WRONG** — the
-cold row was missing, because the rig had put the cold point on the **wrong
-coupling branch**. Re-fitting cold from the phase gives **Q_ext = 8,462**, so:
-
-| cold | 1e18 | 3e18 | **7.9e18** | 1e19 | 3e19 | 1e20 |
-|---:|---:|---:|---:|---:|---:|---:|
-| **8,462** | 8,478 | 8,304 | **8,221** | 8,118 | 8,625 | **9,221** |
-
-🔑 **Q_ext IS ROUGHLY FLAT AT ~8,100–8,600 FROM COLD THROUGH 3e19** (a ±3 %
-wander with a shallow minimum near 1e19), **and rises to 9,221 only at 1e20.**
-**This is not a loading effect.**
-
-🔴 **WHAT IT ACTUALLY EXPOSES IS AN EIGEN↔DRIVEN DISAGREEMENT ON Q_ext.** The
-driven sweeps imply **~8,400 cold**; `h3_loopq`'s eigen pair method gave
-**9,231** on the same cold cavity — **a ~9 % systematic between two methods**,
-not a physical variation. ⚠️ **Unresolved, and it propagates into every coupling.beta
-computed as Q₀/Q_ext.** The measured dip does not depend on it.
-**The record used 9,231 at every density**, which makes coupling.beta too small and VSWR too
-large.
-
-> ## ✅ **VSWR AT THE OPERATING POINT IS 75–82, NOT 85–93.**
-
-⚠️ **MY PRE-REGISTERED TEST WAS ILL-CONDITIONED AND COULD NOT HAVE WORKED.**
-I proposed coupling.beta_true = Q₀(eigen)/Q_L − 1. **coupling.beta here is 1.7 %, while eigen and driven
-agree on Q₀ only to 3.4 %** — the uncertainty is twice the quantity. That method
-swings coupling.beta from 0.017 to 0.052 on a 3.4 % wobble. **Differencing two nearly-equal
-Q's cannot measure a small coupling.beta.** ✅ **The dip depth can**, because it reads |S11|
-directly: at 1e20, −0.2973 dB → coupling.beta = 0.0171, and the implied Q_ext = 9,225
-recovers the cold value to 0.1 % — **an internal consistency check the
-differencing method fails.**
-🔴 **Neither prediction A (Q_ext constant) nor B (2.9× collapse) was right.**
-The answer is a modest, density-dependent 11 %.
+⚠️ **A STALE SECOND COPY OF THIS WHOLE REGION — 213 lines, still asserting ② —
+sat directly below it until 2026-09-07.** A botched edit inserted this corrected
+version ABOVE the old one instead of replacing it; a doubled heading
+(`### ⚠️ AND GEOMETRY-MATCHED IS NOT ENOUGH### ⚠️ AND GEOMETRY-MATCHED…`) was the
+only tell. It also re-asserted the withdrawn *"~9 % eigen↔driven Q_ext gap"*
+(withdrawn above — two cavities were compared). **Removed; it is in git.**
 
 ## ⏳ H3 RE-RUN AT THE ANCHOR — LAUNCHED 2026-08-24, cold anchor landed
 

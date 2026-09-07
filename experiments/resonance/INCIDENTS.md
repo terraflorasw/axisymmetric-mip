@@ -3124,6 +3124,68 @@ returns and what a future reader quotes. Leaving a ✅✅ on a dead claim is not
 neutral — it is an active assertion, restated every time the file is opened.
 
 
+## 7cb — ONE watcher. Do not hand-roll a monitor per launch.
+
+> User, 2026-09-05: *"Before we continue though, we should have a more
+> disciplined approach to monitoring."*
+
+🔴 **THE STANDARD ALREADY EXISTED AND I IGNORED IT FOR A WHOLE SESSION.**
+`ops/watchrig.sh` is the MECHANISM (poll, diff, mirror, detect the three
+endings — **16 tests**); `ops/watch.sh` is the POLICY (fetch results, report the
+instance is idle and billing). They already separate mechanism from policy — the
+same critique that was made of the solve timeout on the same day.
+
+I hand-wrote a bespoke `Monitor` grep loop for **every** launch on 2026-09-04/05.
+Each was slightly different, each had to be tuned, and each reproduced a failure
+`watchrig.sh` had already fixed:
+
+| watchrig's four questions | my hand-rolled loops |
+|---|---|
+| (a) emits per unit of progress | ✅ |
+| (b) ends when the JOB ends | ✅ |
+| (c) ends when the MACHINE ends | ⚠️ only after 3 missed polls — 20 min late |
+| (d) can the caller silently discard it? | 🔴 no mirroring; tuned the filter 3x |
+
+➡️ **RULE: after any launch, arm `Monitor(command="ops/watch.sh <slug>")`.**
+Never hand-roll a grep loop. If the standard watcher lacks something, FIX THE
+WATCHER — that is what its 16 tests are for.
+
+🔴 **AND A CHAINED LAUNCH MUST ARM THE NEXT WATCH IN THE SAME BREATH.** Twice
+this session a monitor launched the next run and then exited, leaving it running
+unwatched; the second time the user had to point it out. A chain that starts a
+run without a watch is the operational twin of a guard that sets a flag nobody
+reads (§7by).
+
+✅ **ENFORCED 2026-09-05.** `ops/wait.sh` is EXPUNGED — measured against the
+three criteria it answered only (b): it blocked and printed a tail, so a job
+stepping through cases looked identical to a job doing nothing, and ssh failure
+was not distinguished from a slow poll. It now REFUSES with the reasons rather
+than silently forwarding, because a caller wanting a BLOCKING wait would
+otherwise get a STREAMING watch and not notice.
+⚙️ **`preflight sh_adhoc_watch`** refuses a hand-rolled remote watch loop
+(`while true` + ssh + sleep, `tail -f *.log`, `until … grep … EXIT=`). Sanctioned
+watchers carry `sanctioned-watcher: <why>` — `watchrig.sh` (the mechanism),
+its test, `spotwatch.sh` (records notices on the VOLUME, not a rig watch), and
+`queue.sh` (launches a batch, defers to `watch.sh` per slug).
+
+✅ **AND THE LAUNCH ITSELF NOW ENFORCES IT (2026-09-05).** `ops/remote.sh` no
+longer RETURNS after launching — it **execs into `ops/watch.sh`**. Launching and
+watching are ONE operation, so there is no window in which a run is live and
+unwatched, and nothing left for an ad-hoc loop to do.
+- no slug -> **exit 4**: a run that cannot be watched by name is not launched.
+- `NOWATCH=1` for a batch that watches per slug itself — and it says
+  **"LIVE AND UNWATCHED"** rather than returning quietly.
+
+🔑 **THE GENERAL FORM: DELETE THE STEP, DO NOT DOCUMENT IT.** Advice printed at
+the end of a script is not a guard — this exact line said *"watch: ops/watch.sh
+<slug> <- do this"* and was ignored on every launch for two days. A step that
+must be remembered will eventually not be. ⚙️ `ops/remote.sh` exec + `preflight
+sh_adhoc_watch`
+
+⚠️ **RESIDUAL, and it is mine not the tooling's:** an assistant can still call
+`ssh` directly instead of going through `ops/`. Nothing outside the repo can stop
+that; §7cb is the rule, and the exec removes the incentive.
+
 ## 7cc — a watch that dies looks exactly like a run that ended
 
 **2026-09-05.** `ops/remote.sh` had just been changed to `exec` into

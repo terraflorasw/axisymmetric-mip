@@ -337,6 +337,28 @@ established independently:
     in the household-oven literature on grapes and hydrogel beads, where alkali
     species in the aqueous body are field-ionised at a dielectric hotspot.
 
+**The sources, named so the boundary can be checked rather than taken on
+trust.** Copies of the last two are in `refs/`:
+
+  - *How to Ignite an Atmospheric Pressure Microwave Plasma Torch without Any
+    Additional Igniters* — graphite/susceptor ignition of a torch.
+  - *Estimated electric conductivities of thermal plasma with potassium or
+    cesium seeding* (PMC11145353) — the alkali-seeding conductivity route.
+  - *Self-Perpetuating Carbon Foam Microwave Plasma Conversion of Hydrocarbon
+    Wastes*, Environ. Sci. Technol. (`acs.est.0c06977`) — a carbon susceptor
+    sustained by its own feedstock.
+  - US 5051557 — MIP torch with a tantalum injector probe: ignition hardware
+    placed in the sample path, which is the approach this disclosure removes.
+  - Zhang et al., *Processes* **12**, 2505 (2024) — metal-acetate-enhanced
+    microwave pyrolysis. Its Table 1 ranks potassium acetate highest in carbon
+    disorder of every salt tested, and it decomposes the acetate below the
+    substrate's own pyrolysis onset. ⚠️ Run in an external SiC susceptor boat, on
+    a carbonaceous substrate — so it supports the decomposition chain but **not**
+    the cold-start bootstrap, which is why that is listed as unestablished below.
+  - *Linking plasma formation in grapes to microwave resonances of aqueous
+    dimers* (PNAS) — potassium/sodium seeded microwave plasma ignition in an
+    aqueous body, and the source of the grape/hydrogel observation above.
+
 🔑 **What is disclosed here is the integration**: a *consumable liquid* whose
 decomposition products supply the susceptor and the seed **together**, delivered
 through the sample-introduction path the instrument already has, and flushed out

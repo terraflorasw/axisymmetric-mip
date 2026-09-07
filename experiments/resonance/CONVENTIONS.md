@@ -23,9 +23,9 @@ on 2026-09-03/04. **An unreadable rulebook manufactures the failures it
 documents.**
 
 - **`CONVENTIONS.md` (here) — THE RULES.** Short enough to read in full.
-- **`INCIDENTS.md` — THE EVIDENCE.** All 79 narratives, verbatim, nothing lost.
+- **`INCIDENTS.md` — THE EVIDENCE.** All 97 narratives, verbatim, nothing lost.
 
-🔑 **CITATIONS STILL RESOLVE.** Ids `7a`–`7ca` were NOT renumbered (§7ay: pin
+🔑 **CITATIONS STILL RESOLVE.** Ids `7a`–`7ct` were NOT renumbered (§7ay: pin
 identifiers, supersede in prose). A reference to "CONVENTIONS §7bi" now reads as
 **`INCIDENTS.md` §7bi**, and its RULE is in §7.1 below.
 
@@ -473,7 +473,9 @@ more than adding a rule.
   *(7m, 7aj, 7ai, 7f)*
 - **Simplify to isolate, then RESTORE. Nothing restores itself.** *(7ai, 7f)*
 - **Solve the mesh the sidecar describes** — bind from it and assert it matches
-  the request. *(7af, 7ba)*
+  the request. ⚠️ **"The configurations are identical" does not mean "the models
+  are identical"**: a config names attributes, the MESH gives them shape.
+  *(7af, 7ba, 7ct)*
 - **A bug fix that could invalidate a result means that result is invalid until
   proven otherwise.** *(7bm)*
 - **A quantity measured in another epoch was measured on another machine.**
@@ -487,8 +489,11 @@ more than adding a rule.
 - **Surviving a falsifier is not confirmation.** A falsifier can fire for a
   reason its author never enumerated; a binary one passes on a meaningless
   effect size. *(7w, 7z, 7l)*
-- **Measure the magnitude before drawing the consequence**, and **state the span
-  a range covers before calling anything constant across it.** *(5, 7z)*
+- **Measure the magnitude before drawing the consequence**; **state the span a
+  range covers before calling anything constant**; and **before theorising where
+  something GOES, check whether it goes ANYWHERE** — a conservation check kills
+  whole families of mechanism at once, and calibrates on a geometry that already
+  works, in the same run set. *(5, 7z, 7ct)*
 - **A wrong label can void a right number**, and a number corrected in a
   document is not corrected in the programme. *(7q, 7r, 7n)*
 - **When the rig says it does not know, do not supply the confidence.** *(7u)*
@@ -505,12 +510,18 @@ more than adding a rule.
   *(7x)*
 - **A sample-count rule is not a resolution rule — interpolate the 3 dB edges.**
   *(7bh, 7bg)*
-- **A checker must be able to see what it checks** (§7), and **a guard must
-  GATE, not announce** — a flag with no reader is a comment with extra steps.
-  *(7, 7by)*
+- **A checker must be able to see what it checks** (§7); **a guard must GATE,
+  not announce** — a flag with no reader is a comment with extra steps; and one
+  with no CONSUMER that is nonetheless RECORDED manufactures a false coordinate.
+  Find the line that USES it, and refuse a dead flag rather than ignoring it.
+  *(7, 7by, 7cs)* ⚙️ `geometry.py` refuses retired flags
 - **An unassigned boundary is a CHOSEN boundary**; out-of-range must not bin to a
   meaningful value. *(7v, 7o)*
-- **A mesh gmsh accepts can still be topologically invalid.** *(7bn)*
+- **A mesh gmsh accepts can still be topologically invalid**, and **an
+  impossible result is a MESH question before a physics one.** Read the solver's
+  own error indicator COMPARATIVELY — against a trusted geometry at a matched
+  element count. A refinement field is sized in the coordinate of the FEATURE it
+  resolves, not the conductor at its centre. *(7bn, 7cr)*
 - **Ask whether the instrument CAN answer, not only what it costs.** *(6c, 7bp)*
 - **A safety margin is a COST, and an unpriced one breaks the solve.** An extra
   requested mode stalled NLEPS at 11 of 12 and nearly discarded eleven converged
@@ -550,18 +561,20 @@ more than adding a rule.
   — and resume must restore the CONTINUATION, not just the result. *(7bw)*
 - **A launcher that cannot reach the host must FAIL, not narrate.** ⚠️ And check
   an exit code without a pipe. *(7bv)* ⚙️ `ops/go` exit 3
-- **Watch, do not poll; never pipe the watcher.** *(7bq — failed 4×)* ⚙️ `ops/remote.sh` execs into `ops/watch.sh`
+- **Watch, do not poll; never pipe the watcher**, and **never hand-roll one** —
+  fix `ops/watchrig.sh` instead. A chained launch arms the NEXT watch in the same
+  breath. 🔑 **DELETE THE STEP, DO NOT DOCUMENT IT**: advice printed at the end of
+  a script is not a guard. *(7bq — failed 4×, 7cb)* ⚙️ `ops/remote.sh` execs into
+  `ops/watch.sh` · `preflight sh_adhoc_watch`
 - **A WATCH MUST OUTLIVE WHAT IT WATCHES, and one that dies must not look like a
   run that ended.** A backgrounded shell is capped by its HOST's timeout, so
   `rc=124` four minutes into a 5 h solve reads exactly like a finished watch.
   ⚠️ The solve is never at risk — it is `nohup`'d — so nothing fails and nobody
   looks. *(7cc)* ⚙️ `EVENTS=1 ops/watch.sh` under a long-lived event host
-- **Progress lives in the SOLVER log, not the rig log.** A rig that prints per
-  CASE gives an armed, correct, silent watch for the whole of a long case.
-  *(7ce)* ⚙️ `ops/solverprogress.sh`, started by `ops/watch.sh` itself
-- **A watcher's output is a measurement — smoke-test that it EMITS.** "It
-  parses" and "it emits the right thing" are different claims; a dedup keyed on
-  a line containing elapsed time emits every poll. *(7ce)*
+- **Progress lives in the SOLVER log, not the rig log**, and **a watcher's
+  output is a measurement — smoke-test that it EMITS**: "it parses" and "it
+  emits the right thing" differ, and a dedup keyed on a line carrying elapsed
+  time emits every poll. *(7ce)* ⚙️ `ops/solverprogress.sh` via `ops/watch.sh`
 - **`pkill -f` matches the shell that runs it.** Exclude `$$`, or keep the
   pattern out of your own argv. *(7cf — twice)*
 - **A timeout is a RUNTIME property. Never put it in the input fingerprint.**
@@ -635,65 +648,3 @@ more than adding a rule.
   four documents, both senses, no definition. *(7cl)* ⚙️ `GLOSSARY.md § converged`
 - **A print is where a claim escapes review.** *(7e)*
 - **Do not mix a verified analysis with an unverified suggestion.** *(7ac)*
-
-## 7cb — ONE watcher. Do not hand-roll a monitor per launch.
-
-> User, 2026-09-05: *"Before we continue though, we should have a more
-> disciplined approach to monitoring."*
-
-🔴 **THE STANDARD ALREADY EXISTED AND I IGNORED IT FOR A WHOLE SESSION.**
-`ops/watchrig.sh` is the MECHANISM (poll, diff, mirror, detect the three
-endings — **16 tests**); `ops/watch.sh` is the POLICY (fetch results, report the
-instance is idle and billing). They already separate mechanism from policy — the
-same critique that was made of the solve timeout on the same day.
-
-I hand-wrote a bespoke `Monitor` grep loop for **every** launch on 2026-09-04/05.
-Each was slightly different, each had to be tuned, and each reproduced a failure
-`watchrig.sh` had already fixed:
-
-| watchrig's four questions | my hand-rolled loops |
-|---|---|
-| (a) emits per unit of progress | ✅ |
-| (b) ends when the JOB ends | ✅ |
-| (c) ends when the MACHINE ends | ⚠️ only after 3 missed polls — 20 min late |
-| (d) can the caller silently discard it? | 🔴 no mirroring; tuned the filter 3x |
-
-➡️ **RULE: after any launch, arm `Monitor(command="ops/watch.sh <slug>")`.**
-Never hand-roll a grep loop. If the standard watcher lacks something, FIX THE
-WATCHER — that is what its 16 tests are for.
-
-🔴 **AND A CHAINED LAUNCH MUST ARM THE NEXT WATCH IN THE SAME BREATH.** Twice
-this session a monitor launched the next run and then exited, leaving it running
-unwatched; the second time the user had to point it out. A chain that starts a
-run without a watch is the operational twin of a guard that sets a flag nobody
-reads (§7by).
-
-✅ **ENFORCED 2026-09-05.** `ops/wait.sh` is EXPUNGED — measured against the
-three criteria it answered only (b): it blocked and printed a tail, so a job
-stepping through cases looked identical to a job doing nothing, and ssh failure
-was not distinguished from a slow poll. It now REFUSES with the reasons rather
-than silently forwarding, because a caller wanting a BLOCKING wait would
-otherwise get a STREAMING watch and not notice.
-⚙️ **`preflight sh_adhoc_watch`** refuses a hand-rolled remote watch loop
-(`while true` + ssh + sleep, `tail -f *.log`, `until … grep … EXIT=`). Sanctioned
-watchers carry `sanctioned-watcher: <why>` — `watchrig.sh` (the mechanism),
-its test, `spotwatch.sh` (records notices on the VOLUME, not a rig watch), and
-`queue.sh` (launches a batch, defers to `watch.sh` per slug).
-
-✅ **AND THE LAUNCH ITSELF NOW ENFORCES IT (2026-09-05).** `ops/remote.sh` no
-longer RETURNS after launching — it **execs into `ops/watch.sh`**. Launching and
-watching are ONE operation, so there is no window in which a run is live and
-unwatched, and nothing left for an ad-hoc loop to do.
-- no slug -> **exit 4**: a run that cannot be watched by name is not launched.
-- `NOWATCH=1` for a batch that watches per slug itself — and it says
-  **"LIVE AND UNWATCHED"** rather than returning quietly.
-
-🔑 **THE GENERAL FORM: DELETE THE STEP, DO NOT DOCUMENT IT.** Advice printed at
-the end of a script is not a guard — this exact line said *"watch: ops/watch.sh
-<slug> <- do this"* and was ignored on every launch for two days. A step that
-must be remembered will eventually not be. ⚙️ `ops/remote.sh` exec + `preflight
-sh_adhoc_watch`
-
-⚠️ **RESIDUAL, and it is mine not the tooling's:** an assistant can still call
-`ssh` directly instead of going through `ops/`. Nothing outside the repo can stop
-that; §7cb is the rule, and the exec removes the incentive.

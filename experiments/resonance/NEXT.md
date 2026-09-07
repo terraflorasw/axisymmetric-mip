@@ -220,6 +220,13 @@ rc=137 at 637 s with the cap at 12,000 s. dmesg shows 21 OOM kills: 32 ranks x
 not a longer run. Until then beta is *measured at three resolutions and still
 moving 4 % at the finest one*.
 
+✅ **UNBLOCKED 2026-09-07 — the instance now has the memory.** Replacement is
+**64 vCPU / 123 GB** (measured, `free -g`), against the 61 GB that OOM'd. The
+requirement was 32 ranks x ~2.3 GB = **~74 GB**, so sf 0.8 now fits with headroom.
+🔑 **The 4th point is a RUNNABLE measurement again, and it is the one thing that
+would let `coupling.beta` be quoted without a resolution caveat.** Nothing else
+about the case changes — same rig, same config, same 12,000 s cap.
+
 ⚠️ **ALSO UNEXPLAINED: cold f0 drifts −350 kHz monotonically** across the four
 meshes (2.442800 -> 2.442450), **4.2x the E0 instrument floor**. f0 comes from
 the dip LOCATION, not its width, so the shallow-dip excuse does not obviously
@@ -230,9 +237,9 @@ cover it. Not diagnosed. ret:beta-not-mesh-converged
 | | |
 |---|---|
 | **E0 instrument floor** | spurious splitting **1.86 kHz**, TE011 **+34 ppm** vs closed form. A difference must clear ~0.1 MHz to be the model rather than the solver. |
-| **Design cavity, driven, barrel + gap2 2.25** | cold `cavity.Q_ext.cold` = **253**; loaded **305** at ne 7.3-8.6e18; **coupling beta.loaded = 0.2476** at 7.9e18 |
+| **Design cavity, driven, barrel + gap2 2.25** | 🔴 **THESE WERE THE sf-1.5 VALUES, WHICH THIS FILE'S OWN § MESH CONVERGENCE RETRACTS ~20 % ABOVE.** Best available (sf 1.0, the finest that solved): **`coupling.beta.loaded` = 0.3007**, **`cavity.Q_ext.loaded` = 249**, `Q_L` = 57.64 at ne 7.9e18. ⚠️ **NOT mesh-converged — still moving 4.3 % at the finest point**, so quote with the resolution attached. Cold `cavity.Q_ext.cold` = 253 is **sf 1.5 only**, and the cold series is non-monotonic (−23.1 %, −8.8 %, −18.2 %) — do not use it as a design number. ~~cold 253; loaded 305; coupling beta.loaded = 0.2476~~ |
 | **Torch shift** | design vs vacuum cold f0 = **-11.43 MHz**, against `e3-torch-01`'s independent -10.40. 136x the instrument floor. |
-| **What is robust in all of it** | `Q_L` (linewidth) and `beta` (dip depth). Everything derived through `Q_EXT_MEASURED` is not — see `Q_LEDGER.md`. |
+| **What is robust in all of it** | `Q_L` (linewidth) and `beta` (dip depth) are robust to the EXTRACTION METHOD; everything derived through `Q_EXT_MEASURED` is not — see `Q_LEDGER.md`. 🔴 **Robust-to-method is NOT mesh-converged** — `beta` moved 21 % from sf 1.5 to sf 1.0, and conflating the two is what let 0.2476 sit in this table. ✅ **`Q0` is the mesh-stable one: 75.59 / 74.95 / 74.97, ±0.9 % across three resolutions.** |
 
 ### 🔴 RETRACTED OR UNSUPPORTED
 
@@ -243,6 +250,26 @@ cover it. Not diagnosed. ret:beta-not-mesh-converged
 - **7.9e18 as "the operating point"** — it is the MICAP-anchored density. The
   fork (~3e16 vs high density) is UNDECIDED and is a plasma question.
 - **Every `Q0` column produced via `Q_EXT_MEASURED`** — a cap-loop constant.
+
+### 🔴 SUPERSEDED 2026-09-07 — ~~THE ORDERING CHANGED. One measurement now gates the rest.~~
+
+> 🔴 **SUPERSEDED. Its STEP 1 cannot be run, and its subject is PARKED.**
+> **Why:** step 1 is *"AZIMUTHAL, LOADED, DESIGN CAVITY, with a fit that returns
+> a real Q_L"*. On 2026-09-07 the power balance voided **every azimuthal driven
+> number** — the azimuthal lumped-port face is an annular SECTOR and Palace's
+> lumped port requires a FLAT element, so its |S11| is wrong and no fit on that
+> mount can settle the loop-set-vs-plasma-set fork. The azimuthal peak is
+> **⏸️ PARKED** in this file ("do not chase this"), and the barrel already meets
+> the requirement.
+> **Forward pointer:** § THE QUEUE AS OF 2026-09-07 at the top of this file —
+> tolerance sensitivity → tuner range → real materials → coupler thermals.
+> **What survives:** ✅ **step 0 is real and still open** — `coupling.beta` is
+> measured at three resolutions and still moving 4.3 % at the finest, so the
+> do-not-quote status of sf-1.5 numbers stands (§ MESH CONVERGENCE above).
+> ✅ **The fork it poses is still the right question** — it just needs a coupler
+> whose port integrates correctly, i.e. the barrel, or a repaired azimuthal face.
+
+**The original entry follows, unedited, for provenance.**
 
 ### 🔴 THE ORDERING CHANGED. One measurement now gates the rest.
 
@@ -339,6 +366,11 @@ loaded**, and every "we need Nx more coupling" statement in this programme is
 wrong at the root.
 
 ## 🔑 THE 4.04x IS NOT A DEFICIT — IT IS THE REMAINING TRAVEL ON THE KNOB
+
+⚠️ **THE MAGNITUDE IS ≈3.3x, NOT 4.04x** — 4.04x is the sf-1.5 value this file's
+own § MESH CONVERGENCE retracts. At sf 1.0, `coupling.beta.loaded` = 0.3007 and
+`cavity.Q_ext.loaded` = 249. **The argument below is unchanged** — it is travel
+on a knob, not a deficit — only the number moves. ret:beta-not-mesh-converged
 
 > User: *"Oh, the series gap. I didn't think we were considering that yet, since
 > it's what we'll need to use to get coupling.beta.loaded to 1 (iirc)"*
@@ -449,6 +481,13 @@ canonical-LOOKING dotted name for a quantity with no canonical entry — while
 | `Q_ext = 307` | `cavity.Q_ext.loaded` at ne = 7.9e18, design cavity |
 | `Q_ext = 343` | `cavity.Q_ext.loaded` at ne = 7.9e18, **vacuum** cavity |
 | "beta = 1 needs 4.04x" | ratio of `cavity.Q_ext.loaded` to `cavity.Q0.loaded`, same ne, same cavity |
+
+⚠️ **The left column is the sf-1.5 set, and those values are themselves
+retracted** — they illustrate NOTATION here, not current numbers (sf 1.0:
+0.3007 / 249). 🔑 **Which adds a qualifier the list below does not have:
+RESOLUTION.** `coupling.beta` moved 21 % from sf 1.5 to sf 1.0, so a coupling
+number without its `size_factor` is as under-specified as one without its state.
+ret:beta-not-mesh-converged
 
 🔑 **A coupling number needs THREE qualifiers, not one:** state (cold/loaded),
 **density** (loaded only), and **cavity** (vacuum torch / design torch). Drop any
