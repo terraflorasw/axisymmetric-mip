@@ -1,4 +1,4 @@
-# Defensive publication — microwave-induced plasma cavity, mode filter and coupler
+# Defensive publication — microwave-induced plasma cavity, mode filter, coupler and starter fluid
 
 **Purpose.** This document places the designs described below into the public
 domain as prior art. It is published deliberately, without restriction on
@@ -66,6 +66,15 @@ discretisation error indicator
 
 striker ignition · seed ignition · igniter electrode · plasma ignition threshold ·
 breakdown field nitrogen · cavity-only ignition
+
+starter fluid · consumable igniter · liquid igniter · ignition through the
+nebuliser · sample introduction path ignition · hardware-free plasma ignition ·
+alkali seeding · easily ionisable element · potassium seeding · caesium seeding ·
+alkali carboxylate · potassium acetate · metal acetate · ketonic decomposition ·
+alkali carbonate · carbothermal reduction · in-situ susceptor · sacrificial
+susceptor · amorphous carbon susceptor · carbon microwave absorber · skin depth
+in amorphous carbon · volumetric microwave absorption · seed shielding ·
+overdense seed · deionised water flush · seed washout · analyte carryover
 
 soil analysis · regenerative agriculture · soil nutrient spectroscopy ·
 elemental analysis plasma source
@@ -244,6 +253,116 @@ return a wrong `S11`. The failure is worst where the loop is closest to the wall
 
 ---
 
+## Disclosure 4 — Consumable liquid starter fluid delivered through the sample path
+
+### The problem
+
+A resonant cavity of this class does not reach the breakdown field of
+atmospheric-pressure nitrogen at practical drive powers, by a margin that more
+power does not close. **An external ignition assist is therefore mandatory**, and
+this is true of commercial microwave-induced plasma instruments generally.
+
+Every standard assist adds hardware at the torch: a high-voltage spark or Tesla
+coil brings a supply and its EMI into an instrument built around a sensitive
+optical measurement; an argon start brings a second gas cylinder and its flow
+control; a mechanical striker brings a moving part, and an eroding electrode,
+into the hottest region of the instrument.
+
+### The design
+
+Deliver a **consumable liquid starter fluid — a dilute aqueous alkali-metal
+carboxylate, for example potassium acetate — through the instrument's existing
+nebuliser and injector.** Ignite, then flush with deionised water before the
+sample is introduced.
+
+🔑 **No ignition hardware is added, because the sample-introduction path is the
+ignition path.** The instrument already has a nebuliser, an injector and a rinse
+step; the disclosure is that these are sufficient to start the discharge.
+
+### Why it works — one compound supplies both requirements
+
+On heating, an alkali carboxylate decomposes by the ketonic route to the alkali
+carbonate plus a ketone, and the ketone pyrolyses to **amorphous carbon** rather
+than escaping as vapour. That single decomposition supplies both of the things
+ignition needs, in the same deposit and in intimate contact:
+
+  - **A susceptor.** Amorphous carbon at 2.45 GHz has a skin depth of tens to
+    hundreds of micrometres across the plausible conductivity range, and
+    millimetres even at the low end. **Any film deposited from solution is far
+    thinner than its own skin depth**, so it absorbs volumetrically throughout
+    rather than reflecting — a lossy absorber, not a mirror. The deposit is
+    therefore heated *directly by the cavity field*, with no external heat
+    source. This is the step that makes the fluid self-starting: a dilute
+    aqueous aerosol is nearly transparent at 2.45 GHz and could not otherwise
+    heat itself.
+  - **A seed.** Because the carbon forms alongside, and in contact with, the
+    carbonate, **carbothermal reduction** liberates alkali vapour well below the
+    temperature at which that carbonate decomposes on its own. An alkali vapour
+    has a far lower ionisation energy than nitrogen, so the temperature at which
+    the bore reaches any given conductivity falls by of order two thousand
+    kelvin relative to unseeded nitrogen — a range reachable by a self-heating
+    deposit, which the breakdown field is not.
+
+Once the bore is conductive the cavity couples into it and the working gas takes
+over. **The deionised-water flush is then part of ignition, not cleanup:**
+removing the seed after the discharge lights removes seed shielding and lets the
+cavity re-couple as the working gas ionises. The same flush also gasifies the
+carbon at temperature, so **the susceptor is consumed rather than accumulating**
+from run to run.
+
+### Choice of anion and cation
+
+  - **The anion should decompose to a carbon residue and benign gases.**
+    Carboxylates do. **Halides should be avoided**: they are electronegative,
+    attach free electrons and work directly against the discharge being started,
+    and the corresponding acid attacks quartz.
+  - **The cation's ionisation energy is the smaller effect.** The decomposition
+    route is what supplies the mechanism; a heavier alkali buys a modest
+    reduction in threshold temperature and nothing structural.
+  - **Where the alkali is also an analyte** — as potassium is in a soil
+    instrument — concentration and washout are a real constraint, and argue for
+    the lowest molarity that still ignites.
+
+### What is already public, and what is not
+
+Stated so the boundary of this disclosure is unambiguous. Each leg is
+established independently:
+
+  - **Susceptor ignition of microwave plasma torches is standard practice**,
+    typically as a solid pointed rod or graphite element placed in the field.
+  - **Alkali seeding to raise plasma conductivity is long established** and
+    modelled by the standard equilibrium route, including for potassium and
+    caesium specifically.
+  - **Alkali-seeded microwave plasma formation in aqueous bodies is documented**
+    in the household-oven literature on grapes and hydrogel beads, where alkali
+    species in the aqueous body are field-ionised at a dielectric hotspot.
+
+🔑 **What is disclosed here is the integration**: a *consumable liquid* whose
+decomposition products supply the susceptor and the seed **together**, delivered
+through the sample-introduction path the instrument already has, and flushed out
+before measurement — so that the instrument contains no ignition hardware at all.
+This is a systems claim rather than a claim about new physics, and it is
+published on that basis.
+
+### What is NOT established, and is disclosed as unestablished
+
+  - 🔴 **The cold-start bootstrap has not been demonstrated in this torch.**
+    Published metal-carboxylate microwave-pyrolysis work heats the sample inside
+    an external susceptor vessel, so it does not show that carbon deposited from
+    the salt initiates absorption *from cold*. The supporting observations for
+    cold start are qualitative.
+  - **No molarity is claimed.** The concentration that ignites without shielding
+    the field is not established, and any figure derived from an equilibrium
+    release model is unsound here — alkali availability is gated by the
+    reduction chemistry, not by ionisation equilibrium.
+  - **Where the carbon deposits** — injector tip, torch wall, or bore — is not
+    established. It decides whether the susceptor sits in the field maximum, and
+    therefore whether ignition is reproducible run to run.
+  - **Whether the flush fully gasifies the deposit** is not established.
+  - No claim is made about the plasma the discharge reaches after ignition.
+
+---
+
 ## Where the numbers are, and how they are derived
 
 This document deliberately states **mechanisms and derivations rather than
@@ -264,6 +383,7 @@ repository, and git history records what it was on any given date.
 | power balance closure, and the drive normalisation it fixes | `SurfaceFlux` boundary integrals on wall / port / conductor, against `P_inc(1 - \|S11\|^2)`, calibrated on a trusted coupler | `experiments/resonance/KNOWN.md`, `h3_driven.py` |
 | unloaded Q by the port-independent route | `Q0 = omega W / P_loss` from stored energy and summed surface dissipation; cross-checked against an eigenmode solve | `experiments/resonance/KNOWN.md`, `Q_LEDGER.md` |
 | coupler and wall dissipation | the same surface integrals, scaled linearly in drive power | `experiments/resonance/KNOWN.md` |
+| starter-fluid ignition — the chain, its supporting literature and its gaps | decomposition chemistry STATED; skin depth and seeded-conductivity thresholds DERIVED against the measured coupling map; nothing measured | `experiments/ignition-options/STARTER-FLUID.md` |
 
 **Reproducing any of it:** meshes are generated by `geometry.py` (gmsh/OCC) and
 solved with Palace (MFEM) finite elements. Rig scripts, solver configurations and
@@ -293,12 +413,17 @@ This section is part of the disclosure. The following were investigated and are
 
 ### Assumed, and stated so it is not mistaken for a claim
 
-The architecture **assumes an external ignition source** (a striker or
-equivalent). A cavity of this class does not reach the breakdown field of
-atmospheric-pressure nitrogen at practical drive powers, by a margin that more
-power does not close. This is consistent with commercial microwave-induced plasma
-instruments generally, and is recorded here as a design premise rather than a
-limitation of the designs disclosed above.
+The architecture **assumes an external ignition source**. A cavity of this class
+does not reach the breakdown field of atmospheric-pressure nitrogen at practical
+drive powers, by a margin that more power does not close. This is consistent with
+commercial microwave-induced plasma instruments generally, and is recorded here
+as a design premise rather than a limitation of the designs disclosed above.
+
+**Disclosure 4 is an approach to supplying that assist without dedicated
+hardware, and it is disclosed as an approach rather than as a demonstrated
+one** — see its own *What is NOT established*. Nothing elsewhere in this document
+depends on it: Disclosures 1–3 stand whether ignition is by starter fluid,
+striker, spark or an argon start.
 
 `NEXT.md` and `KNOWN.md` are a **working record**, including hypotheses that were
 later retracted; they are not claims. This file is the claims.
