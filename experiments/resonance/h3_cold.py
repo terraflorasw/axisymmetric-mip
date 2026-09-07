@@ -57,6 +57,7 @@ FALSIFICATION
 """
 import csv
 import json
+import values
 import math
 import os
 import pathlib
@@ -73,6 +74,11 @@ from e0k2_anchor import (design_point, wall_sigma, LOOP_PHI, LOOP_RW, LOOP_GAP,
                          CAP_R_FRAC)
 from e0k2_azim import sector_bins, read_sector_energy
 from h3_loaded import drude, Z_FRAC, SECTORS
+
+# 🔑 BOUND, not a literal. Value-neutral (still 1.0 mm). Skin depth is
+# 6.89 mm, far larger than any annulus here, so the field varies slowly
+# across it — see mesh.plasma_h.default for the full provenance.
+_PH = f'{values.get("mesh.plasma_h.default", allow_tentative=True, role="default"):.3f}'
 
 TAG = "h3_cold"
 BAND = (2.40, 2.50)          # the LDMOS band — what a tuner can reach
@@ -116,7 +122,7 @@ def build_mesh(tag, a, L, ld, lw, loaded, zlo, zhi, rec):
                                 "--loop-cap", f"{CAP_R_FRAC * a:.4f}",
                                 "--loop-phi", LOOP_PHI])
     if loaded:
-        args += ["--plasma", f"{RI},{RO},{zlo:.4f},{zhi:.4f}", "--plasma-h", "1.000"]
+        args += ["--plasma", f"{RI},{RO},{zlo:.4f},{zhi:.4f}", "--plasma-h", _PH]
     for sf in SIZE_FACTORS:
         r = subprocess.run([sys.executable, "geometry.py", "--out", f"{tag}.msh",
                             "--size-factor", sf] + args,

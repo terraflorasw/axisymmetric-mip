@@ -24,7 +24,7 @@ the answer flips the loop's design target:
 | | if ignition goes THROUGH the cavity | if a STRIKER lights it |
 |---|---|---|
 | cold coupling | 🔴 **hard constraint** | not constraining |
-| right target | **minimax**, Q_ext ≈ 1,700–2,100, VSWR ~16 both states | **β = 1 loaded**, Q_ext ≈ 105 |
+| right target | **minimax**, Q_ext ≈ 1,700–2,100, VSWR ~16 both states | **coupling.beta = 1 loaded**, Q_ext ≈ 105 |
 | steps 2b/2c | pointed the WRONG way | pointed the right way |
 
 **DERIVED — the numbers that make it a blocker.** Cold power into the cavity at
@@ -35,7 +35,7 @@ the answer flips the loop's design target:
 | as built (no capacitor) | 5.0 | **556 W** |
 | minimax | 16.3 | 218 W |
 | gap 2.25 mm (measured) | 86.5 | 45 W |
-| β = 1 loaded | 265 | 🔴 **15 W** |
+| coupling.beta = 1 loaded | 265 | 🔴 **15 W** |
 
 🔑 **Optimising the loaded match costs 37× of the ignition power.** Whether that
 matters depends entirely on whether ignition needs the cavity at all.
@@ -50,7 +50,7 @@ matters depends entirely on whether ignition needs the cavity at all.
 | 4 | **Seed gas / easier-ionised species** at start | changes the plasma chemistry `../spectroscopy/` cares about |
 | 5 | **Reduced pressure at start** | Paschen minimum is far easier; needs a pump and a pressure ramp |
 | 6 | **Tuner-assisted** — re-match cold, then track to loaded | ⚠️ **this is the 400× swing `../control-loop/` already calls its hardest problem**, not a free option |
-| **7** | 🔑 **TWO LOOPS** — one sized for cold, one for loaded | **STATED by the user 2026-08-25.** Breaks the constraint instead of trading against it. See below — the most promising option listed, and the only one that gives β = 1 in **both** states |
+| **7** | 🔑 **TWO LOOPS** — one sized for cold, one for loaded | **STATED by the user 2026-08-25.** Breaks the constraint instead of trading against it. See below — the most promising option listed, and the only one that gives coupling.beta = 1 in **both** states |
 
 ## 🔑 OPTION 7 — TWO LOOPS. The bimodal problem dissolves
 
@@ -58,14 +58,14 @@ matters depends entirely on whether ignition needs the cavity at all.
 and unloaded."*** 🔑 Every other option accepts that ONE Q_ext must serve two
 states whose Q₀ differ 265×. **This one refuses the premise.**
 
-| state | driven | idle loop | β | **VSWR** |
+| state | driven | idle loop | coupling.beta | **VSWR** |
 |---|---|---|---:|---:|
 | cold | **A** (Q_ext = 27,863) | open/shorted | 1.00 | **1.0** |
 | loaded | **B** (Q_ext = 105) | open/shorted | 1.00 | **1.0** |
 
-✅ **β = 1 in BOTH states.** No tuner swing, no compromise point, no 37× loss of
+✅ **coupling.beta = 1 in BOTH states.** No tuner swing, no compromise point, no 37× loss of
 ignition power. Compare the best single-loop options: minimax gives VSWR ~16 in
-both, β=1-loaded gives 1.0 loaded but **265 cold**.
+both, coupling.beta=1-loaded gives 1.0 loaded but **265 cold**.
 
 ### 🔴 The idle port decides it — and it is a REAL failure mode
 
@@ -81,7 +81,7 @@ benign: *"a small closed ring resonant far above 2.45 GHz"*
 🔑 **SO THE SWITCH IS THE COMPONENT BEING PROPOSED, not the second loop.**
 
 ⚠️ **But asymmetrically so, which helps:** during LOADED running, leaving loop A
-terminated is harmless (β = 0.9962, VSWR 1.0) — its Q_ext is huge, so it drains
+terminated is harmless (coupling.beta = 0.9962, VSWR 1.0) — its Q_ext is huge, so it drains
 slowly. **Only loop B needs isolating, and only during ignition.**
 🔑 **And it need never switch under power:** ignite on A → drop power → close
 B → raise power. A cold-switched 1 kW coax relay is an ordinary part; a
@@ -138,7 +138,7 @@ ignition re-imposes the component the loop work was removing.
 | | | blocks |
 |---|---|---|
 | **1** | **Which option is the instrument's?** | ⚠️ **NARROWED 2026-08-26.** Option 1 (cavity-only) is CLOSED by measurement, so the choice is among the ASSISTED options (2-5) — and item 7 is no longer blocked on it, since every assisted option leaves cold coupling unconstrained |
-| ~~2~~ | ✅ **ANSWERED 2026-08-26 — OPTION 1 DOES NOT EXIST.** Measured bore field **0.020 MV/m** at 1 kW (`h3-field-01`) against N₂ breakdown ~3 MV/m. Scaling by √Q to a cavity with **no port at all** still leaves it **13× short in field = 158× in power (0.2 MW)**. 🔑 **A STRIKER IS MANDATORY**, and item 7's target settles as β = 1 loaded. See `../resonance/KNOWN.md` § FIELD MEASURED | ✅ closed |
+| ~~2~~ | ✅ **ANSWERED 2026-08-26 — OPTION 1 DOES NOT EXIST.** Measured bore field **0.020 MV/m** at 1 kW (`h3-field-01`) against N₂ breakdown ~3 MV/m. Scaling by √Q to a cavity with **no port at all** still leaves it **13× short in field = 158× in power (0.2 MW)**. 🔑 **A STRIKER IS MANDATORY**, and item 7's target settles as coupling.beta = 1 loaded. See `../resonance/KNOWN.md` § FIELD MEASURED | ✅ closed |
 | 3 | Does ignition happen once per run, or per sample? | if per-sample, ignition reliability outranks loaded efficiency |
 | 4 | Time budget for ignition | a slow ramp tolerates a poor cold match; a fast one does not |
 

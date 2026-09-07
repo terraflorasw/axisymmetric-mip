@@ -9,7 +9,7 @@ the useful regime:
                   ~3,000 and the mode identification fails outright.
 
 Ratio 10->20 mm was 1.72x. tan(beta d) predicts 2.93x, so it is NOT stub-limited
-down here; lambda/4 is the depth to AVOID, not to target. 2.00x is what the slot
+down here; wavelength/4 is the depth to AVOID, not to target. 2.00x is what the slot
 VOLUME FRACTION predicts, and 1.72 is nearer that:
 
     eta = 4 * gw * gd / (a * L)        slot volume / cavity volume
@@ -43,6 +43,7 @@ mis-identified while reporting confident splittings. Any point whose Q falls
 below half the control is flagged and excluded from the fit, not quietly used.
 """
 import json
+import values
 import pathlib
 import subprocess
 import sys
@@ -55,8 +56,8 @@ from e0_solver_vs_math import GEO, eigen_cfg, run, volume_attrs
 from scipy.optimize import brentq
 
 TAG = "h2b"
-SIGMA = 3.5e7
-LAM = 299.792458 / 2.45
+SIGMA = values.get("wall.conductivity.s_per_m")   # aluminium. BOUND, not copied (7bl)
+WAVELENGTH = 299.792458 / 2.45
 
 # 🔴 TARGET WAS 2.40 AND THAT IS WHAT BROKE THIS RIG. Palace returns N modes
 # ABOVE the target, and the groove pushes TM111 DOWNWARD — that is the whole
@@ -154,7 +155,7 @@ def build(tag, a, L, gw, gd):
         # ⚠️ Slater is the SMALL-groove limit. It must fail for deep slots, and
         # where it starts to fail is itself the measurement of where the slot
         # stops being a perturbation and starts being a resonator — which is the
-        # lambda/4 boundary H2 found the hard way at 30.6 mm.
+        # wavelength/4 boundary H2 found the hard way at 30.6 mm.
         args += ["--groove", f"{gw},{gd}", "--tag-groove"]
     for sf in ("1.5", "1.2", "1.0", "2.0"):
         r = subprocess.run([sys.executable, "geometry.py", "--out", f"{tag}.msh",

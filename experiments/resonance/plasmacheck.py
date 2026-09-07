@@ -6,6 +6,7 @@ for the whole life of the driven programme. Assuming a geometry flag did what it
 says is how all three of those survived. Ask the mesh.
 """
 import pathlib
+import values
 import subprocess
 import sys
 
@@ -19,6 +20,12 @@ from h3_loaded import SECTORS, INNER_R, Z_FRAC
 R = 4.0
 
 
+# 🔑 BOUND, not a literal. Value-neutral (still 1.5) — the point is that it
+# now has ONE source and carries its caveat: 1.5 is the COARSEST point of
+# the h3-betaconv series, where coupling.beta.loaded moves +16.4 % to sf 1.2.
+_SF = f'{values.get("mesh.size_factor.default", allow_tentative=True, role="default"):g}'
+
+
 def main():
     a, L = design_point()
     zlo, zhi = -Z_FRAC * L, Z_FRAC * L
@@ -29,7 +36,7 @@ def main():
                          "--plasma-h", f"{max(0.4, R/6.0):.3f}"])
     print(f"  --plasma {INNER_R},{R},{zlo:.4f},{zhi:.4f}", flush=True)
     r = subprocess.run([sys.executable, "geometry.py", "--out", f"{tag}.msh",
-                        "--size-factor", "1.5"] + args,
+                        "--size-factor", _SF] + args,
                        capture_output=True, text=True)
     if r.returncode or not pathlib.Path(f"{tag}.msh").exists():
         raise SystemExit(f"🔴 mesh failed:\n{(r.stdout + r.stderr)[-800:]}")

@@ -40,6 +40,7 @@ FALSIFICATION
          reported — the same guard that fired on the cap-loop solve.
 """
 import json
+import values
 import pathlib
 import subprocess
 import sys
@@ -54,6 +55,12 @@ from e0k2_anchor import design_point, wall_sigma, shared_energy_list, N_MODES
 TAG = "e0k2_bare"
 
 
+# 🔑 BOUND, not a literal. Value-neutral (still 1.5) — the point is that it
+# now has ONE source and carries its caveat: 1.5 is the COARSEST point of
+# the h3-betaconv series, where coupling.beta.loaded moves +16.4 % to sf 1.2.
+_SF = f'{values.get("mesh.size_factor.default", allow_tentative=True, role="default"):g}'
+
+
 def main():
     print(__doc__)
     print("=" * 78, flush=True)
@@ -65,7 +72,7 @@ def main():
 
     geo = list(GEO) + ["--radius", f"{a:.6f}", "--length", f"{L:.6f}"]
     r = subprocess.run([sys.executable, "geometry.py", "--out", f"{TAG}.msh",
-                        "--size-factor", "1.5"] + geo,
+                        "--size-factor", _SF] + geo,
                        capture_output=True, text=True)
     if r.returncode or not pathlib.Path(f"{TAG}.msh").exists():
         sys.exit(f"mesh failed: {(r.stdout + r.stderr)[-300:]}")

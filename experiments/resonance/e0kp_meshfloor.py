@@ -24,6 +24,7 @@ FALSIFICATION  if the spread is comparable to the 1.3-3.3 MHz "cross-mesh error"
 one FILE. It sets the price of NOT doing that.
 """
 import json
+import values
 import pathlib
 import sys
 import time
@@ -35,8 +36,13 @@ import solveconf
 from e0_solver_vs_math import A_MM, L_MM, GEO, eigen_cfg, run, eig
 from e0k_driven_vs_eigen import LOOP
 
+# 🔑 BOUND, not a literal. Value-neutral (still 1.5) — the point is that it
+# now has ONE source and carries its caveat: 1.5 is the COARSEST point of
+# the h3-betaconv series, where coupling.beta.loaded moves +16.4 % to sf 1.2.
+_SF = f'{values.get("mesh.size_factor.default", allow_tentative=True, role="default"):g}'
+
 N = 3
-GEOARGS = list(GEO) + list(LOOP) + ["--size-factor", "1.5"]
+GEOARGS = list(GEO) + list(LOOP) + ["--size-factor", _SF]
 TAG = "e0kp"
 
 

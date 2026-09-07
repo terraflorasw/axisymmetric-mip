@@ -166,6 +166,12 @@ BETA_MAX = BETA_HI
 AMBIGUOUS_DEG = 10.0    # a phase swing this close to 180 has not decided
 
 
+# 🔑 BOUND, not a literal. Value-neutral (still 1.5) — the point is that it
+# now has ONE source and carries its caveat: 1.5 is the COARSEST point of
+# the h3-betaconv series, where coupling.beta.loaded moves +16.4 % to sf 1.2.
+_SF = f'{values.get("mesh.size_factor.default", allow_tentative=True, role="default"):g}'
+
+
 def design_point():
     """H1's cavity, DERIVED. physics.py owns the relation; nothing is copied."""
     return ph.design_point(DL, values.get("source.f0.ghz"))
@@ -339,7 +345,7 @@ def build_mesh(tag, a, L, ld, lw, cap_r):
     groove = (["--groove", f"{GROOVE_W},{GROOVE_D}", "--tag-groove"]
               if GROOVE_W > 0 and GROOVE_D > 0 else [])
     r = subprocess.run([sys.executable, "geometry.py", "--out", f"{tag}.msh",
-                        "--size-factor", "1.5"] + geo + loop + groove,
+                        "--size-factor", _SF] + geo + loop + groove,
                        capture_output=True, text=True)
     if r.returncode or not pathlib.Path(f"{tag}.msh").exists():
         raise RuntimeError(f"{tag}: mesh failed — {(r.stdout + r.stderr)[-300:]}")

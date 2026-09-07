@@ -69,6 +69,7 @@ FALSIFICATION
          and do not pick the deeper one.
 """
 import json
+import values
 import math
 import os
 import pathlib
@@ -82,6 +83,11 @@ from e0k2_anchor import design_point, LOOP_PHI, LOOP_RW, LOOP_GAP
 from h3_loaded import drude, Z_FRAC, SECTORS, CAP_R_FRAC
 from h3_driven import (local_minima, fit_dip, read_s11, sweep, RI, RO,
                        COARSE_MIN_DEPTH_DB, SIZE_FACTORS)
+
+# 🔑 BOUND, not a literal. Value-neutral (still 1.0 mm). Skin depth is
+# 6.89 mm, far larger than any annulus here, so the field varies slowly
+# across it — see mesh.plasma_h.default for the full provenance.
+_PH = f'{values.get("mesh.plasma_h.default", allow_tentative=True, role="default"):.3f}'
 
 TAG = "h3_margin"
 
@@ -102,7 +108,7 @@ CASE_TIMEOUT_S = 1800.0
 # extrapolation. 384 mm^2 is dropped as dominated.
 LOOPS = [(3.5, 1.5), (5.0, 3.5), (7.5, 5.5), (11.0, 8.0)]
 # 🔴 groove DEPTHS, width fixed at the 5 mm baseline.
-# lambda/4 = 30.59 mm is the depth to AVOID (the slot resonates, Q -> ~3,000).
+# wavelength/4 = 30.59 mm is the depth to AVOID (the slot resonates, Q -> ~3,000).
 GROOVE_W = 5.0
 GROOVE_D = [7.0, 10.0, 14.0]
 
@@ -118,6 +124,20 @@ ANCHOR = {"groove_d": 10.0, "loop": (11.0, 8.0),
           "f0": 2.4824, "lw_mhz": 16.00, "margin_mhz": 9.6}
 V1_TOL_MHZ = 1.0
 F2_MARGINAL_MHZ = 5.0
+
+
+# 🔴 THE TORCH WAS HARDCODED HERE TOO. Same defect as h3_driven:316, found
+# 2026-09-04 by `preflight r_cli_literal` once it could see CLI-arg literals:
+# this rig could ONLY mesh a VACUUM torch and could not reach the design cavity.
+# THE TORCH RESTORATION LANDED 2026-08-26; four rigs never picked it up.
+# ✅ Bound from baselines, overridable per run so the pre-restoration series
+# stays reproducible: set "torch_material": [1.0, 3.5e-05] in the config.
+# ⚠️ These rigs take no run-config parameters, so there is no per-run override
+# here — unlike h3_driven, where `torch_material` is a config key. Changing the
+# torch for one of these means giving it a config, not editing this line.
+_TM = [values.get("torch.sapphire.permittivity"),
+       values.get("torch.sapphire.loss_tangent")]
+_TM_ARG = f"{float(_TM[0]):g},{float(_TM[1]):g}"
 
 
 def save(out):
@@ -140,9 +160,9 @@ def build(tag, ld, lw, gw, gd, a, L, eps_p, sig_p, rec):
     args = (geo_with_groove(gw, gd)
             + ["--radius", f"{a:.6f}", "--length", f"{L:.6f}",
                "--sectors", str(SECTORS),
-               "--torch-material", "1.0,3.5e-05",
+               "--torch-material", _TM_ARG,
                "--plasma", f"{RI},{RO},{-zhi:.4f},{zhi:.4f}",
-               "--plasma-h", "1.000",
+               "--plasma-h", _PH,
                "--loop", f"{ld},{lw},{LOOP_RW},{LOOP_GAP}",
                "--loop-cap", f"{CAP_R_FRAC * a:.4f}",
                "--loop-phi", LOOP_PHI])

@@ -53,6 +53,20 @@ wall-following loop · arc coupler · equatorial loop · loop standoff ·
 external Q · critical coupling · coupling coefficient beta · VSWR ·
 coaxial feedthrough · coaxial feed hole · coax entry · wave port · lumped port
 
+loop standoff · wall gap · conductor centreline · image loading · loop
+self-inductance near a conducting wall · E-field access · J0 J1 field profile ·
+magnetic versus electric coupling · coupler placement within the mode
+
+power balance closure · Poynting flux boundary integral · surface loss
+integration · driven solve verification · S-parameter validation · port
+normalisation · incident power convention · lumped port face planarity ·
+non-planar port face · annular sector port · unloaded Q from stored energy ·
+port-independent Q · broadband reflection offset · spurious absorption ·
+discretisation error indicator
+
+striker ignition · seed ignition · igniter electrode · plasma ignition threshold ·
+breakdown field nitrogen · cavity-only ignition
+
 soil analysis · regenerative agriculture · soil nutrient spectroscopy ·
 elemental analysis plasma source
 
@@ -126,6 +140,30 @@ Specify the loop by **standoff and arc length, independently**:
   - **Arc length, not arc angle.** The angle subtended depends on the standoff,
     so a fixed angle at different standoffs is a different conductor length.
 
+### Standoff is a design variable, not a mounting detail
+
+The standoff sets a **trade between the two field components**, and the trade is
+one-sided at the wall:
+
+  - TE011's azimuthal electric field goes as `J1(chi'_01 r/a)`. Because
+    `chi'_01` is itself a zero of `J1`, **E_phi is identically zero at the
+    cavity wall** — a conductor placed hard against the wall sits in
+    essentially no electric field.
+  - TE011's axial magnetic field goes as `J0(chi'_01 r/a)`, which is **not**
+    zero at the wall. `J0(chi'_01) ~= -0.403`, near its extremum.
+
+So reducing the standoff maximises the magnetic flux the loop links while
+driving the local electric field to zero, and increasing it recovers electric
+field at modest cost in magnetic. Over the first ~12 % of the radius the
+electric field rises by several times while `|J0|` falls by roughly a tenth —
+**the exchange rate strongly favours moving off the wall**, and a design that
+treats the standoff as a mechanical clearance rather than an electrical
+parameter gives that up by default.
+
+⚠️ A wall-following loop is therefore **not** simply "a loop, but curved". Its
+defining property is *where it sits in the mode*, and the standoff is the
+control on that.
+
 ### Coaxial feedthrough
 
 Feed the loop by a **coaxial line entering through a clearance hole in the
@@ -146,10 +184,72 @@ the coaxial inner conductor; the hole wall is the outer conductor.
 
 ---
 
+## Disclosure 3 — Verifying a driven cavity model by closing its power balance
+
+Published because it is the step that distinguishes a coupler measurement from a
+plausible number, and because we spent weeks on numbers that had never been
+subjected to it.
+
+### The problem
+
+A frequency-domain driven solve reports `S11`, from which the absorbed power
+follows as `P_inc(1 - |S11|^2)`. **That figure is not a measurement of anything
+being absorbed.** If the port's geometry or normalisation is wrong, `S11` is
+wrong, no conservation law is violated anywhere in the solve, and the result is
+self-consistent, mesh-convergent-looking and false.
+
+### The method
+
+  - Integrate the **Poynting flux through each dissipative boundary separately**
+    — cavity wall, coupler conductor, port — as a post-processing step on the
+    same solve.
+  - Compare the **sum against `P_inc(1 - |S11|^2)`**. Call the ratio the
+    *closure*. A correct one-port model closes to within a few percent.
+  - **Calibrate on a geometry already trusted, in the same run set.** An absolute
+    closure figure means little alone; the same figure on a known-good coupler,
+    same solver and mesh settings, is what turns it into a verdict.
+  - The closure also **determines the drive normalisation**: the incident power
+    implied by the trusted geometry's closure resolves what the port's reported
+    incident voltage means, which is otherwise a convention to be guessed.
+
+### The port-independent cavity Q
+
+`Q0 = omega * W / P_loss`, with `W` the stored field energy and `P_loss` the
+summed surface dissipation, uses **no S-parameter, no port normalisation and no
+resonance fit**. It therefore yields a cavity Q even on a model whose port is
+demonstrably wrong, and it can be checked against an eigenmode solve of the same
+cavity, which shares none of the driven machinery.
+
+  - ⚠️ `Q0` derived this way is a **ratio**, so it survives an error that scales
+    energy and dissipated power together. The closure is an **absolute** and does
+    not. The two disagreeing in that particular pattern localises the fault to
+    the scale of the resonant response rather than to the physics — which is a
+    diagnostic in its own right.
+
+### Applying it to a curved-gap loop coupler
+
+A lumped port is defined on the face spanning a gap cut in the conductor. When
+the conductor is an arc, that face is an **annular sector, not a plane**. Solvers
+that require a planar port face may accept the non-planar one without error and
+return a wrong `S11`. The failure is worst where the loop is closest to the wall.
+
+  - **The diagnostic signature is a broadband off-resonance offset**: a lossless
+    cavity must reflect essentially all incident power away from resonance, so a
+    persistent flat offset in `|S11|` with no matching surface dissipation is a
+    port-model defect, not a loss.
+  - Discretisation-error indicators correlate with it and are **not** its cause;
+    refining the mesh changes how wrong the port integration is without any power
+    moving. **Treating a mesh-dependent artefact as a mesh-resolution problem is
+    the trap**, and it costs whole studies.
+
+---
+
 ## Where the numbers are, and how they are derived
 
 This document deliberately states **mechanisms and derivations rather than
-values**, because the values are still being refined. Every value lives in the
+values**, because the values are still being refined. Disclosure 3 is stated the
+same way: it is a *method*, and its worth does not depend on any number this
+project happens to hold today. Every value lives in the
 repository, and git history records what it was on any given date.
 
 | quantity | how it is derived | where it lives |
@@ -159,7 +259,11 @@ repository, and git history records what it was on any given date.
 | groove effect on mode purity and TM111 separation | eigenmode simulation, grooved vs ungrooved, with mode purity reported per solve | `experiments/resonance/KNOWN.md`, and the `h2`/`h2b` rigs |
 | groove depth behaviour | parameter sweep over depth | `h2b_groovescale` |
 | loop geometry and the coax hole | constructed in the mesh generator; the sidecar records standoff, centreline and port face separately | `geometry.py` (`--loop-azim-standoff`, `--loop-hole`) |
-| coupling quantities | simulated; see the caveat below | `experiments/resonance/NEXT.md` |
+| coupling quantities | simulated; see the caveat below | `experiments/resonance/Q_LEDGER.md` |
+| standoff, and the field components it trades between | closed form for TE011, `E_phi ~ J1(chi'_01 r/a)` and `H_z ~ J0(chi'_01 r/a)`, evaluated at the conductor centreline | `experiments/resonance/Q_LEDGER.md`, `coldfield.py` |
+| power balance closure, and the drive normalisation it fixes | `SurfaceFlux` boundary integrals on wall / port / conductor, against `P_inc(1 - \|S11\|^2)`, calibrated on a trusted coupler | `experiments/resonance/KNOWN.md`, `h3_driven.py` |
+| unloaded Q by the port-independent route | `Q0 = omega W / P_loss` from stored energy and summed surface dissipation; cross-checked against an eigenmode solve | `experiments/resonance/KNOWN.md`, `Q_LEDGER.md` |
+| coupler and wall dissipation | the same surface integrals, scaled linearly in drive power | `experiments/resonance/KNOWN.md` |
 
 **Reproducing any of it:** meshes are generated by `geometry.py` (gmsh/OCC) and
 solved with Palace (MFEM) finite elements. Rig scripts, solver configurations and
@@ -172,12 +276,29 @@ their outputs are all in `experiments/resonance/`.
 This section is part of the disclosure. The following were investigated and are
 **not** established:
 
-  - Any specific external Q, coupling coefficient, or VSWR for the coupler.
-    Simulated values proved sensitive to the modelled port geometry.
+  - Any specific external Q, coupling coefficient, or VSWR for the **azimuthal**
+    coupler. The sensitivity to modelled port geometry noted in earlier revisions
+    has since been localised — see Disclosure 3 — but the coupling quantities
+    themselves remain unestablished for that coupler.
   - Any operating electron density, plasma coupling efficiency, or claim about
     what plasma the cavity can sustain.
   - Any claim that TE011 is ultimately the correct mode for the finished
     instrument.
+  - Any thermal design. Coupler and wall dissipation have been computed from the
+    field solution, but no thermal model exists and no temperature is claimed.
+    Note only that a coupling loop's **power density** is several times the cavity
+    wall's, and that the worst case for it is the cold, resonant, unloaded state
+    rather than normal operation.
+  - Any tolerance, machining or tuning-range specification. Not characterised.
+
+### Assumed, and stated so it is not mistaken for a claim
+
+The architecture **assumes an external ignition source** (a striker or
+equivalent). A cavity of this class does not reach the breakdown field of
+atmospheric-pressure nitrogen at practical drive powers, by a margin that more
+power does not close. This is consistent with commercial microwave-induced plasma
+instruments generally, and is recorded here as a design premise rather than a
+limitation of the designs disclosed above.
 
 `NEXT.md` and `KNOWN.md` are a **working record**, including hypotheses that were
 later retracted; they are not claims. This file is the claims.

@@ -20,7 +20,7 @@ decision is at the bottom.
 
 | | constraint | owned by |
 |---|---|---|
-| **EM / RF** | bore sets how strongly the plasma loads TE011, so it sets β and VSWR | `../resonance/` |
+| **EM / RF** | bore sets how strongly the plasma loads TE011, so it sets coupling.beta and VSWR | `../resonance/` |
 | **slm → residency → LOD** | bore area and flow set residence time, which sets detection limit | `../spectroscopy/` |
 | **the nitrogen generator** | 🔑 **NEW, and it is a PRODUCT constraint** | **here** |
 
@@ -41,7 +41,7 @@ practice) — **i.e. the loud side of the user's threshold, chosen by nobody.**
 Residence time is `L·A/Q`: **halve the flow and you must halve the bore area to
 keep it.** A narrower bore is also what the EM wants. So:
 
-| flow | bore for EQUAL residence | residence | Q₀ | β | **VSWR** | siting |
+| flow | bore for EQUAL residence | residence | Q₀ | coupling.beta | **VSWR** | siting |
 |---:|---|---:|---:|---:|---:|---|
 | **20 slm** | 2–8.50 mm *(as modelled)* | 59.3 ms | **105** | 0.0113 | **88** | 🔴 utility room |
 | 12 slm | 2–6.70 mm | 59.3 ms | 243 | 0.0263 | **38** | ✅ bench |

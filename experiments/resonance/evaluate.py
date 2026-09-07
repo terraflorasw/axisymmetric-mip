@@ -631,14 +631,15 @@ def insitu_sigma(invariant_ghz):
     return _sd(mhz)
 
 
-def plan_span(sigma_mhz, n, target_slope_err):
+def plan_span(std_dev_mhz, n, target_slope_err):   # sigma = STD DEV, not
+                                                   # conductivity (NAMING.md)
     """Span needed for a target σ_slope. METHODOLOGY §2c.
 
     σ_slope = σ/√Sxx and Sxx ≈ n·W²/12 for n points evenly spread over W.
     Call this BEFORE running: it turns "how fine a sweep do I need" into
     arithmetic instead of a guess, and it usually says the span is impractical.
     """
-    return sigma_mhz * (12.0 / n) ** 0.5 / target_slope_err
+    return std_dev_mhz * (12.0 / n) ** 0.5 / target_slope_err
 
 
 def sweep_verdict(signal_mhz, sigma_insitu, k=2.0, label="signal"):

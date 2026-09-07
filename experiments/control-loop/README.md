@@ -33,9 +33,9 @@ The load side, all from measurement:
 | f₀ locus, cold → 1e20 | **2.4515 → 2.4824 GHz** (+30.9 MHz slew at ignition) |
 | cold linewidth | **0.35 MHz** (Q_L 7,004) |
 | loaded linewidth @1e20 | **16.0 MHz** (Q_L 155) |
-| β range | **4.715 → 0.017** — a factor of **275**, crossing 1 at n_e ≈ 5×10¹⁶ |
+| coupling.beta range | **4.715 → 0.017** — a factor of **275**, crossing 1 at n_e ≈ 5×10¹⁶ |
 | VSWR | **4.7 → 99.3**, worst MID-range (Q₀ minimises near 1e19) |
-| load-side at 1 kW matched | ✅ **39–42 A**, or **1.9–2.1 kV** on the high-Z branch *(MEASURED 2026-08-25; was 34–45 A from interpolated β)* |
+| load-side at 1 kW matched | ✅ **39–42 A**, or **1.9–2.1 kV** on the high-Z branch *(MEASURED 2026-08-25; was 34–45 A from interpolated coupling.beta)* |
 | circulator dump | up to **961 W of 1 kW** unmatched |
 
 **Architecture (STATED):** dual directional coupler at the LDMOS output reading
@@ -45,9 +45,9 @@ tuner · circulator.
 ### Three findings worth having up front
 
 0. 🔴🔴 **THE COUPLING REQUIREMENT IS BIMODAL, AND NO FIXED LOOP MEETS IT.**
-   β = Q₀/Q_ext, and **Q_ext is the coupling loop and nothing else.** Cold wants
+   coupling.beta = Q₀/Q_ext, and **Q_ext is the coupling loop and nothing else.** Cold wants
    Q_ext = **43,422** (Q₀ = 43,422); loaded at the anchored density wants
-   **109**. **The two states want couplers ~400× apart.** Every β and VSWR
+   **109**. **The two states want couplers ~400× apart.** Every coupling.beta and VSWR
    quoted below is therefore **a consequence of a loop we chose**, not a property
    of the cavity (`../resonance/CONVENTIONS.md` §7am).
    🔑 **This restates requirement 1 correctly:** the tuner was being asked to
@@ -63,13 +63,13 @@ tuner · circulator.
    small die, a small die has high thermal resistance, **so the parts that work
    at 2.45 GHz cannot carry 39–42 A.** Not a sourcing failure.
 3. 🔑 **A MAGNITUDE-ONLY DETECTOR INHERITS RESONANCE'S OWN §7x ERROR.** |Γ|
-   cannot distinguish β from 1/β. Either side of the ignition crossing reads
+   cannot distinguish coupling.beta from 1/coupling.beta. Either side of the ignition crossing reads
    −13.98 vs −13.99 dB: identical reflected power, **opposite tuner directions.**
    Downconvert both coupler ports coherently and use complex Γ.
-   ✅ **NAMED 2026-08-25: an RF PHASE DETECTOR** (user). At f₀, Γ = (β−1)/(β+1)
-   is REAL, so β and 1/β differ by exactly **180°** — **±45° resolution is
+   ✅ **NAMED 2026-08-25: an RF PHASE DETECTOR** (user). At f₀, Γ = (coupling.beta−1)/(coupling.beta+1)
+   is REAL, so coupling.beta and 1/coupling.beta differ by exactly **180°** — **±45° resolution is
    ample**, and coupler directivity (even 20 dB) clears our operating points by
-   16–20 dB. 🔴 **But at β = 1 the reflected wave vanishes and there is no phase
+   16–20 dB. 🔴 **But at coupling.beta = 1 the reflected wave vanishes and there is no phase
    to read**, so the crossing must be caught by the |Γ| minimum and applied by a
    state machine. See `SOURCE.md` § RF PHASE DETECTOR.
 
@@ -102,7 +102,7 @@ there for cavity reasons anyway:**
 - ✅✅ **COUPLER — ANSWERED 2026-08-25, and the answer is LARGE.** The loop
   was never designed; it has now been swept across mount, flange and series
   gap. **Q_ext 8,716 → 322 measured, a 27× lever, on a machined gap.** The 4.2×
-  this document calls "an open question" is comfortably exceeded, and **β = 1
+  this document calls "an open question" is comfortably exceeded, and **coupling.beta = 1
   (84×) is no longer obviously out of reach** — it is 3.1× away. 🔴 **The
   remaining question is not CAN it, but SHOULD it: see the cold/loaded trade
   above and `../ignition-options/`.**
@@ -113,7 +113,7 @@ there for cavity reasons anyway:**
   at fixed wire radius, cap radius, turn count and shape. **Q_ext = 9,231 is the
   floor of ONE arbitrary family.**
   🔑 **VSWR 85 → 20 needs Q_ext only 4.2× lower** — the difference between "no
-  part exists" and "a standard tuner works". β = 1 needs 84× and is out of reach.
+  part exists" and "a standard tuner works". coupling.beta = 1 needs 84× and is out of reach.
   **Whether loop design can deliver 4.2× has never been asked.**
 
 ## Rules

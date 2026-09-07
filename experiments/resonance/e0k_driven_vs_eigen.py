@@ -39,6 +39,7 @@ FALSIFICATION  🔴 if offset_eig and offset_drv differ by ~2x on ONE MESH with
                24.54/12.00 gap is entirely LOADING.
 """
 import json
+import values
 import pathlib
 import subprocess
 import sys
@@ -56,11 +57,17 @@ LOOP = ["--loop", "25.8,19.4,1.5,0.3", "--loop-phi", "36"]
 BAND, STEP = (2.415, 2.455), 2e-5      # brackets order-1 (low) and order-2
 
 
+# 🔑 BOUND, not a literal. Value-neutral (still 1.5) — the point is that it
+# now has ONE source and carries its caveat: 1.5 is the COARSEST point of
+# the h3-betaconv series, where coupling.beta.loaded moves +16.4 % to sf 1.2.
+_SF = f'{values.get("mesh.size_factor.default", allow_tentative=True, role="default"):g}'
+
+
 def main():
     print(__doc__)
     print("=" * 78, flush=True)
     r = subprocess.run([sys.executable, "geometry.py", "--out", f"{TAG}.msh",
-                        "--size-factor", "1.5"] + GEO + LOOP,
+                        "--size-factor", _SF] + GEO + LOOP,
                        capture_output=True, text=True)
     if r.returncode or not pathlib.Path(f"{TAG}.msh").exists():
         sys.exit(f"mesh failed: {(r.stdout + r.stderr)[-200:]}")

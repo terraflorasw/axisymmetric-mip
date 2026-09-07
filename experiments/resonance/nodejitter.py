@@ -18,6 +18,7 @@ FALSIFICATION  if interior nodes move too, or if the moved count exceeds the
 """
 import math
 import pathlib
+import values
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
@@ -25,7 +26,12 @@ import meshdet
 from e0_solver_vs_math import GEO
 from e0k_driven_vs_eigen import LOOP
 
-ARGS = list(GEO) + list(LOOP) + ["--size-factor", "1.5"]
+# 🔑 BOUND, not a literal. Value-neutral (still 1.5) — the point is that it
+# now has ONE source and carries its caveat: 1.5 is the COARSEST point of
+# the h3-betaconv series, where coupling.beta.loaded moves +16.4 % to sf 1.2.
+_SF = f'{values.get("mesh.size_factor.default", allow_tentative=True, role="default"):g}'
+
+ARGS = list(GEO) + list(LOOP) + ["--size-factor", _SF]
 
 
 def nodes(path):

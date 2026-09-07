@@ -40,7 +40,7 @@ of the two mounts:
   argument for preferring this mount.
 
 🔴 **The "cap is 1.39× stronger" claim was computed on the LEGACY cavity**
-(D/L 2.343, rejected by H1). The ratio is `(β/k_c)·maxJ₁/|J₀(x'₀₁)|`; the Bessel
+(D/L 2.343, rejected by H1). The ratio is `(β/k_c)·maxJ₁/|J₀(χ′₀₁)|`; the Bessel
 part is 1.4447 and **β/k_c carries the shape**: 0.9604 legacy → 1.387, but
 0.6252 on H1's cavity → **0.903**. The barrel is stronger, and the eigen pair
 agrees. See `../KNOWN.md` § ITEM 7 STEP 1.

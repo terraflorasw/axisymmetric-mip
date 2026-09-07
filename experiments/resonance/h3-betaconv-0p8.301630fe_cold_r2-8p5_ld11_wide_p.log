@@ -1,0 +1,84 @@
+>> /opt/amip/envs/emsim/bin/mpirun -n 32 /opt/amip/palace/bin/palace-x86_64.bin h3-betaconv-0p8.301630fe_cold_r2-8p5_ld11_wide.json
+
+_____________     _______
+_____   __   \____ __   /____ ____________
+____   /_/  /  __ ` /  /  __ ` /  ___/  _ \
+___   _____/  /_/  /  /  /_/  /  /__/  ___/
+  /__/     \___,__/__/\___,__/\_____\_____/
+
+Git changeset ID: v0.17.0-293-g3c83b9db0
+Running with 32 MPI processes, 1 OpenMP thread
+Device configuration: omp,cpu
+Memory configuration: host-std
+libCEED backend: /cpu/self/xsmm/blocked
+
+Removed 429 unmarked domain elements from the mesh
+
+[38;2;255;255;000m--> Warning![0m
+182 mesh faces with no associated boundary element exist on the domain boundary!
+
+Added 182 boundary elements for exterior boundaries to the mesh
+Added 77869 boundary elements for material interfaces to the mesh
+
+Characteristic length and time scales:
+ Lc = 1.974e-01 m, tc = 6.585e-01 ns
+Finished partitioning mesh into 32 subdomains
+
+Mesh curvature order: 2
+Mesh bounding box:
+ (Xmin, Ymin, Zmin) = (-8.800e-02, -8.800e-02, -9.871e-02) m
+ (Xmax, Ymax, Zmax) = (+8.800e-02, +8.800e-02, +9.871e-02) m
+
+Parallel Mesh Stats:
+
+                minimum     average     maximum       total
+ vertices          2641        3372        4697      107907
+ edges            21141       23452       27597      750475
+ faces            38024       39811       43031     1273977
+ elements         19121       19731       20323      631406
+ neighbors            2           6          20
+
+            minimum     maximum
+ h      0.000339181   0.0994233
+ kappa      1.00809     88.1652
+
+Estimated current per-rank memory usage is: Min. 40.8M, Max. 457.2M, Avg. 54.3M, Total 1.7G
+Estimated current per-node memory usage is: Min. 1.7G, Max. 1.7G, Avg. 1.7G, Total 1.7G
+
+Configuring Robin finite conductivity BC at attributes:
+ 90: σ = 3.500e+07 S/m, n = (+0.6,+0.2,-0.8)
+ 92: σ = 5.800e+07 S/m, n = (+0.1,+0.2,+1.0)
+
+Configuring Robin impedance BC for lumped ports at attributes:
+ 91: Rs = 3.000e+02 Ω/sq, n = (+0.0,+0.0,+1.0)
+
+Configuring lumped port circuit properties:
+ Index = 1: R = 5.000e+01 Ω
+
+Configuring lumped port excitation source term at attributes:
+ 91: Index = 1
+
+Computing adaptive fast frequency response for:
+Excitation with index 1 has contributions from:
+ Lumped port  1
+
+Beginning PROM construction offline phase:
+ 4801 points for frequency sweep over [2.400e+00, 2.520e+00] GHz
+
+Assembling system matrices, number of global unknowns:
+ H1 (p = 2): 858382, ND (p = 2): 4048904, RT (p = 2): 5716149
+ Operator assembly level: Partial
+ Mesh geometries:
+  Tetrahedron: P = 20, Q = 14 (quadrature order = 4)
+
+Assembling multigrid hierarchy:
+ Level 0 (p = 1): 750475 unknowns
+ Level 1 (p = 2): 4048904 unknowns
+ Level 0 (auxiliary) (p = 1): 107907 unknowns
+ Level 1 (auxiliary) (p = 2): 858382 unknowns
+
+  Residual norms for GMRES solve
+--------------------------------------------------------------------------
+prterun noticed that process rank 1 with PID 18784 on node i-01fcd601b69b58ae5 exited on
+signal 15 (Terminated).
+--------------------------------------------------------------------------

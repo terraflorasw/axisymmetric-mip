@@ -65,7 +65,7 @@ TE₀₁₁ is right to 0.26 MHz while the spectrum is 10.6 MHz wrong.
 
 | | |
 |---|---|
-| **V** | circuit theory: η = 4β/(1+β)², β = Q₀/Q_ext. And **energy balance must close**: η_total = η_plasma + η_wall + η_dielectric |
+| **V** | circuit theory: η = 4coupling.beta/(1+coupling.beta)², coupling.beta = Q₀/Q_ext. And **energy balance must close**: η_total = η_plasma + η_wall + η_dielectric |
 | **F** | **the closure itself.** If the split does not sum to η_total within a few percent, the decomposition is wrong and only η_total may be quoted. This caught a factor-of-2 convention error once already |
 | **method** | σ_plasma swept same-mesh; wall metal is a boundary property, also same-mesh |
 
@@ -105,7 +105,7 @@ E0j's recipe held on an empty cavity because it had no second scale. Loaded, sf
 also is"*** — and that reframing is right. The groove width (5 mm), the groove
 depth (10 mm) and the loop series gap (2.25 mm measured, ~8 mm extrapolated)
 are **the same class of feature at the same scale**: conductor gaps of
-λ/15 … λ/24, big enough to hold a real voltage, too small to radiate. Calling
+wavelength/15 … wavelength/24, big enough to hold a real voltage, too small to radiate. Calling
 one "a capacitive gap" and the other "a slot dimension" was inconsistent.
 
 ✅ **What that clarifies about the GROOVE.** TE011's wall current is AZIMUTHAL
@@ -139,7 +139,7 @@ the design cavity is now ~7 min at best, so a mechanism study is expensive.
 existing data, and a reading is not a falsification.
 
 ✅ **The one new fact** (`h3-lambda4-02`, KNOWN.md): swept over 18 mm of
-conductor length, Q_ext **turns** — an interior minimum at L = 1.021 λ/4. The
+conductor length, Q_ext **turns** — an interior minimum at L = 1.021 wavelength/4. The
 entry above was written when the only length axis available was the gap's
 1.9 mm, which could not have seen a turn.
 
@@ -267,7 +267,7 @@ These are recorded so they are not lost. **They do not spawn runs.**
 - 🔑 **SALINE AS AN IGNITION BASELINE (user, 2026-08-23).** ⚠️ **Not a proposed device — a REFERENCE.** No beads, no inserted objects. Plain saline is the simplest thing that could work, so it is what every more viable igniter must be measured against. It probably fails on its own; the value is knowing by how much. Khattak, Bianucci
   & Slepkov, **PNAS 116(10) 4000–4005 (2019)**, in `refs/`. Mie resonances in
   water spheres (ε̃ = 79 + i10 at 2.45 GHz) interact cooperatively to make a
-  contact hotspot — **≈19× the vacuum field**, superfocusing to λ₀/100 — which
+  contact hotspot — **≈19× the vacuum field**, superfocusing to (free-space wavelength)/100 — which
   field-ionises Na/K and cascades in the air.
   🔑 **Their Fig 1C is the saline case already done**: skinless >99%-water
   hydrogel beads form plasma after a brief NaCl immersion.

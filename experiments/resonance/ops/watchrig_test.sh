@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# sanctioned-watcher: the tests for it
 # Does ops/watchrig.sh actually fire, and actually NOT fire?
 #
 # 🔴 WRITTEN BECAUSE THREE WATCHERS WERE SHIPPED UNTESTED IN ONE DAY, each

@@ -336,23 +336,23 @@ def build(tag, ld, lw, a, L, grooved, rec):
     # not a defect in the construction. So treat it exactly as the mesher's
     # size factor is already treated: try, and RECORD what worked, because a
     # run that cannot say which geometry it built cannot be compared.
-    _chords = ((7, 3, 9, 5, 11) if rec.get("mount") == "azim" else (None,))
-    for nc in _chords:
+    # 🔴 THE CHORD RETRY IS GONE, 2026-09-06. `arc_chords` never had a consumer
+    # in geometry.py — the arc is an OCC torus, not a polyline — so every value
+    # in the list re-meshed IDENTICAL geometry and the loop reported whichever
+    # was tried first as "what worked". h3-azimchord-01 asked for 11 and
+    # reproduced the 7-chord mesh to the TET (349,530). geometry.py now REFUSES
+    # AMIP_ARC_CHORDS, so setting it here would fail the mesh outright.
+    for nc in (None,):
         _env = dict(os.environ)
-        if nc is not None:
-            _env["AMIP_ARC_CHORDS"] = str(nc)
         for sf in ("1.5", "1.42", "1.58"):
             r = subprocess.run([sys.executable, "geometry.py", "--out",
                                 f"{tag}.msh", "--size-factor", sf] + args,
                                capture_output=True, text=True, env=_env)
             if not r.returncode and pathlib.Path(f"{tag}.msh").exists():
                 rec["size_factor"] = sf
-                if nc is not None:
-                    rec["arc_chords"] = nc
-                if sf != "1.5" or (nc is not None and nc != _chords[0]):
-                    print(f"      ⚠️ mesh needed size-factor {sf}"
-                          + (f", {nc} chords" if nc is not None else "")
-                          + "; REPORTED", flush=True)
+                if sf != "1.5":
+                    print(f"      ⚠️ mesh needed size-factor {sf}; REPORTED",
+                          flush=True)
                 return solveconf.load_meta(f"{tag}.msh")
             rec["_err"] = (r.stdout + r.stderr)[-200:]
     return None

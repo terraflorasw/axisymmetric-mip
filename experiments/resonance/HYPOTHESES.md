@@ -110,7 +110,7 @@ E0 and H1), and H3 is built on it. Do not read "retired" as "set aside".
 **THE RESULT, live and consumed by H3:** an annular groove, **frozen at
 5 × 10 mm**, both end caps. It runs PARALLEL to TE011's azimuthal cap current and
 CUTS the radial component every TM mode has. Cold: TM111 **−64 MHz**, TE011
-**14 kHz**, Q cost **0.3%**. 🔴 λ/4 = 30.59 mm is the depth to AVOID.
+**14 kHz**, Q cost **0.3%**. 🔴 wavelength/4 = 30.59 mm is the depth to AVOID.
 ✅ Confirmed under load 2026-08-23: the filter is what makes TE011 the mode an
 LDMOS tuner locks to; without it the tuner takes a TM-like mode at 2.44 GHz.
 
@@ -137,9 +137,9 @@ carries this numbering. Gaps in the sequence are cheaper than broken citations.
 ## H3 — sustainment: COLD, HOT and LOADED · ✅ **ANSWERED 2026-08-24**
 
 ✅ **All three regimes measured**, and both halves of the question closed:
-- **COLD** — TE011 2.451633 GHz, Q₀ 43,422, β 4.704, purity 0.9997 (`h3_loopq`)
+- **COLD** — TE011 2.451633 GHz, Q₀ 43,422, coupling.beta 4.704, purity 0.9997 (`h3_loopq`)
 - **HOT** — f₀ −5.70 MHz/100 K, Q₀ ×0.838/100 K, **Q_ext thermally INVARIANT**
-  so β tracks Q₀; purity untouched (`h3_hot`)
+  so coupling.beta tracks Q₀; purity untouched (`h3_hot`)
 - **LOADED** — η = 0.986–0.998 over n_e 1e18–1e20, pull +30.9 MHz (`h3_driven`)
 - **(b) the groove under load** — `h3_margin`: groove depth moves the loaded f₀
   by **0.000 MHz**, and depth PEAKS at 10 mm. **5 × 10 needs no refinement.**
@@ -178,7 +178,7 @@ answers a question nobody asked.
 
 🔴 **Everything measured for H3 on 2026-08-23 was groove-free and is DISCARDED**
 — not "scope-invalid pending review", discarded. η(ne), the +31.6 MHz pull,
-loaded Q₀, β vs loop area, the 78% suppression law, sapphire's loaded point.
+loaded Q₀, coupling.beta vs loop area, the 78% suppression law, sapphire's loaded point.
 Do not quote them and do not try to salvage them; re-measure from `GEO_DESIGN`.
 
 ✅ **What survives from that day is instrument, not cavity**: driven replaces
@@ -291,7 +291,7 @@ numbers below are theirs, not recollection.
 
 | | |
 |---|---|
-| **mechanism** | **Mie / morphology-dependent resonances (MDRs)** in each sphere, interacting cooperatively → an EM hotspot at the point of contact. Superfocusing on the order of **λ₀/100** |
+| **mechanism** | **Mie / morphology-dependent resonances (MDRs)** in each sphere, interacting cooperatively → an EM hotspot at the point of contact. Superfocusing on the order of **(free-space wavelength)/100** |
 | **water at 2.45 GHz, 20 °C** | **ε̃ = 79 + i10**, n = 8.9, k = 0.56. Penetration depth **≈ 1.5 cm** |
 | **field enhancement** | FEM, 16 mm beads, 1 V/m input: energy density **1.30 → 1.47 → 16.6** (×0.1 nJ/m³) as separation closes 20 → 4 → **0.5 mm**. At contact that is ≈ **19× the vacuum field** in the gap |
 | **what ignites** | emission spectra show **K and Na** in grapes, and **Na** in the beads — field-ionised at the hotspot, then a cascade in the AIR that "grows and becomes independent from the dimer" |
@@ -325,7 +325,7 @@ it should broaden further — but there is presumably a limit past which the
 resonance is destroyed rather than broadened. **Unmeasured.**
 
 **Why (a) is the interesting one.** A grape is a ~2 cm sphere of water, and water
-is ε ≈ 78 at 2.45 GHz. A dielectric sphere resonates when d ≈ λ₀/√ε ≈
+is ε ≈ 78 at 2.45 GHz. A dielectric sphere resonates when d ≈ (free-space wavelength)/√ε ≈
 122/8.8 ≈ **14 mm** — grape-sized. Two touching spheres put their surface fields
 in phase at the contact point, and the resulting hotspot exceeds air breakdown.
 **This is FIELD CONCENTRATION BY DIELECTRIC RESONANCE, not seeding** — a

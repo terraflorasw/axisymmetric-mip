@@ -56,6 +56,12 @@ LD, LW = values.get("loop.size.mm")
 BEFORE = {"s1": 0.5598, "s5": 0.3411}
 
 
+# 🔑 BOUND, not a literal. Value-neutral (still 1.5) — the point is that it
+# now has ONE source and carries its caveat: 1.5 is the COARSEST point of
+# the h3-betaconv series, where coupling.beta.loaded moves +16.4 % to sf 1.2.
+_SF = f'{values.get("mesh.size_factor.default", allow_tentative=True, role="default"):g}'
+
+
 def main():
     print(__doc__)
     print("=" * 78, flush=True)
@@ -76,7 +82,7 @@ def main():
                              "--loop-cap", f"{cap_r:.4f}",
                              "--loop-phi", LOOP_PHI] + extra)
         r = subprocess.run([sys.executable, "geometry.py", "--out", f"{tag}.msh",
-                            "--size-factor", "1.5"] + args,
+                            "--size-factor", _SF] + args,
                            capture_output=True, text=True)
         if r.returncode or not pathlib.Path(f"{tag}.msh").exists():
             print(f"    🔴 mesh failed — REPORTED, not skipped"); continue

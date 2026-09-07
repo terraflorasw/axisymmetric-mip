@@ -223,7 +223,7 @@ def r_undefined_name(src, tree):
 
 # rules needing the raw source (they inspect string CONTENTS); all others are
 # run against code_only() so prose about a pattern is not mistaken for it
-RAW = {"r_help_percent", "r_undefined_name"}
+RAW = {"r_help_percent", "r_undefined_name", "r_none_format"}
 
 
 # ---------------------------------------------------------------- shell rules
@@ -268,8 +268,40 @@ def sh_rm_rf_var(src, _t=None):
             and not l.strip().startswith("#")]
 
 
-SHELL_RULES = [sh_pkill, sh_unguarded_mkfs, sh_rm_rf_var, r_ps_e_with_C]
+# 🔴 ONE WATCHER. 2026-09-04/05: a bespoke poll-ssh-grep loop was hand-written
+# for EVERY launch across two days, while ops/watchrig.sh — the tested mechanism
+# with 16 tests — sat unused. Each hand-rolled version reproduced a failure it
+# had already fixed: no mirroring, no blindness check, host death caught 20 min
+# late, and a filter tuned three times.
+# 🔑 A watch must answer all three: (a) progress, (b) solve exit, (c) MACHINE
+# exit. ops/wait.sh answered only (b) and was expunged.
+# ✅ A legitimately-sanctioned watcher carries `sanctioned-watcher:` and a reason.
+_ADHOC_WATCH = re.compile(
+    r"(while +true|until +\[|until +!)[\s\S]{0,400}?(ssh|remote )[\s\S]{0,400}?sleep"
+    r"|tail +-f[^\n]*\.log"
+    r"|until[^\n]{0,80}grep[^\n]{0,80}EXIT=")
+
+
+def sh_adhoc_watch(src):
+    """A hand-rolled remote watch loop. Use ops/watch.sh."""
+    if "sanctioned-watcher:" in src:
+        return []
+    m = _ADHOC_WATCH.search(src)
+    if not m:
+        return []
+    line = src[:m.start()].count("\n") + 1
+    return [(ERROR, line,
+             "hand-rolled remote watch loop. Use `ops/watch.sh <slug>` — it "
+             "emits progress, detects SOLVE exit AND MACHINE exit, mirrors to "
+             "<slug>.watch.log, and warns when its filter is blind. If it lacks "
+             "something, FIX THE WATCHER (ops/watchrig_test.sh has 16 tests). "
+             "A sanctioned exception carries `sanctioned-watcher: <why>`.")]
+
+
+SHELL_RULES = [sh_adhoc_watch, sh_pkill, sh_unguarded_mkfs, sh_rm_rf_var, r_ps_e_with_C]
 SH_BAD = {
+    "sh_adhoc_watch": 'while true; do\n  ssh host "grep EXIT= run.log"\n  sleep 60\ndone\n',
+
     "sh_pkill": "pkill -TERM -f myjob.py\n",
     "sh_unguarded_mkfs": "sudo mkfs.ext4 /dev/nvme1n1\n",
     "sh_rm_rf_var": 'rm -rf $PREFIX/build\n',
@@ -303,7 +335,6 @@ _HARDCODED_GRANDFATHERED = {
     "e0l_scaling.py":            {"A_MM", "L_MM"},
     "e3_closure.py":             {"NE"},
     "facetcount.py":             {"A_MM", "L_MM"},
-    "geometry.py":               {"TAG_GROOVE"},
     "h1_aspect.py":              {"F0", "SIGMA"},
     "h2_groove.py":              {"SIGMA", "WIDTH"},
     "h2b_groovescale.py":        {"Q_TE011_BARE", "REFERENCE_GHZ", "SIGMA"},
@@ -417,6 +448,17 @@ def r_hardcoded_value(src, tree, path=None):
                 continue          # a call (values.get(...), wall_sigma()) is fine
             if isinstance(val, bool):
                 continue
+            # 🔴 A gmsh PHYSICAL-GROUP ID IS NOT A MEASUREMENT. `TAG_LOOP = 92`
+            # matched the geometry pattern on "LOOP" with `abs(v) > 0` and was
+            # reported as a hardcoded dimension on every single run of the main
+            # geometry file. `TAG_GROOVE` hit the identical false positive and
+            # was silenced by GRANDFATHERING it — the wrong direction for a
+            # ratchet that may only shrink, and it left a standing ERROR that
+            # trains the reader to skim past preflight output.
+            # Narrow on purpose: TAG_<NAME> holding a small positive integer.
+            if (t.id.startswith("TAG_") and isinstance(val, int)
+                    and 0 < val < 1000):
+                continue
             for pat, rng, what in _MEASURED:
                 if pat.search(t.id) and rng(val):
                     out.append((ERROR, node.lineno,
@@ -475,6 +517,160 @@ _RIG_NAMED_TAGS = {
     "h4_seed",
     "probecheck",
 }
+
+
+# 🔴 REFUSABLE VALUES AND THE PRINTS THAT FORGET THEM. 2026-09-04: making
+# `Q_EXT_MEASURED` and `Q0_COLD_EIGEN` refusable (None when the store has no
+# value for THIS geometry) was correct — and it crashed three separate runs,
+# each time in a PRINT, each time after a solve had already cost 1,000+ s, and
+# once BEFORE `save()` so the case was lost outright.
+# 🔑 Print-only consumers are the easiest to miss: they sit on no success path
+# any test exercises. Making a value refusable is only HALF the change.
+# 🔴 NAME-BASED, AND THAT IS THE BLIND SPOT. 2026-09-06: `ne` became REFUSABLE
+# (None on a prescribed-(eps, sigma) sweep) and this list was not updated, so the
+# rule could not see it and h3-q0map-01 died formatting `{ne:.1e}` — AFTER a
+# 1,699 s solve, the exact cost this rule exists to prevent.
+# ⚠️ Making a value refusable is therefore TWO edits, and the second is easy to
+# skip because the code works until the None actually arrives.
+# ⚠️ `ne` needs boundaries or it matches `line`, `n_e`, `done`.
+_REFUSABLE = re.compile(r"Q0_COLD_EIGEN|Q_EXT_MEASURED|Q_EXT_EST|q0c|_q0ref"
+                        r"|(?<![\w.])ne(?![\w.])")
+# 🔑 SOME NAMES ARE REFUSABLE ONLY IN ONE FILE. `ne` is None ONLY on h3_driven's
+# prescribed-(eps, sigma) path; in h3_eigen / h3_loaded / h4_seed it always comes
+# from a real density grid and cannot be None. Flagging it everywhere produced 8
+# findings across 5 rigs that are all FALSE — and a noisy rule is a rule people
+# learn to ignore, which is worse than no rule.
+# ⚠️ Absent from this map = refusable EVERYWHERE, which is the safe default.
+_REFUSABLE_ONLY_IN = {"ne": {"h3_driven.py"}}
+# 🔴 THE SPEC MAY CARRY FILL AND ALIGNMENT, AND THIS MISSED THEM. `[,.0-9]*`
+# matched `{ne:.1e}` and `{ne:,.0f}` but NOT `{ne:>9.1e}` or `{ne:>8.2f}` — and
+# `>` alignment is the house style for every table in this repo. So the rule was
+# blind to the most common shape it exists to catch, and h3-q0map-01 died on
+# `{p['ne']:>9.1e}` — the FOURTH such site, after 1,699 s and 8 solves.
+# ✅ Accept any spec that ENDS in a numeric presentation type.
+_NUMFMT = re.compile(r"\{[^{}]*?(" + _REFUSABLE.pattern + r")[^{}]*?:[^{}]*?[fdge]\}")
+
+
+# 🔴 THE 5x RULE'S BLIND SPOT. "No constants in scripts" (INCIDENTS 7bi) is the
+# most-repeated rule in this programme — learned 5 times — because
+# `r_hardcoded_value` only ever saw module-level UPPERCASE assignments. It could
+# not see a physical value passed as a CLI-ARG STRING LITERAL, which is where all
+# three of 2026-09-03/04's wrong-cavity constants lived, including
+# `"--torch-material", "1.0,3.5e-05"` — the line that made `h3_driven` unable to
+# mesh the design cavity at all, for nine days, silently.
+# 🔑 RATCHET, following `_HARDCODED_GRANDFATHERED`: the 51 existing pairs are
+# grandfathered so this does not brick 28 rigs. A NEW one is an error.
+# **THIS LIST MAY ONLY SHRINK.**
+_CLI_LITERAL_GRANDFATHERED = {
+    # ✅ EXEMPT entries are NOT debt: the literal IS the experiment (a
+    #    perturbation, a sweep axis, or throwaway geometry for a utility).
+    # 🔴 DEBT entries are real physical values that should bind. THIS is
+    #    what 'the list may only shrink' is about — count the DEBT lines.
+    'cachetest.py': ['--length', '--order', '--radius', '--sectors', '--size-factor'],  # ✅ EXEMPT: arbitrary geometry — this rig tests CACHE IDENTITY, not physics
+    'e0_solver_vs_math.py': ['--chimney', '--feed', '--groove', '--mode-filter', '--n-wl', '--order', '--sectors', '--trap', '--viewport'],  # 🔴 DEBT: bind these
+    'e0b_offset.py': ['--offset'],  # ✅ EXEMPT: --offset is a deliberate rigid-motion PERTURBATION, not a measurement
+    'e0c_rigid.py': ['--offset'],  # ✅ EXEMPT: ditto — rigid-motion probe
+    'e0d_transverse.py': ['--rotate'],  # ✅ EXEMPT: --rotate is the probe itself
+    'e0i_rigid_at_order2.py': ['--offset', '--rotate'],  # ✅ EXEMPT: rigid-motion probe at order 2
+    'e0k2_portfix.py': ['--sectors'],  # 🔴 DEBT: bind these
+    # ⚠️ DO NOT BIND: 25.8x19.4 (1,001 mm^2) is NOT the canonical 11x8
+    #    (176 mm^2) — 5.7x the area. This rig predates loop.size.mm and its
+    #    results are cited NOWHERE in KNOWN/NEXT/OPTIMIZER. Binding it to the
+    #    canonical loop would silently CHANGE WHAT IT MESHES and rewrite what
+    #    the run actually did. The literal is the RECORD of its geometry.
+    'e0k_driven_vs_eigen.py': ['--loop', '--loop-phi'],  # ✅ EXEMPT: historical geometry
+    'meshstage.py': ['--ho-optimize', '--order'],  # ✅ EXEMPT: --order/--ho-optimize are the SWEEP AXIS of this rig
+    'portcheck.py': ['--sectors'],  # 🔴 DEBT: bind these
+}
+
+
+_CLI_FLAG = re.compile(r"^--[a-z][a-z-]*$")
+_CLI_NUM = re.compile(r"^[0-9][0-9.,e+-]*$")
+
+
+def r_cli_literal(src, tree, path=None):
+    """A physical value passed as a CLI-arg string literal, not bound."""
+    if tree is None:
+        return []
+    fname = (path or "").split("/")[-1]
+    alw = set(_CLI_LITERAL_GRANDFATHERED.get(fname, ()))
+    skip = _fixture_lines(tree)
+    out = []
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.List, ast.Tuple)):
+            continue
+        els = node.elts
+        for a, b in zip(els, els[1:]):
+            if not (isinstance(a, ast.Constant) and isinstance(a.value, str)
+                    and isinstance(b, ast.Constant) and isinstance(b.value, str)):
+                continue
+            if not (_CLI_FLAG.match(a.value) and _CLI_NUM.match(b.value)):
+                continue
+            if a.value in alw or getattr(a, "lineno", 0) in skip:
+                continue
+            out.append((ERROR, getattr(a, "lineno", 0),
+                        f'{a.value} "{b.value}" is a physical value passed as a '
+                        f'CLI string literal. Bind it from baselines.json (or '
+                        f'take it from the run config) — this is the blind spot '
+                        f'that hid the hardcoded torch for nine days.'))
+    return out
+
+
+def r_none_format(src, tree, path=None):
+    """A refusable value formatted with a numeric spec and no None guard."""
+    out = []
+    lines = src.split("\n")
+    # 🔑 PRIOR ART, not a new mechanism: `_fixture_lines` already exists for
+    # exactly this — the BAD/GOOD fixtures deliberately contain the forbidden
+    # pattern, so a raw-text rule must not report them. r_hardcoded_value uses it.
+    skip = _fixture_lines(tree) if tree is not None else set()
+    for i, line in enumerate(lines, 1):
+        if i in skip:
+            continue
+        # the explicit marker may sit on the line or just above the block it
+        # covers — a bounded lookback is safe BECAUSE the marker is explicit;
+        # the same lookback on a keyword like "is not None" would not be.
+        if any("refusable-ok" in lines[j]
+               for j in range(max(0, i - 4), min(len(lines), i))):
+            continue
+        # 🔑 THIS RULE IS IN `RAW` — it must see comments, because its own
+        # escape IS a comment. The cost is that it also sees format specs quoted
+        # inside comments and docstrings, so skip comment-only lines.
+        if line.lstrip().startswith("#"):
+            continue
+        m = _NUMFMT.search(line)
+        if not m:
+            continue
+        # guarded if the same line carries an explicit None test or uses _q()
+        # ✅ EXPLICIT ESCAPE, not a wider proximity window. A guard can sit on
+        # an enclosing `if`, which no same-line test can see and which a
+        # multi-line heuristic would get wrong in both directions. Mark it
+        # `refusable-ok: <why>` — same convention as `q:ok` and `ret:<id>`.
+        # 🔴 THE GROUP IS LOad-BEARING. This was `r"if\s+" + _REFUSABLE.pattern`,
+        # and alternation binds LOOSER than concatenation — so it parsed as
+        #   (if\s+Q0_COLD_EIGEN) | Q_EXT_MEASURED | Q_EXT_EST | q0c | _q0ref
+        # i.e. every name AFTER the first matched BARE, anywhere on the line, and
+        # the rule treated its own targets as already-guarded. It could only ever
+        # fire for Q0_COLD_EIGEN. Found 2026-09-06 when adding `ne` and asking why
+        # the new name still did not trip it.
+        # ⚠️ SO THE RULE WAS ~80% DEAD SINCE IT WAS WRITTEN — the rule created
+        # because "this exact shape killed three runs on 2026-09-04, each after a
+        # solve", and which then failed to catch a fourth on 2026-09-06.
+        if ("is not None" in line or "_q(" in line or "refusable-ok" in line
+                or re.search(r"if\s+(?:" + _REFUSABLE.pattern + r")", line)):
+            continue
+        _only = _REFUSABLE_ONLY_IN.get(m.group(1))
+        # ⚠️ basename by split, not pathlib — preflight imports ast/io/re/sys/
+        # tokenize and nothing else, deliberately: it must run anywhere.
+        if _only and (path is None or path.replace("\\", "/").rsplit("/", 1)[-1]
+                      not in _only):
+            continue
+        out.append((ERROR, i,
+                    f"{m.group(1)} is REFUSABLE (None when the store has no value "
+                    f"for this geometry) but is formatted with a numeric spec and "
+                    f"no guard on this line. Use _q(), or test it. This exact "
+                    f"shape killed three runs on 2026-09-04, each after a solve."))
+    return out
 
 
 def r_output_not_slugged(src, tree, path=None):
@@ -584,7 +780,7 @@ def r_direct_baseline_read(src, tree, path=None):
                             f"Use values.get({nm!r})."))
     return out
 
-RULES = [r_direct_baseline_read, r_timeout, r_pkill, r_main_guard, r_help_percent, r_ps_e_with_C,
+RULES = [r_none_format, r_cli_literal, r_direct_baseline_read, r_timeout, r_pkill, r_main_guard, r_help_percent, r_ps_e_with_C,
          r_falsy_numeric_flag, r_bare_background, r_nearest_match,
          r_undefined_name, r_hardcoded_value,
          r_output_not_slugged, r_material_kwarg]
@@ -603,6 +799,8 @@ BAD = {
     # 🔴 an ungrandfathered file (self-test passes no path) hardcoding a Q
     "r_hardcoded_value": "Q_BARE = 44384.0\n",
     # 🔴 a NEW rig naming its outputs after itself
+    "r_cli_literal": 'X = ["--torch-material", "1.0,3.5e-05"]\n',
+    "r_none_format": 'print(f"{Q0_COLD_EIGEN:,.0f}")\n',
     "r_output_not_slugged": 'TAG = "my_new_rig"\n',
     "r_material_kwarg": "P = dict(torch_eps=11.6)\n",
     "r_nearest_match": "y = min(v, key=lambda x: abs(x - t))\n",

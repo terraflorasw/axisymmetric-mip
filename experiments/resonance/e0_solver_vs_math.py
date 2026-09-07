@@ -721,6 +721,21 @@ def run(tag, cfg, allow_lossy_eigen=False, timeout=None,
         except OSError:
             return 0
 
+    # 🔑 PUBLISH THE PROCESS GROUP SO POLICY CAN LIVE OUTSIDE THIS FUNCTION.
+    # User, 2026-09-05: *"There's no reason why the timeout should be tightly
+    # coupled when cancelling is just a simple kill."* Correct — `_kill_tree`
+    # below IS the whole cancel mechanism. Baking a deadline into the SOLVE call
+    # meant extending it needed a config edit, a new slug (configs are immutable)
+    # and the loss of everything already computed, because a PROM build has no
+    # partial-result path.
+    # ➡️ With the pgid on disk, ANY supervisor can cancel: a wall clock, a
+    # no-progress watchdog, an operator, `ops/`. They all become the same event —
+    # the process died — and this function just reports it.
+    try:
+        pathlib.Path(f"{tag}.pgid").write_text(f"{os.getpgid(proc.pid)}\n")
+    except Exception:
+        pass          # publishing is a convenience; never fail the solve for it
+
     def _kill_tree(why):
         try:
             os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
@@ -755,10 +770,40 @@ def run(tag, cfg, allow_lossy_eigen=False, timeout=None,
                 f"DATA, not a bad result: report it as unconverged, do not score "
                 f"it. Raise solvecost.NLEPS_BUDGET deliberately if this case is "
                 f"merely hard."))
+        # 🔑 THE DEADLINE IS RESETTABLE FROM OUTSIDE. It used to be a local
+        # computed once at call time, so a HEALTHY-but-slow solve could not be
+        # granted more time without killing it and losing everything — there is
+        # no partial-result path through a PROM build. Observed 2026-09-05:
+        # sf 0.8 loaded was converging normally at 429 s/sample with the 12,000 s
+        # cap allowing only ~28 of a possible 40 samples.
+        # ⚠️ §7bp's guard is against USELESS solves — hung, stalled, not
+        # progressing. Wall-clock cannot tell "slow" from "stuck"; that is what
+        # NLEPS_BUDGET above does properly, and driven never got an equivalent.
+        # ➡️ Drop `<tag>.extend_s` containing a number of seconds beside the log
+        # and the deadline moves. The file is CONSUMED, so an extension is a
+        # deliberate single act, never a standing exemption.
+        _ext = pathlib.Path(f"{tag}.extend_s")
+        if _ext.exists():
+            try:
+                _add = float(_ext.read_text().strip())
+            except ValueError:
+                _add = 0.0
+            _ext.unlink()
+            if _add > 0:
+                deadline += _add
+                tmo += _add
+                print(f"    ⏱️ deadline EXTENDED by {_add:.0f}s "
+                      f"(now {tmo:.0f}s total) — {tag}", flush=True)
         if time.time() > deadline:
             raise RuntimeError(_kill_tree(
                 f"{tag}: TIMED OUT after {tmo:.0f}s "
-                f"({n} NLEPS iterations) — rank TREE killed"))
+                f"({n} NLEPS iterations) — rank TREE killed. "
+                f"⚠️ If it was PROGRESSING, this is the wrong guard: drop "
+                f"{tag}.extend_s with more seconds and relaunch."))
+    try:
+        pathlib.Path(f"{tag}.pgid").unlink()
+    except OSError:
+        pass          # a stale pgid file is a lie about what is running
     dt = time.time() - t0
     # 🔴 "TOO FAST" IS NOT EVIDENCE OF FAILURE. This was `rc or dt <
     # MIN_SECONDS`, and MIN_SECONDS=30 was calibrated on 4 ranks at order 2 on

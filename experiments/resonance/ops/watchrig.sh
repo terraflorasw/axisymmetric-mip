@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# sanctioned-watcher: THE mechanism — poll/diff/mirror/three endings, 16 tests
 # Watch a remote rig log: emit progress as it lands, and STOP for the right
 # reasons. Three watcher shapes were shipped on 2026-08-25 without a test and
 # each failed differently:

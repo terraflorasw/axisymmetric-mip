@@ -48,7 +48,7 @@ def load_meta(mesh):
 
 
 def driven(mesh, tag, band, step=2e-5, order=1, materials=None,
-           energy_bins=True, template=TEMPLATE):
+           energy_bins=True, template=TEMPLATE, gmres_restart=None):
     """A driven config for `mesh`, with everything mesh-dependent derived.
 
     materials: {attribute: {...}} overrides/additions, e.g. a plasma
@@ -63,6 +63,37 @@ def driven(mesh, tag, band, step=2e-5, order=1, materials=None,
     c["Solver"]["Order"] = order
     c["Solver"]["Driven"]["Samples"] = [{"Type": "Linear", "MinFreq": band[0],
                                          "MaxFreq": band[1], "FreqStep": step}]
+
+    # 🔴 GMRES STORES ONE BASIS VECTOR PER ITERATION. The template runs
+    # MaxIts=500 with NO Restart, so on a hard system the Krylov basis can grow
+    # toward 500 vectors of size N — memory then scales with ITERATION COUNT,
+    # not just problem size.
+    # 🔑 EVIDENCE, 2026-09-04 (h3-betaconv2-0p8): on ONE mesh of 631,835 tets the
+    # COLD case solved in 3345 s and the LOADED case was OOM-KILLED at 637 s
+    # (rc=137, 21 kills in dmesg, 32 ranks x ~2.3 GB vs 61 GB). Same mesh — so it
+    # is not mesh size. The loaded case differs only by eps = -1.456, INDEFINITE,
+    # which is R4's eps-near-zero conditioning: more iterations, more basis.
+    # ⚠️ HYPOTHESIS, NOT YET CONFIRMED. Bounding the basis is the test; if
+    # 0p8-loaded then fits the diagnosis holds, and if it still OOMs the
+    # consumer is the AMG hierarchy and the answer is more RAM.
+    #
+    # 🔴 THE KEY IS `MaxSize`, AND IT IS NOT `Restart`. 2026-09-05: this emitted
+    # `Solver.Linear.Restart`, Palace REFUSED THE CONFIG ("Configuration file
+    # validation failed", iodata.cpp:212), and BOTH cases died in 2 s.
+    # Authoritative, from the installed source rather than from memory:
+    #   configfile.cpp:1370-71  Linear   <- MaxIts, MaxSize
+    #   configfile.cpp:1107     Driven   <- Restart          (a DIFFERENT setting)
+    #   configfile.cpp:1120     '"Restart" is incompatible with adaptive
+    #                            frequency sweep!'
+    # So `Driven.Restart` could never have served this purpose at all: every rig
+    # here uses the adaptive PROM, which Palace refuses to combine with it.
+    # `Linear.MaxSize` IS the GMRES(m) restart dimension — the right knob, and
+    # the name `gmres_restart` stays accurate for it.
+    # 🔑 The mechanism reasoned about above was right; the KEY was invented. A
+    # setting quoted from recollection is the §7-class error applied to a
+    # dependency's schema — check the schema, it ships with the build.
+    if gmres_restart:
+        c["Solver"].setdefault("Linear", {})["MaxSize"] = int(gmres_restart)
 
     # 🔑 A COAX FEED NEEDS A WAVE PORT, NOT A LUMPED ONE. When the loop enters
     # through a hole in the BARREL, the port face is an annulus whose
@@ -133,7 +164,7 @@ def driven(mesh, tag, band, step=2e-5, order=1, materials=None,
     # 🔴🔴 FAIL CLOSED. A mesh that DECLARES a loop attribute and gets no
     # Conductivity entry for it is WORSE than before the split: Palace applies
     # its default PEC to any unlisted boundary, so the coupler would become
-    # LOSSLESS — and a lossless resonant element at λ/4 is exactly the thing
+    # LOSSLESS — and a lossless resonant element at wavelength/4 is exactly the thing
     # whose loss we are trying to measure. So this refuses rather than warns.
     _loop_attr = attrs.get("loop")
     if _loop_attr is not None:

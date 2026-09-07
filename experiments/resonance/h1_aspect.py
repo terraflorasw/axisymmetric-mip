@@ -30,6 +30,7 @@ refusal stands. Comparisons ACROSS this sweep are the product; any single Q is a
 upper bound on a real electropolished surface.
 """
 import json
+import values
 import pathlib
 import sys
 
@@ -44,7 +45,7 @@ import subprocess
 TAG = "h1"
 DLS = [1.20, 1.35, 1.446, 1.525, 1.70, 2.00, 2.332]
 F0 = 2.45
-SIGMA = 3.5e7                      # aluminium, as declared in baselines.json
+SIGMA = values.get("wall.conductivity.s_per_m")   # aluminium. BOUND, not copied (7bl)
 E0Q_REF = {"dl": 2.343, "q": 36548.0}
 
 

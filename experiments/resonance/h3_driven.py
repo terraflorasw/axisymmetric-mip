@@ -126,13 +126,15 @@ TAG = S.out(SLUG)
 # against it is ~2% off in the SAME direction -- a systematic, not noise.
 # 🔴 Do not "correct" it by scaling: re-measure it on the design mesh when the
 # torch is restored (NEXT.md). Stated here so the next reader is not surprised.
-Q_REF = values.get("eta.reference", status="current")   # vacuum torch, port terminated
+Q_REF = values.get("eta.reference", status="current",
+                   mesh="vacuum_torch")   # port terminated
 Q_REF_CONFIG = {"groove_mm": tuple(values.get("cavity.groove.mm")),
                 "loop_mm": tuple(values.get("loop.size.mm"))}
 Q_REF_SOURCE = ("h3_step3 eigen, port_bc=pec (direct Q0, no port loss); "
                 "cross-checked by h3_loopq at 43,422 on the cold-style mesh")
 COLD_TE011_GHZ = values.get("cavity.f0.cold.ghz", solver="driven",
-                            mesh="vacuum_torch", extraction="s11_locator")
+                            mesh="vacuum_torch", eps_r=1.0,
+                            extraction="s11_locator")
 # ⚠️ COLD_TE011_GHZ is a CROSS-CHECK only. The cold case LOCATES f0 empirically
 # and sets the continuation seed from what it finds (§7s) — this constant must
 # never become the seed again.
@@ -159,8 +161,46 @@ COLD_TE011_GHZ = values.get("cavity.f0.cold.ghz", solver="driven",
 COLD_LO_GHZ, COLD_HI_GHZ = 2.40, 2.52
 COLD_STEP_GHZ = 25e-6             # ~4,800 samples, ~8 across the cold 3 dB width
 RI, RO = 2.00, 8.50         # h3_annular's operating point
-CASE_TIMEOUT_S = 1800.0
-SIZE_FACTORS = ["1.5", "1.42", "1.58"]
+# 🔴 THE TIMEOUT WAS THE BINDING CONSTRAINT, AND IT WAS INVISIBLE TO THE CONFIG.
+# 2026-09-04: h3-betaconv-1p0's LOADED case died at exactly 1800 s with "0 NLEPS"
+# — not a conditioning failure, just the cap. The same case took 1486 s at
+# sf 1.2, and sf 1.0 carries ~1.7x the tets, so it needed ~2500 s. A mesh
+# CONVERGENCE series necessarily makes cases slower as it refines, so a fixed
+# per-case cap silently truncates exactly the points the series exists to get.
+# ⚠️ And the run still EXITED 0 — the rig records the error per case and carries
+# on, so the chain fired the next (even finer, even more doomed) point.
+# 🔑 AND THE CAP IS A RUNTIME PROPERTY, NOT AN INPUT. User, 2026-09-04: *"Why is
+# the 12000s cap not resettable"* / *"That's just bad design. There's no reason
+# why the timeout should be tightly coupled when cancelling is just a simple
+# kill."* Correct, and the coupling was worse than it looked: the resume stamp is
+# sha256(baseline-<slug>.json), so RAISING THE CAP CHANGED THE FINGERPRINT and
+# orphaned every case already solved under the old one. On 2026-09-05 that meant
+# a completed sf=0.8 COLD case could not be kept while giving its LOADED sibling
+# more time.
+# ✅ A timeout is not an input to the physics. It cannot change a number — it can
+# only decide whether a number is obtained — so it does not belong in the input
+# fingerprint. $AMIP_CASE_TIMEOUT_S overrides it WITHOUT touching the config,
+# and the EFFECTIVE value goes into every record so a short case is never
+# mistaken for a converged one.
+_TIMEOUT_CFG = float(PRM.get("case_timeout_s", 1800.0))
+_TIMEOUT_ENV = os.environ.get("AMIP_CASE_TIMEOUT_S")
+CASE_TIMEOUT_S = float(_TIMEOUT_ENV) if _TIMEOUT_ENV else _TIMEOUT_CFG
+if _TIMEOUT_ENV:
+    print(f"  ⚠️  case timeout OVERRIDDEN: {_TIMEOUT_CFG:.0f}s (config) "
+          f"-> {CASE_TIMEOUT_S:.0f}s ($AMIP_CASE_TIMEOUT_S)", flush=True)
+    print("     config file UNTOUCHED, so the resume stamp still matches and "
+          "already-solved cases are kept.", flush=True)
+# 🔴 THESE ARE MESH-RETRY FALLBACKS, NOT A SWEEP. If 1.5 fails to mesh the rig
+# tries 1.42 then 1.58 — so the RESOLUTION SILENTLY CHANGES and the run records
+# whichever worked. Harmless when resolution is incidental; FATAL for a
+# convergence series, where the size factor IS the independent variable.
+# ✅ `size_factor` in the config pins it and DISABLES the fallbacks: a mesh
+# failure must be an error, not a quiet move to a different point on the axis.
+# 🔑 OPTIMIZER.md § THE SCHEMA CHANGE: size_factor is a COORDINATE of every
+# observation. beta moved 43% under refinement while Q0 moved 0.12%, and the
+# series that would settle it (1.5/1.2/1.0/0.8) has never been runnable.
+_SF_PIN = PRM.get("size_factor")
+SIZE_FACTORS = ([f"{float(_SF_PIN):g}"] if _SF_PIN else ["1.5", "1.42", "1.58"])
 
 # the density grid. 1e18 and 1e20 are ANCHORS (eigen has them); the rest is the
 # gap. 3e18 sits closest to the eps sign change (eps=+0.067).
@@ -238,13 +278,13 @@ CONTINUATION_JUMP_MHZ = 25.0    # a bigger step than this between cases is REPOR
 # h3_step3 measured one. The two agree to 1.2% at 11x8 (9,117 vs 9,231).
 # 🔑 Q_ext is also THERMALLY INVARIANT (h3_hot: x0.996 over +100 K), so one
 # number serves cold, hot and loaded.
-# 🔴 CANONICAL NAME: `cavity.Q_ext` — see values.py / baselines.json.
+# 🔴 CANONICAL NAME: `cavity.Q_ext.cold` — see values.py / baselines.json.
 # ⚠️ THIS RIG IMPORTS A VALUE MEASURED ON A DIFFERENT CAVITY. It meshes a
 # VACUUM torch (80,621 tets, sf 1.42); 9,231 is the NO-TORCH eigen pair
 # (h3_loopq, GEO_DESIGN which carries --no-torch). The mesh-matched value is
 # h3_step3's 9,117 — +1.25% apart. Every beta_resolved, Q0_branch_free and
 # derived VSWR in this rig carries that import.
-#   values.get("cavity.Q_ext", solver="eigen_pair", mesh="vacuum_torch",
+#   values.get("cavity.Q_ext.cold", solver="eigen_pair", mesh="vacuum_torch",
 #              ne=0.0, loop_mm=[11.0, 8.0])   -> 9117.0
 # 🔴 NOT SWITCHED HERE: changing it moves every stored number, so it belongs to
 # a deliberate re-run — and h3_qext is measuring the right value now anyway.
@@ -252,14 +292,80 @@ CONTINUATION_JUMP_MHZ = 25.0    # a bigger step than this between cases is REPOR
 # 🔑 BOUND, NOT LITERAL (7bl). The context is the argument list, so the
 # no-torch/vacuum-torch mismatch below is now a VISIBLE choice rather than a
 # number with a comment beside it. Flipping it is one edit: mesh="vacuum_torch".
-Q_EXT_MEASURED = values.get("cavity.Q_ext", solver="eigen_pair",
-                            mesh="no_torch", ne=0.0)
+# 🔑 THE GUARD NOW COMES FROM THE STORE, NOT FROM A HAND-WRITTEN COMPARISON.
+# `cavity.Q_ext.cold` declares required_context (mount, gap2_mm, loop_mm), so
+# this query must state the geometry it is asking about. On a barrel + series-gap
+# run there IS no recorded value, and `Unknown` is the correct answer — the
+# earlier version asked only (solver, mesh, ne) and silently received the CAP
+# loop's 9,231. A hand-written geometry check can drift from the store; this
+# cannot (CONVENTIONS §7bx / §7by).
+try:
+    Q_EXT_MEASURED = values.get(
+        "cavity.Q_ext.cold", solver="eigen_pair", mesh="no_torch", ne=0.0,
+        mount=PRM.get("loop_mount", "cap"),
+        gap2_mm=float(PRM.get("loop_gap2", 0.0)),
+        loop_mm=[float(PRM.get("loop_ld", 11.0)), float(PRM.get("loop_lw", 8.0))])
+    Q_EXT_UNAVAILABLE = None
+except values.Unknown as _e:
+    Q_EXT_MEASURED = None
+    Q_EXT_UNAVAILABLE = str(_e).splitlines()[0]
 Q_EXT_SOURCE = ("h3_loopq eigen pairs (port_bc pec vs lumped), 11x8 loop; "
                 "h3_step3 gives 9,117 on the driven-style mesh, 1.2% apart")
-Q0_COLD_EIGEN = values.get("cavity.Q0.cold", solver="eigen",
-                           mesh="vacuum_torch", port_bc="pec")
+# 🔑 SAME TREATMENT AS Q_ext. `cavity.Q0.cold` now declares required_context, so
+# this must say WHICH loop it is asking about. On a barrel + gap2 run there is no
+# recorded cold Q0 and the store refuses — which is the honest answer, and is
+# exactly the condition under which eta must be suppressed anyway.
+try:
+    Q0_COLD_EIGEN = values.get(
+        "cavity.Q0.cold", solver="eigen", mesh="vacuum_torch", port_bc="pec",
+        mount=PRM.get("loop_mount", "cap"),
+        gap2_mm=float(PRM.get("loop_gap2", 0.0)),
+        loop_mm=[float(PRM.get("loop_ld", 11.0)), float(PRM.get("loop_lw", 8.0))])
+    Q0_COLD_UNAVAILABLE = None
+except values.Unknown as _e:
+    Q0_COLD_EIGEN = None
+    Q0_COLD_UNAVAILABLE = str(_e).splitlines()[0]
 Q_EXT_EST = Q_EXT_MEASURED  # legacy name, kept so the forecast block still reads
 SHALLOW_DB = 0.30       # below this the dip is too shallow to trust a fit from
+
+
+def resume_set(slug, enabled=True):
+    """Cases already COMPLETE for this slug+stamp, as {tag: record}.
+
+    🔑 PORTED FROM `h3_loopq.resume_set` (2026-09-03). That rig grew resume after
+    spot reclamation killed it twice; this one had none, and on 2026-09-03 a
+    reclamation at **17.8 minutes uptime** threw away a finished 662 s cold case.
+    With instances being reclaimed inside 20 minutes, a rig without resume cannot
+    finish a 4-case driven sweep at all — every relaunch re-solves case 1 and dies.
+
+    Safe because the result filename carries the config's sha256 stamp: a
+    result.json under this name was produced by THIS config, so its finished
+    cases answer exactly the question being asked now. A changed config gets a
+    different stamp and an empty resume set, automatically.
+
+    🔴 A CASE COUNTS AS DONE ONLY WITH A `wide_fit`. ERRORS ARE RETRIED — you
+    relaunch a failed run BECAUSE you fixed the cause, and a resume that
+    remembers failures makes the fix invisible (h3_loopq learned this the
+    expensive way). A half-written record is re-run too, never trusted.
+    """
+    if not enabled:
+        return {}
+    prior = pathlib.Path(S.outfile(slug, "result.json"))
+    if not prior.exists():
+        return {}
+    try:
+        pj = json.loads(prior.read_text())
+    except Exception as e:
+        print(f"  ⚠️ prior result unreadable ({e}); starting clean", flush=True)
+        return {}
+    # 🔴 KEYED ON THE TAG, NOT ON ne. ne is only a valid key while DENSITY is the
+    # swept axis. A prescribed-(eps, sigma) sweep holds ne undefined, so keying on
+    # it would collapse every case onto ONE entry — the same collision the TAG
+    # COLLISION guard exists to catch, arriving instead through resume. The tag
+    # names every swept variable by construction and is already stored in every
+    # record, so this reads existing artefacts unchanged.
+    return {r["tag"]: r for r in pj.get("points", [])
+            if r.get("wide_fit") and not r.get("error") and r.get("tag")}
 
 
 def save(out):
@@ -301,6 +407,21 @@ def build_mesh(tag, a, L, zlo, zhi, eps_p, sig_p, rec, ri=None, ro=None, _ld_ove
     _LW = float(PRM.get("loop_lw", LOOP_LW))
     _MOUNT = PRM.get("loop_mount", "cap")
     _G2 = float(PRM.get("loop_gap2", 0.0))
+    # 🔴 THE TORCH WAS HARDCODED — `"--torch-material", "1.0,3.5e-05"` — so this
+    # rig could ONLY mesh a VACUUM torch and could not mesh the design cavity at
+    # all. THE TORCH RESTORATION LANDED 2026-08-26 (KNOWN.md § THE TORCH
+    # RESTORATION); `h3_loopq` picked it up through GEO_DESIGN and this rig did
+    # not, so the two have been meshing DIFFERENT CAVITIES since, and every
+    # eigen-vs-driven cross-check after that date crosses the boundary.
+    # ✅ Now BOUND from baselines, overridable per run so the pre-restoration
+    # series stays reproducible: set "torch_material": [1.0, 3.5e-05] in the
+    # config to mesh the OLD vacuum cavity deliberately — and say why.
+    _TM = PRM.get("torch_material")
+    if _TM is None:
+        _TM = [values.get("torch.sapphire.permittivity"),
+               values.get("torch.sapphire.loss_tangent")]
+    _TM = [float(_TM[0]), float(_TM[1])]
+    rec["torch_material"] = list(_TM)   # ⚠️ INTO THE RECORD, not just the log
     # 🔑 AZIMUTHAL MOUNT, added 2026-08-30 for the LOADED pivot. Conventions
     # mirrored EXACTLY from h3_loopq.build_mesh — h and arc are INDEPENDENT and
     # geometry.py takes the arc LENGTH, deriving the angle from R = a - h,
@@ -313,7 +434,7 @@ def build_mesh(tag, a, L, zlo, zhi, eps_p, sig_p, rec, ri=None, ro=None, _ld_ove
     args = ([x for x in GEO if x != "--no-torch"]
             + ["--radius", f"{a:.6f}", "--length", f"{L:.6f}",
                "--sectors", str(SECTORS),
-               "--torch-material", "1.0,3.5e-05",
+               "--torch-material", f"{_TM[0]:g},{_TM[1]:g}",
                "--plasma", f"{ri},{ro},{zlo:.4f},{zhi:.4f}",
                "--plasma-h", f"{ph_mesh:.3f}",
                "--loop", f"{_LD},{_LW},{LOOP_RW},{LOOP_GAP}",
@@ -331,7 +452,22 @@ def build_mesh(tag, a, L, zlo, zhi, eps_p, sig_p, rec, ri=None, ro=None, _ld_ove
                else ["--loop-cap", f"{CAP_R_FRAC * a:.4f}"])
             + (["--loop-strip",
                 f"{float(_STRIP[0]):g},{float(_STRIP[1]):g}"] if _STRIP else [])
-            + ([f"--loop-gap2", f"{_G2:g}"] if _G2 else []))
+            + ([f"--loop-gap2", f"{_G2:g}"] if _G2 else [])
+            # 🔴 THE MESH CACHE MAKES A REPEATABILITY TEST MEASURE ZERO.
+            # Meshes are cached on a hash of the geometry parameters, so two runs
+            # with identical parameters get THE SAME FILE — which is why
+            # h3-betaconv3-0p8's cold case reproduced h3-betaconv2-0p8's to six
+            # significant figures with an identical tet count. That is the cache
+            # working correctly, and it is exactly what must be defeated to ask
+            # "how much does coupling.beta move between INDEPENDENT meshes?"
+            # 🔑 e0kp_meshfloor: setOrder(2) places high-order nodes
+            # non-deterministically (~12 um), so two cold builds genuinely differ.
+            # The floor was measured for FREQUENCY on a bare cavity (66 Hz over 3
+            # meshes) and has NEVER been measured for coupling.beta, which is set
+            # by local field structure at a small coupler rather than by a volume.
+            # ⚠️ Opt-in per config. Cheap meshes are worth caching; this is for
+            # the rigs whose QUESTION is mesh-to-mesh variation.
+            + (["--no-cache"] if PRM.get("no_mesh_cache") else []))
     if _G2 and _MOUNT != "barrel":
         raise SystemExit("loop_gap2 requires loop_mount='barrel' (geometry.py:427)")
     if _MOUNT == "azim":
@@ -346,23 +482,40 @@ def build_mesh(tag, a, L, zlo, zhi, eps_p, sig_p, rec, ri=None, ro=None, _ld_ove
     # works for all h, and which one fails moves with every parameter change
     # (h3_loopq.build_mesh carries the measured table). RECORD what worked: a
     # run that cannot say which geometry it built cannot be compared.
-    _chords = (7, 3, 9, 5, 11) if _MOUNT == "azim" else (None,)
-    for nc in _chords:
+    # 🔴 THE CHORD RETRY IS GONE, 2026-09-06. `arc_chords` never had a consumer
+    # in geometry.py — the arc is an OCC torus, not a polyline — so every value
+    # in the list re-meshed IDENTICAL geometry and the loop reported whichever
+    # was tried first as "what worked". h3-azimchord-01 asked for 11 and
+    # reproduced the 7-chord mesh to the TET (349,530). geometry.py now REFUSES
+    # AMIP_ARC_CHORDS, so setting it here would fail the mesh outright.
+    if PRM.get("arc_chords"):
+        raise SystemExit(
+            "arc_chords is a DEAD parameter — geometry.py builds the arc as a "
+            "torus and never read it. Remove it from the config; for the arc's "
+            "resolution use size_factor or arc_ball_mm.")
+    for nc in (None,):
         _env = dict(os.environ)
-        if nc is not None:
-            _env["AMIP_ARC_CHORDS"] = str(nc)
         for sf in SIZE_FACTORS:
             r = subprocess.run([sys.executable, "geometry.py", "--out",
                                 f"{tag}.msh", "--size-factor", sf] + args,
                                capture_output=True, text=True, env=_env)
             if not r.returncode and pathlib.Path(f"{tag}.msh").exists():
                 rec["size_factor"] = sf
-                if nc is not None:
-                    rec["arc_chords"] = nc
-                if sf != SIZE_FACTORS[0] or (nc is not None and nc != _chords[0]):
-                    print(f"    ⚠️ mesh needed size-factor {sf}"
-                          + (f", {nc} chords" if nc is not None else "")
-                          + "; REPORTED", flush=True)
+                # 🔑 KEEP THE MESHER'S REFINEMENT REPORT. geometry.py prints one
+                # line per refinement field it actually installs ("ARC
+                # refinement: ...", "PORT refinement: ...", "COAX MESH: ...",
+                # "plasma refinement: ..."), and `capture_output=True` above
+                # threw all of it away on success. So on 2026-09-06, diagnosing
+                # the azimuthal pedestal, there was no way to tell from any
+                # artefact whether the arc field had fired — it took reading
+                # geometry.py's control flow to establish that it had.
+                # A run that cannot say how it was refined cannot be compared.
+                rec["mesh_refinement"] = [
+                    ln.strip() for ln in r.stdout.split("\n")
+                    if "refinement:" in ln or "MESH:" in ln]
+                if sf != SIZE_FACTORS[0]:
+                    print(f"    ⚠️ mesh needed size-factor {sf}; REPORTED",
+                          flush=True)
                 return solveconf.load_meta(f"{tag}.msh")
             rec["_last_mesh_err"] = (r.stdout + r.stderr)[-200:]
     return None
@@ -486,7 +639,7 @@ def fit_dip(d, i0, step_ghz=None):
          # Q_L comes from the LINEWIDTH and Q_ext from GEOMETRY; neither needs
          # the dip depth, so the beta/1-beta ambiguity never enters.
          "Q0": (1.0 / (1.0 / ql - 1.0 / Q_EXT_MEASURED)
-                if ql < Q_EXT_MEASURED else None),
+                if (Q_EXT_VALID and ql < Q_EXT_MEASURED) else None),
          "n_across": abs(lw) / (step_ghz or COARSE_STEP_GHZ)}
     r["Q0_if_undercoupled"] = ql * (1 + b_under)
     r["Q0_if_overcoupled"] = ql * (1 + b_over) if b_over != float("inf") else None
@@ -517,7 +670,44 @@ def read_s11(tag):
     return [(float(r[0]), float(r[si])) for r in rows[1:] if r and r[0].strip()]
 
 
-def sweep(mesh_tag, out_tag, band, step, eps_p, sig_p, attrs):
+def read_probes_at(tag, f_ghz, probes):
+    """|E| (V/m) at each named probe, at the sweep row NEAREST f_ghz.
+
+    🔑 RAW ONLY, and deliberately. Palace writes the field for ITS drive
+    normalisation; turning that into "V/m at 1 kW" is a judgement (which power,
+    which port convention) that belongs in a re-runnable layer, not in the
+    driver. Same split as h3_loopq.read_named_probes, whose parser this is.
+    ⚠️ A LUMPED port writes real port V/I, so absolute power IS meaningful here —
+    unlike a WAVE port, where energy balance once gave Q_ext 113x wrong.
+    ⚠️ Returns {} when the file is absent: probes are optional and a missing file
+    must not kill a solved case. It is REPORTED, never silent.
+    """
+    import csv as _csv
+    d = pathlib.Path("postpro") / tag
+    f = d / "probe-E.csv"
+    if not (f.exists() and probes):
+        return {}
+    rows = list(_csv.reader(f.read_text().splitlines()))
+    if len(rows) < 2:
+        return {}
+    hdr = [x.strip() for x in rows[0]]
+    body = [r for r in rows[1:] if r and r[0].strip()]
+    # nearest FREQUENCY row — the driven probe file is one row per sweep point
+    row = min(body, key=lambda r: abs(float(r[0]) - f_ghz))
+    got = {"probe_f_ghz": float(row[0]), "probe_E_named": {}}
+    for i, (nm, _x, _y, _z) in enumerate(probes):
+        mag = 0.0
+        for comp in ("x", "y", "z"):
+            for part in ("Re", "Im"):
+                key = f"{part}{{E_{comp}[{i + 1}]}} (V/m)"
+                if key in hdr:
+                    mag += float(row[hdr.index(key)]) ** 2
+        got["probe_E_named"][nm] = math.sqrt(mag)
+    return got
+
+
+def sweep(mesh_tag, out_tag, band, step, eps_p, sig_p, attrs, probes=None,
+          surface_power=None):
     """One driven sweep over an EXISTING mesh.
 
     🔴 mesh_tag AND out_tag, separately, and this cost a launch. The first
@@ -536,7 +726,8 @@ def sweep(mesh_tag, out_tag, band, step, eps_p, sig_p, attrs):
     mats = {pa: {"Permittivity": eps_p, "Conductivity": sig_p,
                  "Permeability": 1.0}}
     c, _meta, dropped = solveconf.driven(f"{mesh_tag}.msh", out_tag, band,
-                                         step=step, order=2, materials=mats)
+                                         step=step, order=2, materials=mats,
+                                           gmres_restart=PRM.get("gmres_restart"))
     # ⚠️ `dropped` is mostly BENIGN: the shared template asks for a brake/mode
     # filter that this mesh does not carry (--brake 0), and driven records that
     # rather than raising. My first guard refused on ANY drop and killed all
@@ -559,11 +750,68 @@ def sweep(mesh_tag, out_tag, band, step, eps_p, sig_p, attrs):
                            f"{gs}, not the {sig_p} requested.")
     print(f"    plasma: attr {pa}, eps={eps_p:+.3f}, sigma={gs:.4g} S/m "
           f"(verified in the solved config)", flush=True)
+    # 🔑 NAMED POINT PROBES — |E| INSIDE THE PLASMA. Mechanism copied from
+    # h3_loopq (PRIOR ART, not re-derived): Palace takes a Probe list in
+    # Domains.Postprocessing and writes one column per probe.
+    # ✅ VALIDATED: h3-field-01 (2026-08-26) checked these against closed form to
+    # 0.6% — E_phi ~ J1(kc r) predicts E(8.5)/E(4.25) = 1.974, measured 1.987.
+    # 🔴 WHY IT CANNOT COME FROM STORED ENERGY: probecheck.py — electric energy
+    # goes as eps|E|^2 and eps_eff is NEGATIVE in the metal-like regime, so the
+    # energy is negative there (measured p_elec = -3e-5). Probes are the only
+    # route to a field INSIDE a lossy plasma, which is what electron-impact
+    # dissociation needs (E/N sets the electron energy distribution).
+    if probes:
+        c.setdefault("Domains", {}).setdefault("Postprocessing", {})["Probe"] = [
+            {"Index": i + 1, "Center": [x * 1e-3, y * 1e-3, z * 1e-3]}
+            for i, (_nm, x, y, z) in enumerate(probes)]
+        print(f"    probes: {', '.join(f'{n}@r={x:g}mm' for n, x, _y, _z in probes)}",
+              flush=True)
+    # 🔑 WHERE DOES THE POWER GO. Palace's Boundaries.Postprocessing.SurfaceFlux
+    # with Type "Power" integrates the Poynting flux through a named boundary and
+    # writes surface-F.csv. On 2026-09-06 the azimuthal arm was absorbing 43 % of
+    # incident power in a VACUUM cavity and the three candidate sinks — the
+    # walls, the loop conductor, the port — could not be told apart, because
+    # NOTHING MEASURED ANY OF THEM. Two mechanisms were proposed and falsified
+    # before it was noticed that the sink itself is directly measurable
+    # (ret:azimuthal-driven-pedestal).
+    # ⚠️ Callers pass (name, attribute) pairs BOUND FROM THE MESH SIDECAR. Do not
+    # write 90/91/92 here: attribute numbers are the mesh's, stable only by
+    # convention, and a hardcoded one is the §2 shape that has already put one
+    # cavity's constant into another cavity's result three times.
+    if surface_power:
+        c.setdefault("Boundaries", {}).setdefault("Postprocessing", {})["SurfaceFlux"] = [
+            {"Index": i + 1, "Attributes": [int(a)], "Type": "Power",
+             "TwoSided": False}
+            for i, (_nm, a) in enumerate(surface_power)]
+        print("    surface power: "
+              + ", ".join(f"{n}=attr{a}" for n, a in surface_power), flush=True)
     run(out_tag, c, timeout=CASE_TIMEOUT_S)
     return fit(out_tag)
 
 
 ETA_VALID = True
+# 🔴 THE THIRD WRONG-CAVITY CONSTANT. `Q_EXT_MEASURED` is `cavity.Q_ext.cold`,
+# whose own description reads "the 11x8 CAP loop" — no series gap, vacuum torch.
+# The branch-free Q0 divides by it, so on any other geometry Q0, beta_resolved,
+# `branch` and error_amplification are all wrong together. On h3-gap2load-01 it
+# labelled a beta=112 cold cavity "undercoupled". Same shape as the eta
+# reference and the hardcoded torch (CONVENTIONS §7by).
+Q_EXT_VALID = Q_EXT_MEASURED is not None
+
+
+def _q(x, spec=",.0f"):
+    """Format a value that may be REFUSED or UNDEFINED.
+
+    Q0 is None when the branch-free formula is refused
+    (check_q_ext_reference), and `ne` is None on a prescribed-(eps, sigma)
+    sweep where no density was assumed. Every display site must tolerate it —
+    a guard that crashes the report is not an improvement.
+
+    ⚠️ `spec` because callers need different formats: a Q wants thousands
+    separators, a density wants exponent notation. A second bare formatter
+    would be the same defect twice.
+    """
+    return "—" if x is None else f"{x:{spec}}"
 
 
 def check_eta_reference():
@@ -598,8 +846,41 @@ def check_eta_reference():
               f"valid — they come from the dip, not from Q_REF.", flush=True)
 
 
+def check_q_ext_reference():
+    """🔴 Refuse the BRANCH-FREE Q0 when Q_EXT_MEASURED is from another geometry.
+
+    `Q0 = 1/(1/Q_L - 1/Q_ext)` is branch-free BY DESIGN — it avoids the
+    beta/1-beta ambiguity by taking Q_ext from GEOMETRY rather than from the dip
+    depth. That trade is only sound if the Q_ext is THIS geometry's.
+
+    ⚠️ `cavity.Q_ext.cold`'s contexts record loop_mm, mesh, solver and ne — but
+    NOT mount and NOT gap2. The cap-vs-barrel fact lives only in its prose
+    description. So this guard checks what the key cannot say.
+
+    🔑 REFUSE THE QUANTITY, NOT THE RUN — same as check_eta_reference. Q_L is the
+    linewidth and beta is the dip depth; neither needs Q_ext. `Q0_if_undercoupled`
+    and `Q0_if_overcoupled` remain populated and are the correct values.
+    """
+    # 🔑 NO GEOMETRY COMPARISON HERE ANY MORE. The store was asked for THIS
+    # geometry's Q_ext (mount, gap2_mm, loop_mm are required_context) and either
+    # had one or refused; `Q_EXT_UNAVAILABLE` carries its refusal verbatim. A
+    # hand-written cap-vs-barrel check is a SECOND copy of the store's schema and
+    # would drift from it — which is the very defect being fixed (§7bx).
+    if Q_EXT_UNAVAILABLE:
+        print(f"  ⚠️ BRANCH-FREE Q0 SUPPRESSED — no cavity.Q_ext.cold recorded "
+              f"for mount={PRM.get('loop_mount','cap')}, "
+              f"gap2={float(PRM.get('loop_gap2',0.0)):g} mm, "
+              f"loop={float(PRM.get('loop_ld',LOOP_LD)):g}x"
+              f"{float(PRM.get('loop_lw',LOOP_LW)):g}.\n"
+              f"     store: {Q_EXT_UNAVAILABLE}\n"
+              f"     Q_L and beta STAND (dip-derived); read Q0 from "
+              f"Q0_if_undercoupled / Q0_if_overcoupled and resolve the branch.",
+              flush=True)
+
+
 def main():
     check_eta_reference()
+    check_q_ext_reference()
     print(__doc__)
     print("=" * 78, flush=True)
     a, L = design_point()
@@ -631,19 +912,28 @@ def main():
     print(f"  guards: dip >{COARSE_MIN_DEPTH_DB} dB, >{COARSE_EDGE_MHZ} MHz from "
           f"a band edge, continuation step <{CONTINUATION_JUMP_MHZ:.0f} MHz, "
           f"3 dB walk stops at the turning point between features\n", flush=True)
-    print("  coupling forecast (beta = Q0/Q_ext, Q_ext ~ "
-          f"{Q_EXT_EST:,.0f} from e0k2's 11x8 loop):")
-    print(f"    {'eta':>8}{'Q0':>9}{'beta':>9}{'|S11|min':>11}")
-    for eta in (0.2, 0.5, 0.9, 0.99, 0.999):   # illustrative only;
-        # ⚠️ was (0.185, ..., 0.9963) — both VOID groove-free results,
-        # and printing them as reference points lent them authority.
-        q0 = Q_REF * (1 - eta)
-        b = q0 / Q_EXT_EST
-        db = 20.0 * math.log10(abs((1 - b) / (1 + b)))
-        print(f"    {eta:>8.4f}{q0:>9,.0f}{b:>9.4f}{db:>10.2f}dB"
-              + ("" if abs(db) >= SHALLOW_DB else "   🔴 too shallow to fit"))
-    print("    ⚠️ the ne=1e20 end is where driven is WEAKEST and eigen already "
-          "works; the gap is where driven is strongest.\n", flush=True)
+    # 🔑 SKIP THE FORECAST when no Q_ext exists for THIS geometry, rather than
+    # forecasting against ANOTHER loop's number. A table headed "Q_ext ~ 9,231"
+    # is exactly what made a cap-loop constant look like a cavity property.
+    if Q_EXT_EST is None:
+        print(f"  coupling forecast SKIPPED — no cavity.Q_ext.cold recorded for "
+              f"this geometry (mount={PRM.get('loop_mount','cap')}, "
+              f"gap2={float(PRM.get('loop_gap2',0.0)):g} mm). beta comes from "
+              f"the DIP and needs no forecast.\n", flush=True)
+    else:
+        print("  coupling forecast (beta = Q0/Q_ext, Q_ext ~ "
+              f"{_q(Q_EXT_EST)} from e0k2's 11x8 loop):")
+        print(f"    {'eta':>8}{'Q0':>9}{'beta':>9}{'|S11|min':>11}")
+        for eta in (0.2, 0.5, 0.9, 0.99, 0.999):   # illustrative only;
+            # ⚠️ was (0.185, ..., 0.9963) — both VOID groove-free results,
+            # and printing them as reference points lent them authority.
+            q0 = Q_REF * (1 - eta)
+            b = q0 / Q_EXT_EST
+            db = 20.0 * math.log10(abs((1 - b) / (1 + b)))
+            print(f"    {eta:>8.4f}{q0:>9,.0f}{b:>9.4f}{db:>10.2f}dB"
+                  + ("" if abs(db) >= SHALLOW_DB else "   🔴 too shallow to fit"))
+        print("    ⚠️ the ne=1e20 end is where driven is WEAKEST and eigen already "
+              "works; the gap is where driven is strongest.\n", flush=True)
     out = {"q_ref": Q_REF, "q_ref_config": {k: list(v) for k, v in
            Q_REF_CONFIG.items()}, "q_ref_source": Q_REF_SOURCE,
            "ri_mm": RI, "ro_mm": RO,
@@ -659,9 +949,28 @@ def main():
            # this comment was written for, repeated on the next axis added.
            # The axis list has to grow with the sweep or the report follows the
            # wrong one.
+           # 🔴 THE AXIS LIST HAS TO GROW WITH THE SWEEP, AND IT DID NOT.
+           # `plasma_grid` was added 2026-09-06 and this was not, so a prescribed
+           # (eps, sigma) sweep reported "density" — and the summary keys on
+           # `ne`, which is None for every such row. All four fitted rows of
+           # h3-azimmap-01 collapsed to ONE key. ✅ The guard CAUGHT it and said
+           # so; the artefact kept all seven points. A guard that reports is the
+           # difference between a degraded table and a silent lie.
            "sweep_axis": ("loop" if PRM.get("loop_grid") else
-                          "annulus" if PRM.get("annulus_grid") else "density"),
+                          "annulus" if PRM.get("annulus_grid") else
+                          "plasma" if PRM.get("plasma_grid") else "density"),
            "points": []}
+
+    # 🔑 RESUME — see resume_set above. Reclamation is the normal case here, not
+    # the exception, so a completed solve must survive one.
+    _done = resume_set(SLUG, PRM.get("resume", True))
+    if _done:
+        out["points"] = [_done[k] for k in sorted(_done)]
+        print(f"  🔑 RESUME: {len(_done)} case(s) already complete for this "
+              f"config stamp — {', '.join(str(k).split(TAG + '_')[-1] for k in sorted(_done))}",
+              flush=True)
+        print("     re-running only what is missing. Set resume:false in the "
+              "config to force a clean re-run.", flush=True)
 
     # 🔴 CONTINUATION SEED — MEASURED, NOT ANALYTIC. Was `exact` (2.4500, the
     # closed-form BARE value) until 2026-08-24. This rig meshes groove 5x10 +
@@ -690,7 +999,28 @@ def main():
         SWEEP = [(float(PRM["ne_fixed"]), float(c[0]), float(c[1]), float(PRM.get('loop_ld', LOOP_LD)))
                  for c in _ann]
     else:
-        SWEEP = [(ne, RI, RO, float(PRM.get('loop_ld', LOOP_LD))) for ne in NE_GRID]
+        # 🔑 PRESCRIBED (eps, sigma) — the plasma as a LOSSY MEDIUM, not a density.
+        # User, 2026-09-06: *"we probably have to model the plasma as a lossy
+        # dielectric"*; the target is cavity.Q0.loaded over (eps, sigma).
+        # ⚠️ WHY THIS AXIS IS THE ROBUST ONE: eps and sigma are what MAXWELL sees.
+        # Reaching them through n_e needs BOTH a Saha inversion AND a collision
+        # rate — and the collision rate is an unmade decision (NU_M 1e11 vs
+        # plasma_state 6.295e10, worth 3.4x in eps). A map over (eps, sigma)
+        # carries neither and survives that decision whichever way it goes.
+        # ✅ THE MESH DOES NOT DEPEND ON eps OR sigma (plasma_h comes from the
+        # config or the annulus thickness), so every point shares ONE mesh —
+        # same-mesh differencing, zero mesh noise across the curve.
+        # 🔑 PROBES: [name, r_mm] on the +x axis at the mid-plane, where TE011's
+        # E_phi is the probe's y component (h3_loopq's convention, and the one
+        # h3-field-01 validated). z = 0 is the mid-plane, the largest field.
+        _PROBES = [(str(n), float(r), 0.0, 0.0)
+                   for n, r in (PRM.get("probes_r_mm") or [])]
+        _pg = PRM.get("plasma_grid")
+        _ld0 = float(PRM.get('loop_ld', LOOP_LD))
+        if _pg:
+            SWEEP = [(None, RI, RO, _ld0, float(e), float(s)) for e, s in _pg]
+        else:
+            SWEEP = [(ne, RI, RO, _ld0, None, None) for ne in NE_GRID]
     # 🔴 A TAG THAT DOES NOT CARRY WHAT VARIES IS A COLLISION WAITING FOR
     # SOMEONE TO CHANGE THE AXIS — and it has now happened TWICE. Once when the
     # annulus became the axis (caught at case 2, from the log banner), and again
@@ -700,9 +1030,21 @@ def main():
     # 🔑 Naming discipline did not survive either time, so this does not rely on
     # it: the guard FAILS BEFORE THE FIRST SOLVE if any two cases would write to
     # the same place, whatever axis is added next.
-    def case_tag(ne, ri, ro, ld):
-        _n = "cold" if ne == 0.0 else (
-            f"n{math.log10(ne):.2f}".replace(".", "p").replace("+", ""))
+    def case_tag(ne, ri, ro, ld, eps_ovr=None, sig_ovr=None):
+        # 🔴 NAME WHAT VARIES. With (eps, sigma) prescribed, ne is constant-None
+        # and every case would collide onto one tag — one mesh, one postpro dir,
+        # one S11 file, and a sweep reporting a flat line. The guard below catches
+        # that; this is what lets the guard pass honestly.
+        if eps_ovr is not None:
+            _n = (f"e{eps_ovr:+.3f}_s{sig_ovr:.3f}"
+                  .replace(".", "p").replace("+", "p").replace("-", "m"))
+        else:
+            # This branch is the DENSITY path — reached only when eps_ovr is
+            # None, where ne is always a real grid value. The guard is the
+            # enclosing `if eps_ovr is not None`, which no same-line test sees.
+            _n = "cold" if ne == 0.0 else (
+                # refusable-ok: guarded by the enclosing eps_ovr branch above
+                f"n{math.log10(ne):.2f}".replace(".", "p").replace("+", ""))
         _r = f"r{ri:g}-{ro:g}".replace(".", "p")
         _l = f"ld{ld:g}".replace(".", "p")
         return f"{TAG}_{_n}_{_r}_{_l}"
@@ -718,8 +1060,40 @@ def main():
             f"  🔑 case_tag() does not name a variable this sweep is varying. "
             f"Add it there, not in the caller.")
 
-    for ne, ri, ro, _ld_case in SWEEP:
-        eps_p, sig_p = drude(ne, w)
+    for _case_i, (ne, ri, ro, _ld_case, _eps_ovr, _sig_ovr) in enumerate(SWEEP):
+        # 🔴 THE CONTINUATION MUST BE RESTORED, NOT JUST THE RESULT. `expect`
+        # carries the dip selection forward from the previous case; skipping a
+        # case without advancing it would seed the next one from the COLD TE011
+        # and walk the continuation onto the wrong dip — the exact failure the
+        # seed comment above documents. The checkpoint stores `expect_ghz`.
+        _ckey = case_tag(ne, ri, ro, _ld_case, _eps_ovr, _sig_ovr)
+        if _ckey in _done:
+            _r = _done[_ckey]
+            # 🔴 PREFER THE MEASURED f0, NOT `expect_ghz`. `expect_ghz` is what
+            # the case EXPECTED — i.e. the PREVIOUS case's measurement — so
+            # seeding from it makes the continuation LAG BY ONE CASE on resume.
+            # Harmless on a 2-case run; on the 4-case density grids the third
+            # case would continue from the first's f0. Found 2026-09-04 by
+            # reading the resume lines: both cases reported "seeded at
+            # 2.442750" although the loaded case MEASURED 2.451600.
+            _wf = _r.get("wide_fit") or {}
+            expect = _wf.get("f0") or _r.get("expect_ghz") or expect
+            print(f"  --- {_ckey.split(TAG + '_')[-1]}  ✅ RESUMED from "
+                  f"checkpoint (continuation seeded at {expect:.6f} GHz)",
+                  flush=True)
+            continue
+        # prescribed wins; drude() only when DENSITY is the axis
+        eps_p, sig_p = ((_eps_ovr, _sig_ovr) if _eps_ovr is not None
+                        else drude(ne, w))
+        # 🔴 THE COLD BRANCH MUST TEST THE STATE, NOT THE DENSITY. Four sites
+        # below keyed on `ne == 0.0` to pick the narrow cold band and the cold
+        # guards. On a prescribed-(eps, sigma) sweep ne is None, `None == 0.0` is
+        # False, and a VACUUM point would silently take the LOADED band —
+        # 200 kHz steps across a 0.35 MHz cold resonance, i.e. two samples.
+        # ✅ Equivalent on the density path by construction: drude(0, w) returns
+        # exactly (1.0, 0.0), so this tests the same thing and keeps every
+        # existing result identical.
+        _is_cold = (eps_p == 1.0 and sig_p == 0.0)
         # 🔴 THE TAG MUST NAME EVERY SWEPT VARIABLE, NOT JUST DENSITY.
         # It was f"{TAG}_n{log10(ne)}" — fine while ne was the only axis. With
         # the annulus as the axis and ne FIXED, all four cases collapsed onto
@@ -729,26 +1103,43 @@ def main():
         # 🔑 Caught before the second case, from the log banner. CONVENTIONS
         # 7ap at the CASE level: a name that does not carry what varies is a
         # collision waiting for someone to change the axis.
-        tag = case_tag(ne, ri, ro, _ld_case)
+        tag = _ckey
         # 🔑 RECORD THE SLICE COORDINATES, not just the axis (NEXT.md's standing
         # requirement: "which other variables were held fixed, and at what").
         # `ld_mm` was the swept variable on 2026-08-27 and was in NO field of the
         # record — the four points were distinguishable only by array order,
         # which is an argument, not a measurement (§7bm).
+        # ⚠️ the EFFECTIVE cap, not the configured one — see CASE_TIMEOUT_S.
+        # A case that stopped at the cap must be distinguishable from one that
+        # converged, and the cap is no longer recoverable from the config alone.
         rec = {"ne": ne, "eps": eps_p, "sigma": sig_p, "tag": tag,
+               # ⚠️ WHERE eps/sigma CAME FROM. "prescribed" means they were SET
+               # and `ne` is None because no density was assumed. Do NOT
+               # back-infer one: that needs the collision rate this axis avoids.
+               "plasma_source": ("prescribed" if _eps_ovr is not None
+                                 else "drude(ne, NU_M)"),
+               # ⚠️ POSITIONS INTO THE RECORD, not just the log — a probe reading
+               # with no coordinate is not a measurement of anywhere.
+               "probe_r_mm": {n: x for n, x, _y, _z in _PROBES},
+               "case_timeout_s": CASE_TIMEOUT_S,
                "ri_mm": ri, "ro_mm": ro,
                "ld_mm": float(_ld_case),
                "lw_mm": float(PRM.get("loop_lw", LOOP_LW)),
                "loop_gap_mm": float(LOOP_GAP),
                "loop_gap2_mm": float(PRM.get("loop_gap2", 0.0)),
                "loop_mount": PRM.get("loop_mount", "cap")}
-        if ne == 0.0:
-            print("  --- COLD (ne=0, plasma region = vacuum) — THE ANCHOR CASE",
-                  flush=True)
+        if _is_cold:
+            # ⚠️ says eps/sigma, NOT "ne=0" — on a prescribed sweep ne is None
+            # and a banner claiming ne=0 would be a label contradicting the
+            # value it labels (§7br).
+            print(f"  --- COLD (eps={eps_p:g}, sigma={sig_p:g} — plasma region "
+                  f"= vacuum) — THE ANCHOR CASE", flush=True)
             print(f"      must reproduce eigen: f0={COLD_TE011_GHZ:.6f} GHz, "
                   f"Q0={Q_REF:,.0f}", flush=True)
         else:
-            print(f"  --- ne={ne:.1e}  eps={eps_p:+.3f}  sigma={sig_p:.4g} S/m",
+            # ⚠️ `ne` is None on a prescribed-(eps, sigma) sweep — _q() it.
+            print(f"  --- ne={_q(ne, '.1e')}  eps={eps_p:+.3f}  "
+                  f"sigma={sig_p:.4g} S/m",
                   flush=True)
         meta = build_mesh(tag, a, L, zlo, zhi, eps_p, sig_p, rec, ri, ro,
                           _ld_override=_ld_case)
@@ -761,7 +1152,34 @@ def main():
         rec["tets"] = meta["tets"]
 
         # ---- STAGE 1: one WIDE sweep. Everything is extracted from it.
-        if ne == 0.0:
+        # 🔴 THE STEP MUST RESOLVE THE LINEWIDTH, AND THE TWO PRESETS DO NOT SPAN
+        # WHAT THIS RIG NEEDS. COLD (25 kHz) is for a 0.35 MHz resonance; COARSE
+        # (200 kHz) is for a heavily loaded one ~40 MHz wide. A WEAKLY ionised
+        # plasma sits between: at sigma ~ 0.008 S/m the mode is barely damped, the
+        # linewidth is ~0.5 MHz, and the coarse step puts 2-3 samples across it.
+        # ⚠️ THAT IS EXACTLY HOW h3-azimload-02's FIT FAILED — a 3 dB walk with
+        # nothing to walk on. A step too coarse for the linewidth does not error,
+        # it returns a bad Q or refuses; either way the case is lost after the
+        # solve has been paid for.
+        # ✅ The PROM is built ADAPTIVELY, so a finer step costs only surrogate
+        # EVALUATIONS (~0.16 s/point measured), not solves.
+        # ⚠️ PER-CASE, because one step does not fit the grid. 25 kHz over
+        # 2.40-2.52 resolves every PLASMA point here (linewidths 0.25-43 MHz),
+        # but a VACUUM anchor on a plain loop has Q ~ 40,000 — a 61 kHz
+        # linewidth, 2.4 samples. Accept either one setting for the run or a
+        # LIST parallel to plasma_grid.
+        _cfg_band, _cfg_step = PRM.get("sweep_band_ghz"), PRM.get("sweep_step_ghz")
+        if _cfg_band and isinstance(_cfg_band[0], (list, tuple)):
+            _cfg_band = _cfg_band[_case_i]
+        if isinstance(_cfg_step, (list, tuple)):
+            _cfg_step = _cfg_step[_case_i]
+        if _cfg_band and _cfg_step:
+            band = (float(_cfg_band[0]), float(_cfg_band[1]))
+            step = float(_cfg_step)
+            print(f"      CONFIG sweep {band[0]:.3f}-{band[1]:.3f} GHz @ "
+                  f"{step*1e6:.0f} kHz ({round((band[1]-band[0])/step):,} samples)"
+                  f" — overrides the cold/coarse presets", flush=True)
+        elif _is_cold:
             band = (COLD_LO_GHZ, COLD_HI_GHZ)
             step = COLD_STEP_GHZ
             print(f"      LOCATOR sweep {band[0]:.3f}-{band[1]:.3f} GHz @ "
@@ -774,7 +1192,17 @@ def main():
             step = COARSE_STEP_GHZ
         rec["sweep_band_ghz"], rec["sweep_step_ghz"] = list(band), step
         try:
-            sweep(tag, f"{tag}_wide", band, step, eps_p, sig_p, attrs)
+            # 🔑 BOUND FROM THE SIDECAR, and only the surfaces that EXIST in
+            # this mesh — a barrel run has no different keys from an azimuthal
+            # one here, but a bare-cavity instrument mesh can lack the loop
+            # entirely, and asking Palace for a missing attribute is an error,
+            # not an empty column.
+            _SP = ([(n, attrs[n]) for n in ("wall", "port", "loop")
+                    if attrs.get(n) is not None]
+                   if PRM.get("surface_power") else None)
+            sweep(tag, f"{tag}_wide", band, step, eps_p, sig_p, attrs,
+                  probes=_PROBES, surface_power=_SP)
+            rec["surface_power_attrs"] = dict(_SP) if _SP else None
         except RuntimeError as e:
             rec["error"] = f"wide sweep failed: {str(e)[:160]}"
             print(f"    🔴 {rec['error']}\n    REPORTED.", flush=True)
@@ -791,7 +1219,7 @@ def main():
                             f"@ {step*1e6:.0f} kHz "
                             f"(depth threshold {COARSE_MIN_DEPTH_DB} dB)")
             print(f"    🔴 {rec['error']}", flush=True)
-            if ne == 0.0:
+            if _is_cold:
                 raise SystemExit(
                     "🔴 THE COLD LOCATOR FOUND NOTHING. STOPPING.\n"
                     "   The cold sweep supplies BOTH the external anchor and the\n"
@@ -803,7 +1231,7 @@ def main():
                     "COARSE_MIN_DEPTH_DB, then re-run.")
             out["points"].append(rec); save(out); continue
 
-        if ne == 0.0:
+        if _is_cold:
             # 🔑 THE SEED IS MEASURED HERE, NOT ASSUMED. Deepest dip wins for the
             # cold case only: with no plasma there is no continuation history to
             # follow, and depth is the honest discriminator for which resonance
@@ -870,6 +1298,24 @@ def main():
 
         fi = fit_dip(d, i_sel, rec.get('sweep_step_ghz'))
         rec["wide_fit"] = fi
+        # 🔑 PROBES AT THE SELECTED RESONANCE, not at the band centre and not at
+        # the global minimum — f_sel is the dip this case's continuation chose,
+        # so the field is read where the mode actually is.
+        # ⚠️ Read even when the FIT failed: |E| does not depend on a 3 dB width
+        # existing, and h3-azimload-02 showed a case can lose its fit while the
+        # solve is perfectly good. The field is the observable this rig exists
+        # for; losing it to a failed width fit would be the §7ck defect again.
+        if _PROBES:
+            _pr = read_probes_at(f"{tag}_wide", f_sel, _PROBES)
+            if _pr:
+                rec.update(_pr)
+                print("      probes: " + "  ".join(
+                    f"{n}={v:,.1f} V/m" for n, v in _pr["probe_E_named"].items()),
+                    flush=True)
+            else:
+                print("      ⚠️ probes REQUESTED but probe-E.csv is absent or "
+                      "empty — the field for this case was NOT captured",
+                      flush=True)
         if "Q_L" not in fi:
             rec["error"] = f"wide: {fi['error']}"
             print(f"    🔴 {rec['error']}", flush=True)
@@ -886,7 +1332,7 @@ def main():
                   f"beta and Q0 are LOW CONFIDENCE (Q_L stands; beta<<1 makes "
                   f"Q_L ~ Q0)", flush=True)
         rec["Q0"] = fi["Q0"]
-        if ne == 0.0:
+        if _is_cold:
             # 🔑 THE COLD CASE IS THE REFERENCE, NOT A POINT SCORED AGAINST ONE.
             # 🔴 BUT TAKE IT FROM EIGEN, NOT FROM HERE. The cold cavity is
             # OVERCOUPLED (beta 4.77), so its Q0 is exactly where the
@@ -903,13 +1349,30 @@ def main():
             out["q_ref_measured_f0"] = fi["f0"]
             rec["eta"] = None
             dd = fi["Q0"]
-            print(f"    🔑 ETA REFERENCE: Q0={Q0_COLD_EIGEN:,.0f} "
-                  f"(eigen, port shorted — direct)", flush=True)
-            print(f"       driven-derived here: {dd:,.0f}"
-                  + (f"  ({abs(dd-Q0_COLD_EIGEN)/Q0_COLD_EIGEN*100:.0f}% apart)"
-                     if dd else "")
-                  + "  — CROSS-CHECK; ill-conditioned when overcoupled",
-                  flush=True)
+            # 🔴 Q0_COLD_EIGEN IS None WHEN THE STORE HAS NO COLD Q0 FOR THIS
+            # GEOMETRY — which is the CORRECT answer for barrel + series gap.
+            # This block formatted it unconditionally and killed h3-betaconv-1p2
+            # AFTER a 1036 s solve, BEFORE save(), so the case was lost outright.
+            # ⚠️ THE LESSON: making a value refusable is only half the change.
+            # Every consumer must tolerate the refusal, and the ones that only
+            # PRINT are the easiest to miss — they are not on any success path a
+            # test exercises. `_q()` exists for exactly this.
+            if Q0_COLD_EIGEN is None:
+                print(f"    ⚠️ NO ETA REFERENCE for this geometry "
+                      f"(mount={PRM.get('loop_mount','cap')}, "
+                      f"gap2={float(PRM.get('loop_gap2',0.0)):g} mm) — "
+                      f"eta is suppressed. driven-derived cold Q0 here: {_q(dd)}",
+                      flush=True)
+            else:
+                print(f"    🔑 ETA REFERENCE: Q0={_q(Q0_COLD_EIGEN)} "
+                      f"(eigen, port shorted — direct)", flush=True)
+                print(f"       driven-derived here: {_q(dd)}"
+                      # refusable-ok: the enclosing if/else guarantees
+                      # Q0_COLD_EIGEN is not None on this branch
+                      + (f"  ({abs(dd-Q0_COLD_EIGEN)/Q0_COLD_EIGEN*100:.0f}% apart)"
+                         if dd is not None else "  (branch-free Q0 suppressed)")
+                      + "  — CROSS-CHECK; ill-conditioned when overcoupled",
+                      flush=True)
             print(f"       branch here: {fi.get('branch')}  "
                   f"beta={fi.get('beta_resolved', float('nan')):.3f}  "
                   f"(error amplification {fi.get('error_amplification', 0):.1f}x)",
@@ -919,14 +1382,30 @@ def main():
             # measured by a DIFFERENT solver on a DIFFERENT mesh imports both
             # discretisation systematics into the ratio (§7c).
             qref = out.get("q_ref_measured")
-            if qref is None:
+            # 🔴 THE SUPPRESSION FLAG WAS SET AND NEVER READ. check_eta_reference
+            # prints "eta SUPPRESSED: reference 43,523 is for a 11x8 CAP loop;
+            # this run meshes 11x8 barrel" and sets ETA_VALID=False — and then
+            # this line computed eta anyway and the per-case line PRINTED it.
+            # 2026-09-04, h3-gap2load-02: eta=0.9985 on a SAPPHIRE BARREL cavity
+            # against a VACUUM CAP-LOOP EIGEN reference. Cross-solver AND
+            # cross-cavity — exactly the trap §7c exists to stop.
+            # ⚠️ AND THE NAME LIES: `q_ref_measured` is assigned Q0_COLD_EIGEN, a
+            # CONSTANT, while the comment just above claims "SAME MESH, SAME
+            # SOLVER, SAME CAVITY". Nothing in this run measured it.
+            if not ETA_VALID:
+                rec["eta"] = None
+                rec["eta_error"] = (
+                    "SUPPRESSED — the eta reference does not match this run's "
+                    "cavity (check_eta_reference, at startup). Q_L and beta "
+                    "stand: they come from the dip, not from Q_REF.")
+            elif qref is None:
                 rec["eta"] = None
                 rec["eta_error"] = "cold reference missing — eta not computable"
             else:
                 rec["eta"] = 1.0 - fi["Q0"] / qref
         expect = fi["f0"]                   # advance the continuation
         print(f"    f0={fi['f0']:.6f} GHz  lw={fi['linewidth_mhz']:.2f} MHz  "
-              f"Q_L={fi['Q_L']:,.0f}  beta={fi['beta']:.4f}  Q0={fi['Q0']:,.0f}  "
+              f"Q_L={fi['Q_L']:,.0f}  beta={fi['beta']:.4f}  Q0={_q(fi['Q0'])}  "
               + (f"eta={rec['eta']:.4f}" if rec.get("eta") is not None
                  else "eta=— (reference case)"), flush=True)
         out["points"].append(rec); save(out)
@@ -953,7 +1432,24 @@ def resolve_branch(w, ne):
     🔑 Q_ext is robust on either root — Q_ext = Q_L*(1+beta_u) overcoupled,
     which is Q_L to within a few percent. Q0 is the fragile number, not Q_ext.
     """
-    qL, b_u = w["Q_L"], w["beta"]
+    # 🔴 A FIT THAT REFUSED HAS NO Q_L, AND THIS ASSUMED IT ALWAYS DOES.
+    # 2026-09-05, h3-azimload-02: the loaded azimuthal dip had NO measurable 3 dB
+    # width — the low side ran into the band edge and the high side turned before
+    # -3 dB — so `wide_fit` legitimately carried `beta` and `s11_db` but no
+    # `Q_L`. `w["Q_L"]` then raised KeyError and the rig died in _report, AFTER
+    # every solve had finished. Hours of solving, no report, EXIT=1.
+    # 🔑 The measurement layer did the right thing: it recorded that the width is
+    # not measurable. The EVALUATION layer assumed success — the same split this
+    # programme keeps paying for, and the reason verdicts live in a re-runnable
+    # layer. ⚠️ Refuse, do not substitute: beta comes from the DIP DEPTH and is
+    # still sound, but without Q_L there is no Q0 and no Q_ext, and inventing a
+    # width from the band edge would manufacture both.
+    qL, b_u = w.get("Q_L"), w.get("beta")
+    if qL is None or b_u is None:
+        return {"resolved": False, "over": False, "beta": b_u,
+                "Q0": None, "Q_ext": None,
+                "why": ("no Q_L: the 3 dB width was not measurable, so Q0 and "
+                        "Q_ext are UNAVAILABLE. beta (from the dip depth) stands.")}
     q0_u = qL * (1.0 + b_u)
     if not b_u:
         return {"resolved": False, "over": False, "beta": b_u, "Q0": q0_u,
@@ -964,7 +1460,7 @@ def resolve_branch(w, ne):
         # as the fit gives it, and SAY it was not resolved.
         return {"resolved": False, "over": False, "beta": b_u, "Q0": q0_u,
                 "Q_ext": q0_u / b_u,
-                "why": f"loaded (ne={ne:.1e}) — the cold Q0 anchor does not "
+                "why": f"loaded (ne={_q(ne, '.1e')}) — the cold Q0 anchor does not "
                        f"apply, so the branch is NOT resolved here"}
     over = abs(math.log(q0_o / Q_REF)) < abs(math.log(q0_u / Q_REF))
     return {"resolved": True, "over": over,
@@ -978,7 +1474,8 @@ def _report(out):
     print("\n" + "=" * 78)
     _axis_now = out.get("sweep_axis")
     _lead = (f"{'ld mm':<10}" if _axis_now == "loop" else
-             f"{'bore mm':<10}" if _axis_now == "annulus" else f"  {'ne':>9}")
+             f"{'bore mm':<10}" if _axis_now == "annulus" else
+             f"{'sigma':>9}" if _axis_now == "plasma" else f"  {'ne':>9}")
     print(f"{_lead}{'eps':>9}{'f0 GHz':>11}{'lw MHz':>9}{'Q_L':>8}"
           f"{'beta':>8}{'Q0':>7}{'eta':>9}")
     for p in out["points"]:
@@ -988,7 +1485,7 @@ def _report(out):
         # result.json held all three fits. The comment below already prescribed
         # keying on wide_fit; only the `P = ` line beneath it was ever fixed.
         if not p.get("wide_fit"):
-            print(f"  {p['ne']:>9.1e}{p['eps']:>9.3f}   🔴 "
+            print(f"  {_q(p['ne'], '>9.1e')}{p['eps']:>9.3f}   🔴 "
                   + p.get("error", "no result")[:46])
             continue
         f = p["wide_fit"]
@@ -999,7 +1496,9 @@ def _report(out):
             flag = "  width thin"
         lead = (f"  {p['ld_mm']:<8.1f}" if _axis_now == "loop" else
                 f"{p['ri_mm']:.0f}-{p['ro_mm']:<7.1f}"
-                if _axis_now == "annulus" else f"  {p['ne']:>9.1e}")
+                if _axis_now == "annulus"
+                else f"{p['sigma']:>9.4f}" if _axis_now == "plasma"
+                else f"  {_q(p['ne'], '>9.1e')}")
         eta = f"{p['eta']:>9.4f}" if p.get("eta") is not None else f"{'—':>9}"
         q0 = p.get("Q0", f.get("Q0"))
         # 🔴 A FIT CAN HAVE f0 AND DEPTH BUT NO WIDTH. If the 3 dB walk runs
@@ -1033,8 +1532,9 @@ def _report(out):
               "see the branch-resolved table below, and read Q_ext\n"
               "     from there, not Q0 from here.")
     _key = ((lambda q: q["ld_mm"]) if _axis_now == "loop" else
-            (lambda q: (q["ri_mm"], q["ro_mm"]))
-            if _axis_now == "annulus" else (lambda q: q["ne"]))
+            (lambda q: (q["ri_mm"], q["ro_mm"])) if _axis_now == "annulus" else
+            (lambda q: (q["eps"], q["sigma"])) if _axis_now == "plasma" else
+            (lambda q: q["ne"]))
     P = {_key(p): p for p in out["points"] if p.get("wide_fit")}
     if len(P) != len([q for q in out["points"] if q.get("wide_fit")]):
         print("  🔴 SWEEP KEY COLLIDES — two points share a key, so the "
@@ -1063,7 +1563,7 @@ def _report(out):
         d_grv = (f0c - 2.450561) * 1e3              # ladder grooved, NO loop
         print("  ✅ V1' COLD LOCATOR — where does this port actually resonate?")
         _br = resolve_branch(c["wide_fit"], c["ne"])
-        print(f"     measured  f0={f0c:.6f} GHz   Q0={q0c:,.0f}   "
+        print(f"     measured  f0={f0c:.6f} GHz   Q0={_q(q0c)}   "
               f"|S11|={c['wide_fit']['s11_db']:.2f} dB")
         if _br["resolved"] and _br["over"]:
             # ⚠️ q0c above is the undercoupled root. Saying "eta is referenced
@@ -1071,7 +1571,7 @@ def _report(out):
             # wrong reference gets adopted (§7c has caught this name 4 times).
             print(f"     🔑 BRANCH: OVERcoupled — beta={_br['beta']:.1f}, so "
                   f"Q0={_br['Q0']:,.0f} and Q_ext={_br['Q_ext']:,.0f}.\n"
-                  f"        The {q0c:,.0f} above is the UNDERCOUPLED root and "
+                  f"        The {_q(q0c)} above is the UNDERCOUPLED root and "
                   f"is NOT this cavity's Q0.")
         print(f"     vs h3_cold eigen 2.440003 (A2/A0-selected, m_az=1) "
               f"-> {d_cold:+.3f} MHz")
@@ -1098,7 +1598,7 @@ def _report(out):
                   "        solve of THIS mesh before calling it TE011.")
         _q0ref = _br["Q0"] if _br["resolved"] else q0c
         print(f"     🔑 eta below is referenced to THIS measured "
-              f"Q0={_q0ref:,.0f} — same mesh, same solver"
+              f"Q0={_q(_q0ref)} — same mesh, same solver"
               + (", branch-resolved." if _br["resolved"] else "."))
     elif out.get("sweep_axis") == "annulus":
         # 🔑 A BORE SWEEP HAS NO COLD CASE AND DOES NOT NEED ONE. Its anchor is
@@ -1133,7 +1633,7 @@ def _report(out):
         _q0 = (_abr["Q0"] if _abr["resolved"]
                else a.get("Q0", a["wide_fit"].get("Q0")))
         print(f"     measured here: f0={a['wide_fit']['f0']:.6f} GHz  "
-              f"eta={_eta}  Q0={_q0:,.0f}")
+              f"eta={_eta}  Q0={_q(_q0)}")
         print("     ⚠️ NOT cross-checked. The old anchor (2.481566 / 0.9963) was "
               "groove-free and is void.")
         print("     ⚠️ eta = 1 - Q0/Q_ref is INSENSITIVE to Q0 when Q0 << Q_ref. "
@@ -1193,7 +1693,10 @@ def _report(out):
             lo, hi = pts[0], pts[-1]
             print(f"\n  🔑 LEVER: {lo['ri_mm']:.0f}-{lo['ro_mm']:g} vs "
                   f"{hi['ri_mm']:.0f}-{hi['ro_mm']:g} mm moves Q0 by "
-                  f"{lo['Q0'] / hi['Q0']:.1f}x.")
+                  + (f"{lo['Q0'] / hi['Q0']:.1f}x."
+                     if lo.get('Q0') and hi.get('Q0')
+                     else 'an unknown factor — the branch-free Q0 is '
+                          'SUPPRESSED for this geometry; use Q0_if_overcoupled.'))
             print(f"     ⚠️ beta/VSWR are FITTED, not divided by "
                   f"q_ext_est={qe:,.0f}. Compare the Q_ext impl column against "
                   f"it: a drift means the LOOP's coupling is itself moving "
@@ -1202,7 +1705,7 @@ def _report(out):
                   "slm -> residency -> LOD (user, 2026-08-25): the analysis "
                   "picks the bore and the EM copes. This measures the price.")
 
-    # ── loop sweep: Q_ext vs UNWOUND CONDUCTOR LENGTH, and the λ/4 test ─────
+    # ── loop sweep: Q_ext vs UNWOUND CONDUCTOR LENGTH, and the wavelength/4 test ─────
     # 🔴 THE COUPLING BRANCH IS NOT OPTIONAL HERE, AND IT HAS BITTEN TWICE.
     # `fit` returns the UNDERCOUPLED root beta_u = (1-|S11|)/(1+|S11|). The
     # overcoupled root is its reciprocal, and |S11| ALONE CANNOT TELL THEM
@@ -1225,7 +1728,7 @@ def _report(out):
         pts = sorted((q for q in out["points"] if q.get("wide_fit")),
                      key=lambda q: q["ld_mm"])
         if len(pts) >= 2:
-            print(f"\n  {'ld mm':>7}{'L_unwound':>11}{'L/(λ/4)':>10}"
+            print(f"\n  {'ld mm':>7}{'L_unwound':>11}{'L/(wavelength/4)':>18}"
                   f"{'Q_L':>8}{'VSWR':>8}{'Q_ext':>9}{'Q0 sel':>9}  branch")
             rows = []
             for q in pts:
@@ -1247,10 +1750,10 @@ def _report(out):
                 over, q_ext, q0 = br["over"], br["Q_ext"], br["Q0"]
                 rows.append({"ld": q["ld_mm"], "L": Lc, "q_ext": q_ext,
                              "q0": q0, "over": over})
-                print(f"  {q['ld_mm']:>7.1f}{Lc:>11.2f}{Lc / quarter:>10.3f}"
+                print(f"  {q['ld_mm']:>7.1f}{Lc:>11.2f}{Lc / quarter:>18.3f}"
                       f"{qL:>8.0f}{vswr:>8.1f}{q_ext:>9,.0f}{q0:>9,.0f}"
                       f"  {'OVER' if over else 'under'}coupled")
-            print(f"     λ/4 = {(299.792458 / pts[0]['wide_fit']['f0']) / 4.0:.2f} mm"
+            print(f"     wavelength/4 = {(299.792458 / pts[0]['wide_fit']['f0']) / 4.0:.2f} mm"
                   f" · branch chosen by |ln(Q0/Q_ref)|, Q_ref = {Q_REF:,.0f}")
 
             # 🔴 THE FALSIFIERS THE CONFIG DECLARED. They were stated in the run
@@ -1269,16 +1772,16 @@ def _report(out):
             if spread < 1.5:
                 print("  🔴 F-FLAT FIRES — Q_ext is flat across the whole span. "
                       "Conductor length is\n"
-                      "     NOT the mechanism, and λ/4 AND the area/capacitance "
+                      "     NOT the mechanism, and wavelength/4 AND the area/capacitance "
                       "story fail TOGETHER.")
             elif 0 < lo_i < len(qs) - 1:
-                print(f"  ✅ λ/4 SUPPORTED — Q_ext has an INTERIOR MINIMUM at "
+                print(f"  ✅ wavelength/4 SUPPORTED — Q_ext has an INTERIOR MINIMUM at "
                       f"ld = {rows[lo_i]['ld']:g} mm,\n"
                       f"     L = {rows[lo_i]['L']:.2f} mm = "
-                      f"{rows[lo_i]['L'] / ((299.792458 / pts[lo_i]['wide_fit']['f0']) / 4.0):.3f} λ/4."
+                      f"{rows[lo_i]['L'] / ((299.792458 / pts[lo_i]['wide_fit']['f0']) / 4.0):.3f} wavelength/4."
                       f" A capacitance/area picture predicts no turn.")
             elif mono:
-                print("  🔴 λ/4 NOT SUPPORTED on this span — Q_ext is MONOTONIC "
+                print("  🔴 wavelength/4 NOT SUPPORTED on this span — Q_ext is MONOTONIC "
                       "and never turns.\n"
                       "     The area/capacitance story survives. ⚠️ A minimum "
                       "OUTSIDE the swept range\n"
@@ -1294,11 +1797,21 @@ def _report(out):
                   "Q_ext is COLD and geometric;\n"
                   "     beta at any density is arithmetic on Q0(n_e)/Q_ext.")
 
-    es = [p["eta"] for p in out["points"] if p.get("eta") is not None]
-    if len(es) >= 2 and out.get("sweep_axis") != "annulus":
+    # 🔴 THE COLD CASE IS ne = 0 AND THIS IS A LOG AXIS. `min(P)` was 0, so
+    # `log10(max(P)/min(P))` raised ZeroDivisionError and killed the whole report
+    # AFTER every case had solved — h3-gap2load-02, 2026-09-04, EXIT=1 on four
+    # good solves. ✅ Nothing was lost only because `save()` runs per case.
+    # ⚠️ It never fired before because eta was None on every earlier run, so
+    # `len(es) >= 2` was false. The eta LEAK (§7by) is what reached this line —
+    # one defect exposing another, in the evaluation layer both times.
+    _sp = [p for p in out["points"]
+           if p.get("eta") is not None and (p.get("ne") or 0.0) > 0.0]
+    es = [p["eta"] for p in _sp]
+    _P = [p["ne"] for p in _sp]
+    if len(es) >= 2 and _P and min(_P) > 0.0 and out.get("sweep_axis") != "annulus":
         print(f"\n  eta spans {min(es):.4f}-{max(es):.4f} across ne "
-              f"{min(P):.0e}-{max(P):.0e} — absorption stays above "
-              f"{100*min(es):.1f}% over {math.log10(max(P)/min(P)):.0f} decades.")
+              f"{min(_P):.0e}-{max(_P):.0e} — absorption stays above "
+              f"{100*min(es):.1f}% over {math.log10(max(_P)/min(_P)):.0f} decades.")
     print(f"\n  wrote {S.outfile(SLUG, 'result.json')}")
 
 

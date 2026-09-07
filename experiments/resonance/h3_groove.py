@@ -82,6 +82,11 @@ from h3_driven import (local_minima, fit_dip, read_s11, sweep,
                        COARSE_MIN_DEPTH_DB, Q0_COLD_EIGEN, RI, RO,
                        SIZE_FACTORS)
 
+# 🔑 BOUND, not a literal. Value-neutral (still 1.0 mm). Skin depth is
+# 6.89 mm, far larger than any annulus here, so the field varies slowly
+# across it — see mesh.plasma_h.default for the full provenance.
+_PH = f'{values.get("mesh.plasma_h.default", allow_tentative=True, role="default"):.3f}'
+
 TAG = "h3_groove"
 # 🔴 NO PHYSICAL PROVENANCE (§7ab). Copied silently from h3_annular,
 # whose own basis was SOLVER CONVERGENCE (PI_1 = 5.58), not physics.
@@ -95,6 +100,20 @@ CASES = [(11.0, 8.0, False), (11.0, 8.0, True),
 CONTROLS = {(11.0, 8.0): (2.4824, -0.35), (28.0, 20.0): (2.4812, -0.69)}
 
 
+# 🔴 THE TORCH WAS HARDCODED HERE TOO. Same defect as h3_driven:316, found
+# 2026-09-04 by `preflight r_cli_literal` once it could see CLI-arg literals:
+# this rig could ONLY mesh a VACUUM torch and could not reach the design cavity.
+# THE TORCH RESTORATION LANDED 2026-08-26; four rigs never picked it up.
+# ✅ Bound from baselines, overridable per run so the pre-restoration series
+# stays reproducible: set "torch_material": [1.0, 3.5e-05] in the config.
+# ⚠️ These rigs take no run-config parameters, so there is no per-run override
+# here — unlike h3_driven, where `torch_material` is a config key. Changing the
+# torch for one of these means giving it a config, not editing this line.
+_TM = [values.get("torch.sapphire.permittivity"),
+       values.get("torch.sapphire.loss_tangent")]
+_TM_ARG = f"{float(_TM[0]):g},{float(_TM[1]):g}"
+
+
 def save(out):
     p = pathlib.Path(f"{TAG}.result.json")
     t = p.with_suffix(p.suffix + f".tmp{os.getpid()}")
@@ -106,9 +125,9 @@ def build_mesh(tag, a, L, zlo, zhi, ld, lw, groove_on, rec):
     args = ([x for x in GEO if x != "--no-torch"]
             + ["--radius", f"{a:.6f}", "--length", f"{L:.6f}",
                "--sectors", str(SECTORS),
-               "--torch-material", "1.0,3.5e-05",
+               "--torch-material", _TM_ARG,
                "--plasma", f"{RI},{RO},{zlo:.4f},{zhi:.4f}",
-               "--plasma-h", "1.000",
+               "--plasma-h", _PH,
                "--loop", f"{ld},{lw},{LOOP_RW},{LOOP_GAP}",
                "--loop-cap", f"{CAP_R_FRAC * a:.4f}",
                "--loop-phi", LOOP_PHI])

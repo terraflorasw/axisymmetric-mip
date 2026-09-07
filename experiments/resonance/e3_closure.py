@@ -102,6 +102,11 @@ from h3_ladder import purity, PROBE_PHI_DEG, PROBE_R_FRAC
 # slug + the hash of the config that produced them, so an edited config cannot
 # silently reuse a filename.
 import slug as S
+
+# 🔑 BOUND, not a literal. Value-neutral (still 1.0 mm). Skin depth is
+# 6.89 mm, far larger than any annulus here, so the field varies slowly
+# across it — see mesh.plasma_h.default for the full provenance.
+_PH = f'{values.get("mesh.plasma_h.default", allow_tentative=True, role="default"):.3f}'
 SLUG = S.parse()
 CFG = S.config(SLUG)
 PRM = CFG["_run"]["parameters"]
@@ -155,7 +160,7 @@ def build(tag, torch, a, L, eps_p, sig_p, rec):
                  "--sectors", str(SECTORS),
                  "--torch-material", f"{torch[0]},{torch[1]}",
                  "--plasma", f"{RI},{RO},{-zhi:.4f},{zhi:.4f}",
-                 "--plasma-h", "1.000",
+                 "--plasma-h", _PH,
                  "--loop", f"{LOOP_LD},{LOOP_LW},{LOOP_RW},{LOOP_GAP}",
                  "--loop-cap", f"{CAP_R_FRAC * a:.4f}",
                  "--loop-phi", LOOP_PHI])
@@ -177,7 +182,7 @@ def main():
     a, L = design_point()
     w = 2.0 * math.pi * 2.45e9
     eps_p, sig_p = drude(NE, w)
-    ne_anch, nu_anch, _ = ph.plasma_state(5245.0)
+    ne_anch, nu_anch, _ = ph.plasma_state(sum(ph.T_GAS_ANCHOR_K) / 2.0)   # midpoint, BOUND not copied
     print(f"  a={a:.4f} L={L:.4f}   ne={NE:.1e}  eps={eps_p:+.3f}  "
           f"sigma_p={sig_p:.4g} S/m")
     print(f"  torch: DESIGN = sapphire {TORCH_SAPPHIRE}, vs the {TORCH_VACUUM} "

@@ -11,12 +11,18 @@ FALSIFICATION  if geometric order 1 (no high-order pass at all) is reproducible
                If order 1 also varies, the source is upstream of it.
 """
 import pathlib
+import values
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import meshdet
 from e0_solver_vs_math import GEO
 from e0k_driven_vs_eigen import LOOP
+
+# 🔑 BOUND, not a literal. Value-neutral (still 1.5) — the point is that it
+# now has ONE source and carries its caveat: 1.5 is the COARSEST point of
+# the h3-betaconv series, where coupling.beta.loaded moves +16.4 % to sf 1.2.
+_SF = f'{values.get("mesh.size_factor.default", allow_tentative=True, role="default"):g}'
 
 BASE = [g for g in (list(GEO) + list(LOOP)) if g not in ("--order",)]
 # strip the geometric order pair from GEO so we can vary it
@@ -30,7 +36,7 @@ for g in list(GEO) + list(LOOP):
         skip = True
         continue
     _clean.append(g)
-SF = ["--size-factor", "1.5"]
+SF = ["--size-factor", _SF]
 CASES = [("order 1              ", _clean + ["--order", "1"] + SF),
          ("order 2, ho-opt 2    ", _clean + ["--order", "2"] + SF
           + ["--ho-optimize", "2"]),

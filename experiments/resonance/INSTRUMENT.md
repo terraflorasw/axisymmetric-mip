@@ -244,7 +244,7 @@ says the latter).
 
 ## Driven or eigen — which question is being asked
 
-They are not two ways to compute the same number. **Eigen has no port**, so β,
+They are not two ways to compute the same number. **Eigen has no port**, so coupling.beta,
 Q_ext, S11, delivered power and field amplitude at a given input power are
 STRUCTURALLY unavailable from it.
 
@@ -446,7 +446,7 @@ exist**, so they stand:
 |---|---|
 | **samples ∝ Q** for a driven sweep | arithmetic: the step must resolve f₀/Q. The SCALING holds; the specific sample counts quoted are groove-free |
 | **η is robust where Q₀ is not** | arithmetic: η = 1 − Q₀/Q_bare is insensitive when Q₀ ≪ Q_bare |
-| **\|S11\| cannot distinguish β from 1/β** | one-port circuit theory; resolve the branch from PHASE |
+| **\|S11\| cannot distinguish coupling.beta from 1/coupling.beta** | one-port circuit theory; resolve the branch from PHASE |
 | **band brackets the widest feature, step resolves the narrowest** | a sampling argument, not a cavity result |
 | **a guard on the QUALITY of a fit cannot tell you the fit is of the WRONG THING** | a statement about guards |
 | **continuation needs a seed MEASURED in the same regime** | a statement about the method |
@@ -454,7 +454,7 @@ exist**, so they stand:
 🔴 **These do NOT survive without re-checking**, because each is a claim about
 mode behaviour in a cavity whose modes the filter changes: the ~176 mm²
 mode-identity threshold; the ε-contrast convergence envelope (ε⁺ between 6 and
-8); the 2.6232 GHz "19× deeper" competitor; the 12→0 timeout comparison; every β,
+8); the 2.6232 GHz "19× deeper" competitor; the 12→0 timeout comparison; every coupling.beta,
 Q_ext and delivered-power figure; and the dielectric-shift numbers from
 `h4_field`.
 
@@ -468,10 +468,10 @@ groove-free, does not).
 - **Quote η, not Q₀.** They agree on η to 0.0006 while differing ~17% on Q₀,
   because η = 1 − Q₀/Q_bare is insensitive when Q₀ ≪ Q_bare.
 - **Q_ext is NOT transferable between meshes** — a value carried across gives Q₀
-  12× off. β is not mesh-converged (43% for a 1.25× refinement) and Q_ext
+  12× off. coupling.beta is not mesh-converged (43% for a 1.25× refinement) and Q_ext
   inherits it. Re-derive on the loaded mesh.
-- 🔴 **|S11| cannot distinguish β from 1/β.** −11.46 dB is 0.578 OR 1.730.
-  Depth-only β silently assumes undercoupling — fine at β ~ 0.02, wrong the
+- 🔴 **|S11| cannot distinguish coupling.beta from 1/coupling.beta.** −11.46 dB is 0.578 OR 1.730.
+  Depth-only coupling.beta silently assumes undercoupling — fine at coupling.beta ~ 0.02, wrong the
   moment a sweep is designed to REACH critical coupling. Resolve the branch from
   PHASE (`branch_from_phase`), and report AMBIGUOUS near a 180° swing.
 - **One-sided 3 dB widths are usable and must be flagged**: validated against
@@ -496,7 +496,7 @@ builders because callers assemble geometry themselves.
 | **1.05** | **12** | ✅ **`h2_groove` solved this cavity with these** — its −64.25 MHz is in the record |
 
 🔑 **Why, and it is counter-intuitive.** Shift-invert transforms eigenvalues to
-1/(λ − σ). A σ placed just below a TIGHT CLUSTER makes several transformed
+1/(eigenvalue − σ). A σ placed just below a TIGHT CLUSTER makes several transformed
 values simultaneously huge and nearly equal — precisely what Krylov methods
 separate slowly. Starting far below means the first modes converged are the
 **well-separated** low ones, and the cluster is reached with a good subspace
@@ -574,11 +574,11 @@ not). Free in every solve.
   E_elec at the tube ~75%, material-independently (74.4% vacuum tube, 74.7%
   quartz). Constant to 0.6 points over ε 2–6; **ε=11.6 is a 1.9× extrapolation,
   not a measurement.**
-- ✅ **Driven-mode coupling is now measured** — β = 0.015–0.098 on the loaded
+- ✅ **Driven-mode coupling is now measured** — coupling.beta = 0.015–0.098 on the loaded
   annulus, and driven f₀/η validated against eigen on the SAME geometry to
   0.83 MHz and 0.0006.
   🔴 **But Q_ext is NOT transferable between meshes.** ⚠️ **2026-08-24: e0k2's 50,709 was measured with the loop's port UNASSIGNED (= gap OPEN, §7v) and is retracted. Measured value: Q_ext = 9,231**, and it is thermally invariant (`h3_loopq`, `h3_hot`). Historically, e0k2's Q_ext≈50,709 gives
-  Q₀ 12× different from the linewidth route on a different mesh. β is not
+  Q₀ 12× different from the linewidth route on a different mesh. coupling.beta is not
   mesh-converged (43% for a 1.25× refinement); Q_ext inherits that.
   🔑 **Quote η, not Q₀.** Driven and eigen agree on η to **0.0006** while
   differing ~17% on Q₀, because η = 1 − Q₀/Q_bare is insensitive when

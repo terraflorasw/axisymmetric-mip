@@ -64,6 +64,7 @@ inflates apparent absorption. That is F3's subject, not a bug — but do not quo
 eta from this rig as "power into the plasma" without reading F3.
 """
 import json
+import values
 import math
 import os
 import pathlib
@@ -86,6 +87,11 @@ from h3_driven import (local_minima, fit_dip, read_s11, sweep,
                        CONTINUATION_JUMP_MHZ, Q0_COLD_EIGEN, RI, RO,
                        SIZE_FACTORS)
 
+# 🔑 BOUND, not a literal. Value-neutral (still 1.0 mm). Skin depth is
+# 6.89 mm, far larger than any annulus here, so the field varies slowly
+# across it — see mesh.plasma_h.default for the full provenance.
+_PH = f'{values.get("mesh.plasma_h.default", allow_tentative=True, role="default"):.3f}'
+
 TAG = "h3_loopsize"
 # 🔴 NO PHYSICAL PROVENANCE (§7ab). Copied silently from h3_annular,
 # whose own basis was SOLVER CONVERGENCE (PI_1 = 5.58), not physics.
@@ -96,6 +102,20 @@ BETA_REF, AREA_REF = 0.0201, 176.0      # measured, h3_driven ne=1e20
 SEED_GHZ = 2.4824                       # measured, same density and geometry
 SEED_TOL_MHZ = 1.0
 BETA_TARGET = 1.0
+
+
+# 🔴 THE TORCH WAS HARDCODED HERE TOO. Same defect as h3_driven:316, found
+# 2026-09-04 by `preflight r_cli_literal` once it could see CLI-arg literals:
+# this rig could ONLY mesh a VACUUM torch and could not reach the design cavity.
+# THE TORCH RESTORATION LANDED 2026-08-26; four rigs never picked it up.
+# ✅ Bound from baselines, overridable per run so the pre-restoration series
+# stays reproducible: set "torch_material": [1.0, 3.5e-05] in the config.
+# ⚠️ These rigs take no run-config parameters, so there is no per-run override
+# here — unlike h3_driven, where `torch_material` is a config key. Changing the
+# torch for one of these means giving it a config, not editing this line.
+_TM = [values.get("torch.sapphire.permittivity"),
+       values.get("torch.sapphire.loss_tangent")]
+_TM_ARG = f"{float(_TM[0]):g},{float(_TM[1]):g}"
 
 
 def area_mm2(d, hw):
@@ -113,9 +133,9 @@ def build_mesh(tag, a, L, zlo, zhi, ld, lw, rec):
     args = ([x for x in GEO if x != "--no-torch"]
             + ["--radius", f"{a:.6f}", "--length", f"{L:.6f}",
                "--sectors", str(SECTORS),
-               "--torch-material", "1.0,3.5e-05",
+               "--torch-material", _TM_ARG,
                "--plasma", f"{RI},{RO},{zlo:.4f},{zhi:.4f}",
-               "--plasma-h", "1.000",
+               "--plasma-h", _PH,
                "--loop", f"{ld},{lw},{LOOP_RW},{LOOP_GAP}",
                "--loop-cap", f"{CAP_R_FRAC * a:.4f}",
                "--loop-phi", LOOP_PHI])

@@ -10,7 +10,10 @@
 | **`GLOSSARY.md`** | 🔑 **say exactly this, mean exactly this.** Every entry caused a real error: cold/hot/loaded, the TWO "mode filter" devices, which cavity a Q belongs to, baseline vs frozen, loop half-width | **read second** |
 | **`PLAN.md`** | 🔑 **the FIXED experiment list, E0–E4. "It does not grow."** Each with V and F declared before any driver. Has a *Parked* section for surprises that **do not spawn runs** | **authority on what experiments EXIST**; some status lines stale (E1 was deleted 2026-08-21) |
 | `NEXT.md` | the queue only, no measurements | current |
-| `CONVENTIONS.md` | recurring errors + corrected approach | current |
+| `CONVENTIONS.md` | 🔴 **CANON** — the rules. Non-adherence = stale | current |
+| `INCIDENTS.md` | the 79 narratives behind them. Evidence, NOT canon | current |
+| `Q_LEDGER.md` | every Q with its state/cavity/loop/density qualifiers | current |
+| `VERIFY.md` | the re-verification plan and its phases | current |
 | `HYPOTHESES.md` | H0–H5, the working question set | current |
 | `INSTRUMENT.md` | what gmsh+Palace can and cannot tell us | current |
 | ➡️ **`../spectroscopy/`** | 🔴 **WHY any of this exists — and resonance is BLOCKED on one answer from it: the required GAS TEMPERATURE.** Saha turns that into n_e. Also holds the inherited-and-unverified assumptions (20 slm N₂, Fassel torch, working gas) that resonance has been building on | **NEW 2026-08-24** |
@@ -96,7 +99,7 @@ inward-facing loop that ended the previous programme (`README.md`).
   **+0.8%** (44,057 → 44,414). Bare Q itself differs from E0's 44,384 by 0.7%,
   so the mesh spread at sf 1.5 is ~1% and a 0.3% effect sits underneath it.
   Consistent with H2, but this measurement cannot confirm the sign.
-- 🔴 **λ/4 = 30.59 mm is the depth to AVOID** — the slot resonates and Q
+- 🔴 **wavelength/4 = 30.59 mm is the depth to AVOID** — the slot resonates and Q
   collapses to ~3,000.
 - ⚠️ An annular filter is **blind to m**.
 
@@ -174,7 +177,7 @@ from it. **Purity rejects it at a spread of 0.836.**
 **User, 2026-08-25: *"with an RF phase detector, we can distinguish Beta from
 1/Beta."*** ✅ **And the consequence reaches past the tuner.**
 
-**1. UNAMBIGUOUS Q₀ IN OPERATION.** Q₀ = Q_L(1+β), so the branch IS the answer:
+**1. UNAMBIGUOUS Q₀ IN OPERATION.** Q₀ = Q_L(1+coupling.beta), so the branch IS the answer:
 cold, the wrong branch gives **8,462** and the right one **40,652** — a **4.8×**
 error, and **exactly the one this programme made on its own cold case this
 week.** 🔑 **The hardware phase detector does for the MACHINE what
@@ -377,7 +380,7 @@ rather than a binary label. First measurement:
 ✅ **The answer is below**: +0.93 MHz, Q ×0.980, purity 0.9998.
 🔑 **Both errors share one shape — a number taken from a rig whose own caveat
 was on the same line as the value** (`identification_uncertain: True`; the
-undercoupled-branch comment on the `beta` assignment).
+undercoupled-branch comment on the `coupling.beta` assignment).
 
 ## 🔴🔴 AN UNASSIGNED PORT BOUNDARY OPENS THE LOOP GAP — the day's main finding
 **`h3_step3`, 2026-08-24. Same mesh, only the port BC changed.**
@@ -432,18 +435,18 @@ halves of TE011 mixed with the open-gap resonator — which is why they had
 *identical* purity spreads and straddled 2.4505. Its `identification_uncertain:
 True` and `m_az = 1` were both correct.
 
-## ✅ ITEM 1b ANSWERED — THE COLD CAVITY IS OVERCOUPLED, β = 4.77
+## ✅ ITEM 1b ANSWERED — THE COLD CAVITY IS OVERCOUPLED, coupling.beta = 4.77
 **From first principles: two eigen solves, no |S11|, no phase unwrapping.**
 
     Q0  (port PEC, no port loss)  = 43,523
     Q_L (port 50 ohm)             =  7,538
-    1/Q_ext = 1/Q_L - 1/Q0  ->  Q_ext = 9,117  ->  beta = Q0/Q_ext = 4.774
+    1/Q_ext = 1/Q_L - 1/Q0  ->  Q_ext = 9,117  ->  coupling.beta = Q0/Q_ext = 4.774
 
 🔴 **`h3_driven.fit_dip` HARDCODED THE UNDERCOUPLED BRANCH** (`b = (1-S)/(1+S)`).
-For the cold case that is wrong: β = 0.208 → Q₀ = 8,462, where the truth is
-β = 4.803 → **Q₀ = 40,645**, matching eigen's 43,523 to 7%.
+For the cold case that is wrong: coupling.beta = 0.208 → Q₀ = 8,462, where the truth is
+coupling.beta = 4.803 → **Q₀ = 40,645**, matching eigen's 43,523 to 7%.
 🔑 **THE BRANCH FLIPS.** Cold is OVERCOUPLED; every loaded case is UNDERCOUPLED
-(Q_ext ≈ 9,117 gives β = 0.065 at ne=1e18 against 0.070 fitted). **No single
+(Q_ext ≈ 9,117 gives coupling.beta = 0.065 at ne=1e18 against 0.070 fitted). **No single
 branch choice is safe across a density sweep**, which is exactly why |S11| alone
 cannot be trusted (`e0k2_anchor.branch_from_phase`, and item 1b, said so).
 ⚠️ **My phase read was wrong too.** I compared two WRAPPED phase values 6 MHz
@@ -462,7 +465,7 @@ branch fixed.**
 "not an eigenmode" implied "not real". Check the mechanism before executing the
 consequence.
 
-| ne | ε | f₀ GHz | Q₀ | **η** | β | VSWR | **margin (f₀→2.500)** | ~~3 dB edge~~ |
+| ne | ε | f₀ GHz | Q₀ | **η** | coupling.beta | VSWR | **margin (f₀→2.500)** | ~~3 dB edge~~ |
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | 0 (ref) | +1.000 | 2.451500 | **43,523** (eigen) | — | **4.715** OVER | 4.7 | **48.5 MHz** | ~~48.3~~ |
 | 1e18 | +0.689 | 2.452000 | 593 | **0.9864** | 0.064 | 15.6 | **48.0** | ~~45.8~~ |
@@ -486,7 +489,7 @@ Q₀ of **8,462** — the undercoupled branch, wrong for the cold case. Old valu
     1/Q_L = 1/Q0 + 1/Q_ext   ->   Q0 = 1 / (1/Q_L - 1/Q_ext)
 
 Q_L from the LINEWIDTH, Q_ext = **9,117** from the eigen pair (geometry, one
-measurement for the whole sweep). **The dip depth never enters, so β vs 1/β
+measurement for the whole sweep). **The dip depth never enters, so coupling.beta vs 1/coupling.beta
 cannot arise.**
 🔴 **THE REFERENCE COMES FROM EIGEN (43,523), NOT FROM THIS FORMULA.** The cold
 cavity is overcoupled, which is exactly where `1/Q_L − 1/Q_ext` subtracts two
@@ -515,10 +518,10 @@ which is why groove size is a variable".** BOTH halves are now corrected: the
 criterion is f₀ (2× more headroom) and Phase B showed **geometry has ~1 MHz of
 authority over it regardless**. The 5 × 10 groove is optimal, not provisional.
 
-⚠️ **β IS LOW-CONFIDENCE FROM 3e18 UP** — 0.011–0.026 against dips of −0.19 to
+⚠️ **coupling.beta IS LOW-CONFIDENCE FROM 3e18 UP** — 0.011–0.026 against dips of −0.19 to
 −0.45 dB. The loaded branch is now CHECKED rather than assumed (Q_ext ≈ 9,117
 predicts 0.065 at 1e18 against 0.070 fitted), but the shallow dips still make
-the magnitudes soft. **η is robust where β is not**: Q_L comes from a linewidth
+the magnitudes soft. **η is robust where coupling.beta is not**: Q_L comes from a linewidth
 resolved by 50–130 samples, and η now uses a branch-corrected reference.
 ⚠️ **ONE MINIMUM IN BAND IS NOT BAND CLEARANCE.** A driven sweep shows what the
 PORT COUPLES TO, not what exists. The other two minima (≈2.38 and 2.6064) sit
@@ -527,7 +530,7 @@ outside the band, but mode COMPETITION is an eigen question.
 ## ✅✅ WHAT THE GROOVE IS ACTUALLY FOR — measured 2026-08-24, `h3_loopq` F4
 **Anchor: the same 11×8 loop and an identical mesh, groove present or absent.**
 
-| loop 11×8 | Q₀ | Q_L | Q_ext | β | purity | spread |
+| loop 11×8 | Q₀ | Q_L | Q_ext | coupling.beta | purity | spread |
 |---|---:|---:|---:|---:|---:|---:|
 | **NO groove** | 30,878 | 22,024 | **76,811** | **0.402** under | **0.7593** | **0.2407** |
 | **grooved 5×10** | **43,422** | 7,613 | **9,231** | **4.704** OVER | **0.9997** | 0.0003 |
@@ -546,7 +549,7 @@ onto; this is about whether a clean TE011 survives having a feed attached.
 
 🔑 **AND THE GROOVE IS WHAT MAKES THE COUPLING WORK AT ALL:**
 - **Q_ext 76,811 → 9,231 — the loop is 8.3× more effective with the groove.**
-- **β 0.402 → 4.704 — a 12× change that CROSSES from under- to overcoupled.**
+- **coupling.beta 0.402 → 4.704 — a 12× change that CROSSES from under- to overcoupled.**
 - Q₀ +41%, and the mode goes from a blend to clean.
 
 The hybrid's H_r is redistributed, so a loop that links H_r couples to it far
@@ -562,13 +565,13 @@ DEGENERACY cost the rest.**
 half of a pair, exactly the situation `e0k2_anchor` warned of: *a driven dip is
 TWO overlapping resonances and a single-Lorentzian fit returns NEITHER Q.*
 
-## ✅ LOOP SIZE — Q₀, Q_ext and β, by EIGEN PAIRS (`h3_loopq`, 2026-08-24)
+## ✅ LOOP SIZE — Q₀, Q_ext and coupling.beta, by EIGEN PAIRS (`h3_loopq`, 2026-08-24)
 **No |S11|, no depth, no Lorentzian, no phase, no branch decision.**
 
     Q0 = eigen port_bc="pec"   ·   Q_L = eigen port_bc="lumped"
-    1/Q_ext = 1/Q_L - 1/Q0     ·   beta = Q0/Q_ext
+    1/Q_ext = 1/Q_L - 1/Q0     ·   coupling.beta = Q0/Q_ext
 
-| area mm² | f₀ GHz | Q₀ | Q_ext | β | Q cost | spread |
+| area mm² | f₀ GHz | Q₀ | Q_ext | coupling.beta | Q cost | spread |
 |---:|---:|---:|---:|---:|---:|---:|
 | 0 | 2.450561 | 44,414 | — | — | — | 0.0015 |
 | 35 | 2.450818 | 44,196 | 19,633 | 2.251 | 0.5% | 0.0001 |
@@ -583,7 +586,7 @@ k = M/√(L_loop·L_cav) peaks and falls. **A loop can be too big to couple well
 🔴 **384 mm² IS STRICTLY DOMINATED** — weaker coupling AND 6.0% Q cost against
 2.2%. It is retired, not a candidate.
 🔑 **TO APPROACH MATCHING, GO SMALLER — AND SMALLER IS ALSO CHEAPER IN Q.** Both
-axes point the same way. Every grooved size here is OVERCOUPLED; β = 1
+axes point the same way. Every grooved size here is OVERCOUPLED; coupling.beta = 1
 extrapolates to **~10 mm²** on the small-area branch.
 ⚠️ **Extrapolate only on the small-area branch.** The curve has a turning point;
 a monotonic fit through it is meaningless — the same error the groove-depth law
@@ -593,8 +596,8 @@ was retired for.
 must. **The driven anomaly (Q₀ rising 20,005 → 30,112) was an artefact of the
 driven extraction, not physics.**
 ⚠️ **The branch is only a PARTIAL explanation.** If the branch were the whole
-error the ratio Q₀_eigen/Q₀_driven would equal β at every size. It does at
-35 mm² (2.21 vs β=2.251) and **not** at 82/176/384 (1.76, 1.53, 1.39 vs β =
+error the ratio Q₀_eigen/Q₀_driven would equal coupling.beta at every size. It does at
+35 mm² (2.21 vs coupling.beta=2.251) and **not** at 82/176/384 (1.76, 1.53, 1.39 vs coupling.beta =
 3.9, 4.7, 3.1). Those driven cases were also **groove-free** and some predate
 the port-meshing fix. **Do not record the anomaly as fully explained.**
 ✅ V1 reproduced `h3_step3` at 11×8 to 0.2 / 1.0 / 1.3 / 1.5% — **across two
@@ -631,7 +634,7 @@ one frequency — the cavity linewidth is not a band-occupancy constraint.
 
 ### 🔴 CORRECTION 2 — THE MATCH IS WORST AT ~1e19, NOT AT 1e20
 
-| n_e | β | **VSWR** | into circulator dump @1 kW |
+| n_e | coupling.beta | **VSWR** | into circulator dump @1 kW |
 |---|---:|---:|---:|
 | cold | 4.715 | 4.7 | 423 W |
 | 1e18 | 0.064 | 15.6 | 773 W |
@@ -648,7 +651,7 @@ mid-density. Whether it ever sees that depends on the PIN tuner's range against
 
 ### 🔑 TWO THINGS FOR THE CONTROL DESIGN
 - **The tuner REVERSES DIRECTION during ignition.** Cold is **OVERCOUPLED**
-  (β = 4.715); loaded is **UNDERCOUPLED**. It passes through unity transformation
+  (coupling.beta = 4.715); loaded is **UNDERCOUPLED**. It passes through unity transformation
   at **n_e ≈ 5×10¹⁶** and must then transform the OTHER way — while the frequency
   loop slews **+30.9 MHz** over the same transient. Both loops move fast and one
   changes sign.
@@ -662,7 +665,7 @@ match (VSWR 15.6) for a 1.2-point η penalty.** Lower density is better on
 essentially every electromagnetic axis — which sharpens why anchoring n_e
 (§7ab) is the top open question.
 
-## ✅ THE MATCHING NETWORK IS A HARDWARE REQUIREMENT — so β is a TUNER SPEC
+## ✅ THE MATCHING NETWORK IS A HARDWARE REQUIREMENT — so coupling.beta is a TUNER SPEC
 **User, 2026-08-24: *"The intended hardware definitely requires a matching
 network."* That settles the open question and changes what β MEANS.**
 
@@ -672,14 +675,14 @@ a modelling boundary condition, not the machine. **Do not quote them.**
 
 ✅ **What the measurement actually specifies is the TUNER'S RANGE:**
 
-| state | Q₀ | β | Z at the port |
+| state | Q₀ | coupling.beta | Z at the port |
 |---|---:|---:|---|
 | cold (no plasma) | 43,523 | **4.715** | 236 Ω (or 11 Ω) |
 | 1e18 | 593 | 0.064 | 3.2 Ω (or 778 Ω) |
 | 1e19 | 93 | 0.010 | 0.50 Ω (or 4,963 Ω) |
 | 1e20 | 158 | 0.017 | 0.86 Ω (or 2,921 Ω) |
 
-🔑 **THE TUNER MUST TRACK A FACTOR OF 275 IN β** (4.715 → 0.017), and
+🔑 **THE TUNER MUST TRACK A FACTOR OF 275 IN coupling.beta** (4.715 → 0.017), and
 🔑 **IT CROSSES PERFECT MATCH AT n_e ≈ 5×10¹⁶ — essentially the instant of
 ignition.** The system is OVERCOUPLED before that point and progressively
 UNDERCOUPLED for every density after it.
@@ -692,12 +695,12 @@ comfortably, so this is a real specification, not a formality — and a
 high-ratio match is narrowband against a 16 MHz linewidth.
 
 ✅ **THIS UNBLOCKS "NET INTO PLASMA", WHICH THE RECORD BANNED.** It was banned
-because β's branch was unresolved. β is now resolved from eigen pairs, and the
+because coupling.beta's branch was unresolved. coupling.beta is now resolved from eigen pairs, and the
 match is confirmed, so **net ≈ η × (match efficiency)** with η = 0.996. The only
 missing term is tuner loss, which is a component spec, not a solve.
 
 ⚠️ **VIEWPORT, LIGHT TRAP AND CHIMNEY ARE DELIBERATELY OUT OF SCOPE** (user,
-2026-08-24) — and they would not move β regardless. `GEO` disabling them is
+2026-08-24) — and they would not move coupling.beta regardless. `GEO` disabling them is
 intentional gating, NOT the groove omission's shape. **This is settled; do not
 re-raise it.**
 
@@ -707,7 +710,7 @@ re-raise it.**
 **Unloaded, no plasma, wall temperature scaled** (α = 23.1e-6/K on every
 dimension — cavity, groove, loop, wire, gap — and σ by 1/(1+α_R·ΔT)):
 
-| T_wall | ΔT | f₀ GHz | Δf | Q₀ | Q_ext | β | VSWR |
+| T_wall | ΔT | f₀ GHz | Δf | Q₀ | Q_ext | coupling.beta | VSWR |
 |---:|---:|---:|---:|---:|---:|---:|---:|
 | **293 K** | +0 | 2.451633 | — | 43,422 | 9,231 | 4.704 | 4.7 |
 | **393 K** | +100 | 2.445935 | **−5.70** | 36,374 | 9,194 | 3.956 | 4.0 |
@@ -724,11 +727,11 @@ mode shape alone, as it must.
 
 🔑 **THE NEW RESULT: Q_ext IS THERMALLY INVARIANT.** ×0.9960 at +100 K, ×0.9997
 at +200 K — flat, while Q₀ falls ×0.838 and ×0.736. **The loop expands with the
-cavity and the coupling does not change**, so **β tracks Q₀ directly** (×0.841,
+cavity and the coupling does not change**, so **coupling.beta tracks Q₀ directly** (×0.841,
 ×0.736). F3's assumption is measured, not assumed.
 🔑 **CONSEQUENCE FOR THE CONTROL LOOP:** the cold-to-hot difference is ENTIRELY
 Q₀'s. A temperature reading gives f₀ as a computed offset (−5.70 MHz/100 K) and
-β from Q₀ alone. **One sensor, two derived quantities, no search.**
+coupling.beta from Q₀ alone. **One sensor, two derived quantities, no search.**
 
 🔴 **GLOSSARY's "Q × 0.78 at +100 K" IS NOT REPRODUCED — we measure ×0.838.**
 That is exactly √σ with standard aluminium α_R = 4.29e-3/K. **0.78 would need
@@ -753,7 +756,7 @@ plasma density — the exact confusion GLOSSARY exists to stop.
 
 **What the record already gives** (α = 23.1e-6/K, wall σ falling with T):
 
-| wall ΔT | f₀ (unloaded) | Q₀ | β | VSWR |
+| wall ΔT | f₀ (unloaded) | Q₀ | coupling.beta | VSWR |
 |---|---:|---:|---:|---:|
 | +0 K | 2.4515 | 43,523 | 4.715 | 4.7 |
 | +100 K | **2.4458** | 33,948 | 3.678 | 3.7 |
@@ -763,7 +766,7 @@ plasma density — the exact confusion GLOSSARY exists to stop.
 - **Frequency — every state.** −5.7 MHz per 100 K, purely geometric. It pulls
   **OPPOSITE to the plasma** (+30.9 MHz), so **heating BUYS BACK margin.**
 - **Match — UNLOADED ONLY.** Loaded, the plasma is **275×** the wall loss, so
-  Q₀ moves 158.0 → 157.8 at +100 K. **Loaded β belongs to the plasma.**
+  Q₀ moves 158.0 → 157.8 at +100 K. **Loaded coupling.beta belongs to the plasma.**
 
 ✅ **AND THE REQUIREMENT THIS CREATES IS ONE SENSOR.** Given a cavity wall
 temperature, f₀ is a computed offset from the cold value rather than something to
@@ -818,8 +821,8 @@ already believed impossible. This is an independent angle on it, with a number.
 ### 🔑 WHAT IT SETTLES — item 7's target
 
 `../ignition-options/` recorded the decision as conditional: *cavity ignition →
-minimax loop; striker → β = 1 loaded.* **The striker branch is now measured.**
-- ✅ **ITEM 7'S TARGET IS β = 1 LOADED.** The cold-coupling constraint does not
+minimax loop; striker → coupling.beta = 1 loaded.* **The striker branch is now measured.**
+- ✅ **ITEM 7'S TARGET IS coupling.beta = 1 LOADED.** The cold-coupling constraint does not
   bind, because cold coupling was never going to ignite anything.
 - ⚠️ **The 2026-08-25 correction ("we were optimising the wrong objective")
   stands in PRINCIPLE and is VOID in practice** — Q_ext really does serve two
@@ -901,7 +904,7 @@ actually being built**: full Fassel torch in sapphire (outer 20/1.5,
 intermediate 16/1.0, injector 5/2, ε = 9.39) **passing through BOTH end caps**,
 chimney 21×41, feed 21×41, groove 5×10.
 
-| mount | f₀ GHz | Q₀ | Q_ext | β | P_min | spread |
+| mount | f₀ GHz | Q₀ | Q_ext | coupling.beta | P_min | spread |
 |---|---:|---:|---:|---:|---:|---:|
 | **barrel** | **2.440236** | **43,259** | **8,808** | 4.911 | 0.9999 | 0.0001 |
 | cap | 2.440302 | 43,253 | 9,303 | 4.649 | 0.9998 | 0.0002 |
@@ -977,14 +980,14 @@ sliding along a TRADE, not climbing a gradient.**
 that improved the loaded match made the cold match worse by nearly the same
 factor:
 
-| design | Q_ext | β cold | **VSWR cold** | β loaded | **VSWR loaded** | worst | cold P_in @1 kW |
+| design | Q_ext | coupling.beta cold | **VSWR cold** | coupling.beta loaded | **VSWR loaded** | worst | cold P_in @1 kW |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | no capacitor | 8,716 | 5.0 | **5.0** | 0.012 | 83.0 | 83 | **556 W** |
 | gap 0.75 | 720 | 52.1 | 52.1 | 0.146 | 6.9 | 52 | 74 W |
 | gap 2.25 | 322 | 86.5 | 86.5 | 0.326 | **3.1** | 87 | 45 W |
-| **β=1 loaded** | 105 | 265 | **265** | 1.000 | **1.0** | 265 | 🔴 **15 W** |
+| **coupling.beta=1 loaded** | 105 | 265 | **265** | 1.000 | **1.0** | 265 | 🔴 **15 W** |
 
-🔴 **CHASING β = 1 LOADED COSTS 37× OF THE IGNITION POWER** — 556 W → 15 W.
+🔴 **CHASING coupling.beta = 1 LOADED COSTS 37× OF THE IGNITION POWER** — 556 W → 15 W.
 **You cannot run a plasma you never lit.** The loaded match is bought in a state
 reachable only *after* the state it destroys.
 
@@ -1014,7 +1017,7 @@ having to absorb. **The lever is real; the target was wrong.**
 - **If ignition goes THROUGH the cavity** → cold coupling is a hard constraint,
   the minimax loop is right, and steps 2b/2c pointed the wrong way.
 - **If a STRIKER lights it** (`geometry.py` has `--striker`) → cold coupling
-  stops constraining, and **β = 1 loaded becomes correct after all.**
+  stops constraining, and **coupling.beta = 1 loaded becomes correct after all.**
 
 🔑 **The same measurement supports either target; only the CHOICE changes.**
 ✅ **`../ignition-options/` opened 2026-08-25 to answer it.**
@@ -1022,7 +1025,7 @@ having to absorb. **The lever is real; the target was wrong.**
 ### 🔑🔑 AND THERE IS A THIRD ANSWER: TWO LOOPS (user, 2026-08-25)
 
 **One sized for cold (Q_ext = 27,863), one for loaded (Q_ext = 105).**
-**β = 1 in BOTH states** — the bimodal constraint dissolves rather than being
+**coupling.beta = 1 in BOTH states** — the bimodal constraint dissolves rather than being
 traded against. ✅ Sizing checks out against MEASURED area data: loop A wants
 ~20–25 mm², **a small plain loop with no series gap and therefore no arcing
 risk**; loop B is the capacitor loop, 3.1× further than measured.
@@ -1045,12 +1048,12 @@ point."*** The mechanism is measured across 4 mounts/capacitor families and 9
 Q_ext values spanning 8,716 → 322. **What remains is a CHOICE under
 constraints** — ignition strategy, arcing margin, F2 purity — not another sweep.
 
-## ✅✅✅ ITEM 7 STEP 2c — Q_ext 8,716 → 322, A 27× LEVER. β = 1 IS BACK IN REACH (2026-08-25)
+## ✅✅✅ ITEM 7 STEP 2c — Q_ext 8,716 → 322, A 27× LEVER. coupling.beta = 1 IS BACK IN REACH (2026-08-25)
 
 `h3-loop-gap2-02`, stamp `bda90296`. Barrel mount, 176 mm² loop, no flange,
 series gap widened. **`gap2-01`'s 0.75 mm control reproduced exactly (720).**
 
-| gap mm | Q₀ | **Q_ext** | β | slope | lever | VSWR @ Q₀=105 | spread |
+| gap mm | Q₀ | **Q_ext** | coupling.beta | slope | lever | VSWR @ Q₀=105 | spread |
 |---:|---:|---:|---:|---:|---:|---:|---:|
 | 0.75 | 37,516 | 720 | 52.1 | — | 12.1× | 6.9 | 0.0010 |
 | 1.00 | 35,735 | 580 | 61.6 | −0.75 | 15.0× | 5.5 | 0.0015 |
@@ -1059,9 +1062,9 @@ series gap widened. **`gap2-01`'s 0.75 mm control reproduced exactly (720).**
 
 ### 🔑 THE HEADLINE: "OUT OF REACH FOR A LOOP" NO LONGER HOLDS
 
-`../control-loop/` records that **β = 1 needs an 84× reduction in Q_ext** and
+`../control-loop/` records that **coupling.beta = 1 needs an 84× reduction in Q_ext** and
 calls it *"out of reach for a loop"*, leaving requirement 1 🔴 UNSOLVED.
-**Measured: 27.0×, still descending.** β = 1 at the design bore needs
+**Measured: 27.0×, still descending.** coupling.beta = 1 at the design bore needs
 Q_ext = 105; we are at **322 — a further 3.1×** on a knob that has already
 delivered 27×.
 
@@ -1091,7 +1094,7 @@ Everything that trades against coupling is degrading FASTER than Q_ext improves:
 | series-gap E-field | **unquantified**, and rises with BOTH I and X_C |
 
 **Extrapolating the late purity slope puts F2 (`spread > 0.02`) at gap ≈ 5 mm.**
-The Q_ext extrapolation reaches β = 1 in the same region. 🔑 **So the coupling
+The Q_ext extrapolation reaches coupling.beta = 1 in the same region. 🔑 **So the coupling
 optimum, the hybridisation limit and the arcing risk all arrive together** —
 which is not coincidence: the same in-band loop resonance drives all three.
 
@@ -1104,7 +1107,7 @@ wrong three times in one day. It says *"the limit is near"*, not *"the limit is
 
 **Before 2.25 mm I twice argued to stop the hunt** — the remaining VSWR gain
 looked small (4.4 → ~3.5) against three degrading constraints.
-🔑 **2.25 mm changed that: β = 1 is 3.1× away, not 20×.** A matched cavity is
+🔑 **2.25 mm changed that: coupling.beta = 1 is 3.1× away, not 20×.** A matched cavity is
 worth more than an incrementally better VSWR, because it deletes a component
 rather than easing its spec.
 
@@ -1121,13 +1124,13 @@ therefore a PRECONDITION for the next sweep, not a follow-up to it.
 series gap swept. The flange sweep had shown the disc was the wrong knob; this
 asked only **which direction** the gap moves Q_ext.
 
-| gap2 mm | tets | Q₀ | **Q_ext** | β | VSWR @ Q₀=105 | P_min | spread | A2/A0 |
+| gap2 mm | tets | Q₀ | **Q_ext** | coupling.beta | VSWR @ Q₀=105 | P_min | spread | A2/A0 |
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | 0.35 | 43,927 | 40,102 | 1,134 | 35.4 | 10.8 | 0.9993 | 0.0006 | 0.0181 |
 | 0.50 *(control)* | 44,049 | 40,147 | 1,143 | 35.1 | 10.9 | 0.9994 | 0.0005 | 0.0184 |
 | **0.75** | 44,197 | **37,516** | **720** | **52.1** | **6.9** | 0.9988 | 0.0010 | 0.0270 |
 
-✅ **Control reproduced `h3-loop-seriesc-01` exactly** (Q_ext 1,143, β 35.139),
+✅ **Control reproduced `h3-loop-seriesc-01` exactly** (Q_ext 1,143, coupling.beta 35.139),
 across a reclamation and a fourth machine.
 🔑 **Lever vs the plain loop: 8,716 → 720 = 12.1×**, up from 7.6×.
 🔑 **VSWR at the design bore: 83 → 6.9**, inside `../control-loop/`'s "3-stub
@@ -1164,12 +1167,12 @@ prediction is offered for where. Two attempts to place a grid ahead of the
 measurement failed today. `h3-loop-gap2-02` extends until Q_ext turns back up
 **or** purity crosses F2, whichever comes first.
 
-## ✅ MEASURED — Q_ext HAS AN INTERIOR MINIMUM NEAR λ/4 (2026-08-27)
+## ✅ MEASURED — Q_ext HAS AN INTERIOR MINIMUM NEAR wavelength/4 (2026-08-27)
 
-⚠️ **THIS HEADING FIRST READ "λ/4 CONFIRMED", IN THIS SESSION, AND THAT WAS WRONG.**
+⚠️ **THIS HEADING FIRST READ "wavelength/4 CONFIRMED", IN THIS SESSION, AND THAT WAS WRONG.**
 *"Nothing about this is known, because we haven't falsified anything"* — user,
 2026-08-27. **Surviving a falsifier is not confirmation.** What is established
-below is a MEASUREMENT and ONE FALSIFICATION. λ/4 is a hypothesis that has not
+below is a MEASUREMENT and ONE FALSIFICATION. wavelength/4 is a hypothesis that has not
 yet been killed, on one span, in one slice. It is not knowledge.
 
 `h3-lambda4-02`, stamp `2fe70896`. **DRIVEN**, cold (ne = 0), barrel mount,
@@ -1178,7 +1181,7 @@ Four leg depths. The unwound conductor is **L = 2·ld + (2·lw − port gap) −
 series gap**, derived from the meshed geometry, so ld carries **twice** the
 leverage of any gap — which is why the earlier gap sweep could not test this.
 
-| ld mm | L_unwound | L/(λ/4) | Q_L | VSWR | **Q_ext** | Q₀ | branch |
+| ld mm | L_unwound | L/(wavelength/4) | Q_L | VSWR | **Q_ext** | Q₀ | branch |
 |---:|---:|---:|---:|---:|---:|---:|---|
 | 5 | 25.20 | 0.824 | 1,283 | 30.8 | **1,325** | 40,861 | OVER |
 | **8** | **31.20** | **1.021** | 355 | 93.9 | **359** | 33,704 | OVER |
@@ -1187,39 +1190,39 @@ leverage of any gap — which is why the earlier gap sweep could not test this.
 
 ### ✅ WHAT IS MEASURED
 
-**Q_ext has an interior minimum on this span, at L = 31.20 mm = 1.021 λ/4**
-(λ/4 = 30.59 mm at the measured f₀), spread **5.6×** across 18 mm of conductor.
+**Q_ext has an interior minimum on this span, at L = 31.20 mm = 1.021 wavelength/4**
+(wavelength/4 = 30.59 mm at the measured f₀), spread **5.6×** across 18 mm of conductor.
 That is the observation, and it is the only thing here that is not inference.
 
 ### ✅ WHAT IS FALSIFIED — one thing, and it was declared before the run
 
-The config declared: *"A capacitance/area picture predicts beta to rise
+The config declared: *"A capacitance/area picture predicts coupling.beta to rise
 MONOTONICALLY with loop area and never turn."* **It turned.** 🔴 **The
 monotonic-area prediction is DEAD**, killed by a test written down before the
 data existed. That is the one result here that meets this programme's bar.
 
 ### ⚠️ WHAT IS **NOT** ESTABLISHED
 
-- 🔴 **λ/4 is NOT confirmed.** It survived two pre-declared falsifiers (β is
+- 🔴 **wavelength/4 is NOT confirmed.** It survived two pre-declared falsifiers (coupling.beta is
   neither flat nor monotonic) on **one span, cold, at one lw / gap / bore / mount**.
   A hypothesis that has not been killed is not a hypothesis that is true.
 - 🔴 **"The coupler is a quarter-wave resonator" is NOT established.** The
-  minimum lands within 2 % of λ/4, which is consistent with that reading and
+  minimum lands within 2 % of wavelength/4, which is consistent with that reading and
   with other readings not yet excluded. **One coincidence at one frequency is
   not a mechanism** — nothing here varied f₀ and watched the minimum move,
   which is the test that would separate them.
 - ⚠️ **The minimum is bracketed, not located.** ld = 8 is the smallest of four
   samples 3 mm apart; the true minimum is somewhere in ld ≈ 5–11.
 - ⚠️ **Q₀'s variation across the four points is not interpreted.** 33,704 at
-  ld = 8 vs ~40,000 elsewhere is where β ≈ 94 makes the extraction worst
+  ld = 8 vs ~40,000 elsewhere is where coupling.beta ≈ 94 makes the extraction worst
   conditioned. Do not read it as a physical trend.
 
 ### 🔴 THE COUPLING BRANCH — read this before quoting any Q₀ above
 
-`fit` returns the **UNDERCOUPLED** root β = (1−|S11|)/(1+|S11|); the overcoupled
+`fit` returns the **UNDERCOUPLED** root coupling.beta = (1−|S11|)/(1+|S11|); the overcoupled
 root is its reciprocal, and **|S11| alone cannot tell them apart** — both give a
 shallow dip. These cold barrel cases are strongly OVERcoupled, so the rig's
-printed β and Q₀ are the wrong root. Reading them as Q₀ gives 359 and 1,325 and
+printed coupling.beta and Q₀ are the wrong root. Reading them as Q₀ gives 359 and 1,325 and
 produced a false *"the rig is broken"* alarm on a healthy run.
 
 🔑 **The discriminator is external and COLD-ONLY:** with no plasma, Q₀ must be
@@ -1227,9 +1230,9 @@ the cavity's own cold Q₀ (43,523), and the two roots sit ~30× apart. ⚠️ *
 NOT apply loaded** — at the anchored density Q₀ ≈ 105, so the same test would
 pick OVERcoupled for a genuinely undercoupled case. `resolve_branch()` refuses
 to resolve a loaded point rather than guess.
-🔑 **Q_ext is robust on either root** — Q_ext = Q_L·(1+β_undercoupled), i.e. Q_L
+🔑 **Q_ext is robust on either root** — Q_ext = Q_L·(1+coupling.beta_undercoupled), i.e. Q_L
 to within a few percent. **Q₀ is the fragile number here, not Q_ext.** The
-Q₀ = 33,704 at ld = 8 is the least reliable of the four (β ≈ 94, the most
+Q₀ = 33,704 at ld = 8 is the least reliable of the four (coupling.beta ≈ 94, the most
 ill-conditioned point).
 
 ### ✅ THE CONTROL REPRODUCES A PRIOR **EIGEN** MEASUREMENT — three ways
@@ -1241,7 +1244,7 @@ ld = 11 is the design loop, measured before by `h3-loop-seriesc-01` and
 |---|---:|---:|---:|
 | Q_ext | 1,135 | 1,143 | **0.7 %** |
 | Q₀ | 39,982 | 40,147 | **0.4 %** |
-| β | 35.24 | 35.14 | **0.3 %** |
+| coupling.beta | 35.24 | 35.14 | **0.3 %** |
 
 🔑 **This is a second eigen↔driven cross-check** (the first was E3 case E), and
 it simultaneously **validates the branch resolution** — on the undercoupled root
@@ -1279,7 +1282,7 @@ regenerates unconditionally, so each case solved its own geometry — but:
 176 mm² loop, gap2 = 0.5 mm, flange radius swept. **Calculated since R62 and
 never simulated until now.**
 
-| capacitor | Q₀ | **Q_ext** | β | VSWR @ Q₀=105 | P_min | spread | A2/A0 |
+| capacitor | Q₀ | **Q_ext** | coupling.beta | VSWR @ Q₀=105 | P_min | spread | A2/A0 |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | none (control) | 43,463 | 8,716 | 4.99 | 83.0 | 0.9997 | 0.0003 | 0.0026 |
 | **bare wire, 0.5 mm** | **40,147** | **1,143** | **35.1** | **10.9** | 0.9994 | 0.0005 | 0.0184 |
@@ -1296,8 +1299,8 @@ the loop family IS exhausted and `../control-loop/`'s requirement 1 is real."*
 reclamation and three machines.
 
 ✅ **THE MEASUREMENT IS WELL-CONDITIONED**, which matters because this exact
-extraction has been wrong before. At β = 35, Q₀ contributes only **2.8 %** of
-the `1/Q_L − 1/Q₀` difference — nothing like the β≪1 regime where the pair
+extraction has been wrong before. At coupling.beta = 35, Q₀ contributes only **2.8 %** of
+the `1/Q_L − 1/Q₀` difference — nothing like the coupling.beta≪1 regime where the pair
 amplifies error 64× (§7bd).
 
 ✅ **NO HYBRIDISATION. The method falsifier did not fire.** Worst purity across
@@ -1344,19 +1347,19 @@ interpolation, not a mechanism — and the control was on disk the whole time.
 ✅ **So no direction is claimed.** `h3-loop-gap2-01` probes 0.35 and 0.75 mm
 either side of 0.5 and lets the measurement name it.
 
-### 🔴 THE R62 "FAILURE" WAS A β ↔ 1/β MISREAD
+### 🔴 THE R62 "FAILURE" WAS A coupling.beta ↔ 1/coupling.beta MISREAD
 
 The record says the one attempt *"failed … |Γ| 0.568 → 0.904 — worse"*. Those
-are **β ≈ 3.6 → ≈ 19.8 on the OVERCOUPLED branch**: coupling got ~5× STRONGER
-and overshot further past β = 1, which *raises* cold reflection. It was judged
+are **coupling.beta ≈ 3.6 → ≈ 19.8 on the OVERCOUPLED branch**: coupling got ~5× STRONGER
+and overshot further past coupling.beta = 1, which *raises* cold reflection. It was judged
 by **|Γ| alone, COLD** — the one regime where more coupling looks worse.
 🔑 **That is §7x exactly, the error this programme documented and then made.**
 The consequence was not just a wrong verdict: it sent the fix to a *flange*,
 which this sweep shows was never the knob.
 ⚠️ **A near-exact coincidence, recorded and REFUSED:** flange 1.9 measures
-β = 19.816 → |Γ| = 0.9039 against the recorded 0.904, and R62's untested fix was
+coupling.beta = 19.816 → |Γ| = 0.9039 against the recorded 0.904, and R62's untested fix was
 *"r ≈ 1.9 mm"*. **But the other endpoint kills it** — |Γ| = 0.568 implies
-β = 3.63, while this cavity's barrel loop measures 4.99 and its cap loop 4.70.
+coupling.beta = 3.63, while this cavity's barrel loop measures 4.99 and its cap loop 4.70.
 The 2026 pair is not this cavity, so the match is cross-era (§7aq). **The
 misread finding stands on the physics, not on the coincidence.**
 
@@ -1372,7 +1375,7 @@ it. §7d — a check that cannot fail.
 single-turn loop, **only the mount changes**, with the cap loop re-measured in
 the SAME run as the control rather than compared across eras (§7aq).
 
-| loop | mount | Q₀ | **Q_ext** | β | purity spread |
+| loop | mount | Q₀ | **Q_ext** | coupling.beta | purity spread |
 |---|---|---:|---:|---:|---:|
 | 11×8 | **barrel** | 43,463 | **8,716** | 4.99 | 0.0000 |
 | 11×8 | cap (control) | 43,422 | 9,231 | 4.70 | 0.0000 |
@@ -1397,8 +1400,8 @@ than a coupling result. It did not.
   **It costs nothing — it gains 5.6 %.**
 - 🔴 **THE 1.39× FIELD RATIO IN `geometry.py` IS A LEGACY-CAVITY NUMBER — and
   that is now DERIVED, not guessed.** For TE011 the cap sees H_r and the barrel
-  sees H_z, and their ratio is `(β/k_c)·max J₁ / |J₀(x'₀₁)|` where β = π/L and
-  k_c = x'₀₁/a. **The Bessel part alone is 1.4447; the β/k_c factor is what
+  sees H_z, and their ratio is `(β/k_c)·max J₁ / |J₀(χ′₀₁)|` where β = π/L and
+  k_c = χ′₀₁/a. **The Bessel part alone is 1.4447; the β/k_c factor is what
   carries the cavity's SHAPE.**
 
   | cavity | D/L | β/k_c | H_r(cap) / H_z(barrel) |
@@ -1432,13 +1435,13 @@ would require re-deriving the 45×. On inspection the two are independent, so
 **step 2's premise survives** — but it is still CALCULATED and NEVER SIMULATED.
 
 🔑 **Rescaled to the measured baseline: 8,716 / 45 ≈ 194.** Against the design
-bore's measured Q₀ = 105 that would be **β = 0.54, VSWR ≈ 1.9** — essentially
+bore's measured Q₀ = 105 that would be **coupling.beta = 0.54, VSWR ≈ 1.9** — essentially
 matched, with no change to the bore. ⚠️ **That is arithmetic on an unsimulated
 45×, not a result.** Step 2 is the test.
 
-⚠️ β does not cross 1 anywhere in the swept range (4.99 … 4.70): **critical
+⚠️ coupling.beta does not cross 1 anywhere in the swept range (4.99 … 4.70): **critical
 coupling is outside it, cold.** These are COLD numbers; the loaded state is
-where β ≪ 1.
+where coupling.beta ≪ 1.
 
 ## 🔴 THE LOOP WAS FORCED, NOT DESIGNED — and the tuner conclusion rests on it
 
@@ -1470,7 +1473,7 @@ spent:**
 | **comfortable 3-stub tuner** | **20** | **2,200** | **4.2×** |
 | matched | 1 | 110 | 84× |
 
-**β = 1 needs 84× and is very likely unreachable. VSWR 85 → 20 needs 4.2×** — the
+**coupling.beta = 1 needs 84× and is very likely unreachable. VSWR 85 → 20 needs 4.2×** — the
 difference between "no part exists" and "a standard tuner works". **Whether loop
 design can deliver that has never been asked.**
 ⚠️ ❌ Aperture coupling stays closed (patented; and the cavity IS the waveguide,
@@ -1487,7 +1490,7 @@ programme had treated as plumbing.**
 sits at r = 2–8.5 mm — **2–10 % of the radius, deep in the weak-field region** —
 so **where the bore puts it dominates how strongly it loads the cavity:**
 
-| annulus | E_φ at outer r | energy fraction | **Q₀ (scaled)** | **β** | **VSWR** | I @1 kW |
+| annulus | E_φ at outer r | energy fraction | **Q₀ (scaled)** | **coupling.beta** | **VSWR** | I @1 kW |
 |---|---:|---:|---:|---:|---:|---:|
 | **MP-AES-like 1–4** | 14.9 % | 0.0048 % | **2,098** | **0.255** | **4** | **8.9 A** |
 | narrow 2–6 | 22.3 % | 0.0239 % | 422 | 0.051 | 20 | 19.8 A |
@@ -1499,7 +1502,7 @@ so **where the bore puts it dominates how strongly it loads the cavity:**
 **The forecast above was a SCALING, not a measurement.** Three driven sweeps at
 the anchored density (n_e = 7.9e18, vacuum torch, r_i fixed at 2.0 mm):
 
-| annulus | Q₀ | **β (fitted)** | VSWR | Q_ext implied | dip | tets |
+| annulus | Q₀ | **coupling.beta (fitted)** | VSWR | Q_ext implied | dip | tets |
 |---|---:|---:|---:|---:|---:|---:|
 | **2–4 mm** | **1,695** | **0.1829** | **5.5** | 9,262 | −3.21 dB | 50,768 |
 | 2–6 mm | 360 | 0.0394 | 25.4 | 9,138 | −2.04 dB | 58,854 |
@@ -1507,7 +1510,7 @@ the anchored density (n_e = 7.9e18, vacuum torch, r_i fixed at 2.0 mm):
 
 ✅ **THE CONTROL REPRODUCES `h3-driven-anchor-01` TO 0.27 %** — different run,
 different slug, different day, and the anchor side was itself RECONSTRUCTED from
-raw Palace CSVs after the §7ap clobber. f₀, β and |S11|min agree to **every
+raw Palace CSVs after the §7ap clobber. f₀, coupling.beta and |S11|min agree to **every
 digit**; the only mover is linewidth (23.7357 vs 23.800 MHz), which is the
 **interpolated 3 dB edge** replacing the grid-snapped one (§7bh). Mesh matched
 at 80,621 tets / sf 1.42.
@@ -1537,14 +1540,14 @@ eigen value is **9,231**:
 | 2–6 | −2.04 dB | 9,138 | −1.0 % |
 | 2–8.5 | −0.22 dB | 8,243 | **−10.7 %** |
 
-**At β = 0.0127 the dip is 0.22 dB and the fit is ill-conditioned** — the rig
+**At coupling.beta = 0.0127 the dip is 0.22 dB and the fit is ill-conditioned** — the rig
 says so itself. **At 2–4 mm the same method recovers the cold Q_ext to 0.3 %**,
 which is an independent check the design bore cannot supply. ⚠️ So the 8,243 is
 **a fit artefact, not the loop moving with the bore**; do not read it as physics.
 
-⚠️ **β and VSWR here are FITTED from dip depth, never Q₀/Q_ext.** Computing
-β = Q₀/9,231 gives 0.0114 against the fit's 0.0127 — **12 % apart, from the same
-solve** (§7d). The Q₀ *ratio* is safe; absolute β is not.
+⚠️ **coupling.beta and VSWR here are FITTED from dip depth, never Q₀/Q_ext.** Computing
+coupling.beta = Q₀/9,231 gives 0.0114 against the fit's 0.0127 — **12 % apart, from the same
+solve** (§7d). The Q₀ *ratio* is safe; absolute coupling.beta is not.
 
 ⚠️ **Q_ext = 9,231 is the NO-TORCH value on a VACUUM-TORCH mesh** (+1.25 %; the
 mesh-matched number is 9,117). It divides every case equally, so **the 16.2×
@@ -1590,7 +1593,7 @@ cannot be CHOSEN yet, whatever the EM derivative says.**
 derivative **∂Q₀/∂(bore) at fixed n_e** — one real term in a coupled problem.
 ⚠️ **It is NOT "what a narrower torch would do."**
 
-🔑 **A NARROWER BORE RAISES Q₀ → RAISES β → COLLAPSES VSWR.** MP-AES-like
+🔑 **A NARROWER BORE RAISES Q₀ → RAISES coupling.beta → COLLAPSES VSWR.** MP-AES-like
 geometry would take **VSWR 79 → ~4** and the load current **40 A → 9 A** — which
 **is** the magnitude-tuning problem (`../control-loop/` requirement 1), solved by
 geometry rather than by a part that does not exist.
@@ -1615,25 +1618,25 @@ of one assumption.
 Q_ext; the bore is ~20× in Q₀. **They are independent and they multiply.**
 **Item 7 is no longer the only lever, and it may not be the first one.**
 
-## 🔴🔴 β WAS REPORTED AS AN OBSERVATION. IT IS A DESIGN OUTPUT.
+## 🔴🔴 coupling.beta WAS REPORTED AS AN OBSERVATION. IT IS A DESIGN OUTPUT.
 
 **User, 2026-08-24: *"we designed a loop and then complained about
 over/undercoupling as if we needed to simply accept the loop geometry as
 given."*** ✅ **Correct, and it is worse than the provenance gap above.**
 
 🔑 **Q₀ is the cavity and the load. Q_ext is THE LOOP, and nothing else.**
-β = Q₀/Q_ext. So *"the cavity is overcoupled cold at β = 4.7 and undercoupled
-loaded at β = 0.012"* is a **category error**: the cavity is not coupled to
-anything. **The LOOP WE CHOSE is. Every β in the record is a statement about a
+coupling.beta = Q₀/Q_ext. So *"the cavity is overcoupled cold at coupling.beta = 4.7 and undercoupled
+loaded at coupling.beta = 0.012"* is a **category error**: the cavity is not coupled to
+anything. **The LOOP WE CHOSE is. Every coupling.beta in the record is a statement about a
 part we picked, written as though it were a property we found.**
 
-⚠️ **And the programme then reasoned FORWARD from it** — β range → VSWR ~100 →
+⚠️ **And the programme then reasoned FORWARD from it** — coupling.beta range → VSWR ~100 →
 45 A → 960 W dump → *"magnitude tuning is unsolved"*. **A chosen value became a
 constraint, and the constraint became a hardware impossibility.**
 
 ### The design question that was never asked: *what Q_ext do we WANT?*
 
-| state | Q₀ | **Q_ext wanted (β=1)** | built | off by |
+| state | Q₀ | **Q_ext wanted (coupling.beta=1)** | built | off by |
 |---|---:|---:|---:|---:|
 | **COLD** — build field to ignite | 43,422 | **43,422** | 9,231 | **4.7× too LOW** |
 | **LOADED** @ anchored 7.9e18 | 109 | **109** | 9,231 | **85× too HIGH** |
@@ -1685,7 +1688,7 @@ a break in the conductor that resonates out the loop's own inductance:**
 > create a series element."*
 
 🔑 **45× IS THE RIGHT ORDER FOR THE PROBLEM.** Against our Q_ext = 9,231 it lands
-near **205**, versus the **109** that β = 1 needs at the anchored density — and
+near **205**, versus the **109** that coupling.beta = 1 needs at the anchored density — and
 far past the **2,200** that makes a 3-stub tuner comfortable. **This is a
 mechanism for the 84×, not a nibble at it.**
 
@@ -1703,7 +1706,7 @@ mechanism for the 84×, not a nibble at it.**
   be changed in that order, not together.
 
 🔴 **THE COUPLING FIX WAS ALREADY IDENTIFIED, IMPLEMENTED, AND NOT CARRIED
-OVER.** This programme measured β, called it a property, and derived a hardware
+OVER.** This programme measured coupling.beta, called it a property, and derived a hardware
 impossibility from it — **while a mechanism sized at 45× sat unused in the
 geometry builder.** §7am and §7an in one object.
 ⚠️ **And 176 mm² is the best of the four for LOADED and the WORST for COLD** —
@@ -1714,13 +1717,13 @@ geometry builder.** §7am and §7an in one object.
 The area sweep TURNS OVER between 176 and 384 mm². **Why it turns over decides
 the sign of the turns axis**, and both readings fit the data:
 
-| perimeter | 0.138λ | 0.212λ | **0.311λ** | 0.459λ |
+| perimeter, × wavelength | 0.138 | 0.212 | **0.311** | 0.459 |
 |---|---:|---:|---:|---:|
 | Q_ext | 19,633 | 11,202 | **9,231** | 13,333 |
 
 - **If FOOTPRINT-limited** (flux cancels across a big loop): Q_ext ∝ 1/(A·N)², so
   **N=2 → Q_ext 2,308, VSWR 21 — that IS the 3-stub target.** But the conductor
-  reaches 0.62λ.
+  reaches 0.62wavelength.
 - **If ELECTRICAL-LENGTH-limited** (the turnover sits exactly where a loop stops
   being magnetically small): at fixed length A ∝ (L/N)², so A·N ∝ L²/N and
   **turns make it 4× WORSE at N=2.**
@@ -1867,7 +1870,7 @@ differ from three".
 - ✅ **Direction is favourable**: higher ε pulls f₀ DOWN, so the real cavity
   resonates BELOW what was modelled and **every band margin in the record is
   CONSERVATIVE** — by an unmeasured amount.
-- ✅ **Q, η and β: little.** tanδ = 3.5e-5 either way, and those are ratios.
+- ✅ **Q, η and coupling.beta: little.** tanδ = 3.5e-5 either way, and those are ratios.
   PLAN puts the dielectric at *"~2% of the loss budget"* — itself untested.
 - 🔴 **E3 cannot decompose a dielectric that is not there.** With ε = 1 the
   dielectric channel is nearly empty, which is why `e3_closure` meshes the
@@ -2084,7 +2087,7 @@ result file is stale (it still carries the retracted Q = 12,368 / f₀ = 2.44000
 |---|---:|---:|---:|
 | Q₀ | 43,523 | 40,652 | −6.6 % |
 | **Q_L** | **7,538** | **7,004** | **−7.1 %** |
-| **β** | **4.7740** | **4.8041** | **+0.6 %** ✅ |
+| **coupling.beta** | **4.7740** | **4.8041** | **+0.6 %** ✅ |
 | Q_ext | **9,117** | 8,462 | −7.2 % |
 
 ## ✅✅ RESOLVED 2026-08-25 — THE 7.7 % GAP WAS THE FIT, NOT THE SOLVERS
@@ -2103,10 +2106,10 @@ solvers, and **not the sample count either.** ⚠️ **My first explanation ("14
 samples") was also wrong:** 1e20 gives 0.0 % at TEN samples and cold gives −0.8 %
 at SIX, once the edges interpolate. **Sample count bounds the error at ~2/N; it
 does not determine it.**
-✅ **`cavity.Q_ext` = 9,117 stands, and now has an independent driven
+✅ **`cavity.Q_ext.cold` = 9,117 stands, and now has an independent driven
 confirmation at 0.78 % instead of a 7.7 % contradiction.**
 
-🔑 **β AGREES TO 0.6 %. THE ENTIRE DISAGREEMENT IS Q_L** — and Q_L is the 3 dB
+🔑 **coupling.beta AGREES TO 0.6 %. THE ENTIRE DISAGREEMENT IS Q_L** — and Q_L is the 3 dB
 LINEWIDTH: **0.35 MHz sampled at 25 kHz, ~14 points across.** `h3_driven`'s own
 docstring calls its cold case a **LOCATOR** for exactly this reason. **So this
 is not a solver disagreement; it is a resolution limit on one side**, and it
@@ -2116,8 +2119,8 @@ a 7 % linewidth error.
 
 ### ✅ AND IT REPRODUCES `h3_step3`'s V1_ANCHOR TO FOUR FIGURES
 
-**recorded** Q₀ = 43,523 · Q_L = 7,538 · Q_ext = 9,117 · β = 4.774
-**measured** Q₀ = 43,523 · Q_L = 7,538 · Q_ext = 9,117 · β = 4.7740
+**recorded** Q₀ = 43,523 · Q_L = 7,538 · Q_ext = 9,117 · coupling.beta = 4.774
+**measured** Q₀ = 43,523 · Q_L = 7,538 · Q_ext = 9,117 · coupling.beta = 4.7740
 
 🔑 **This settles a question `baselines.json` recorded as unanswered:** which of
 `h3_step3`'s two mesh styles produced 9,117. **The vacuum-torch one.** The
@@ -2133,7 +2136,7 @@ resolution, eigen and driven should agree closely at the anchor.** If a 7 % gap
 survives there, it is a genuine method difference and the cold case was not the
 explanation.
 
-## ✅✅ `h3-qext-01` COMPLETE — and WHICH METHOD TO TRUST FLIPS WITH β
+## ✅✅ `h3-qext-01` COMPLETE — and WHICH METHOD TO TRUST FLIPS WITH coupling.beta
 
 | case | pec | lumped | Q_ext | vs driven dip |
 |---|---|---|---:|---:|
@@ -2151,14 +2154,14 @@ Q₀ − Q_L = **2.7** on numbers of ~163, and the eigen pair **differences them
 | method | Q_L +0.1 % → Q_ext | amplification |
 |---|---:|---:|
 | **eigen pair** (differences Q₀ and Q_L) | **+6.4 %** | **64×** |
-| **driven dip** (β from the DEPTH, independent of the width) | +0.1 % | **1×** |
+| **driven dip** (coupling.beta from the DEPTH, independent of the width) | +0.1 % | **1×** |
 
-🔑 **WHICH INSTRUMENT IS BETTER CONDITIONED FLIPS WITH β, AND IT FLIPS THE WAY
+🔑 **WHICH INSTRUMENT IS BETTER CONDITIONED FLIPS WITH coupling.beta, AND IT FLIPS THE WAY
 YOU WOULD NOT GUESS:**
-- **COLD (β = 4.77):** Q₀/Q_L = 5.8, the eigen pair is well conditioned and the
+- **COLD (coupling.beta = 4.77):** Q₀/Q_L = 5.8, the eigen pair is well conditioned and the
   driven fit needed edge interpolation to reach it (0.16 %).
-- **LOADED (β ≪ 1):** Q₀ ≈ Q_L, the eigen pair is **~60× worse**, and the
-  **DRIVEN DIP is the reliable one** because β comes from the dip DEPTH and never
+- **LOADED (coupling.beta ≪ 1):** Q₀ ≈ Q_L, the eigen pair is **~60× worse**, and the
+  **DRIVEN DIP is the reliable one** because coupling.beta comes from the dip DEPTH and never
   differences two large numbers.
 
 ✅ **So the Q_ext-vs-density table above — all driven — is the trustworthy one,
@@ -2169,7 +2172,7 @@ quoted.
 🔑 **TO GET A REAL Q_ext, RUN THE EIGEN PAIR ON THE DRIVEN MESH.** `pec` and
 `lumped` on **the same `h3_driven_n*.msh` files that are already built** — no
 new geometry, no re-meshing, and it lands Q_ext at every density including the
-anchor. **Until then, quote β from the DIP, which needs no Q_ext at all.**
+anchor. **Until then, quote coupling.beta from the DIP, which needs no Q_ext at all.**
 
 ### 🔴 But the DESIGN torch is a real offset, and NO eigen anchor has ever used it
 
@@ -2182,7 +2185,7 @@ anchor. **Until then, quote β from the DIP, which needs no Q_ext at all.**
   DENSITY; it is still a vacuum-torch cavity. **f₀ = 2.4586 becomes ≈ 2.4447**,
   and the 41.4 MHz band margin becomes ≈ 55 MHz — *better*, but not what is
   written down.
-- ✅ **β and VSWR should barely move** — they are ratios, and the torch changes
+- ✅ **coupling.beta and VSWR should barely move** — they are ratios, and the torch changes
   Q₀ by 2 %.
 
 🔑 **THE FIX IS ONE LINE AND A RE-RUN, NOT AN INVESTIGATION:** `GEO_DESIGN` must
@@ -2194,7 +2197,7 @@ silently** — it invalidates every stored f₀, so it belongs with the restorat
 
 📎 **`baseline-h3-driven-anchor-01.json`** · results `h3-driven-anchor-01.result.json`
 *(the config records the question, the bindings, and three caveats — including
-that it binds `cavity.Q_ext` at `mesh=no_torch` while meshing `vacuum_torch`.
+that it binds `cavity.Q_ext.cold` at `mesh=no_torch` while meshing `vacuum_torch`.
 `slug.py --check` verifies this citation resolves in both directions.)*
 
 **`h3_driven`, 9-point grid. The anchored band 7.3–8.6e18 was never on any grid
@@ -2245,10 +2248,10 @@ trend above shows that direction costs VSWR (75 → 82 across the band).
 
 ### ✅ VSWR IS NOW SETTLED — and it is BETTER than the record says
 
-**The two β estimates differed 13 %. Resolved by deriving Q_ext from the dip
-alone, with no imported constant:  Q_ext = Q_L(1+β_dip)/β_dip.**
+**The two coupling.beta estimates differed 13 %. Resolved by deriving Q_ext from the dip
+alone, with no imported constant:  Q_ext = Q_L(1+coupling.beta_dip)/coupling.beta_dip.**
 
-| n_e | Q_L | β_dip | **Q_ext implied** | vs cold 9,231 |
+| n_e | Q_L | coupling.beta_dip | **Q_ext implied** | vs cold 9,231 |
 |---|---:|---:|---:|---:|
 | 1e18 | 557 | 0.0704 | 8,478 | −8.2 % |
 | 3e18 | 208 | 0.0257 | 8,304 | −10.0 % |
@@ -2283,7 +2286,7 @@ that is now **validated against an independent solver at the one density where
 both exist.**
 🔴 **`h3_loopq`'s docstring — *"Q_ext is set by loop geometry, not by the load"*
 — is FALSE by ~9 %**, and the flag already added there now has a number.
-✅ **β and VSWR are UNAFFECTED**: they come from the dip DEPTH, not the width.
+✅ **coupling.beta and VSWR are UNAFFECTED**: they come from the dip DEPTH, not the width.
 **VSWR 75–82 at the anchor stands.**
 
 ### ⚠️ AND GEOMETRY-MATCHED IS NOT ENOUGH### ⚠️ AND GEOMETRY-MATCHED IS NOT ENOUGH — THE MESH MUST MATCH TOO
@@ -2330,7 +2333,7 @@ result file is stale (it still carries the retracted Q = 12,368 / f₀ = 2.44000
 |---|---:|---:|---:|
 | Q₀ | 43,523 | 40,652 | −6.6 % |
 | **Q_L** | **7,538** | **7,004** | **−7.1 %** |
-| **β** | **4.7740** | **4.8041** | **+0.6 %** ✅ |
+| **coupling.beta** | **4.7740** | **4.8041** | **+0.6 %** ✅ |
 | Q_ext | **9,117** | 8,462 | −7.2 % |
 
 ## ✅✅ RESOLVED 2026-08-25 — THE 7.7 % GAP WAS THE FIT, NOT THE SOLVERS
@@ -2349,10 +2352,10 @@ solvers, and **not the sample count either.** ⚠️ **My first explanation ("14
 samples") was also wrong:** 1e20 gives 0.0 % at TEN samples and cold gives −0.8 %
 at SIX, once the edges interpolate. **Sample count bounds the error at ~2/N; it
 does not determine it.**
-✅ **`cavity.Q_ext` = 9,117 stands, and now has an independent driven
+✅ **`cavity.Q_ext.cold` = 9,117 stands, and now has an independent driven
 confirmation at 0.78 % instead of a 7.7 % contradiction.**
 
-🔑 **β AGREES TO 0.6 %. THE ENTIRE DISAGREEMENT IS Q_L** — and Q_L is the 3 dB
+🔑 **coupling.beta AGREES TO 0.6 %. THE ENTIRE DISAGREEMENT IS Q_L** — and Q_L is the 3 dB
 LINEWIDTH: **0.35 MHz sampled at 25 kHz, ~14 points across.** `h3_driven`'s own
 docstring calls its cold case a **LOCATOR** for exactly this reason. **So this
 is not a solver disagreement; it is a resolution limit on one side**, and it
@@ -2362,8 +2365,8 @@ a 7 % linewidth error.
 
 ### ✅ AND IT REPRODUCES `h3_step3`'s V1_ANCHOR TO FOUR FIGURES
 
-**recorded** Q₀ = 43,523 · Q_L = 7,538 · Q_ext = 9,117 · β = 4.774
-**measured** Q₀ = 43,523 · Q_L = 7,538 · Q_ext = 9,117 · β = 4.7740
+**recorded** Q₀ = 43,523 · Q_L = 7,538 · Q_ext = 9,117 · coupling.beta = 4.774
+**measured** Q₀ = 43,523 · Q_L = 7,538 · Q_ext = 9,117 · coupling.beta = 4.7740
 
 🔑 **This settles a question `baselines.json` recorded as unanswered:** which of
 `h3_step3`'s two mesh styles produced 9,117. **The vacuum-torch one.** The
@@ -2382,7 +2385,7 @@ explanation.
 🔑 **TO GET A REAL Q_ext, RUN THE EIGEN PAIR ON THE DRIVEN MESH.** `pec` and
 `lumped` on **the same `h3_driven_n*.msh` files that are already built** — no
 new geometry, no re-meshing, and it lands Q_ext at every density including the
-anchor. **Until then, quote β from the DIP, which needs no Q_ext at all.**
+anchor. **Until then, quote coupling.beta from the DIP, which needs no Q_ext at all.**
 
 ### 🔴 But the DESIGN torch is a real offset, and NO eigen anchor has ever used it
 
@@ -2395,7 +2398,7 @@ anchor. **Until then, quote β from the DIP, which needs no Q_ext at all.**
   DENSITY; it is still a vacuum-torch cavity. **f₀ = 2.4586 becomes ≈ 2.4447**,
   and the 41.4 MHz band margin becomes ≈ 55 MHz — *better*, but not what is
   written down.
-- ✅ **β and VSWR should barely move** — they are ratios, and the torch changes
+- ✅ **coupling.beta and VSWR should barely move** — they are ratios, and the torch changes
   Q₀ by 2 %.
 
 🔑 **THE FIX IS ONE LINE AND A RE-RUN, NOT AN INVESTIGATION:** `GEO_DESIGN` must
@@ -2407,7 +2410,7 @@ silently** — it invalidates every stored f₀, so it belongs with the restorat
 
 📎 **`baseline-h3-driven-anchor-01.json`** · results `h3-driven-anchor-01.result.json`
 *(the config records the question, the bindings, and three caveats — including
-that it binds `cavity.Q_ext` at `mesh=no_torch` while meshing `vacuum_torch`.
+that it binds `cavity.Q_ext.cold` at `mesh=no_torch` while meshing `vacuum_torch`.
 `slug.py --check` verifies this citation resolves in both directions.)*
 
 **`h3_driven`, 9-point grid. The anchored band 7.3–8.6e18 was never on any grid
@@ -2452,10 +2455,10 @@ trend above shows that direction costs VSWR (75 → 82 across the band).
 
 ### ✅ VSWR IS NOW SETTLED — and it is BETTER than the record says
 
-**The two β estimates differed 13 %. Resolved by deriving Q_ext from the dip
-alone, with no imported constant:  Q_ext = Q_L(1+β_dip)/β_dip.**
+**The two coupling.beta estimates differed 13 %. Resolved by deriving Q_ext from the dip
+alone, with no imported constant:  Q_ext = Q_L(1+coupling.beta_dip)/coupling.beta_dip.**
 
-| n_e | Q_L | β_dip | **Q_ext implied** | vs cold 9,231 |
+| n_e | Q_L | coupling.beta_dip | **Q_ext implied** | vs cold 9,231 |
 |---|---:|---:|---:|---:|
 | 1e18 | 557 | 0.0704 | 8,478 | −8.2 % |
 | 3e18 | 208 | 0.0257 | 8,304 | −10.0 % |
@@ -2481,19 +2484,19 @@ wander with a shallow minimum near 1e19), **and rises to 9,221 only at 1e20.**
 🔴 **WHAT IT ACTUALLY EXPOSES IS AN EIGEN↔DRIVEN DISAGREEMENT ON Q_ext.** The
 driven sweeps imply **~8,400 cold**; `h3_loopq`'s eigen pair method gave
 **9,231** on the same cold cavity — **a ~9 % systematic between two methods**,
-not a physical variation. ⚠️ **Unresolved, and it propagates into every β
+not a physical variation. ⚠️ **Unresolved, and it propagates into every coupling.beta
 computed as Q₀/Q_ext.** The measured dip does not depend on it.
-**The record used 9,231 at every density**, which makes β too small and VSWR too
+**The record used 9,231 at every density**, which makes coupling.beta too small and VSWR too
 large.
 
 > ## ✅ **VSWR AT THE OPERATING POINT IS 75–82, NOT 85–93.**
 
 ⚠️ **MY PRE-REGISTERED TEST WAS ILL-CONDITIONED AND COULD NOT HAVE WORKED.**
-I proposed β_true = Q₀(eigen)/Q_L − 1. **β here is 1.7 %, while eigen and driven
+I proposed coupling.beta_true = Q₀(eigen)/Q_L − 1. **coupling.beta here is 1.7 %, while eigen and driven
 agree on Q₀ only to 3.4 %** — the uncertainty is twice the quantity. That method
-swings β from 0.017 to 0.052 on a 3.4 % wobble. **Differencing two nearly-equal
-Q's cannot measure a small β.** ✅ **The dip depth can**, because it reads |S11|
-directly: at 1e20, −0.2973 dB → β = 0.0171, and the implied Q_ext = 9,225
+swings coupling.beta from 0.017 to 0.052 on a 3.4 % wobble. **Differencing two nearly-equal
+Q's cannot measure a small coupling.beta.** ✅ **The dip depth can**, because it reads |S11|
+directly: at 1e20, −0.2973 dB → coupling.beta = 0.0171, and the implied Q_ext = 9,225
 recovers the cold value to 0.1 % — **an internal consistency check the
 differencing method fails.**
 🔴 **Neither prediction A (Q_ext constant) nor B (2.9× collapse) was right.**
@@ -2513,13 +2516,13 @@ The answer is a modest, density-dependent 11 %.
 
 🔴🔴 **RETRACTED — THE RIG DID NOT GET THE BRANCH WRONG. I READ THE WRONG
 FIELD.** I published *"the rig put the cold point on the wrong coupling branch"*
-after reading `wide_fit["beta"]` = 0.2082. **That field is the raw undercoupled
+after reading `wide_fit["coupling.beta"]` = 0.2082. **That field is the raw undercoupled
 root, and the rig labels it** `"branch": "UNRESOLVED — |S11| alone cannot pick"`.
 **The rig does all of this correctly and always did:**
 
 | field | cold value | |
 |---|---:|---|
-| `beta` | 0.2082 | raw root — **explicitly UNRESOLVED**, what I misread |
+| `coupling.beta` | 0.2082 | raw root — **explicitly UNRESOLVED**, what I misread |
 | `beta_undercoupled` / `beta_overcoupled` | 0.2082 / **4.803** | **both returned** |
 | `Q0_if_undercoupled` / `Q0_if_overcoupled` | 8,462 / **40,645** | **both returned** |
 | `beta_resolved` → `branch` | 3.146 → **"OVERCOUPLED"** | ✅ **resolved, correctly** |
@@ -2535,7 +2538,7 @@ estimates only agree **if `Q_EXT_MEASURED` is right.**
 **Branch-free 29,037 vs overcoupled 40,645 — they differ by 40 %**, and the
 Q_ext that reconciles them is **8,462**, not 9,231. **That is a built-in Q_ext
 consistency check sitting unread in every result file.**
-✅ **The LOADED points are untouched** — every one is β ≪ 1, unambiguously
+✅ **The LOADED points are untouched** — every one is coupling.beta ≪ 1, unambiguously
 undercoupled, and the re-fit reproduces all eight of the rig's own values
 exactly.
 
@@ -2606,7 +2609,7 @@ the three that failed were the three that would have been wrong anyway.**
 
 🔴 **The anchor falls in a 3.3× gap across which VSWR changes 2.3×**, on the
 steepest limb, immediately below the peak between 1e19 and 3e19. **Every number
-I have quoted at the operating point — VSWR 80–89, Q₀ ≈ 109, β ≈ 0.012, ~45 A,
+I have quoted at the operating point — VSWR 80–89, Q₀ ≈ 109, coupling.beta ≈ 0.012, ~45 A,
 960 W dump, and the 400× coupler spread — is INTERPOLATED there.**
 ⚠️ **§7ah's neighbour:** not interpolating *across* a turning point, but up the
 steep approach *to* one.
@@ -2868,7 +2871,7 @@ CONVENTIONS §7ab.
   density chosen because a solver converged there, AND it used the 3 dB edge
   instead of f₀. On the tuner's own criterion it is **17.6 MHz** — still at an
   unanchored density.
-- 🔴 **"At the operating point" must be struck from every η, β and power claim.**
+- 🔴 **"At the operating point" must be struck from every η, coupling.beta and power claim.**
   There is no established operating point.
 - 🔴 **The design question — is the margin adequate? — is UNANSWERABLE until
   n_e is anchored.** It is not a hard question awaiting more solves; it is
@@ -2960,15 +2963,15 @@ convergence (§7ab, section above).** So "the margin is thin" was never a findin
 about the machine. **It is a finding about a density nobody chose.**
 
 ⚠️ **THE 10 mm² LOOP HAS NO MEASURABLE RESONANCE UNDER LOAD**, at any depth —
-β ≈ 0.004 gives a ~0.06 dB dip. I sized that cell from a **cold** β = 1
+coupling.beta ≈ 0.004 gives a ~0.06 dB dip. I sized that cell from a **cold** coupling.beta = 1
 extrapolation, but Q₀ collapses 275× under load (43,423 → 158) while Q_ext is
-geometry, so β collapses with it. **A loop critically coupled cold is hopelessly
+geometry, so coupling.beta collapses with it. **A loop critically coupled cold is hopelessly
 undercoupled loaded.** One regime's number quoted in another — the §7c shape.
 🔴 **AND THE CONSEQUENCE IS STRUCTURAL: Q_ext MINIMISES at 9,231 (Phase A), so
-loaded β CANNOT EXCEED 0.017 with a cap loop of this family.** Loaded critical
+loaded coupling.beta CANNOT EXCEED 0.017 with a cap loop of this family.** Loaded critical
 coupling is not merely unachieved, it is **unreachable by loop geometry**.
 ✅ **RESOLVED 2026-08-24: the hardware requires a MATCHING NETWORK** (user), so
-the raw β is a tuner specification, not an efficiency. **The 6.6% figure is
+the raw coupling.beta is a tuner specification, not an efficiency. **The 6.6% figure is
 withdrawn** — see the matching-network section above.
 
 ✅ **A METHOD RESULT WORTH KEEPING: cold Q_ext PREDICTS loaded dip depth.**
@@ -2984,10 +2987,10 @@ open (§7v). This is the disposition of each.**
 |---|---|---|
 | `e0k2_sizeq` | eigen Q per loop size; killed a "backwards" driven trend | 🔴 **VOID.** Its `q_te011` at 176 mm² reads **30,020**; properly measured the same loop gives **43,523**. The mode it identified was half a hybridised pair |
 | `e0k2_azim` | azimuthal discriminator validated on real solves | 🔴 **VOID on looped solves.** The discriminator itself is fine (and superseded by purity) |
-| `e0k2_betacause` | is the β spread symmetry or convergence? | 🔴 **VOID.** Open gap AND an unresolved branch |
-| `e0k2_portfix` | β agreement between meshes after the port fix | 🔴 **VOID** for the same two reasons. ⚠️ The **port-meshing** fix it made (2 → 42 elements) is real and independent |
+| `e0k2_betacause` | is the coupling.beta spread symmetry or convergence? | 🔴 **VOID.** Open gap AND an unresolved branch |
+| `e0k2_portfix` | coupling.beta agreement between meshes after the port fix | 🔴 **VOID** for the same two reasons. ⚠️ The **port-meshing** fix it made (2 → 42 elements) is real and independent |
 | `h3_cold` | design-cavity cold modes, Q₀ = 12,368 | 🔴 **VOID** — the pair 2.440003 / 2.494440 |
-| `h3_loopsize` | β vs loop area | 🔴 **VOID twice over** — groove-free AND branch-unresolved |
+| `h3_loopsize` | coupling.beta vs loop area | 🔴 **VOID twice over** — groove-free AND branch-unresolved |
 | OPTIMIZER **hybridised Q** prior | 1/Q mixes with m=1 admixture | 🔴 **DO NOT USE.** It fits the open-gap hybridisation |
 | **176 mm² mode-identity threshold** | | 🔴 **VOID.** Derived from `e0k2_sizeq` |
 | `h3_ladder` steps 1–2 | bare and grooved anchors | ✅ **STAND** — loop-free, no port |
@@ -2997,7 +3000,7 @@ open (§7v). This is the disposition of each.**
 
 🔑 **THE DIVIDING LINE IS SHARP AND WORTH KEEPING**: a claim survives if it rests
 on **a loop-free eigen solve**, or on **driven f₀/Q_L/linewidth**. It dies if it
-rests on a looped eigen **mode identity, Q, or purity**, or on a **β from |S11|
+rests on a looped eigen **mode identity, Q, or purity**, or on a **coupling.beta from |S11|
 depth**.
 
 ⚠️ **ONE THING THE AUDIT DID *NOT* SETTLE.** `e0k2_sizeq` existed to explain a
@@ -3032,7 +3035,7 @@ table is the fix.
 |---|---|---|
 | **eigen on a GROOVED cavity** | `h2_groove` | **target = 1.05**, `n = count(closed-form modes ≤ 2.57) + 5` = 12, σ = 3.5e7, sf 1.5. 🔴 A target just below the cluster (2.25, 2.30) does NOT converge — three attempts |
 | **coupling BRANCH from |S11|** | `e0k2_anchor.branch_from_phase` | phase swing through resonance; ~360° overcoupled vs returns-to-start undercoupled. Reports **AMBIGUOUS** within a few degrees of 180° |
-| **driven Q₀ extraction** | `e0k2_anchor.analyse_driven` | 3 dB width of ABSORBED power + dip depth → Q_L, β, Q₀ |
+| **driven Q₀ extraction** | `e0k2_anchor.analyse_driven` | 3 dB width of ABSORBED power + dip depth → Q_L, coupling.beta, Q₀ |
 | **why a grooved solve needs the groove** | `e0k2_anchor` docstring | TE011/TM111 are EXACTLY degenerate ungrooved, so a driven dip is TWO overlapping resonances and a single-Lorentzian fit returns NEITHER Q |
 | **the η reference trap** | CONVENTIONS §7c | 44,384 no-loop/no-groove · 29,854 loop-no-groove **(a HYBRID's Q — §7v)** · ❌ ~~12,368~~ **retracted, open-gap artifact** · ✅ **43,523 the DESIGN cavity, port terminated** (`h3_step3`/`h3_loopq`). **None of the first three transfers.** |
 | ✅ **terminating the loop in eigen** | `eigen_cfg(port_bc=...)` | **`lumped`** = 50 Ω LumpedPort, excitation off — the MACHINE, Q is LOADED. `pec` = shorted on purpose. `absorbing` = radiation BC, NOT the feed. **No default; a looped mesh without it is refused (GATE 4).** |
@@ -3040,7 +3043,7 @@ table is the fix.
 | **identifying a mode when labels fail** | `h3_ladder` | **continuation** — perturb ONE element from a state whose label is exact, and pick the candidate needing the smallest shift. Beat both purity and m-binning on the design cavity |
 | **energy-balance falsifier** | `PLAN.md` E3 | η_total = η_plasma + η_wall + η_dielectric must close within a few % or **only η_total may be quoted** |
 | 🔴 **eigen with SAPPHIRE + PLASMA does NOT converge** | **`h3_driven` docstring (lines 10–11)** — *"sapphire: its loaded point does not converge in eigen either (eps +11.6 beside the plasma's −30.09)"*; and `h3_eigenprobe` found **PCG stagnation, 92 non-convergences**, at ne=1e19 | 🔑 **THE CONTRAST, named explicitly, BEFORE E3 was written.** Neither ingredient alone fails. **Use DRIVEN** — its cost scales with Q, so it is cheapest exactly where eigen fails |
-| **groove depth law** | `h2b_groovescale` | not a power law — local exponent 1.22 (gd 5→10) → 0.78 (10→20). 🔴 λ/4 = 30.59 mm is the depth to AVOID |
+| **groove depth law** | `h2b_groovescale` | not a power law — local exponent 1.22 (gd 5→10) → 0.78 (10→20). 🔴 wavelength/4 = 30.59 mm is the depth to AVOID |
 | **mode window / target trap** | `h2b_groovescale` docstring | Palace returns N modes ABOVE target; the groove pushes TM111 DOWN, so a target inside the band loses it through the floor |
 
 ## 🔑 THE FILTER — apply this before believing any number here
@@ -3064,15 +3067,94 @@ Audited 2026-08-23 by mesh sidecar (`geometry_mm.groove`):
 | `e0k2` — all 10 | ✅ **instrument rig — bare is CORRECT.** Its purpose was to characterise a BARE cavity against eigen AND driven, so the plain cylinder is the subject. Its extraction validation stands. ⚠️ Its **Q = 44,384 is a bare-cavity number** and must NOT be used as the design cavity's η reference — that is a different measurement, not a defect in e0k2 |
 | `probecheck`, `portcheck`, `plasmacheck` | bare infrastructure checks; their numbers are bare-cavity |
 
+## ✅✅ THE POWER BALANCE — a driven solve can now be checked against itself (2026-09-07)
+**Anchor: conservation of energy, and the barrel arm as an internal calibration.**
+
+Palace's `Boundaries.Postprocessing.SurfaceFlux` with `Type: "Power"` integrates
+the Poynting flux through a named boundary. Put one on the **wall**, the **port**
+and the **loop conductor** (attributes bound from the mesh sidecar) and compare
+the sum against the power the port says was absorbed, `P_inc(1 − |S11|²)`.
+
+- ✅ **The barrel closes to 97.0 % on resonance, 89.1 % off.** Every watt the
+  port claims is found on a surface.
+- ✅ **`P_inc` = 1 W.** Long open and blocking every absolute field quote: the
+  port reports `V_inc` = √50 and it was unclear whether that meant 0.5 or 1 W (an
+  energy-balance estimate had suggested ~0.31 W). The barrel's on-resonance
+  closure **is** the measurement — it implies 0.970 W, and 0.5 W would put the
+  closure at 194 %. Palace uses `V_inc = √(P·R)`, i.e. `P = |V|²/R`.
+- ✅ **`Q₀ = ω·W/P_loss`** — stored energy over dissipated power, using no |S11|,
+  no port normalisation and no fit. Barrel **44,149**, azimuthal at h = 10.5
+  **43,907**, against the eigen anchor 43,470. 🔑 **This is the port-independent
+  cavity Q the programme lacked**, and it works on an arm whose port is broken.
+
+🔑 **It caught what nothing else did.** The azimuthal pedestal had survived weeks
+as three separate anomalies; two mechanisms were proposed and falsified before
+anyone asked whether the power was going anywhere at all. It was not
+(`ret:azimuthal-driven-pedestal`). ⚠️ `error-indicators.csv` was likewise written
+by every solve and read by none — at matched element count it separated the two
+arms 22:1.
+
+## ✅ COUPLER DISSIPATION — the first thermal number (2026-09-07)
+**Anchor: the calibrated power balance above.**
+
+Measured on the barrel loop, cold, vacuum, on resonance: **loop 4.97 mW and wall
+547 mW per 1 W incident**. The loop takes 0.9 % of the dissipated power but has
+~190 mm² against the wall's ~112,000, so its **power density is 5.4× the wall's**
+on resonance and 78× off it, where the cavity stores nothing and the loop still
+carries the drive current.
+
+| drive | loop | wall | loop W/cm² | wall W/cm² |
+|---|---|---|---|---|
+| 1 kW | 4.97 W | 547 W | 2.64 | 0.49 |
+| 2 kW | 9.95 W | 1093 W | 5.28 | 0.97 |
+| 5 kW | 24.9 W | 2733 W | 13.19 | 2.43 |
+
+⚠️ **The worst case is cold, resonant and unloaded — the ignition transient**, not
+steady operation: Q is highest, circulating current is highest, and there is no
+plasma to take the power.
+⚠️ **Palace has NO thermal solver** — six problem types, all electromagnetic, and
+zero source files mentioning thermal/temperature. A conduction-only hand
+calculation (2 mm copper, 30 mm run, bonded both ends, `R_th` = 11.9 K/W per
+half) gives ~30 K at 2 kW and ~74 K at 5 kW above the wall. **That is a hand
+calculation, not a simulation**: no convection, no radiation, uniform
+dissipation, and it ignores copper's ~0.4 %/K resistivity rise feeding back into
+the loss. Palace registers `J_s` as a boundary field, so a real loss-density map
+is a config flag away, not new capability.
+
 ## 🔴 NOT ESTABLISHED — do not quote
 
+- 🔴 **EVERY AZIMUTHAL DRIVEN NUMBER** (`h3-azimmap-01`, `h3-azimload-01/02`,
+  `h3-azimne-01`) — **including the dip, not just the baseline**. MEASURED
+  2026-09-07 with Palace `SurfaceFlux` `Type: "Power"` on wall / port / loop:
+  the azimuthal model dissipates **0.4 %** of the absorption its |S11| claims
+  off resonance and **23 %** on it, while the **barrel closes to 97 %**.
+  **Nothing is absorbing — the |S11| itself is wrong**, so `Q_L`,
+  `coupling.beta` and every `Q_ext`/`Q0` from them are void
+  (`ret:azimuthal-driven-pedestal`).
+  🔑 **Cause: the azimuthal lumped port face is an annular SECTOR, and Palace's
+  lumped port requires a FLAT element** — which `geometry.py` has flagged as
+  "the open problem" since the loop was built. The barrel's gap is a planar slot
+  and is unaffected. ⚠️ The 22× error indicator and the pedestal falling under
+  refinement are CORRELATION: refinement changes how wrong the port-face
+  integration is, not how much power is lost, because none is.
+  Q_LEDGER.md § THE POWER BALANCE CLOSES ON THE BARREL AND FAILS ON THE AZIMUTHAL.
+- ✅ **NO LONGER OPEN: the drive normalisation.** `P_inc` = **1 W**
+  (`V_inc` = √50, `P = |V|²/R`). Established by the barrel's 97 % closure;
+  0.5 W would put it at 194 %. Absolute field quotes are unblocked.
+- 🔴 **`arc_chords` IN ANY MESH SIDECAR OR RUN RECORD.** It is not a geometry
+  coordinate: the flag had **no consumer** — the arc is an OCC torus, and the
+  polyline-chord construction it is named for was abandoned in August because
+  Palace refused the mesh. `h3-azimchord-01` asked for 11 and reproduced the
+  "7-chord" mesh to the tet (`ret:azimuthal-arc-chords`). ⚠️ **The meshes are
+  fine** — all of them are the torus — only the recorded coordinate is false.
+  Both rigs' retry loops are removed and `geometry.py` now refuses the flag.
 - **All of H4's field work (`h4_field`, `h4_seed`).** Groove-free. This
   discards the Slater validation (predicted −15.3 MHz, measured −15.00), the
   torch dielectric shifts, the bore field map and the E/N ignition numbers.
   🔑 **Consequence: "no mode cold-ignites" is NOT currently anchored.** It is
   probably right and it must be re-measured with the groove.
 - **All non-groove H3/H6 work (2026-08-23).** η(ne), the +31.6 MHz loaded pull,
-  loaded Q₀, the 78% suppression law, sapphire's loaded point, β vs loop area.
+  loaded Q₀, the 78% suppression law, sapphire's loaded point, coupling.beta vs loop area.
   ⚠️ **`OPTIMIZER.md` carried the 78% law as VALIDATED until 2026-08-24** — two
   live documents disagreeing about the same result. Now marked DISPUTED there,
   with the data kept and a one-pair grooved test named. **When two documents
@@ -3080,11 +3162,11 @@ Audited 2026-08-23 by mesh sidecar (`geometry_mm.groove`):
   Measured on a cavity with **no mode filter**; the design has one. The cavity
   was wrong, so the mode landscape was wrong, and every one of those results is
   *about* the mode landscape.
-- **"Net into plasma" figures.** A product of a β whose coupling branch is
-  unresolved (|S11| cannot distinguish β from 1/β), an η referenced to the
+- **"Net into plasma" figures.** A product of a coupling.beta whose coupling branch is
+  unresolved (|S11| cannot distinguish coupling.beta from 1/coupling.beta), an η referenced to the
   **no-loop** 44,384 instead of the design cavity's **43,523**, one-sided linewidths, and
   in places a mode whose identity the rig itself flagged. **Stop quoting these.**
-- **β and Q_ext.** β is not mesh-converged (43% for a 1.25× refinement); Q_ext
+- **coupling.beta and Q_ext.** coupling.beta is not mesh-converged (43% for a 1.25× refinement); Q_ext
   is not transferable between meshes.
 - ~~**The 2.44 GHz TM-like mode.**~~ 🔴 **RESOLVED TWICE, and the FIRST answer
   was wrong.** I said 2.440003 was TE011 "by continuation". It is not: with the
@@ -3099,8 +3181,8 @@ claim often sit in one sentence. INSTRUMENT now marks which is which; five of
 its sections carry a GROOVE-FREE re-check banner.
 
 **Survives** (arithmetic or circuit theory, independent of which modes exist):
-driven sweep cost ∝ Q; η robust where Q₀ is not; |S11| cannot distinguish β from
-1/β; band-vs-step sizing; continuation needs a seed measured in-regime; a guard
+driven sweep cost ∝ Q; η robust where Q₀ is not; |S11| cannot distinguish coupling.beta from
+1/coupling.beta; band-vs-step sizing; continuation needs a seed measured in-regime; a guard
 on fit QUALITY cannot detect a fit of the WRONG THING.
 
 **Does NOT survive without re-checking** (claims about mode behaviour in a cavity
@@ -3108,7 +3190,7 @@ whose modes the filter changes): the ~176 mm² mode-identity threshold — its
 source rig `e0k2_sizeq` was groove-free and TE011/TM111 are EXACTLY degenerate
 ungrooved, so it may be an artifact of a degeneracy the design removes; the
 ε-contrast convergence envelope; the 2.6232 GHz competitor; the 12→0 eigen/driven
-timeout comparison; every β, Q_ext and delivered-power figure; `h4_field`'s
+timeout comparison; every coupling.beta, Q_ext and delivered-power figure; `h4_field`'s
 dielectric shifts.
 
 ## 🔑 The old note, kept for the numbers

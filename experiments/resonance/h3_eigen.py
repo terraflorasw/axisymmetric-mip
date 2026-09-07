@@ -81,6 +81,7 @@ FALSIFICATION
 """
 import csv
 import json
+import values
 import math
 import os
 import pathlib
@@ -112,6 +113,12 @@ CASE_TIMEOUT_S = 900.0
 # two rows, either side of the transition, both at PI_1 values proven solvable
 ROWS = [("metal-like", 1.0e20, [0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0]),
         ("gas-like",   1.0e18, [1.0, 2.0, 4.0, 8.0, 16.0])]
+
+
+# 🔑 BOUND, not a literal. Value-neutral (still 1.5) — the point is that it
+# now has ONE source and carries its caveat: 1.5 is the COARSEST point of
+# the h3-betaconv series, where coupling.beta.loaded moves +16.4 % to sf 1.2.
+_SF = f'{values.get("mesh.size_factor.default", allow_tentative=True, role="default"):g}'
 
 
 def pi1(ne, w, nu=1.0e11):
@@ -154,7 +161,7 @@ def main():
                                  "--plasma", f"{INNER_R},{R},{zlo:.4f},{zhi:.4f}",
                                  "--plasma-h", f"{ph_mesh:.3f}"])
             r = subprocess.run([sys.executable, "geometry.py", "--out",
-                                f"{tag}.msh", "--size-factor", "1.5"] + args,
+                                f"{tag}.msh", "--size-factor", _SF] + args,
                                capture_output=True, text=True)
             if r.returncode or not pathlib.Path(f"{tag}.msh").exists():
                 rec["error"] = f"mesh failed: {(r.stdout + r.stderr)[-200:]}"

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# sanctioned-watcher: records spot notices ON THE VOLUME — not a rig watch
 # Record spot interruption notices ON THE PERSISTENT VOLUME, so that after an
 # instance dies we can tell a RECLAMATION from any other termination.
 #

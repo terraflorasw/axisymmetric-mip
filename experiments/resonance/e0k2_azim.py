@@ -60,6 +60,12 @@ SECTORS = 5
 LOOP_LD, LOOP_LW = values.get("loop.size.mm")   # the 176 mm^2 case, beta 0.560
 
 
+# 🔑 BOUND, not a literal. Value-neutral (still 1.5) — the point is that it
+# now has ONE source and carries its caveat: 1.5 is the COARSEST point of
+# the h3-betaconv series, where coupling.beta.loaded moves +16.4 % to sf 1.2.
+_SF = f'{values.get("mesh.size_factor.default", allow_tentative=True, role="default"):g}'
+
+
 def sector_bins(meta):
     """Energy Index -> attribute, for the AIR sectors only, in azimuthal order.
 
@@ -104,7 +110,7 @@ def build(tag, a, L, loop):
     geo = list(GEO) + ["--radius", f"{a:.6f}", "--length", f"{L:.6f}",
                        "--sectors", str(SECTORS)]
     r = subprocess.run([sys.executable, "geometry.py", "--out", f"{tag}.msh",
-                        "--size-factor", "1.5"] + geo + loop,
+                        "--size-factor", _SF] + geo + loop,
                        capture_output=True, text=True)
     if r.returncode or not pathlib.Path(f"{tag}.msh").exists():
         raise RuntimeError(f"{tag}: mesh failed — {(r.stdout + r.stderr)[-300:]}")

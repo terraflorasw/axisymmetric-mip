@@ -15,12 +15,23 @@ and **must never enter version control**. So:
                                       ⏸️ PARKED, opened 2026-08-24
         experiments/spectroscopy/  <- WHY any of it exists: the analytical
                                       measurement. Opened 2026-08-24.
-                                      🔴 resonance is BLOCKED on one answer
-                                      from here: the required GAS TEMPERATURE
+                                      ✅ NOT A BLOCKER — resolved 2026-08-24;
+                                      this line was STALE FOR 13 DAYS. n_e is
+                                      ANCHORED at 7.3-8.6e18 from Kuonen 2024
+                                      (N2 MICAP, 5220/5270 K, pressure
+                                      reduction). ⚠️ AND IT IS NOT A LEVER:
+                                      that temperature is NITROGEN's, set by
+                                      re-association — no cavity or waveguide
+                                      changes it (user, 2026-09-07)
         experiments/ignition-options/ <- HOW the plasma starts. Opened
-                                      2026-08-25. 🔴 HOLDS A LIVE BLOCKER:
-                                      resonance item 7's loop TARGET flips
-                                      on the answer. NOT the removed
+                                      2026-08-25. ✅ NO LONGER A BLOCKER: the
+                                      striker branch was MEASURED 2026-08-26 —
+                                      cavity-only ignition is 13x short in
+                                      field — so item 7's target is settled at
+                                      coupling.beta = 1 LOADED. ⚠️ AND A STRIKER
+                                      IS NOT A DEFICIENCY: neither MP-AES nor
+                                      MICAP self-ignites either (user,
+                                      2026-09-07). NOT the removed
                                       `ignition/`, which was TM-specific
         experiments/torch-geometry/ <- where EM, residency/LOD and the NITROGEN
                                       GENERATOR collide. Opened 2026-08-25.
@@ -59,8 +70,13 @@ Consequences worth knowing:
    day: `hot` is a THERMAL regime not a plasma density; two different parts are
    called "mode filter"; a Q is meaningless without saying which cavity.
 3. **`experiments/resonance/PLAN.md`** — the FIXED experiment list, **E0–E4**.
-4. **`experiments/resonance/CONVENTIONS.md`** — the recurring errors. Long, and every
-   entry is a mistake actually made here, several of them twice.
+4. **`experiments/resonance/CONVENTIONS.md`** — 🔴 **CANONICAL. ~490 lines, ~50
+   rules, read it in full.** Anything in the repo that contradicts it is STALE.
+   Split 2026-09-04: it had reached 3,454 lines, 90% incident narrative, and at
+   that size stopped being consulted — so its rules were re-discovered and
+   re-appended. The narratives are now `INCIDENTS.md` (evidence, not canon).
+   ⚠️ Citations to §7a–§7ca still resolve: the ids live in `INCIDENTS.md`, the
+   RULES are in CONVENTIONS §7.1–§7.7.
 
 ⚠️ **`FINDINGS.md` is NOT in the working tree.** It was removed 2026-08-23
 because 5,300 lines across three invalidated eras confused more than it helped.

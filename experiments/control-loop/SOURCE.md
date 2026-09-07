@@ -44,9 +44,9 @@ control problem, not addressed here.
 | **frequency span** | f₀ = **2.4515 → 2.4824 GHz** | `h3_driven`, cold → 1e20 |
 | **frequency slew during ignition** | **+30.9 MHz** | same |
 | **frequency resolution** | **≲ 100 kHz** (see §3) | cold linewidth 350 kHz |
-| **match range** | **β 4.715 → 0.017 — a factor of 275** | `h3_loopq` + `h3_driven` |
+| **match range** | **coupling.beta 4.715 → 0.017 — a factor of 275** | `h3_loopq` + `h3_driven` |
 | **worst VSWR** | **99.3, at n_e ≈ 1e19** — and the ANCHORED density is 7.3–8.6e18, just below it (§4f) | Q₀ minimum |
-| **match direction** | **REVERSES** — over → under at n_e ≈ 5×10¹⁶ | β crosses 1 |
+| **match direction** | **REVERSES** — over → under at n_e ≈ 5×10¹⁶ | coupling.beta crosses 1 |
 | **circulator dump** | up to **961 W of 1 kW** unmatched | Γ² at worst VSWR |
 | **LDMOS load-pull** | must survive VSWR ~99 behind the circulator | same |
 
@@ -77,7 +77,7 @@ anything has ignited.
 🔑 **So the control problem is hardest BEFORE the plasma exists**, and easiest
 once it does. That is worth designing for explicitly: a slow careful cold
 acquisition, then a fast tracking loop once the linewidth opens up.
-⚠️ And the cold cavity is **OVERCOUPLED (β = 4.715, VSWR 4.7)** — a comparatively
+⚠️ And the cold cavity is **OVERCOUPLED (coupling.beta = 4.715, VSWR 4.7)** — a comparatively
 easy match. **The frequency loop is the difficult one cold; the magnitude loop is
 the difficult one hot.** They do not peak together.
 
@@ -168,7 +168,7 @@ No part is assumed anywhere.**
 2. 🔴 **Frequency resolution ≲ 100 kHz** — it must ACQUIRE and HOLD a **350 kHz**
    cold resonance inside a 100 MHz band. **This is the tightest control number in
    the document** (§3).
-3. **Power** ~1 kW *(ASSUMED — but η, β, Q and all margins are ratios and
+3. **Power** ~1 kW *(ASSUMED — but η, coupling.beta, Q and all margins are ratios and
    frequencies, so this assumption failing is cheap)*.
 4. **Load-pull** — must survive whatever the circulator leaves of VSWR ~100.
 5. 🔴 **Out-of-band emission — the band is ISM, so this is a COMPLIANCE limit,
@@ -181,15 +181,15 @@ No part is assumed anywhere.**
 
 ✅ **MEASURED 2026-08-24 (`h3_hot`), not estimated:**
 
-| T_wall | f₀ GHz | Δf | Q₀ | Q_ext | β | VSWR |
+| T_wall | f₀ GHz | Δf | Q₀ | Q_ext | coupling.beta | VSWR |
 |---:|---:|---:|---:|---:|---:|---:|
 | 293 K | 2.451633 | — | 43,422 | 9,231 | 4.704 | 4.7 |
 | 393 K | 2.445935 | **−5.70** | 36,374 | 9,194 | 3.956 | 4.0 |
 | 493 K | 2.440206 | **−11.43** | 31,938 | 9,229 | 3.461 | 3.5 |
 
 🔑 **Q_ext IS THERMALLY INVARIANT** (×0.996, ×0.9997) while Q₀ falls ×0.838 per
-100 K. **So β tracks Q₀ alone, and one temperature reading gives BOTH derived
-quantities**: f₀ = f₀(cold) − 5.70 MHz × ΔT/100, and β = Q₀(T)/9,215.
+100 K. **So coupling.beta tracks Q₀ alone, and one temperature reading gives BOTH derived
+quantities**: f₀ = f₀(cold) − 5.70 MHz × ΔT/100, and coupling.beta = Q₀(T)/9,215.
 ⚠️ Wall heating is slow (minutes), so this is not a fast-tracking problem — but
 **a search window centred on the cold f₀ would miss a warm cavity**, and
 first-start and restart begin at different frequencies.
@@ -197,8 +197,8 @@ first-start and restart begin at different frequencies.
 1. **A wall temperature reading**, resolution ~10 K (≈0.6 MHz of detuning).
 2. Used to compute f₀ ≈ f₀(cold) − 5.7 MHz × ΔT/100 as the **acquisition
    starting point**, instead of searching a 100 MHz band blind.
-⚠️ **Unloaded only, for the MATCH.** Measured: unloaded β 4.704 → 3.956 at
-+100 K → 3.461 at +200 K. **Loaded, the plasma is ~275× the wall loss and β does
+⚠️ **Unloaded only, for the MATCH.** Measured: unloaded coupling.beta 4.704 → 3.956 at
++100 K → 3.461 at +200 K. **Loaded, the plasma is ~275× the wall loss and coupling.beta does
 not care.** ⚠️ Note the unloaded VSWR IMPROVES with heat (4.7 → 3.5), the
 opposite direction to the loaded requirement.
 🔑 **Thermal pulls OPPOSITE to the plasma** (−5.7 vs +30.9 MHz), so heating
@@ -221,14 +221,14 @@ partially cancels the loading shift and **buys back band margin**.
 4. ⚠️ **The two loops interact**: the tuner moves the impedance the coupler sees,
    which moves the apparent reflected-power minimum.
 5. ⚠️ **A reflected-power minimiser passes a TRUE NULL** at n_e ≈ 5×10¹⁶, where
-   β crosses 1. The match point is crossed, not approached.
+   coupling.beta crosses 1. The match point is crossed, not approached.
 6. 🔑 **A MAGNITUDE-ONLY DETECTOR INHERITS THE PROGRAMME'S OWN §7x ERROR.**
-   |Γ| cannot distinguish β from 1/β — that is definitional, and this record
-   demonstrates it: `fit_dip` read −3.67 dB and returned β = 0.208 when the truth
-   was **4.804**. Either side of the β=1 crossing at ignition:
+   |Γ| cannot distinguish coupling.beta from 1/coupling.beta — that is definitional, and this record
+   demonstrates it: `fit_dip` read −3.67 dB and returned coupling.beta = 0.208 when the truth
+   was **4.804**. Either side of the coupling.beta=1 crossing at ignition:
 
-       cold side   beta 1.500  ->  -13.98 dB
-       loaded side beta 0.667  ->  -13.99 dB
+       cold side   coupling.beta 1.500  ->  -13.98 dB
+       loaded side coupling.beta 0.667  ->  -13.99 dB
 
    **Identical reflected power, OPPOSITE tuner directions.** A magnitude-only PID
    is blind exactly where the tuner must reverse.
@@ -258,7 +258,7 @@ through different models and disagree by ~2×.
 ✅ **SUPERSEDED 2026-08-25 — THE ANCHOR BAND IS NOW MEASURED, NOT INTERPOLATED.**
 `h3_driven` solved 7.3 / 7.9 / 8.6e18 directly (`../resonance/` item 8). The
 column below marked *interpolated* was derived by interpolating across the
-3e18→1e19 gap **and using a COLD Q_ext of 9,231 at every density**. β is now
+3e18→1e19 gap **and using a COLD Q_ext of 9,231 at every density**. coupling.beta is now
 taken from the **measured S11 dip**, which imports no Q_ext at all.
 
 | | at 1e20 (assumed) | anchored, *interpolated* | **anchored, MEASURED** |
@@ -281,7 +281,7 @@ assuming 1e20), and the **loaded resonance is 1.5× WIDER** (23.8 MHz, not 16.0)
 so the tracking loop has a broader target to hold.
 ⚠️ **Still a vacuum-torch cavity** — `GEO_DESIGN` carries `--no-torch` and
 `h3_driven` meshes ε = 1. The design sapphire torch moves f₀ by ≈ −13.9 MHz
-(which *widens* band margin to ≈ 55 MHz) and Q₀ by ≈ +2 %. **β and VSWR are
+(which *widens* band margin to ≈ 55 MHz) and Q₀ by ≈ +2 %. **coupling.beta and VSWR are
 ratios and barely move.**
 
 ⚠️ **CAVEATS THAT TRAVEL WITH THE ANCHOR:** it is the plasma **as sampled through
@@ -296,10 +296,10 @@ MS-vs-OES — same plasma, different detector.
 
 **Delivered power with NO matching at all:**
 
-| state | β | VSWR | delivered |
+| state | coupling.beta | VSWR | delivered |
 |---|---:|---:|---:|
 | cold, pre-ignition | 4.715 | 4.7 | **57.7%** |
-| β = 1 crossing | 1.000 | 1.0 | **100%** |
+| coupling.beta = 1 crossing | 1.000 | 1.0 | **100%** |
 | 1e18 | 0.064 | 15.6 | 22.7% |
 | 1e20 | 0.017 | 58.4 | 6.6% |
 
@@ -323,22 +323,22 @@ here.** Confirm against the intended sequencing before relying on it.
 This section exists so that is on the record as an open problem rather than an
 assumption that a part exists.
 
-## 🔑 RF PHASE DETECTOR — the component that resolves β from 1/β
+## 🔑 RF PHASE DETECTOR — the component that resolves coupling.beta from 1/coupling.beta
 
 🔑 **User, 2026-08-25: *"We need an RF Phase Detector to distinguish Beta from
 1/Beta in the control loop."*** ✅ **And the requirement is far cheaper than it
 sounds, because at resonance the branch is a 180° flip.**
 
-**At f₀ the reflection coefficient is REAL:** Γ = (β−1)/(β+1). So β and 1/β give
+**At f₀ the reflection coefficient is REAL:** Γ = (coupling.beta−1)/(coupling.beta+1). So coupling.beta and 1/coupling.beta give
 **identical |Γ| and opposite sign** — which is `resonance`'s §7x stated as
 hardware, and why a power meter cannot ever resolve it:
 
-| state | β | Γ | \|Γ\| | **arg Γ** | reflected of 1 kW |
+| state | coupling.beta | Γ | \|Γ\| | **arg Γ** | reflected of 1 kW |
 |---|---:|---:|---:|---:|---:|
 | **cold** (measured) | 4.774 | **+0.6536** | 0.654 | **0°** | 427 W |
 | **anchor 7.9e18** | 0.0127 | **−0.9749** | 0.975 | **180°** | 950 W |
 | 1e20 | 0.0171 | −0.9664 | 0.966 | 180° | 934 W |
-| β = 1/4.774 | 0.2095 | **−0.6536** | **0.654** | **180°** | 427 W |
+| coupling.beta = 1/4.774 | 0.2095 | **−0.6536** | **0.654** | **180°** | 427 W |
 
 ⚠️ **Note the last row: identical \|Γ\| to cold, opposite phase.** That is the
 ambiguity, and phase is the only thing that breaks it.
@@ -358,7 +358,7 @@ removes no current.**
 
 ✅ **BUT IT DOES RELAX THE TUNER, GENUINELY — the CONTROL problem, not the POWER
 problem.** Without phase you must **hill-climb on |Γ|**: continuous fine steps,
-and it can **stall or reverse at the β ↔ 1/β ambiguity**. With complex Γ you
+and it can **stall or reverse at the coupling.beta ↔ 1/coupling.beta ambiguity**. With complex Γ you
 **solve** for the transformation in one shot, so **a SWITCHED tuner with a few
 computed states replaces a continuously-variable one.** That is a real
 simplification, and it is the sense in which "just a transistor" is right.
@@ -382,7 +382,7 @@ UNVERIFIED question** — plausible, and exactly the kind of claim §4d already
 warns was "asserted once in conversation without a datasheet". **Do not adopt it
 without one.**
 
-🔑 **Ranking, then:** ① fix β in the coupler (removes current *and* may remove
+🔑 **Ranking, then:** ① fix coupling.beta in the coupler (removes current *and* may remove
 the tuner) → ② phase detector (removes the ambiguity, allows a discrete tuner)
 → ③ find a part that survives the residual current. **The detector is ②, and ②
 does not substitute for ①.**
@@ -407,18 +407,18 @@ does not substitute for ①.**
 Forward power leaks into the reflected port at −D dB and **adds vectorially**, so
 it corrupts the phase once \|Γ\| approaches the leakage:
 
-| directivity | smallest \|Γ\| readable | β blinded |
+| directivity | smallest \|Γ\| readable | coupling.beta blinded |
 |---:|---:|---|
-| 20 dB | 0.100 | 0.82 < β < 1.22 |
-| 30 dB | 0.032 | 0.94 < β < 1.07 |
-| 40 dB | 0.010 | 0.98 < β < 1.02 |
+| 20 dB | 0.100 | 0.82 < coupling.beta < 1.22 |
+| 30 dB | 0.032 | 0.94 < coupling.beta < 1.07 |
+| 40 dB | 0.010 | 0.98 < coupling.beta < 1.02 |
 
 ✅ **Our operating points clear even 20 dB by ~16–20 dB.** Directivity only
 matters near critical coupling.
 
 ### 🔴 AND THERE THE PHASE DOES NOT EXIST — SO DO NOT MEASURE IT
 
-**At β = 1, Γ = 0: the reflected wave VANISHES. There is no phase.** The record
+**At coupling.beta = 1, Γ = 0: the reflected wave VANISHES. There is no phase.** The record
 puts the crossing at **n_e ≈ 5e16**, i.e. **transiently, during ignition**.
 🔑 **So the branch flip must be detected by the \|Γ\| MINIMUM and applied by a
 STATE MACHINE — not read from the detector.** Chasing the null with directivity
@@ -429,7 +429,7 @@ instrument is imprecise, it is that the quantity is not there.
 ### What has to be met
 
 Transform a **real** load of **VSWR up to ~90** at **2.45 GHz**, passing **1 kW**.
-*(was ~100, from interpolated β; measured 2026-08-25 — worst case 90 at 3e19,
+*(was ~100, from interpolated coupling.beta; measured 2026-08-25 — worst case 90 at 3e19,
 75–82 across the anchor band.)*
 🔴 **And the binding number is not the diode, it is the load side**: a matched
 transformation at 1 kW forces **39–42 A** (low-Z branch) or **1.9–2.1 kV**
@@ -478,7 +478,7 @@ in the network. Treat them as indicative of the class, not as ratings.
   **AREA ONLY**, at fixed wire radius 1.0 mm, fixed cap radius 0.4805a, single
   turn, rectangular. **Q_ext floored at 9,231 WITHIN THAT FAMILY — the family was
   never chosen.**
-  🔑 **AND THE TARGET IS NOT ABSURD.** β = 1 needs Q_ext 84× lower and is very
+  🔑 **AND THE TARGET IS NOT ABSURD.** coupling.beta = 1 needs Q_ext 84× lower and is very
   likely unreachable. **But VSWR 85 → 20 — the difference between "no part
   exists" and "a standard 3-stub tuner works" — needs only 4.2×.**
   ⚠️ **So "magnitude tuning is unsolved" holds GIVEN AN UNDESIGNED COUPLER.**
@@ -518,7 +518,7 @@ and has never been asked.
 
 - **If the band is narrower than 100 MHz** — the margin numbers shrink directly.
   At 1e20, f₀ = 2.4824 needs the band to reach at least there.
-- **If P ≠ 1 kW** — every absolute power figure scales, but **η, β, Q and the
+- **If P ≠ 1 kW** — every absolute power figure scales, but **η, coupling.beta, Q and the
   margins do not**: they are ratios and frequencies. This is the one assumption
   whose failure is cheap.
 - **If the PIN tuner cannot reach VSWR 99** — the machine runs mismatched at

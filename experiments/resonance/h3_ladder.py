@@ -79,7 +79,7 @@ WINDOW = (2.20, 2.55)   # report window; TE311 (2.622) is already identified
 #
 # 🔑 The lesson is counter-intuitive and worth keeping: a target FAR BELOW the
 # spectrum converges where one placed just below the cluster does not. Shift-
-# invert transforms eigenvalues to 1/(lambda - sigma); a sigma close to a tight
+# invert transforms eigenvalues to 1/(eigenvalue - sigma); a sigma close to a tight
 # cluster makes several transformed values huge and nearly equal, which is
 # exactly the case Krylov methods separate slowly. Starting low means the first
 # modes converged are the WELL-SEPARATED ones, and the cluster is reached with a

@@ -144,6 +144,19 @@ SECTORS = 5                 # resolves m <= 1 ONLY; N>=9 is unbuildable
 # own 32% Q cost.
 Q_BARE_WITH_LOOP = 29854.0  # e0k2_portfix_s1, port-resolved
 Q_BARE_EMPTY = 44384.0      # e0k2_bare — kept for context, NOT the reference
+# 🔴 nu_m and n_e are ONE STATE, not two constants. `physics.plasma_state` was
+# written as the fix for exactly this defect ("the code used to set NE and NU_M
+# independently, and nothing errored when they disagreed"). This rig predates
+# that function and still carries a round, order-of-magnitude collision rate:
+#
+#   NU_M, here                          1.000e11 rad/s   round, "N2 at 1 atm"
+#   physics.plasma_state(T_anchor)      6.295e10 rad/s   DERIVED from T
+#   ratio 1.59x  ->  eps = 0 moves 2.44x (n_e 3.22e18 vs 1.32e18)
+#
+# It is kept as the DEFAULT so that no already-recorded result silently moves.
+# `drude` now takes nu explicitly, so a caller can bind it to the SAME state
+# that set ne. ⚠️ Decide which before any further loaded number is quoted —
+# both are order-only, since MOMENTUM_CROSS_SECTION_M2 is itself not measured.
 NU_M = 1.0e11               # electron-neutral collision rate, N2 at 1 atm
 TAG_PLASMA = 12
 
@@ -210,12 +223,24 @@ Z_FRAC = 0.40               # plasma spans +-0.40 L, clear of the end caps so it
                             # cannot short to them (the TDS objection in miniature)
 
 
-def drude(ne, w):
-    """(Permittivity, Conductivity) for one electron density. BOTH from one ne."""
+# 🔑 BOUND, not a literal. Value-neutral (still 1.5) — the point is that it
+# now has ONE source and carries its caveat: 1.5 is the COARSEST point of
+# the h3-betaconv series, where coupling.beta.loaded moves +16.4 % to sf 1.2.
+_SF = f'{values.get("mesh.size_factor.default", allow_tentative=True, role="default"):g}'
+
+
+def drude(ne, w, nu=None):
+    """(Permittivity, Conductivity) for one electron density. BOTH from one ne.
+
+    nu — collision rate, rad/s. Defaults to NU_M, which is a round
+    order-of-magnitude figure. Pass `physics.plasma_state(T)[1]` to tie the
+    collision rate to the SAME state that set ne (§7ad) — see NU_M above.
+    """
+    nu = NU_M if nu is None else nu
     eps0, e, me = 8.8541878128e-12, 1.602176634e-19, 9.1093837015e-31
     wp2 = ne * e * e / (eps0 * me)
-    den = w * w + NU_M * NU_M
-    return 1.0 - wp2 / den, eps0 * wp2 * NU_M / den
+    den = w * w + nu * nu
+    return 1.0 - wp2 / den, eps0 * wp2 * nu / den
 
 
 def skin_depth(sigma, w):
@@ -274,7 +299,7 @@ def main():
                 geo += ["--loop", f"{LOOP_LD},{LOOP_LW},{LOOP_RW},{LOOP_GAP}",
                         "--loop-cap", f"{cap_r:.4f}", "--loop-phi", LOOP_PHI]
             r = subprocess.run([sys.executable, "geometry.py", "--out",
-                                f"{tag}.msh", "--size-factor", "1.5"]
+                                f"{tag}.msh", "--size-factor", _SF]
                                + list(GEO) + geo,
                                capture_output=True, text=True)
             if r.returncode or not pathlib.Path(f"{tag}.msh").exists():
@@ -439,7 +464,7 @@ def _overlap(out, a, L, cap_r, exact, sigma_w, w, zlo, zhi):
            "--loop", f"{LOOP_LD},{LOOP_LW},{LOOP_RW},{LOOP_GAP}",
            "--loop-cap", f"{cap_r:.4f}", "--loop-phi", LOOP_PHI]
     r = subprocess.run([sys.executable, "geometry.py", "--out", f"{tag}.msh",
-                        "--size-factor", "1.5"] + list(GEO) + geo,
+                        "--size-factor", _SF] + list(GEO) + geo,
                        capture_output=True, text=True)
     if r.returncode or not pathlib.Path(f"{tag}.msh").exists():
         print("    🔴 mesh failed — REPORTED, mix stays unearned."); return

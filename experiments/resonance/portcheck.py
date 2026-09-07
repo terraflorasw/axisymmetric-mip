@@ -22,6 +22,7 @@ FALSIFICATION
          Ball radius is wrong.
 """
 import pathlib
+import values
 import subprocess
 import sys
 
@@ -32,12 +33,18 @@ from e0_solver_vs_math import GEO
 from e0k2_anchor import design_point, CAP_R_FRAC, LOOP_PHI, LOOP_RW, LOOP_GAP
 
 
+# 🔑 BOUND, not a literal. Value-neutral (still 1.5) — the point is that it
+# now has ONE source and carries its caveat: 1.5 is the COARSEST point of
+# the h3-betaconv series, where coupling.beta.loaded moves +16.4 % to sf 1.2.
+_SF = f'{values.get("mesh.size_factor.default", allow_tentative=True, role="default"):g}'
+
+
 def build(tag, a, L, ld, lw, cap_r, extra):
     args = (list(GEO) + ["--radius", f"{a:.6f}", "--length", f"{L:.6f}"]
             + ["--loop", f"{ld},{lw},{LOOP_RW},{LOOP_GAP}",
                "--loop-cap", f"{cap_r:.4f}", "--loop-phi", LOOP_PHI] + extra)
     r = subprocess.run([sys.executable, "geometry.py", "--out", f"{tag}.msh",
-                        "--size-factor", "1.5"] + args,
+                        "--size-factor", _SF] + args,
                        capture_output=True, text=True)
     out = r.stdout + r.stderr
     for line in out.splitlines():

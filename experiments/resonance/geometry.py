@@ -127,9 +127,12 @@ P = dict(
     loop_d=0.0,             # radial depth (m); 0 disables the loop
     port_pw=None,           # port-face radial half-width, as a multiple of the
                             # conductor radius. In P for cache correctness.
-    arc_chords=None,        # AZIMUTHAL: number of straight chords in the arc.
-                            # In P so the MESH CACHE keys on it — different
-                            # counts are different geometry.
+    arc_chords=None,        # 🔴 DEAD. Never had a consumer; the arc is a torus,
+                            # not a polyline. Always None now, kept only so old
+                            # sidecars still parse. See the refusal at :2496.
+    arc_ball_mm=None,       # AZIMUTHAL: reach of the arc refinement balls from
+                            # the conductor CENTRELINE, mm. None = span the wall
+                            # gap (see build()). In P for cache correctness.
     loop_strip=None,        # (axial, radial) m: rectangular conductor. The
                             # AXIAL dimension is the wide one, so the broad face
                             # is parallel to the wall. None = round wire.
@@ -597,7 +600,7 @@ def build(p: dict, out: str, msh_order: int) -> None:
         # runs on through a radial clearance tube as the coax INNER conductor
         # and the tube wall is the OUTER. Same circuit class either way (a
         # series-fed loop returning through the wall); it moves the source
-        # ~26 deg around a lambda/6.8 loop, and puts the port reference plane
+        # ~26 deg around a wavelength/6.8 loop, and puts the port reference plane
         # AT THE WALL where VSWR is actually measured.
         _hole = p.get("loop_hole")
         _feed_ang = -_th                     # the leg that goes through
@@ -1782,7 +1785,37 @@ def build(p: dict, out: str, msh_order: int) -> None:
         _rc = ((p["loop_strip"][0] / 2.0) if p.get("loop_strip")
                else p["loop_rw"])
         _vin = _rc / 2.0                    # resolve the conductor itself
-        _rad = 2.0 * _rc
+        # 🔴 THE BALLS MUST REACH THE WALL. `2.0 * _rc` is 2.0 mm for a 1 mm
+        # wire, but the balls sit on the CENTRELINE at r = a - _hh, so the wall
+        # is exactly `_hh` away — 3.0 mm at standoff 2, 4.0 mm at standoff 3
+        # (`_hh` is ALREADY standoff + t/2; the conversion is at :455-458, and
+        # adding _rc again here double-counts it). So 1.0 mm and 2.0 mm of the
+        # wall gap respectively got NO refinement, in the one place an azimuthal
+        # loop's field is strongest. Measured 2026-09-06, on artefacts, at
+        # matched element counts:
+        #     standoff 2.0, 349,530 tets, 1.0 mm unreached -> -2.456 dB (43%)
+        #     standoff 3.0, 351,049 tets, 2.0 mm unreached -> -3.717 dB (58%)
+        # of BROADBAND VACUUM absorption that cannot be physical
+        # (ret:azimuthal-driven-pedestal). The barrel loop is unaffected: it has
+        # no wall gap to span. ⚠️ +0.5 mm past the wall so the last elements are
+        # graded rather than truncated at the boundary.
+        # 🔴 REVERTED TO A FIXED REACH, 2026-09-07. Spanning the wall gap was a
+        # HYPOTHESIS about where the azimuthal power was going, and h3-azimwall-01
+        # FALSIFIED it: widening 2.0 -> 3.5 mm moved the baseline 0.011 dB. Then
+        # the power balance showed no power is going anywhere at all
+        # (ret:azimuthal-driven-pedestal). So the wider default bought nothing —
+        # and it cost the one thing that matters here: `_hh` is the STANDOFF plus
+        # t/2, so a reach of `_hh + 0.5` makes the ELEMENT SIZE AROUND THE LOOP A
+        # FUNCTION OF THE SWEPT VARIABLE. At h=10.5 the reach becomes 12.0 mm and
+        # the refined tube is 27x the volume it is at h=2.0 — 0.7 M extra tets,
+        # 75 GB, and an h sweep confounded by resolution.
+        # ⚠️ THIS IS THE DEFECT h3_driven's OWN COMMENT WARNS ABOUT for the plasma
+        # annulus ("makes mesh size a function of the swept variable ... Q0 would
+        # move for two reasons at once"). Same shape, different field.
+        # ✅ Back to 2*_rc, which resolves the CONDUCTOR and does not move with h.
+        # A deliberate reach is still available as `arc_ball_mm`, pinned per run.
+        _rad = float(p["arc_ball_mm"]) * 1e-3 if p.get("arc_ball_mm") else \
+            2.0 * _rc
         _n = max(5, int(math.ceil(_al / _rad)) + 1)   # overlapping cover
         _pts = []
         for _i in range(_n):                # along the arc
@@ -1893,8 +1926,17 @@ def build(p: dict, out: str, msh_order: int) -> None:
     ne = len(gmsh.model.mesh.getElementsByType(_ETYPE[msh_order])[0])
     nn = len(gmsh.model.mesh.getNodes()[0])
     print(f"  mesh: {ne} tets, {nn} nodes, order {msh_order} -> {out}")
-    _mat = ("SAPPHIRE" if abs(p["torch_eps"] - 11.6) < 0.3 else
-            "quartz" if abs(p["torch_eps"] - 3.78) < 0.3 else "custom")
+    # 🔴 These tests were keyed on the LITERALS 11.6 and 3.78 while the mesh
+    # itself is built from baselines.json. 11.6 is eps_PARALLEL_c — the axis
+    # TE011 does NOT see — so the canonical 9.39 printed "custom" and a mesh
+    # built on the WRONG axis would have printed "SAPPHIRE". Label from the
+    # same source the value is bound from, never from a copy of it (§2).
+    _sap = _bind("torch.sapphire.permittivity")
+    # allow_tentative: quartz is TENTATIVE and this is a LABEL ONLY — it is
+    # never meshed from. Binding it plainly would fail-closed at mesh time.
+    _qtz = _bind("torch.quartz.permittivity", allow_tentative=True)
+    _mat = ("SAPPHIRE" if abs(p["torch_eps"] - _sap) < 0.3 else
+            "quartz" if abs(p["torch_eps"] - _qtz) < 0.3 else "custom")
     print(f"  torch: {_mat}  eps={p['torch_eps']} tand={p['torch_tand']}")
     print(f"  domains: bore={TAG_BORE} torch={TAG_TORCH} "
           f"air={TAG_AIR0}..{TAG_AIR0 + ns - 1}"
@@ -2046,6 +2088,7 @@ def build(p: dict, out: str, msh_order: int) -> None:
             "loop_hole_mm": ([p["loop_hole"][0] * 1e3, p["loop_hole"][1] * 1e3]
                              if p.get("loop_hole") else None),
             "port_pw": (p.get("port_pw") or 0.9),
+            "arc_ball_mm": (p.get("arc_ball_mm") or None),
             "port_face_mm": _PORT_FACE_MM,
             # [axial_mm, radial_mm] or None for a round wire
             "loop_strip": ([p["loop_strip"][0] * 1e3, p["loop_strip"][1] * 1e3]
@@ -2347,7 +2390,7 @@ if __name__ == "__main__":
                          "which is what every run before 2026-09-01 used. "
                          "🔑 Same circuit class (series-fed loop returning "
                          "through the wall); it moves the source ~26 deg "
-                         "around a lambda/6.8 loop and puts the port reference "
+                         "around a wavelength/6.8 loop and puts the port reference "
                          "plane AT THE WALL, where VSWR is actually measured.")
     ap.add_argument("--loop-azim-standoff", default=None, metavar="standoff_mm,arc_mm",
                     help="AZIMUTHAL loop: an arc of length arc_mm at "
@@ -2465,10 +2508,31 @@ if __name__ == "__main__":
     # never runs — the same "declared with no consumer" shape as
     # loop.conductivity.s_per_m. Adding the argparse entry is half the change.
     P["dump_faces"] = a.dump_faces
-    P["arc_chords"] = (int(os.environ["AMIP_ARC_CHORDS"])
-                       if os.environ.get("AMIP_ARC_CHORDS") else None)
+    # 🔴 REFUSED, 2026-09-06. `arc_chords` HAD NO CONSUMER — it was read here,
+    # stored in P, written to the mesh sidecar and recorded in every azimuthal
+    # run, and NO geometry code ever used it. The arc is an OCC TORUS
+    # (occ.revolve, :498); the POLYLINE-CHORD construction it names was tried in
+    # August and ABANDONED because Palace refused the result ("MFEM abort:
+    # STable3D::operator()"). So there are no chords and no facets, every
+    # recorded `arc_chords: 7` is a LABEL FOR SOMETHING THAT DOES NOT EXIST, and
+    # the rigs' "retry over the chord count" loops re-meshed identical geometry
+    # and reported whichever value happened to be first.
+    # 🔑 Measured: h3-azimchord-01 asked for 11 and reproduced h3-azimmap-01's
+    # 7 to the TET (349,530) and to every digit of |S11|.
+    # ⚠️ Refuse rather than ignore. Silently ignoring is what produced four weeks
+    # of artefacts carrying a geometry coordinate that was false.
+    if os.environ.get("AMIP_ARC_CHORDS"):
+        sys.exit(
+            "ERROR: AMIP_ARC_CHORDS is REFUSED. It never had a consumer: the "
+            "arc is an OCC torus, not a polyline, so there is no chord count "
+            "to set. Setting it only wrote a false `arc_chords` into the mesh "
+            "sidecar. Remove it from the caller; if the arc's resolution is "
+            "what you mean, use `size_factor` or `arc_ball_mm`.")
+    P["arc_chords"] = None
     P["port_pw"] = (float(os.environ["AMIP_PORT_PW"])
                     if os.environ.get("AMIP_PORT_PW") else None)
+    P["arc_ball_mm"] = (float(os.environ["AMIP_ARC_BALL_MM"])
+                        if os.environ.get("AMIP_ARC_BALL_MM") else None)
     if a.loop_azim:
         sys.exit(
             "ERROR: --loop-azim is REFUSED. Its h was the conductor CENTRELINE "

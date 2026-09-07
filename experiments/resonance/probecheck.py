@@ -40,6 +40,7 @@ FALSIFICATION
          and the sweep cannot be built on it either way
 """
 import json
+import values
 import math
 import pathlib
 import subprocess
@@ -60,6 +61,12 @@ N_MODES = 4
 PROBE_R = [0.1, 0.5, 1.0, 2.0, 3.0, 3.9, 5.0, 8.0, 15.0, 42.3, 80.0]
 
 
+# 🔑 BOUND, not a literal. Value-neutral (still 1.5) — the point is that it
+# now has ONE source and carries its caveat: 1.5 is the COARSEST point of
+# the h3-betaconv series, where coupling.beta.loaded moves +16.4 % to sf 1.2.
+_SF = f'{values.get("mesh.size_factor.default", allow_tentative=True, role="default"):g}'
+
+
 def main():
     print(__doc__)
     print("=" * 78, flush=True)
@@ -78,7 +85,7 @@ def main():
                          "--plasma", f"{INNER_R},{R_MM},{zlo:.4f},{zhi:.4f}",
                          "--plasma-h", f"{PLASMA_H:.3f}"])
     r = subprocess.run([sys.executable, "geometry.py", "--out", f"{TAG}.msh",
-                        "--size-factor", "1.5"] + args,
+                        "--size-factor", _SF] + args,
                        capture_output=True, text=True)
     if r.returncode or not pathlib.Path(f"{TAG}.msh").exists():
         sys.exit(f"🔴 mesh failed: {(r.stdout + r.stderr)[-300:]}")

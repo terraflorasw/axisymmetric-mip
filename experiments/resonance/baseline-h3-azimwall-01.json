@@ -1,0 +1,866 @@
+{
+  "_meta": {
+    "programme": "resonance",
+    "started": "2026-08-20",
+    "rule": "An entry requires BOTH a `verification` (what outside the instrument it agrees with) and a `falsification` (the measurement that would have shown it wrong, and its outcome). Inputs -- material properties, physical constants, requirements -- carry `source` instead, and are marked kind=input. Results carry kind=result. error:null means UNMEASURED, never zero.",
+    "entries": "starts EMPTY by design: nothing is inherited from ../waveguide without re-derivation",
+    "indirection": "A NAME ALONE MUST NOT RESOLVE. Entries with a `contexts` list hold several recorded values discriminated by context (solver, mesh, extraction, ne, ...). values.get(name, **context) returns one or REFUSES, printing the alternatives. Added 2026-08-25 after CONVENTIONS 7aq/7at: every serious error in that window was one name meaning different measured things in different contexts. Legacy single-value entries (no `contexts`) still resolve."
+  },
+  "cavity.Q_ext.cold": {
+    "kind": "result",
+    "unit": "1",
+    "description": "External (port) Q of the 11x8 cap loop, COLD (ne = 0). NOT a constant: it depends on the mesh's torch state and on how it was extracted. \ud83d\udd34 Renamed from `cavity.Q_ext` 2026-09-03 \u2014 the bare name had no state suffix, which is where the assumption 'Q_ext is geometric, so the cavity state cannot matter' was hiding. Every recorded context here is ne = 0.0. A LOADED Q_ext has never been measured; if one ever disagrees, it belongs at cavity.Q_ext.loaded rather than overwriting this. \ud83d\udd11 required_context mount, gap2_mm, loop_mm (added 2026-09-04): the recorded values differ along these, so a query omitting one returned another configuration's number silently. The cap/no-gap fact lived only in this prose; it is now a coordinate. \ud83d\udd11 required_context extended ['mesh', 'solver'] on 2026-09-04: those coordinates VARY across the recorded rows, and solver DETERMINES the solver-specific ones (port_bc for eigen, extraction for driven), so requiring it removes the partial-annotation hole.",
+    "contexts": [
+      {
+        "value": 9231.0,
+        "context": {
+          "solver": "eigen_pair",
+          "mesh": "no_torch",
+          "loop_mm": [
+            11.0,
+            8.0
+          ],
+          "ne": 0.0,
+          "mount": "cap",
+          "gap2_mm": 0.0
+        },
+        "rig": "h3_loopq",
+        "date": "2026-08-24",
+        "verification": "reproduces h3_step3's anchor to 1.25%",
+        "falsification": "F4 no-groove control gave 76,811 - the groove is what makes this number possible",
+        "note": "GEO_DESIGN as-is, which CARRIES --no-torch. A torchless cavity.",
+        "required_context": [
+          "mount",
+          "gap2_mm",
+          "loop_mm",
+          "solver",
+          "mesh"
+        ]
+      },
+      {
+        "value": 9117.0,
+        "context": {
+          "solver": "eigen_pair",
+          "mesh": "vacuum_torch",
+          "ne": 0.0,
+          "loop_mm": [
+            11.0,
+            8.0
+          ],
+          "mount": "cap",
+          "gap2_mm": 0.0
+        },
+        "rig": "h3-qext-01",
+        "date": "2026-08-25",
+        "status": "definitive",
+        "verification": "h3_qext reproduces h3_step3 V1_ANCHOR to 4 figures on a mesh of known fingerprint \u2705 INDEPENDENTLY CONFIRMED 2026-08-25 by the DRIVEN fit once its 3 dB edges interpolate: Q_ext 9,045 (-0.78%), Q0 43,455 vs 43,523 (-0.16%).",
+        "falsification": "had the driven dip on the SAME mesh agreed, the 7.7% gap would be a method artefact",
+        "supersedes": 9117.0,
+        "required_context": [
+          "mount",
+          "gap2_mm",
+          "loop_mm",
+          "solver",
+          "mesh"
+        ]
+      },
+      {
+        "value": 8462.0,
+        "context": {
+          "solver": "driven_dip",
+          "mesh": "vacuum_torch",
+          "ne": 0.0,
+          "loop_mm": [
+            11.0,
+            8.0
+          ],
+          "mount": "cap",
+          "gap2_mm": 0.0
+        },
+        "rig": "h3-qext-01",
+        "date": "2026-08-25",
+        "status": "tentative",
+        "verification": null,
+        "falsification": "\ud83d\udd34 RETRACTED 2026-08-25. Refitting the SAME sweep with INTERPOLATED 3 dB crossings gives Q_ext = 9,045 \u2014 0.78% from the eigen pair's 9,117, not 7.7%. 8,462 was an artefact of snapping both edges to the sample grid. Neither a solver disagreement nor a sample-count problem: 1e20 gives 0.0% error at ten samples because its width is commensurate with the step.",
+        "note": "Retained as the measured artefact of a grid-snapped 3 dB fit (CONVENTIONS 7bh).",
+        "supersedes": 8462.0,
+        "retracted": true,
+        "required_context": [
+          "mount",
+          "gap2_mm",
+          "loop_mm",
+          "solver",
+          "mesh"
+        ]
+      }
+    ]
+  },
+  "cavity.Q0.cold": {
+    "kind": "result",
+    "unit": "1",
+    "description": "Unloaded Q of the cold grooved cavity with the 11x8 loop. FOUR numbers have carried this name. \ud83d\udd11 required_context mount, gap2_mm, loop_mm (added 2026-09-04): the recorded values differ along these, so a query omitting one returned another configuration's number silently. The cap/no-gap fact lived only in this prose; it is now a coordinate. \ud83d\udd11 required_context extended ['mesh', 'solver'] on 2026-09-04: those coordinates VARY across the recorded rows, and solver DETERMINES the solver-specific ones (port_bc for eigen, extraction for driven), so requiring it removes the partial-annotation hole.",
+    "contexts": [
+      {
+        "value": 43422.0,
+        "context": {
+          "solver": "eigen",
+          "mesh": "no_torch",
+          "port_bc": "pec",
+          "mount": "cap",
+          "gap2_mm": 0.0,
+          "loop_mm": [
+            11.0,
+            8.0
+          ]
+        },
+        "rig": "h3_loopq",
+        "date": "2026-08-24",
+        "verification": "cross-checks h3_step3 to 0.23%",
+        "falsification": null,
+        "required_context": [
+          "mount",
+          "gap2_mm",
+          "loop_mm",
+          "solver",
+          "mesh"
+        ]
+      },
+      {
+        "value": 43523.0,
+        "context": {
+          "solver": "eigen",
+          "mesh": "vacuum_torch",
+          "port_bc": "pec",
+          "mount": "cap",
+          "gap2_mm": 0.0,
+          "loop_mm": [
+            11.0,
+            8.0
+          ]
+        },
+        "rig": "h3_step3",
+        "date": "2026-08-24",
+        "verification": "used as the eta reference Q_REF",
+        "falsification": null,
+        "note": "\u26a0\ufe0f THE ETA REFERENCE. Vacuum torch; the design sapphire torch is worth +2.0% (e3 case B).",
+        "required_context": [
+          "mount",
+          "gap2_mm",
+          "loop_mm",
+          "solver",
+          "mesh"
+        ]
+      },
+      {
+        "value": 29037.0,
+        "context": {
+          "solver": "driven",
+          "mesh": "vacuum_torch",
+          "extraction": "branch_free",
+          "mount": "cap",
+          "gap2_mm": 0.0,
+          "loop_mm": [
+            11.0,
+            8.0
+          ]
+        },
+        "rig": "h3_driven",
+        "date": "2026-08-25",
+        "verification": null,
+        "falsification": "disagrees 40% with the overcoupled branch on the SAME solve - which is the signal that Q_ext=9,231 does not apply here",
+        "note": "1/(1/Q_L - 1/Q_ext) with Q_ext=9,231. error_amplification 4.15, Q0_ill_conditioned=true. NOT the rig's authoritative answer.",
+        "required_context": [
+          "mount",
+          "gap2_mm",
+          "loop_mm",
+          "solver",
+          "mesh"
+        ]
+      },
+      {
+        "value": 40645.0,
+        "context": {
+          "solver": "driven",
+          "mesh": "vacuum_torch",
+          "extraction": "overcoupled_branch",
+          "mount": "cap",
+          "gap2_mm": 0.0,
+          "loop_mm": [
+            11.0,
+            8.0
+          ]
+        },
+        "rig": "h3_driven",
+        "date": "2026-08-24",
+        "verification": "OPTIMIZER.md records this as the branch-corrected value; independent re-fit from raw S11 gave 40,652 (0.02%)",
+        "falsification": null,
+        "note": "Q_L(1+beta_overcoupled). 6.4% below the eigen value - but eigen is a DIFFERENT mesh, so that gap is NOT a method result (7aq).",
+        "required_context": [
+          "mount",
+          "gap2_mm",
+          "loop_mm",
+          "solver",
+          "mesh"
+        ]
+      }
+    ]
+  },
+  "eta.reference": {
+    "kind": "result",
+    "unit": "1",
+    "description": "Q0 that eta = 1 - Q0/Q_ref is measured against. CONVENTIONS 7c has caught this ONE name four times. \ud83d\udd11 required_context extended ['mesh', 'status'] on 2026-09-04: those coordinates VARY across the recorded rows, and solver DETERMINES the solver-specific ones (port_bc for eigen, extraction for driven), so requiring it removes the partial-annotation hole.",
+    "contexts": [
+      {
+        "value": 43523.0,
+        "context": {
+          "status": "current",
+          "mesh": "vacuum_torch"
+        },
+        "rig": "h3_step3",
+        "date": "2026-08-24",
+        "verification": "guarded by h3_driven.Q_REF_CONFIG (groove 5x10, loop 11x8)",
+        "falsification": null,
+        "note": "\u26a0\ufe0f Vacuum torch. The design value is ~2% higher (e3 case B: 44,387 wall-only with sapphire).",
+        "required_context": [
+          "status",
+          "mesh"
+        ]
+      },
+      {
+        "value": 44384.0,
+        "context": {
+          "status": "retracted",
+          "mesh": "no_loop_no_groove"
+        },
+        "rig": "?",
+        "date": "2026-08-23",
+        "verification": null,
+        "falsification": "wrong cavity - no loop and no groove",
+        "retracted": true,
+        "required_context": [
+          "status",
+          "mesh"
+        ]
+      },
+      {
+        "value": 29854.0,
+        "context": {
+          "status": "retracted",
+          "mesh": "loop_no_groove"
+        },
+        "rig": "?",
+        "date": "2026-08-23",
+        "verification": null,
+        "falsification": "a HYBRID's Q (7v)",
+        "retracted": true,
+        "required_context": [
+          "status",
+          "mesh"
+        ]
+      },
+      {
+        "value": 12368.0,
+        "context": {
+          "status": "retracted",
+          "mesh": "other_rig"
+        },
+        "rig": "h3_cold",
+        "date": "2026-08-23",
+        "verification": null,
+        "falsification": "open-gap artifact; came with f0=2.440003, also retracted",
+        "retracted": true,
+        "required_context": [
+          "status",
+          "mesh"
+        ]
+      }
+    ]
+  },
+  "torch.sapphire.permittivity": {
+    "kind": "input",
+    "value": 9.39,
+    "unit": "1",
+    "material": "single-crystal sapphire (Al2O3), eps PERPENDICULAR to the anisotropy (c) axis \u2014 what TE011's E_phi sees when c lies along the tube axis",
+    "source": "\u2705 MEASURED. Krupka J, Huang W-T, Tung M-J, 'Complex permittivity measurements of low-loss microwave ceramics employing higher order quasi TE0np modes excited in a cylindrical dielectric sample', Meas. Sci. Technol. 16 (2005) 1014-1020, doi:10.1088/0957-0233/16/4/014. Figure 10 caption: 'Dielectric loss tangents PERPENDICULAR TO THE ANISOTROPY AXIS ... The measured permittivity was 4.43 +-0.5% for single-crystal quartz and 9.39 +-0.5% for sapphire.' refs/Complex_Permittivity_Measurements_of_Low-Loss_Micr.pdf, supplied by the user 2026-08-25. \ud83d\udd11 The method is TE0np modes in a cylindrical sample \u2014 the SAME mode family as this cavity.",
+    "adopted": "inherited, date unknown",
+    "note": "\u2705 THE AXIS CORRECTION IS REAL; ITS CONSEQUENCE IS SMALLER THAN FIRST CLAIMED. Measured on this cavity (e3-torch-01 B_sap): eps 11.6 -> 9.39 moves f0 by only +3.325 MHz, a slope of 1.50 MHz per unit eps. The R-era slope of 6.56 used to predict a cancellation is 4.4x too large and does NOT transfer. So the torch shift goes from about -13.9 MHz to about -10.5 MHz -- a 24% reduction, NOT the cancellation predicted. The torch restoration keeps its urgency.",
+    "status": "definitive",
+    "verification": "Independent of this programme, peer-reviewed, quoted uncertainty +-0.5% on the real part. Agrees with the standard uniaxial convention (eps_perp ~9.4 ordinary, eps_par ~11.6 extraordinary) that geometry.py's comment INVERTED.",
+    "falsification": "geometry.py:1416 (from R98) asserted '11.6 is eps_PERP_c ... 9.4 is eps_PARALLEL_c'. This measurement says the reverse. R32's supporting check was CIRCULAR: 'c-longitudinal reproduces isotropic 11.6' confirms only that the simulation put 11.6 on the perpendicular axis, which was the assumption under test.",
+    "supersedes": 11.6,
+    "date": "2026-08-25"
+  },
+  "torch.sapphire.loss_tangent": {
+    "kind": "input",
+    "value": 3.5e-05,
+    "unit": "1",
+    "material": "single-crystal sapphire",
+    "source": "geometry.py default, alongside the permittivity (R99). Same inheritance, same gap.",
+    "adopted": "inherited, date unknown",
+    "note": "Used by e3_closure case D -> Q_dielectric 1,911,259 and the F2 bound eta_diel <= 2.27%. The BOUND survives any plausible change here because it only needs plasma loss >= 0."
+  },
+  "cavity.f0.cold.ghz": {
+    "kind": "result",
+    "unit": "GHz",
+    "description": "TE011 of the cold grooved cavity with the 11x8 loop. Torch state moves this by ~14 MHz. \ud83d\udd11 required_context extended ['mesh', 'solver'] on 2026-09-04: those coordinates VARY across the recorded rows, and solver DETERMINES the solver-specific ones (port_bc for eigen, extraction for driven), so requiring it removes the partial-annotation hole.",
+    "contexts": [
+      {
+        "value": 2.451633,
+        "context": {
+          "solver": "eigen",
+          "mesh": "no_torch",
+          "port_bc": "pec",
+          "eps_r": null
+        },
+        "rig": "h3_loopq",
+        "date": "2026-08-24",
+        "verification": "h3_ladder step 2 continuation",
+        "falsification": null,
+        "required_context": [
+          "solver",
+          "mesh",
+          "eps_r"
+        ]
+      },
+      {
+        "value": 2.4515,
+        "context": {
+          "solver": "driven",
+          "mesh": "vacuum_torch",
+          "extraction": "s11_locator",
+          "eps_r": 1.0
+        },
+        "rig": "h3_driven",
+        "date": "2026-08-25",
+        "verification": "agrees with eigen to 133 kHz = 0.38 linewidths",
+        "falsification": null,
+        "required_context": [
+          "solver",
+          "mesh",
+          "eps_r"
+        ]
+      },
+      {
+        "value": 2.437762,
+        "context": {
+          "solver": "eigen",
+          "mesh": "sapphire_torch",
+          "port_bc": "pec",
+          "eps_r": 11.6
+        },
+        "rig": "e3_closure",
+        "date": "2026-08-24",
+        "verification": "case B, wall loss only; -13.87 MHz vs no_torch, as predicted in sign and order \u26a0\ufe0f eps_r ANNOTATED 2026-09-04 from the run's OWN LOG (e3-closure-00_*.log: 'torch: eps=11.6') \u2014 not inferred from dates. 11.6 is eps_PARALLEL_c, the axis TE011 does NOT see; R1 corrected the canonical value to 9.39 on 2026-08-25. The 3.3 MHz gap to the 2.441087 row IS that correction, and 'sapphire_torch' alone hid it.",
+        "falsification": null,
+        "note": "\ud83d\udd11 THE ONLY ENTRY HERE ON THE CAVITY ACTUALLY BEING BUILT.",
+        "required_context": [
+          "solver",
+          "mesh",
+          "eps_r"
+        ]
+      },
+      {
+        "value": 2.441087,
+        "context": {
+          "solver": "eigen",
+          "mesh": "sapphire_torch",
+          "port_bc": "pec",
+          "eps_r": 9.39
+        },
+        "rig": "e3-torch-01",
+        "date": "2026-08-25",
+        "status": "definitive",
+        "verification": "matched pair with B_vac (eps=1.0, f0=2.451490) on identical geometry; B_vac reproduces h3-qext-01's cold pec exactly",
+        "falsification": "if the torch shift were the -13.87 MHz in the record, f0 would be 2.4376",
+        "note": "\ud83d\udd11 THE DESIGN TORCH AT THE MEASURED PERMITTIVITY. Shift -10.403 MHz vs vacuum torch.",
+        "required_context": [
+          "solver",
+          "mesh",
+          "eps_r"
+        ]
+      }
+    ]
+  },
+  "wall.conductivity.s_per_m": {
+    "kind": "input",
+    "value": 35000000.0,
+    "unit": "S/m",
+    "material": "bare electropolished aluminium 6061",
+    "source": "R58 adopted bare electropolished aluminium on OPTICAL grounds (no plating to degrade or flake into the optical path). The conductivity is the handbook value for 6061 at 20 C, not a measurement of our surface \u2014 a real electropolished wall will fall SHORT of it, so every Q computed from this is an UPPER bound.",
+    "adopted": "2026-08-20",
+    "note": "Declared here because this programme's baselines start empty by design and nothing is inherited without re-derivation. The MATERIAL CHOICE is inherited from R58 and still needs its own re-derivation (optical vs Q trade); the NUMBER is a handbook input, which is why kind=input and it carries source rather than verification/falsification."
+  },
+  "torch.quartz.permittivity": {
+    "kind": "input",
+    "value": 3.78,
+    "unit": "1",
+    "material": "fused quartz (amorphous SiO2) \u2014 ISOTROPIC, so no axis question",
+    "source": "geometry.py filter_eps default, inherited from R107. \u26a0\ufe0f NOT independently cited here. The same paper that settles sapphire (Krupka et al., Meas. Sci. Technol. 16 (2005) 1014) measures SINGLE-CRYSTAL quartz at 4.43 +-0.5% perpendicular to the anisotropy axis \u2014 a DIFFERENT material from fused quartz, so it does NOT transfer.",
+    "adopted": "inherited, date unknown",
+    "status": "tentative",
+    "note": "Used for the development-build torch and the retired mode-filter annulus. \ud83d\udd11 Fused quartz ~3.78 is a standard handbook value and plausible, but this programme has not cited one. Marked tentative so it cannot be quoted as measured."
+  },
+  "cavity.d_over_l": {
+    "kind": "input",
+    "value": 1.525,
+    "unit": "1",
+    "description": "Cavity diameter-to-length ratio. H1's answer, and the ONLY statement of the cavity's shape.",
+    "source": "H1, an ANALYTIC max-min over D/L for TE011 Q (KNOWN.md \u00a7 H1). At 2.45 GHz it gives a = 88.0045 mm, L = 115.4158 mm. Poles to avoid: TM012 crosses TE011 at D/L = 1.096440.",
+    "adopted": "2026-08-20",
+    "note": "\ud83d\udd34 DECLARED 2026-08-25 because this number was written THREE times, twice as itself (e0k2_anchor.py, h2_groove.py) and once as a CONTRADICTORY a/L pair: e0_solver_vs_math carried A_MM,L_MM = 103.70,88.53, i.e. D/L = 2.343 \u2014 a different cavity, and the default in GEO. Every H3 rig overrode it with design_point() so the design record is consistent, but rigs that did NOT override meshed the legacy cavity. Derive a and L; never write them.",
+    "status": "definitive",
+    "verification": "the sidecars of every H3 mesh record radius 88.004517 / length 115.41576, which is exactly this D/L at 2.45 GHz",
+    "falsification": "if a design-rig sidecar ever records radius 103.70, that rig did not override GEO and is on the legacy cavity"
+  },
+  "source.f0.ghz": {
+    "kind": "input",
+    "value": 2.45,
+    "unit": "GHz",
+    "description": "The source frequency the cavity is designed to. A HARD ANCHOR \u2014 the ISM band and the LDMOS.",
+    "source": "Design requirement, stated. Not derived from anything here.",
+    "adopted": "2026-08-20",
+    "note": "Distinct from cavity.f0.cold.ghz, which is a MEASURED resonance. This is the target the geometry is solved to."
+  },
+  "cavity.groove.mm": {
+    "kind": "input",
+    "value": [
+      5.0,
+      10.0
+    ],
+    "unit": "mm",
+    "description": "The mode filter: an annular groove at the cap/barrel corner, both end caps. [width, depth].",
+    "source": "H2, validated COLD against the LDMOS tuning range. TM111 -64 MHz, TE011 Q -0.3%.",
+    "adopted": "2026-08-23",
+    "note": "\ud83d\udd34 BASELINE, NOT IMMUTABLE \u2014 loading moves every mode and refining it under load is H3's job. \ud83d\udd34 DECLARED 2026-08-25 because this pair was written as a literal in SEVEN files. The groove omission (GEO never passed --groove) put 31 rigs on a cavity nobody is building; a frozen value living in seven places is the same failure waiting to happen (CONVENTIONS 7f).",
+    "status": "definitive",
+    "verification": "every design mesh sidecar records geometry_mm.groove = [5.0, 10.0]; rigs assert it",
+    "falsification": "a sidecar reading [0.0, 0.0] after H1 is a discarded result, not a control"
+  },
+  "loop.cap_r_frac": {
+    "kind": "input",
+    "value": 0.4805,
+    "unit": "1",
+    "description": "Cap-loop mount radius as a fraction of a. H_r peaks here for TE011.",
+    "source": "J1 peak of TE011's radial H field: 0.4805a = 42.29 mm at a = 88.0045.",
+    "adopted": "inherited",
+    "note": "One of the three loop axes ALREADY pinned at maximum coupling (NEXT.md item 7). Meaningless for a barrel mount, where the radius is forced to a."
+  },
+  "loop.size.mm": {
+    "kind": "input",
+    "value": [
+      11.0,
+      8.0
+    ],
+    "unit": "mm",
+    "description": "Coupling loop [depth ld, half-width lw]. Area = ld * 2 * lw = 176 mm^2.",
+    "source": "e0k2_sizeq area sweep; 176 mm^2 was the Q_ext minimum of that family.",
+    "adopted": "2026-08-24",
+    "note": "\u26a0\ufe0f FOUND ON THE CAP AT N=1. NEXT.md item 7 records that it does not transfer to another mount, and re-sweeping area is step 3 \u2014 after mount and capacitor."
+  },
+  "loop.wire_r.mm": {
+    "kind": "input",
+    "value": 1.0,
+    "unit": "mm",
+    "description": "Coupling loop wire radius.",
+    "source": "geometry.py default, inherited. \u26a0\ufe0f NO PROVENANCE \u2014 one of the loop axes NEXT.md item 7 flags as never chosen.",
+    "adopted": "inherited, date unknown",
+    "status": "tentative"
+  },
+  "loop.gap.mm": {
+    "kind": "input",
+    "value": 0.3,
+    "unit": "mm",
+    "description": "Port gap at the loop crossbar \u2014 the lumped-port face sits here.",
+    "source": "geometry.py default, inherited. \u26a0\ufe0f NO PROVENANCE.",
+    "adopted": "inherited, date unknown",
+    "status": "tentative"
+  },
+  "loop.phi.deg": {
+    "kind": "input",
+    "value": 36.0,
+    "unit": "deg",
+    "description": "Loop azimuth. At sectors=5 the sector planes are at 0/72/144...; 36 is a sector CENTRE.",
+    "source": "R47: a loop at phi=0 straddles a sector plane and splits the port face.",
+    "adopted": "inherited"
+  },
+  "cavity.atmosphere": {
+    "kind": "input",
+    "value": "air",
+    "unit": "1",
+    "description": "The gas filling the cavity volume OUTSIDE the torch. Not the plasma gas.",
+    "source": "STATED by the user 2026-08-25: 'We should check the simplest route first: just air.' A DECISION, taken deliberately as the simplest buildable option \u2014 not an inheritance.",
+    "adopted": "2026-08-25",
+    "note": "\ud83d\udd11 DECIDES THE ARCING LIMIT. Paschen breakdown over a sub-millimetre gap differs by orders of magnitude between atmospheric air, a purge, and vacuum (which would substitute multipactor instead). Before this was stated, NEXT.md 7d recorded the arcing check as UNDEFINED rather than merely unmeasured. \u26a0\ufe0f Distinct from the PLASMA gas (N2) and from torch flows.",
+    "status": "definitive"
+  },
+  "cavity.pressure.kpa": {
+    "kind": "input",
+    "value": 101.325,
+    "unit": "kPa",
+    "description": "Cavity fill pressure \u2014 ambient, implied by an air-filled cavity open to atmosphere.",
+    "source": "Follows from cavity.atmosphere = air with no sealing stated. \u26a0\ufe0f DERIVED FROM AN ABSENCE: if the cavity is ever sealed or pressurised this must be re-stated, and the arcing limit moves with it.",
+    "adopted": "2026-08-25",
+    "status": "tentative"
+  },
+  "loop.conductivity.s_per_m": {
+    "kind": "input",
+    "value": 58000000.0,
+    "unit": "S/m",
+    "material": "copper",
+    "source": "STATED by the user 2026-08-27: 'I think the loop material being copper makes sense.' A DECISION. \u26a0\ufe0f Distinct from the WALLS, which are bare electropolished aluminium 6061 at 3.5e7 (R58, optical grounds) \u2014 the two are different metals and must not be conflated.",
+    "adopted": "2026-08-27",
+    "note": "\ud83d\udd34 DECLARED BECAUSE I ASSERTED IT WITHOUT PROVENANCE. 'a copper gap' reached THREE landed documents while NEXT.md 7d.A simultaneously listed the loop material as UNSTATED \u2014 the same session both flagged the gap and filled it with an invention. The store's guard could not catch it: values.get() refuses an undeclared name, but PROSE does not go through values.get(). Now it is declared, so the claim is backed.",
+    "status": "definitive"
+  },
+  "loop.azim.h.mm": {
+    "kind": "input",
+    "value": 3.0,
+    "unit": "mm",
+    "description": "AZIMUTHAL loop: height of the arc above the barrel wall, i.e. the arc sits at r = a - h. Also sets the conductor-to-wall clearance (h - half the conductor's radial thickness), which is both a capacitance and the arc risk.",
+    "source": "STATED by the user 2026-08-29 as the range to characterise: 2, 3, 4 mm. \ud83d\udd34 NOT A CHOSEN VALUE \u2014 3.0 is the middle of that range, recorded so the parameter has a home with provenance rather than living as a number on a command line. The sweep is what chooses it.",
+    "adopted": "2026-08-29, placeholder pending characterisation",
+    "status": "tentative",
+    "verification": "a run that quotes this must be a sweep OVER it, not a run that inherited it"
+  },
+  "loop.azim.arc.mm": {
+    "kind": "input",
+    "value": 12.24,
+    "unit": "mm",
+    "description": "AZIMUTHAL loop: ARC LENGTH along the wall. Unwound conductor = arc - port gap + 2h. \ud83d\udd11 Length not angle: the angle depends on R = a - h, so specifying an angle would couple h and L, and they are meant to be independent axes.",
+    "source": "STATED by the user 2026-08-29: lambda/10 = 12.24 mm plus brackets at 10.2 and 14.2. lambda/10 puts the loop well BELOW resonance, where it behaves as a lumped inductor \u2014 avoiding both the 39.6% conductor loss measured at lambda/4 and the tolerance sensitivity there (d ln Q_ext / d ln L = 4-6.5). \ud83d\udd34 NOT CHOSEN; 12.24 is the centre of the declared range.",
+    "adopted": "2026-08-29, placeholder pending characterisation",
+    "status": "tentative"
+  },
+  "loop.strip.mm": {
+    "kind": "input",
+    "value": null,
+    "unit": "mm",
+    "description": "Conductor cross-section [axial, radial] for a RECTANGULAR strip, or null for a round wire of loop.wire_r.mm. The AXIAL dimension is the wide one, so the broad face lies parallel to the wall.",
+    "source": "PROPOSED by the user 2026-08-29: compare a 1 mm round wire against a 5x1 mm strip, broad face to the wall, because the conductor's impedance shows up in the solve. null is the current default (round wire) \u2014 the strip is a case the sweep carries, not a choice yet.",
+    "adopted": "2026-08-29, default null = round wire",
+    "status": "tentative",
+    "note": "\ud83d\udd34 A strip changes the loop-surface identification rule: it is 5 mm tall in z, not 2*loop.wire_r.mm, and geometry.py keys the loop attribute on exactly that. Handled \u2014 but any new cross-section must revisit it or the coupler silently reverts to the wall's aluminium."
+  },
+  "cavity.Q0.loaded": {
+    "kind": "result",
+    "unit": "1",
+    "description": "Unloaded Q of the GROOVED cavity WITH PLASMA, at the anchored electron density. \ud83d\udd34 This is NOT cavity.Q0.cold and must never be read as it: it is ~420x smaller. Added 2026-09-03 because the coupling target had no canonical name, so prose called it 'loaded Q0' and the reader had to infer which cavity was meant. \ud83d\udd11 required_context mount, gap2_mm, loop_mm, ne_per_m3 (added 2026-09-04): the recorded values differ along these, so a query omitting one returned another configuration's number silently. The cap/no-gap fact lived only in this prose; it is now a coordinate.",
+    "contexts": [
+      {
+        "value": 108.3,
+        "context": {
+          "solver": "driven",
+          "mesh": "vacuum_torch",
+          "ne_per_m3": 7.3e+18,
+          "mount": "cap",
+          "gap2_mm": 0.0,
+          "loop_mm": [
+            11.0,
+            8.0
+          ]
+        },
+        "rig": "h3_driven",
+        "date": "2026-08-25",
+        "verification": "h3-driven-anchor-01, 9-point grid; the anchored band was solved at all three points and Q0 varies only 108.3->99.6 across it. low edge of the MICAP band (5220 K)",
+        "falsification": null,
+        "required_context": [
+          "mount",
+          "gap2_mm",
+          "loop_mm",
+          "ne_per_m3"
+        ]
+      },
+      {
+        "value": 104.6,
+        "context": {
+          "solver": "driven",
+          "mesh": "vacuum_torch",
+          "ne_per_m3": 7.9e+18,
+          "mount": "cap",
+          "gap2_mm": 0.0,
+          "loop_mm": [
+            11.0,
+            8.0
+          ]
+        },
+        "rig": "h3_driven",
+        "date": "2026-08-25",
+        "verification": "h3-driven-anchor-01, 9-point grid; the anchored band was solved at all three points and Q0 varies only 108.3->99.6 across it. centre of the MICAP band (5245 K) \u2014 THE OPERATING POINT",
+        "falsification": null,
+        "required_context": [
+          "mount",
+          "gap2_mm",
+          "loop_mm",
+          "ne_per_m3"
+        ]
+      },
+      {
+        "value": 99.6,
+        "context": {
+          "solver": "driven",
+          "mesh": "vacuum_torch",
+          "ne_per_m3": 8.6e+18,
+          "mount": "cap",
+          "gap2_mm": 0.0,
+          "loop_mm": [
+            11.0,
+            8.0
+          ]
+        },
+        "rig": "h3_driven",
+        "date": "2026-08-25",
+        "verification": "h3-driven-anchor-01, 9-point grid; the anchored band was solved at all three points and Q0 varies only 108.3->99.6 across it. high edge of the MICAP band (5270 K)",
+        "falsification": null,
+        "required_context": [
+          "mount",
+          "gap2_mm",
+          "loop_mm",
+          "ne_per_m3"
+        ]
+      }
+    ]
+  },
+  "plasma.n_e.per_m3": {
+    "kind": "input",
+    "unit": "m^-3",
+    "status": "tentative",
+    "description": "Electron density, DERIVED from a gas temperature by Saha under LTE \u2014 never measured in this cavity. \ud83d\udd34 ADDED 2026-09-04 because it had NO canonical entry at all: the most important INPUT to every loaded run was a literal in each config, with no coordinates and no provenance in the store. \u26a0\ufe0f THREE CAVEATS TRAVEL WITH IT, and required_context makes them unskippable: (1) REGION \u2014 the temperature was measured at an MS SAMPLING CONE on a different instrument; physics.py says outright 'Not the same region' as the r=2-8.5 mm annulus modelled here. (2) EQUILIBRIUM \u2014 LTE is assumed, and non-LTE puts n_e ABOVE Saha-at-T, so this is a LOWER BOUND. (3) The 5245 K midpoint was INTERPOLATED between two sample-introduction conditions and corresponds to no measurement. \ud83d\udd11 It is an ANCHOR, not an operating point \u2014 the fork between ~3e16 and high density is undecided and is a plasma question.",
+    "contexts": [
+      {
+        "value": 7.347e+18,
+        "context": {
+          "t_gas_k": 5220.0,
+          "pressure_pa": 101325.0,
+          "equilibrium": "LTE",
+          "region": "ms_sampling_cone"
+        },
+        "required_context": [
+          "t_gas_k",
+          "pressure_pa",
+          "equilibrium",
+          "region"
+        ],
+        "rig": "physics.plasma_state",
+        "date": "2026-09-04",
+        "verification": "MICAP low sample-introduction condition. Kuonen/Hattendorf/Gunther JAAS 39(5) 2024 Table 2, pressure-reduction method, N2 MICAP.",
+        "falsification": null
+      },
+      {
+        "value": 7.944e+18,
+        "context": {
+          "t_gas_k": 5245.0,
+          "pressure_pa": 101325.0,
+          "equilibrium": "LTE",
+          "region": "ms_sampling_cone"
+        },
+        "required_context": [
+          "t_gas_k",
+          "pressure_pa",
+          "equilibrium",
+          "region"
+        ],
+        "rig": "physics.plasma_state",
+        "date": "2026-09-04",
+        "verification": "MIDPOINT \u2014 INTERPOLATED, never measured. Kuonen/Hattendorf/Gunther JAAS 39(5) 2024 Table 2, pressure-reduction method, N2 MICAP.",
+        "falsification": null
+      },
+      {
+        "value": 8.584e+18,
+        "context": {
+          "t_gas_k": 5270.0,
+          "pressure_pa": 101325.0,
+          "equilibrium": "LTE",
+          "region": "ms_sampling_cone"
+        },
+        "required_context": [
+          "t_gas_k",
+          "pressure_pa",
+          "equilibrium",
+          "region"
+        ],
+        "rig": "physics.plasma_state",
+        "date": "2026-09-04",
+        "verification": "MICAP high sample-introduction condition. Kuonen/Hattendorf/Gunther JAAS 39(5) 2024 Table 2, pressure-reduction method, N2 MICAP.",
+        "falsification": null
+      }
+    ]
+  },
+  "plasma.collision_frequency.rad_per_s": {
+    "kind": "input",
+    "unit": "rad/s",
+    "status": "tentative",
+    "description": "Electron-neutral momentum-transfer collision frequency, from the SAME state as plasma.n_e.per_m3. \ud83d\udd34 nu_m and n_e are ONE STATE, not two constants (CONVENTIONS \u00a77.1) \u2014 h3_loaded still carries NU_M = 1.0e11 hardcoded, which is 1.59x the derived value and moves the eps=0 threshold 2.44x. \u26a0\ufe0f cross_section_m2 = 1e-19 is ORDER-OF-MAGNITUDE ONLY, not measured, and is a REQUIRED coordinate so no caller can forget it.",
+    "contexts": [
+      {
+        "value": 63110000000.0,
+        "context": {
+          "t_gas_k": 5220.0,
+          "pressure_pa": 101325.0,
+          "equilibrium": "LTE",
+          "region": "ms_sampling_cone",
+          "cross_section_m2": 1e-19
+        },
+        "required_context": [
+          "t_gas_k",
+          "pressure_pa",
+          "equilibrium",
+          "region",
+          "cross_section_m2"
+        ],
+        "rig": "physics.plasma_state",
+        "date": "2026-09-04",
+        "verification": "MICAP low sample-introduction condition",
+        "falsification": null
+      },
+      {
+        "value": 62950000000.0,
+        "context": {
+          "t_gas_k": 5245.0,
+          "pressure_pa": 101325.0,
+          "equilibrium": "LTE",
+          "region": "ms_sampling_cone",
+          "cross_section_m2": 1e-19
+        },
+        "required_context": [
+          "t_gas_k",
+          "pressure_pa",
+          "equilibrium",
+          "region",
+          "cross_section_m2"
+        ],
+        "rig": "physics.plasma_state",
+        "date": "2026-09-04",
+        "verification": "MIDPOINT \u2014 INTERPOLATED, never measured",
+        "falsification": null
+      },
+      {
+        "value": 62810000000.0,
+        "context": {
+          "t_gas_k": 5270.0,
+          "pressure_pa": 101325.0,
+          "equilibrium": "LTE",
+          "region": "ms_sampling_cone",
+          "cross_section_m2": 1e-19
+        },
+        "required_context": [
+          "t_gas_k",
+          "pressure_pa",
+          "equilibrium",
+          "region",
+          "cross_section_m2"
+        ],
+        "rig": "physics.plasma_state",
+        "date": "2026-09-04",
+        "verification": "MICAP high sample-introduction condition",
+        "falsification": null
+      }
+    ]
+  },
+  "mesh.size_factor.default": {
+    "kind": "input",
+    "unit": "1",
+    "status": "tentative",
+    "description": "Default gmsh size factor. \ud83d\udd34 ADDED 2026-09-04 because 13 rigs hardcoded '1.5' as a CLI string literal, invisible to the linter until r_cli_literal. \u26a0\ufe0f THIS IS THE COARSEST POINT OF AN UNCONVERGED SERIES: h3-betaconv measures coupling.beta.loaded moving +16.4 % between sf 1.5 and 1.2 while Q0 moves -0.9 %. Binding it here does NOT make it right \u2014 it makes it ONE place to change, and gives it the caveat it never carried. \ud83d\udd11 A rig that cares about mesh resolution must take size_factor from its RUN CONFIG (h3_driven does), not from this default.",
+    "contexts": [
+      {
+        "value": 1.5,
+        "context": {
+          "role": "default"
+        },
+        "required_context": [
+          "role"
+        ],
+        "rig": "inherited",
+        "date": "2026-09-04",
+        "verification": "the value 13 rigs already used; binding is value-neutral",
+        "falsification": "h3-betaconv: if beta is unconverged at 1.5, every rig on this default inherits that"
+      }
+    ]
+  },
+  "_run": {
+    "slug": "h3-azimwall-01",
+    "derived_from": {
+      "file": "baselines.json",
+      "sha256_16": "154bcf27c562692e"
+    },
+    "provenance": {
+      "hypothesis": "H3 \u2014 cavity.Q0.loaded as a function of the PLASMA STATE",
+      "document": "NEXT.md \u00a7 CRITICAL COUPLING FOR N2 DISSOCIATION",
+      "question": "Does the azimuthal vacuum pedestal collapse once the arc refinement spans the conductor-to-wall gap? Step 2 of the piece-by-piece bisection.",
+      "why_this_axis": "eps and sigma are what MAXWELL sees. Reaching them through plasma.n_e needs BOTH a Saha inversion AND a collision rate, and the collision rate is an UNMADE DECISION: every rig solved NU_M=1e11 while physics.plasma_state gives 6.295e10 from the same temperature \u2014 3.4x in eps, 1.53x in sigma at n_e 7.9e18. h3_loaded.py says 'Decide which before any further loaded number is quoted' and the decision was never made. This axis carries neither assumption and survives the decision either way.",
+      "prior_art": "h3-azimne-01 swept 9 DENSITIES (vacuum torch, azimuthal loop) and found the cavity optimum near 3e16. This is the same question re-asked on the axis that does not assume Drude or Saha, on the DESIGN cavity. e0kp_meshfloor: the mesh does not depend on eps or sigma, so all points share ONE cached mesh \u2014 same-mesh differencing, mesh noise identically zero across the curve."
+    },
+    "binds": {
+      "torch.sapphire.permittivity": "design torch 9.39",
+      "cavity.groove.mm": "5x10",
+      "loop.size.mm": "11x8"
+    },
+    "parameters": {
+      "size_factor": 1.0,
+      "loop_ld": 11.0,
+      "loop_lw": 8.0,
+      "case_timeout_s": 7200.0,
+      "plasma_grid": [
+        [
+          1.0,
+          0.0
+        ]
+      ],
+      "note_cache": "\u26a0\ufe0f The mesh cache is deliberately LEFT ON. eps/sigma never enter the mesher's arguments, so all seven cases hit ONE cached mesh \u2014 which is the point: differences across the curve carry zero mesh noise.",
+      "note_coupler": "\ud83d\udd11 PLAIN BARREL LOOP, NO SERIES GAP \u2014 and the coupler is a FIXTURE here, not a subject. User, 2026-09-06: *\"Does that include a coupler? (I hope not)\"* A DRIVEN solve cannot have no port, so the question is how much it contaminates Q0.loaded. MEASURED loss budget at n_e 7.9e18: the plasma is 99.705% of the loaded dissipation and EVERYTHING else \u2014 walls + torch + loop \u2014 is 0.295%. Swapping the coupler entirely (plain cap vs barrel + gap2 2.25) moves cavity.Q0.loaded by 0.123%; even a 10x lossier coupler moves it 2.6%. So the loaded map is a cavity+plasma property to ~0.1%. \u26a0\ufe0f THE VACUUM ANCHOR IS NOT: cavity.Q0.cold is 25,416 with gap2 2.25 vs 43,523 for the plain-loop design cavity. That point is an INSTRUMENT CHECK, not a datum. \ud83d\udd34 gap2 dropped because its basis is retracted (ret:coupling-series-as-design, ret:minimax-q0-105) and the 2026-09-06 decision forbids chasing the barrel \u2014 this run must not smuggle that geometry back in as an assumption.",
+      "sweep_band_ghz": [
+        [
+          2.435,
+          2.46
+        ]
+      ],
+      "sweep_step_ghz": [
+        5e-06
+      ],
+      "probes_r_mm": [
+        [
+          "bore_in",
+          2.0
+        ],
+        [
+          "bore_mid",
+          4.25
+        ],
+        [
+          "bore_edge",
+          8.5
+        ],
+        [
+          "field_peak",
+          42.3
+        ]
+      ],
+      "note_probes": "\ud83d\udd11 |E| INSIDE THE PLASMA \u2014 the observable electron-impact dissociation actually needs. Power absorbed by the plasma IS power into the electron cloud (Drude sigma is electron momentum transfer), but whether those electrons DISSOCIATE is set by E/N, i.e. by the field where they are. \ud83d\udd34 IT CANNOT COME FROM STORED ENERGY: probecheck.py \u2014 electric energy goes as eps|E|^2 and eps_eff is NEGATIVE in the metal-like regime, so it goes negative there (measured p_elec = -3e-5). Probes are the only route. \u2705 VALIDATED MECHANISM: h3-field-01 (2026-08-26) ran named probes on this cavity and checked them against closed form to 0.6% \u2014 E_phi ~ J1(chi'01 r/a) predicts E(8.5)/E(4.25) = 1.974, measured 1.987. THE SAME PAIR IS INCLUDED HERE so every case carries that check. \u26a0\ufe0f bore_in/mid/edge span the plasma annulus (r = 2.0-8.5 mm). field_peak sits at r = 0.4805a = 42.3 mm, TE011's known maximum, in VACUUM \u2014 a landmark that needs no plasma physics to predict (probecheck V3). \u26a0\ufe0f Probes are read at the SELECTED resonance and are captured even when the 3 dB fit FAILS: |E| does not need a width to exist, and h3-azimload-02 lost a good solve to a failed fit.",
+      "loop_mount": "azim",
+      "loop_azim": [
+        2.0,
+        12.24
+      ],
+      "note_geometry": "\ud83d\udd11 standoff 2.0 mm / arc 12.24 mm \u2014 h3-azimwidth-01's CHARACTERISED point, where the L-exponents were fitted with the CORRECTED port face (0.9x the conductor's half-extent). \u26a0\ufe0f NOT h3-azimload-02's standoff 3.0: that run produced no usable loaded number (ret:azimload02-beta-no-resonance) and its geometry has no characterisation behind it.",
+      "note_bisect": "\ud83d\udd11 STEP 2 OF THE AZIMUTHAL BISECTION. ONE VARIABLE: the ARC REFINEMENT REACH. arc_chords is back at 7 and size_factor at 1.0, so this is h3-azimmap-01's vacuum case with ONLY the mesh field around the conductor changed.",
+      "note_readout": "\ud83d\udd34 THE READOUT IS THE OFF-RESONANCE BASELINE |S11| AND error-indicators.csv, NOT A FIT \u2014 neither depends on the extraction machinery in doubt. Barrel reference: -0.010 dB, err max 5.85e-3, 346,118 tets.",
+      "note_mechanism": "\ud83d\udd34 THE REFINEMENT BALLS DID NOT REACH THE WALL. geometry.py placed them on the conductor CENTRELINE with radius 2.0*loop_rw = 2.0 mm, but the centreline sits `_hh` = standoff + t/2 from the wall \u2014 3.0 mm at standoff 2, 4.0 mm at standoff 3. So 1.0 / 2.0 mm of the wall gap got cavity-scale elements, in the one place an azimuthal loop's field is strongest. The measured pedestal follows that gap at MATCHED element count: 349,530 tets / 1.0 mm unreached -> -2.456 dB (43% absorbed); 351,049 tets / 2.0 mm unreached -> -3.717 dB (58%). \u26a0\ufe0f The BARREL loop has no wall gap to span, which is why it was never affected. Fixed 2026-09-06: reach = max(2*rc, _hh + 0.5 mm), i.e. 2.0 -> 3.5 mm here, pinnable as arc_ball_mm.",
+      "note_ruled_out": "\u26a0\ufe0f ALREADY RULED OUT FROM ARTEFACTS, do not re-test: the resolved configs of the azimuthal and barrel runs are IDENTICAL \u2014 same LumpedPort R=50 and Direction [-0.5878, 0.8090, 0], same Conductivity attrs 90 (3.5e7) and 92 (5.8e7), same Materials, same solver block. The ONLY difference is the mesh. The ARC refinement field DOES fire (0.25 mm within 2.0 mm of ~13 ball centres): p['loop_azim'] is set at geometry.py:455 and read at :1778, both inside build(), in that order.",
+      "note_instrument": "\ud83d\udd34 THIS IS AN INSTRUMENT RIG, NOT A DESIGN MEASUREMENT. Nothing it emits is a cavity number. Its question is whether the azimuthal driven corpus is measuring the cavity or measuring the mesh.",
+      "arc_ball_mm": null,
+      "note_cost": "\u26a0\ufe0f EXPECT MORE TETS, and that is not free: the refined tube grows from radius 2.0 to 3.5 mm at 0.5 mm elements, roughly +30k on a 350k mesh. If the count lands near h3-azimmap-01's the field did NOT widen \u2014 check geometry_mm.arc_ball_mm in the sidecar before reading the result.",
+      "note_chords": "\ud83d\udd34 arc_chords IS GONE and is NOT a variable here. h3-azimchord-01 asked for 11 and reproduced h3-azimmap-01's mesh to the TET (349,530) and to every digit of |S11|: the flag never had a consumer, because the arc is an OCC TORUS, not a polyline. geometry.py now REFUSES AMIP_ARC_CHORDS."
+    },
+    "note": "Azimuthal bisection step 2: arc refinement reach 2.0 -> 3.5 mm (spans the wall gap), vacuum, everything else h3-azimmap-01.",
+    "predictions": {
+      "wall_gap": "baseline rises from -2.456 dB toward the barrel's -0.010 and err max falls from 1.29e-1 toward 5.85e-3 -> the unrefined wall gap IS the artefact. Then: re-solve the azimuthal corpus and lift ret:azimuthal-driven-pedestal.",
+      "not_wall_gap": "baseline stays ~-2.5 dB -> neither faceting (step 1) nor the wall gap. Next: drop the TORCH via torch_material [1.0, 0.0], which leaves the mesh IDENTICAL and removes only the dielectric, then the groove."
+    },
+    "falsifiers": {
+      "F1": "geometry_mm.arc_ball_mm is absent or the tet count is within 2% of h3-azimmap-01's 349,530 -> the widened field did not reach the mesher and this measures nothing.",
+      "F2": "arc_chords != 7 or size_factor != 1.0 in the record -> a fallback moved a second axis. Void the comparison.",
+      "F3": "the tet count comes back at exactly 349,530 -> the mesh was served from cache or the widened field did not reach the mesher, and this run measured nothing. That is precisely how h3-azimchord-01 failed; check it FIRST."
+    }
+  },
+  "slug": "h3-azimwall-01"
+}

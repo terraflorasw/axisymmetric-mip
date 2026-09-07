@@ -58,7 +58,18 @@ else
      echo $(( ${r:-0} + ${g:-0} + ${n:-0} ))' 2>/dev/null || echo unreachable)
   case "$BUSY" in
     0) ( cd "$D0" && bash rsync.sh ) | tail -1 | sed 's/^/  sync: /' ;;
-    unreachable) echo "  sync: skipped (instance unreachable)" ;;
+    # 🔴 UNREACHABLE IS A FAILURE, NOT A NOTE. This branch printed and
+    # CONTINUED, so the whole launch path ran against a host that was gone and
+    # still exited 0 — the caller cannot tell "launched" from "did nothing".
+    # 2026-09-03: exactly that happened; only an rsync error in the log gave it
+    # away. A launcher that cannot reach the host must FAIL, or a silent no-op
+    # looks like a run in flight (§8b: a rig is not done when it exits 0).
+    unreachable)
+       echo "  🔴 sync: INSTANCE UNREACHABLE — ${AMIP_HOST:-?}"
+       echo "     Nothing was synced and nothing will be launched."
+       echo "     If the instance was reclaimed, put the new address in"
+       echo "     ops/env.sh — one line, one place."
+       exit 3 ;;
     *) echo "  🔴 sync SKIPPED: $BUSY rig/mesh/rank process(es) running remotely."
        echo "     Overwriting files a running solve reads corrupts it."
        echo "     Wait, or re-run with NOSYNC=1 if you know it is safe." ;;

@@ -49,6 +49,7 @@ FALSIFICATION
          was MY MESH, not Palace, and the INSTRUMENT entry must be retracted.
 """
 import json
+import values
 import math
 import pathlib
 import subprocess
@@ -69,6 +70,12 @@ R_MM = 2.0
 N_MODES = 4                 # fewer than H3's 6: this asks CAN it, not what
 
 
+# 🔑 BOUND, not a literal. Value-neutral (still 1.5) — the point is that it
+# now has ONE source and carries its caveat: 1.5 is the COARSEST point of
+# the h3-betaconv series, where coupling.beta.loaded moves +16.4 % to sf 1.2.
+_SF = f'{values.get("mesh.size_factor.default", allow_tentative=True, role="default"):g}'
+
+
 def build(tag, a, L, ne, plasma_h):
     zlo, zhi = -Z_FRAC * L, Z_FRAC * L
     args = (list(GEO) + ["--radius", f"{a:.6f}", "--length", f"{L:.6f}",
@@ -76,7 +83,7 @@ def build(tag, a, L, ne, plasma_h):
                          "--plasma", f"{INNER_R},{R_MM},{zlo:.4f},{zhi:.4f}",
                          "--plasma-h", f"{plasma_h:.3f}"])
     r = subprocess.run([sys.executable, "geometry.py", "--out", f"{tag}.msh",
-                        "--size-factor", "1.5"] + args,
+                        "--size-factor", _SF] + args,
                        capture_output=True, text=True)
     if r.returncode or not pathlib.Path(f"{tag}.msh").exists():
         raise RuntimeError(f"mesh failed: {(r.stdout + r.stderr)[-250:]}")

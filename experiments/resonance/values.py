@@ -19,7 +19,7 @@ across that boundary without anyone noticing.
       -> CONVENTIONS 7c has caught this ONE name four times.
 
 🔑 THE FIX IS NOT MORE CAREFUL COPYING. It is that a name alone must not resolve.
-`get("cavity.Q_ext")` is a REFUSAL; `get("cavity.Q_ext", solver="driven_dip",
+`get("cavity.Q_ext.cold")` is a REFUSAL; `get("cavity.Q_ext.cold", solver="driven_dip",
 mesh="vacuum_torch", ne=0.0)` is an answer. Ambiguity raises and PRINTS THE
 ALTERNATIVES, which is exactly the moment the mistake was being made.
 
@@ -31,8 +31,8 @@ Same instinct each time, re-implemented each time, covering one value each.
 
 USAGE
     from values import get, entries, describe
-    q = get("cavity.Q_ext", solver="eigen_pair", mesh="vacuum_torch", ne=0.0)
-    describe("cavity.Q_ext")        # every recorded context, for a human
+    q = get("cavity.Q_ext.cold", solver="eigen_pair", mesh="vacuum_torch", ne=0.0)
+    describe("cavity.Q_ext.cold")        # every recorded context, for a human
 """
 import json
 import pathlib
@@ -126,6 +126,31 @@ def get(name, allow_tentative=False, store=None, **ctx):
     have an answer, and silently getting one is how 7aq happened.
     """
     rows = entries(name, allow_tentative=allow_tentative, store=store)
+
+    # 🔴 THE STORE CANNOT OBJECT TO A COORDINATE THE CALLER NEVER NAMED.
+    # `get` already refuses an AMBIGUOUS context and an UNKNOWN one. The gap it
+    # could not see is an UNDER-SPECIFIED QUERY: `h3_driven` asked
+    # cavity.Q_ext.cold for (solver, mesh, ne) and got 9,117 — a CAP-loop value —
+    # while meshing a barrel with a 2.25 mm series gap, because it never
+    # mentioned mount or gap2. Nothing was ambiguous; the question was.
+    # ✅ So a quantity may DECLARE the coordinates that must be supplied. Asking
+    # without them is refused, which turns "I forgot to ask" into an error
+    # instead of a plausible number. (CONVENTIONS §7bx / §7by — three constants
+    # from other cavities reached live rigs this way.)
+    req = []
+    for r in rows:
+        for k in r.get("required_context", []):
+            if k not in req:
+                req.append(k)
+    missing = [k for k in req if k not in ctx]
+    if missing:
+        raise Unknown(
+            f"'{name}' requires context {req}; missing {missing}.\n"
+            f"  🔑 These coordinates are MANDATORY because the recorded values "
+            f"differ along them — asking without one returns another "
+            f"configuration's number and nothing errors.\n"
+            f"  recorded:\n" + "\n".join(_fmt(r) for r in rows))
+
     hit = [r for r in rows
            if all(r.get("context", {}).get(k) == v for k, v in ctx.items())]
     if not hit:
@@ -166,7 +191,7 @@ def get(name, allow_tentative=False, store=None, **ctx):
 #     cavity.f0.cold.ghz      unit "GHz"     ✅ agree
 #     cavity.f0.cold.mhz      unit "GHz"     🔴 caught
 #     cavity.f0.cold          unit "GHz"     🔴 caught — dimensional, unmarked
-#     cavity.Q_ext            unit "1"       ✅ dimensionless: no suffix
+#     cavity.Q_ext.cold            unit "1"       ✅ dimensionless: no suffix
 UNIT_SUFFIX = {
     "GHz": "ghz", "MHz": "mhz", "kHz": "khz", "Hz": "hz",
     "S/m": "s_per_m", "K": "k", "W": "w", "A": "a", "V": "v",

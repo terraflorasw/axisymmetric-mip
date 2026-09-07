@@ -1,0 +1,219 @@
+{
+  "_meta": {
+    "purpose": "Machine-readable retraction registry. A retracted VALUE is listed here ONCE; audit_stale.py then finds every document that still quotes it without a supersession stamp. This is what makes 'invalidate and forward-reference' checkable instead of a discipline nobody can verify.",
+    "why": "User, 2026-09-04: 'I'm still worried about stale entries that don't follow invalidate, forward-reference. However, checking for this would require visiting each entry... An O(n^2) process.' It is O(n^2) only if entries are compared with EACH OTHER. Compared against ONE registry it is O(n), and retractions are rare.",
+    "adding_one": "Add the value, what it was, why it died, and what replaces it. Then run audit_stale.py \u2014 it will list every place that still asserts it.",
+    "stamp_markers": [
+      "SUPERSEDED",
+      "RETRACT",
+      "DO NOT QUOTE",
+      "VOID",
+      "stale",
+      "no longer",
+      "was WRONG",
+      "~~",
+      "unsupported",
+      "correction",
+      "invalid",
+      "retracted",
+      "was wrong",
+      "not a band",
+      "do not",
+      "wrongly",
+      "circular",
+      "low confidence",
+      "impossible",
+      "pre-restoration",
+      "vacuum torch",
+      "anchored density",
+      "in doubt",
+      "premise"
+    ],
+    "seeding": "\ud83d\udd34 SEED THIS FROM KNOWN.md \u00a7 NOT ESTABLISHED, not from memory. The first version was written from what I remembered of one week and MISSED the oldest and most damaging entry: coupling.beta is not mesh-converged. A registry built from recollection inherits recollection's blind spots.",
+    "naming": "\ud83d\udd11 EVERY quantity here carries its STATE. coupling.beta.cold and coupling.beta.loaded differ by ~450x and sit on opposite coupling branches; an unqualified 'coupling.beta' names neither. Same rule as cavity.Q_ext.cold (CONVENTIONS \u00a77.1)."
+  },
+  "retractions": [
+    {
+      "id": "qext-loaded-circular",
+      "values": [
+        "260",
+        "264",
+        "268"
+      ],
+      "quantity": "cavity.Q_ext.loaded",
+      "was": "Q_ext.loaded on the vacuum cavity, derived as Q0/beta from a Q0 computed with the cap-loop constant Q_EXT_MEASURED=9231",
+      "why": "circular: Q0 was itself derived from an assumed Q_ext",
+      "superseded_by": "342 / 343 / 345 (vacuum), read from Q0_if_overcoupled",
+      "pointer": "NEXT.md \u00a7 RETRACTION \u2014 h3-gap2load-01's Q0 AND Q_ext COLUMNS WERE WRONG"
+    },
+    {
+      "id": "azimload-impossible-q0",
+      "values": [
+        "70,353",
+        "70353"
+      ],
+      "quantity": "cavity.Q0.cold",
+      "was": "cold Q0 for the azimuthal loop in h3-azimload-01",
+      "why": "ABOVE the bare cavity (43,523) \u2014 adding a lossy loop cannot raise Q0. Physically impossible.",
+      "superseded_by": "14,152",
+      "pointer": "Q_LEDGER.md \u00a7 SUPERSEDED / DO NOT QUOTE"
+    },
+    {
+      "id": "qext-loaded-shallow-cap",
+      "values": [
+        "8,150",
+        "8,221",
+        "8,162"
+      ],
+      "quantity": "cavity.Q_ext.loaded",
+      "was": "loaded Q_ext for the plain 11x8 cap loop from h3-driven-anchor-01",
+      "why": "the dip is -0.22 dB, below the rig's own SHALLOW_DB=0.30; beta and anything derived from it are LOW CONFIDENCE",
+      "superseded_by": "not measured. Q0.loaded (108.3/104.6/99.6) IS sound because beta<<1 makes Q0~Q_L.",
+      "pointer": "NEXT.md \u00a7 h3-driven-anchor-01 DOES NOT ALREADY ANSWER IT"
+    },
+    {
+      "id": "eta-cross-cavity",
+      "values": [
+        "0.9985",
+        "0.9986"
+      ],
+      "quantity": "eta",
+      "was": "eta reported by h3-gap2load-02 on the design cavity",
+      "why": "computed against a VACUUM CAP-LOOP EIGEN reference while meshing a sapphire barrel \u2014 cross-solver AND cross-cavity. The ETA_VALID suppression flag was set and never read.",
+      "superseded_by": "suppressed; no valid eta reference exists for this geometry",
+      "pointer": "CONVENTIONS \u00a77.4 (a guard must GATE, not announce) / INCIDENTS 7by"
+    },
+    {
+      "id": "coupling-series-as-design",
+      "values": [
+        "8,716",
+        "720",
+        "322"
+      ],
+      "quantity": "cavity.Q_ext.cold",
+      "was": "the series-gap coupling lever, quoted as DESIGN-cavity numbers",
+      "why": "all measured with a VACUUM torch, before the torch restoration of 2026-08-26. Valid for the vacuum cavity; NOT design numbers. \u26a0\ufe0f AND THE COUPLER WAS ALUMINIUM. The sweep ran 2026-08-25; TAG_LOOP=92 (2026-08-27) separated the loop's surface as COPPER 5.8e7 S/m \u2014 before it, the wire was swept into TAG_WALL and modelled as the wall's ALUMINIUM 3.5e7, its dissipation indistinguishable from the cavity's. So these Q_ext values describe a differently-lossy coupler as well as a different cavity.",
+      "superseded_by": "design cavity: 253 cold / 305 loaded at gap2=2.25 (one gap only; the sweep has never been run on the design cavity)",
+      "pointer": "NEXT.md \u00a7 THE TWO RIGS NOW MESH DIFFERENT CAVITIES",
+      "note": "These values remain CORRECT in their own context. Flagged only where quoted as design-cavity or as a general property. \ud83d\udd11 gap2 = 2.25 mm was SELECTED from this sweep on a minimax cold-vs-loaded criterion \u2014 it did not carry over from another coupler. But it was the LARGEST gap swept (an endpoint, not an interior optimum), and every input to that selection has since moved. See ret:minimax-q0-105."
+    },
+    {
+      "id": "qext-state-independent",
+      "values": [
+        "state-independent",
+        "cold, geometric"
+      ],
+      "quantity": "cavity.Q_ext.loaded",
+      "was": "the claim that external Q does not depend on cavity state",
+      "why": "demonstrated on ONE coupler compared with itself (+21%). h3_loopq's own docstring already put load dependence at ~9%. The only cross-coupler test disputes it.",
+      "superseded_by": "UNSUPPORTED. Settled by: azimuthal, loaded, design cavity, with a real Q_L.",
+      "pointer": "NEXT.md \u00a7 Q_ext IS GEOMETRIC IS UNSUPPORTED WHEN LOADED"
+    },
+    {
+      "id": "operating-point-79e18",
+      "values": [
+        "the operating point",
+        "THE OPERATING POINT"
+      ],
+      "quantity": "plasma.n_e",
+      "was": "7.9e18 described as the operating point",
+      "why": "it is the MICAP-ANCHORED density (midpoint of 5220-5270 K, a temperature nobody measured, on a different instrument, sampled at an MS cone). The fork between ~3e16 and high density is UNDECIDED and is a plasma question.",
+      "superseded_by": "call it the anchored density; the operating density is undecided",
+      "pointer": "NEXT.md \u00a7 THE OPERATING POINT AND THE MISSING STATE SUFFIXES"
+    },
+    {
+      "id": "beta-not-mesh-converged",
+      "values": [
+        "0.2476",
+        "0.2586",
+        "0.2371",
+        "0.3124",
+        "0.3278",
+        "0.2976"
+      ],
+      "quantity": "coupling.beta.loaded",
+      "was": "coupling.beta quoted as a measured coupling coefficient",
+      "why": "NOT MESH-CONVERGED. 2026-08-23: beta moved 43.1% for a 1.25x linear refinement (0.4081 -> 0.2320) and was still falling. Q0 = Q_L(1+beta) moved 0.12% over the same refinement \u2014 beta and Q_L COMPENSATE, so Q0 is stable and beta is not. Q_ext = Q0/beta inherits beta's instability in full. All 2026-09-03/04 runs used size_factor 1.5, the COARSEST point of the declared series. \u26a0\ufe0f THE WARNING ITSELF IS UNDERSPECIFIED: it does not say COLD or LOADED, and beta.cold (112, overcoupled) and beta.loaded (0.25, undercoupled) are not the same quantity. Its figures (0.4081 -> 0.2320) appear in ONE line of OPTIMIZER.md with no slug and no artefact, and predate branch resolution (h3_driven hardcoded the UNDERCOUPLED root until 2026-08-24), so they are probably the wrong root of a cold overcoupled case \u2014 on the other branch the same pair is a 76% move, not 43%. Treat 'beta is not converged' as the claim; do NOT quote 43%.",
+      "superseded_by": "MEASURED at FOUR resolutions on the design cavity (barrel mount, gap2 2.25 mm, loop 11x8, plasma.n_e 7.9e18, driven): coupling.beta.loaded = 0.2476 (sf 1.5) / 0.2882 (1.2) / 0.3007 (1.0) / 0.3264 (0.8). \ud83d\udd34 STILL NOT CONVERGED, and the 2026-09-04 reading of it was too optimistic: the step is NON-MONOTONE (+16.41%, +4.35%, +8.56%) \u2014 the LAST refinement moved beta about twice as far as the one before, so 'still moving 4.3% at the finest resolution' understated it. cavity.Q_ext.loaded tracks it: 305.3 / 260.1 / 249.3 / 227.6 (-8.7% on the last step). \u2705 cavity.Q0.loaded is STABLE TO 0.88% across the whole series (75.58 / 74.95 / 74.97 / 74.31), confirming that beta and Q_L compensate and that Q0 is the trustworthy quantity here.",
+      "pointer": "KNOWN.md \u00a7 NOT ESTABLISHED / OPTIMIZER.md \u00a71 search box",
+      "note": "The original '43% for a 1.25x refinement' was ONE step, underspecified in state and branch, with no artefact. Measured, the first step is +16.4% and the second +4.3%. beta was badly wrong at 1.5 \u2014 that stands \u2014 but 'unusable at any resolution' does not. \u26a0\ufe0f 2026-09-05: a FOURTH point (sf 0.8, 631,835 tets) did not settle it. Quote coupling.beta.loaded as ~0.33 AND FALLING, or quote cavity.Q0.loaded instead. The sf=1.5 values remain retracted; they are now known to be ~24% below the sf=0.8 value."
+    },
+    {
+      "id": "minimax-q0-105",
+      "values": [
+        "Q\u2080=105",
+        "Q0=105",
+        "Q_ext = 105",
+        "105"
+      ],
+      "quantity": "cavity.Q0.loaded",
+      "was": "the loaded Q0 assumed by the coupler minimax table (VSWR @ Q0=105, and the beta=1 row's Q_ext=105) that selected gap2 = 2.25 mm",
+      "why": "MEASURED cavity.Q0.loaded is 74.31 and stable to 0.88% across the sf 1.5->0.8 series (75.58/74.95/74.97/74.31) on the DESIGN cavity with the COPPER loop. 105 is ~41% high, so coupling.beta and VSWR are wrong at EVERY gap in that table, and the match target is Q_ext ~ 74, not 105. The minimax verdict rests on the shifted columns, so WHICH GAP WINS is itself unverified.",
+      "superseded_by": "cavity.Q0.loaded = 74.31 (design cavity, barrel loop 11x8 + gap2 2.25 mm, plasma.n_e 7.9e18, driven, sf 0.8) \u2014 Q_LEDGER.md",
+      "pointer": "Q_LEDGER.md \u00a7 THE gap2 = 2.25 BASIS IS STALE",
+      "note": "\u26a0\ufe0f The MINIMAX REASONING stands and is important: one Q_ext serves two states whose Q0 differ by ~265x, so chasing beta=1 loaded costs the ignition power (556 W -> 15 W cold). Only the NUMBERS that picked the gap are stale."
+    },
+    {
+      "id": "azimload02-beta-no-resonance",
+      "values": [
+        "0.2053",
+        "0.20531",
+        "0.2053118118301483"
+      ],
+      "quantity": "coupling.beta.loaded",
+      "was": "coupling.beta.loaded = 0.2053 for the AZIMUTHAL coupler at f0 = 2.4474 GHz, design cavity, plasma.n_e 7.9e18 (h3-azimload-02)",
+      "why": "THERE IS NO RESONANCE AT 2.4474 GHz IN THAT SWEEP. |S11| is a monotonic slope from -2.73 dB at 2.30 GHz to -5.25 dB at 2.58; the 'local minimum' at 2.4474 is -3.618 dB with its 2.46 GHz neighbour LOWER at -3.623 \u2014 ripple, not a dip. Decisively, the PHASE moves 0.4 deg over 20 MHz there, where a Q_L~56 resonance would rotate ~180 deg across its linewidth. beta was taken from a dip depth that is not a resonance, so it is not a coupling coefficient. The only genuine in-band feature is 2.6024 GHz at -12.388 dB.",
+      "superseded_by": "NOT MEASURED. \u26a0\ufe0f Possibly NOT MEASURABLE at this density: h3-azimne-01 recorded Q_L = 4 and W/W_peak = 0.15% at 7.9e18, i.e. a ~600 MHz linewidth \u2014 wider than the sweep band, which IS a monotonic slope with no feature. The mode may be absorbed out of existence at 7.9e18.",
+      "pointer": "Q_LEDGER.md \u00a7 THE AZIMUTHAL LOADED CASE HAS NO RESONANCE",
+      "note": "\ud83d\udd11 The earlier diagnosis \u2014 'the fit failed, widen the band or use a complex-S11 fit' \u2014 was WRONG and is retracted with it. The band is fine and the PROM converged (4.83e-04). There was nothing there to fit."
+    },
+    {
+      "id": "three-x-more-coupling",
+      "values": [
+        "3.06x",
+        "3.06\u00d7",
+        "3x more coupling",
+        "Q_ext ~ 75",
+        "224.9"
+      ],
+      "quantity": "cavity.Q_ext.loaded",
+      "was": "the target that cavity.Q_ext.loaded must fall from ~228 to ~75 \u2014 '3.06x more coupling' \u2014 to reach critical coupling",
+      "why": "DERIVED AT THE WRONG OPERATING POINT. It assumed plasma.n_e 7.9e18 (sigma 2.175). h3-q0map-01/-02 measured power INTO THE ELECTRONS across twelve states: 3.8% at that sigma versus 82.6% at sigma ~0.02. Matching at sigma 2.175 buys a match at the one state the design should not operate in. The plain barrel loop with NO series gap already sits at VSWR 1.63 and 82.6% at the optimum.",
+      "superseded_by": "no coupling target until the operating sigma is chosen. Q_LEDGER.md \u00a7 POWER INTO THE ELECTRON CLOUD gives cavity.Q_ext.loaded for critical coupling at ANY state; the plain loop's 8,735 already peaks at 82.6%.",
+      "pointer": "Q_LEDGER.md \u00a7 POWER INTO THE ELECTRON CLOUD \u2014 THE DESIGN CURVE",
+      "note": "\u26a0\ufe0f The ARITHMETIC was right and remains right AT sigma 2.175. Only its status as a design target is withdrawn. Same shape as ret:minimax-q0-105: sound reasoning on an operating point nobody had established."
+    },
+    {
+      "id": "azimuthal-driven-pedestal",
+      "values": [
+        "41,633",
+        "18,206",
+        "8,780 vs 41,633",
+        "4.7x weaker",
+        "69.6%",
+        "93.5 %"
+      ],
+      "quantity": "cavity.Q_ext.loaded",
+      "was": "every azimuthal DRIVEN number from h3-azimmap-01: Q_ext 41,633, cold Q0 18,206, the 4.7x weaker-coupling claim, the 93.5% Q_ext drift (reported as F2 firing), and the predicted 69.6% power delivery \ud83d\udd34 WIDENED 2026-09-07: this is NOT confined to the off-resonance baseline. The power balance fails ON RESONANCE too (only 23% of the claimed absorption exists), so the DIP DEPTH is independently wrong and every quantity read off it \u2014 Q_L, coupling.beta, and each Q_ext/Q0 derived from them \u2014 is void, not merely offset by a pedestal.",
+      "why": "THE AZIMUTHAL S11 SITS ON A 44% BROADBAND ABSORPTION PEDESTAL THAT CANNOT BE PHYSICAL. Measured baseline -2.40 dB WITH NO PLASMA (sigma=0, vacuum) against the barrel's -0.00 dB. A closed vacuum cavity with copper and aluminium surfaces cannot absorb 44% of incident power at every frequency. Conductor loss accounts for 0.46% of what is needed (arc resistance ~33 mOhm vs the ~7 Ohm implied). The solved Boundaries are IDENTICAL to the barrel's \u2014 same attribute 91, R=50, same materials, same Direction \u2014 so it is the MESH GEOMETRY (port face or loop), not the configuration. Q_L comes from a 3 dB walk on a pedestal, so every Q_ext = Q_L(1+beta)/beta inherits it. \u26a0\ufe0f beta itself is SOUND: the circle fit agrees with the rig to 0.15% in both arms. \ud83d\udd34 2026-09-07, MEASURED, and it overturns the mesh-error explanation: Palace SurfaceFlux Type 'Power' on the wall, port and loop shows the azimuthal model dissipates 0.4% of the claimed absorption off resonance and 23% on it, while the BARREL closes to 97% on resonance and 89% off. NOTHING IS ABSORBING. The |S11| itself is wrong. \u26a0\ufe0f The error indicator being 22x the barrel's, and the pedestal falling under refinement, are CORRELATION \u2014 refinement changes how wrong the port-face integration is, not how much power is lost, because none is.",
+      "superseded_by": "CAUSE IDENTIFIED: the azimuthal LUMPED PORT FACE IS NOT FLAT. The gap faces are planes at +-psi, so the port face spanning them is an annular SECTOR, and Palace's lumped port requires a flat element ('bounding box discovered length should match projected length'). geometry.py has documented this as 'the open problem' since the azimuthal loop was built. A lumped port on a non-flat face integrates the wrong voltage and current, so |S11| is wrong WITH NO POWER IMBALANCE TO NOTICE. The barrel's gap is a planar slot in a straight crossbar and is unaffected. \ud83d\udd34 STILL NOTHING QUOTABLE from the azimuthal driven arm until the port face is fixed.",
+      "pointer": "Q_LEDGER.md \u00a7 THE POWER BALANCE CLOSES ON THE BARREL AND FAILS ON THE AZIMUTHAL (cause); \u00a7 THE AZIMUTHAL ARM IS NOT MEASURED",
+      "note": "\ud83d\udd11 THREE AZIMUTHAL DRIVEN RUNS, THREE ANOMALIES: h3-azimload-01's Q0 = 70,353 failed the identity check as physically impossible; h3-azimload-02 found NO resonance (ret:azimload02-beta-no-resonance); h3-azimmap-01 sits on this pedestal. Treated as three separate difficulties for weeks. They are one defect. \u26a0\ufe0f The BARREL maps are UNAFFECTED \u2014 baseline 0.00 dB, no pedestal. \ud83d\udd34 2026-09-07 \u2014 (a) IS WITHDRAWN. I ruled out the PORT FACE because the LumpedPort CONFIGURATION is identical to the barrel's (same R, same Direction). That reasoning was wrong: the defect is in the MESH FACE the port is attached to, which config diffing cannot see, and the port face is now the identified cause. Do not repeat the exclusion. Still ruled out: (b) a DEAD ARC-REFINEMENT BRANCH \u2014 the field does fire, p['loop_azim'] is set at geometry.py:455 and read at :1778, both inside build(); it merely looks dead because h3_driven.build_mesh discards the mesher's stdout (capture_output=True); (c) THE EIGEN SIDESTEP this entry recommended \u2014 h3-eigencheck-02 STALLED, bit-identical NLEPS residual 3.547620e-08 across 80 iterations with Armijo backtracks=9 every iteration, which is the SAME ill-conditioning in a second solver. \u26a0\ufe0f An azimuthal loop is not intrinsically broken: e0k2-azim-00 runs one in the E0 instrument cavity at 35,738 tets and reads -0.011 dB. It is this loop INSIDE THE DESIGN CAVITY, and 10x the elements makes it worse, not better."
+    },
+    {
+      "id": "azimuthal-arc-chords",
+      "values": [
+        "arc_chords",
+        "7 chords",
+        "arc_chords: 7",
+        "chord count"
+      ],
+      "quantity": "geometry.arc_chords",
+      "was": "every azimuthal mesh sidecar and run record carries `arc_chords` (7 for all of them), and both h3_driven and h3_loopq retried over (7, 3, 9, 5, 11) recording 'what worked'",
+      "why": "THE PARAMETER HAD NO CONSUMER. It was read from AMIP_ARC_CHORDS, stored in P, written to the sidecar and to the run record \u2014 and no geometry code ever used it. The arc is an OCC TORUS (occ.revolve, geometry.py:498); the polyline-chord construction the flag is named for was built in August 2026 and ABANDONED because Palace refused the mesh ('MFEM abort: STable3D::operator()'). MEASURED: h3-azimchord-01 asked for 11 chords and reproduced h3-azimmap-01's 7 to the TET (349,530) and to every digit of |S11| (-2.456 dB, err max 1.29e-1). So every retry re-meshed identical geometry and reported whichever value was tried first, and h3_loopq's 'measured table' of which counts mesh is measuring nothing.",
+      "superseded_by": "NOTHING \u2014 there is no chord count, because there are no chords. geometry.py now REFUSES AMIP_ARC_CHORDS and the retry loops are removed from both rigs. For the arc's resolution use size_factor or the new arc_ball_mm.",
+      "pointer": "INCIDENTS.md \u00a7 7cs; Q_LEDGER.md \u00a7 THE AZIMUTHAL PEDESTAL IS A DISCRETISATION ARTEFACT -> Step 1 tested nothing",
+      "note": "\u26a0\ufe0f READ AS NOISE, NOT AS GEOMETRY. A recorded `arc_chords` does not describe any mesh that was built. It does NOT invalidate the meshes themselves \u2014 they are all the torus construction \u2014 only the coordinate claimed for them. \ud83d\udd11 Distinct from ret:azimuthal-driven-pedestal, which is about the arc REFINEMENT field failing to span the wall gap; that one is real and is what h3-azimwall-01 tests."
+    }
+  ]
+}

@@ -4,7 +4,8 @@
 # instance address: ops/env.sh, overridable with $AMIP_HOST — SOURCED HERE,
 # like every sibling script. This one relied on inheriting the variable and
 # died with "unbound variable" the first time it was run standalone.
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/env.sh"
+HERE_OPS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$HERE_OPS/env.sh"
 set -euo pipefail
 RIG="${1:?usage: ops/remote.sh <rig.py> [ranks] [slug]}"
 RANKS="${2:-4}"
@@ -115,18 +116,78 @@ if [ "${_CODE%% *}" = "200" ]; then
 fi
 echo "  no pending notice (IMDS ${_CODE%% *})"
 
+# 🔴 ENV DOES NOT CROSS ssh BY ITSELF. This line hardcoded PALACE_RANKS and RUN,
+# so any OTHER variable the caller exported was silently dropped — the rig ran
+# with its config default and said nothing, which is the failure shape this
+# programme keeps paying for (a guard that announces instead of gating; a value
+# that differs from what was asked for with no record of it).
+# ✅ Forward an EXPLICIT list, and PRINT what was forwarded so the launch banner
+# shows the run's actual settings, not the ones that were intended.
+FWD=""
+for v in AMIP_CASE_TIMEOUT_S AMIP_MAX_SAMPLES; do
+  if [ -n "${!v:-}" ]; then FWD="$FWD $v=${!v}"; echo "  forwarding $v=${!v}"; fi
+done
+[ -z "$FWD" ] && echo "  no env overrides (rig uses its config)"
+
 echo "== launch (detached, journalled) =="
+# 🔴 `set -e` + `timeout 60 ssh` = THE EXEC BELOW NEVER RUNS. 2026-09-05: the
+# launch ssh sometimes does not return (it holds the channel even though the job
+# is detached and the remote `echo` has already printed). timeout kills it, 124
+# meets `set -euo pipefail`, and the script DIES RIGHT HERE — after launching,
+# before arming the watch. Both Monitor-hosted launches that day stopped at
+# exactly "launched ... at 64 ranks" with rc=124 and watched nothing.
+# ⚠️ So the "launch and watch are ONE operation" guarantee was resting on an ssh
+# that sometimes does not come back. A guarantee with a hole is worse than none:
+# it stops anyone looking for the hole.
+# ✅ The launch ssh's exit code is NOT evidence either way. Ask the instance
+# whether the rig is running — verify with the CONSUMER, not with the messenger.
+set +e
 timeout 60 ssh -i "$K" $H \
-  "cd $R && nohup bash -c 'source /opt/amip/env.sh && PALACE_RANKS=$RANKS RUN=$TAG python3 -u $RIG $SLUG_ARG > $TAG.log 2>&1; echo EXIT=\$? >> $TAG.log' >/dev/null 2>&1 & sleep 3; echo '  launched $RIG at $RANKS ranks'"
+  "cd $R && nohup bash -c 'source /opt/amip/env.sh && PALACE_RANKS=$RANKS RUN=$TAG$FWD python3 -u $RIG $SLUG_ARG > $TAG.log 2>&1; echo EXIT=\$? >> $TAG.log' >/dev/null 2>&1 & sleep 3; echo '  launched $RIG at $RANKS ranks'"
+LAUNCH_RC=$?
+set -e
+if [ "$LAUNCH_RC" -ne 0 ]; then
+  echo "  ⚠️  launch ssh returned $LAUNCH_RC (124 = it held the channel past the"
+  echo "      timeout). This is NOT evidence the launch failed — verifying."
+fi
+# 🔑 ps -C python3 + grep, NOT pgrep -f: pgrep's own argv contains the rig name
+# and it matches ITSELF (§7cf, twice). `grep` is not a python3 process, so it
+# cannot appear in `ps -C python3` output.
+sleep 2
+UP=$(timeout 30 ssh -i "$K" $H \
+     "ps -C python3 -o args= 2>/dev/null | grep -c -- '-u $RIG'" 2>/dev/null | tr -dc '0-9')
+if [ -z "$UP" ] || [ "$UP" -lt 1 ]; then
+  echo "  🔴 THE RIG IS NOT RUNNING on the instance. The launch did not take."
+  echo "     Nothing is watching because there is nothing to watch."
+  exit 5
+fi
+echo "  ✅ verified: $UP rig process(es) live on the instance"
+
 # 🔴 THIS SAID `watch: ops/go ops/status.sh` UNTIL 2026-08-27. status.sh is a
 # SNAPSHOT — it answers "is anything running right now", not "tell me when a
 # case lands". Pointing at it here is how launches ended up POLLED instead of
 # watched, which CLAUDE.md forbids for exactly this reason. Name the watch.
-if [ -n "$SLUG_ARG" ]; then
-  echo "  watch:  ops/watch.sh $SLUG        <- do this, and do NOT pipe it"
-  echo "          progress is mirrored to $SLUG.watch.log regardless"
+# 🔴 LAUNCHING AND WATCHING ARE ONE OPERATION. Until 2026-09-05 this printed the
+# watch command as ADVICE — and advice is not a guard. Across two days a chained
+# launch left the next run unwatched TWICE, and every launch got a hand-rolled
+# watcher instead of ops/watch.sh. Both were possible only because "now arm a
+# watch" was a SEPARATE step someone had to remember.
+# ✅ This no longer returns after launching — it EXECS INTO THE WATCH. There is
+# no window in which a run is live and unwatched, and nothing left to substitute
+# an ad-hoc loop for.
+# ⚠️ NOWATCH=1 for deliberate exceptions (a batch that watches per slug itself).
+# It SAYS SO LOUDLY rather than silently returning.
+if [ -z "$SLUG_ARG" ]; then
+  echo "  🔴 no slug — this launch cannot be watched BY NAME. Relaunch with one."
+  exit 4
+fi
+if [ "${NOWATCH:-0}" = "1" ]; then
+  echo "  ⚠️  NOWATCH=1 — this run is LIVE AND UNWATCHED. Arm one yourself:"
+  echo "        ops/watch.sh $SLUG"
 else
-  echo "  🔴 no slug — there is nothing to watch BY NAME. Relaunch with one."
+  echo "  == watching (launch and watch are ONE operation) =="
+  echo "     mirrored to $SLUG.watch.log regardless of what the caller does"
+  exec "$HERE_OPS/watch.sh" "$SLUG"
 fi
 echo "  snapshot: ops/go ops/status.sh   (is anything running — not a watch)"
 echo "  fetch:  ops/go ops/fetch.sh"

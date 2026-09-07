@@ -447,7 +447,7 @@ if __name__ == "__main__":
 #    - LTE is assumed. Non-LTE would put n_e ABOVE Saha-at-T_gas, so this is a
 #      LOWER BOUND on n_e.
 #    - Full N2 dissociation is assumed for the heavy density (fair above ~5000 K).
-#    - SIGMA_M is an order-of-magnitude cross-section, NOT a measured value; nu_m
+#    - MOMENTUM_CROSS_SECTION_M2 is an order-of-magnitude value, NOT measured; nu_m
 #      inherits its uncertainty directly. Stated, not hidden.
 #    ✅ Power does NOT enter: in an atmospheric plasma more power makes a BIGGER
 #    plasma, not a hotter one, so the paper's 1450 W vs this programme's 1 kW is
@@ -458,16 +458,22 @@ T_GAS_SOURCE = ("Kuonen/Hattendorf/Gunther JAAS 39(5) 2024 Table 2, "
                 "pressure-reduction method, N2 MICAP")
 E_ION_N_EV = 14.53                      # atomic nitrogen
 G_ION, G_NEUTRAL = 9.0, 4.0             # N+ (3P) / N (4S)
-SIGMA_M = 1.0e-19                       # m^2, momentum transfer — ORDER ONLY
+# 🔴 NOT A CONDUCTIVITY. Three quantities in this repo are written sigma:
+# this momentum-transfer CROSS-SECTION (m^2), the wall/loop CONDUCTIVITY
+# (S/m, canonical `wall.conductivity.s_per_m`), and a STANDARD DEVIATION
+# (MHz, evaluate.py). The name says which. CONVENTIONS §0 / NAMING.md.
+MOMENTUM_CROSS_SECTION_M2 = 1.0e-19     # m^2, momentum transfer — ORDER ONLY
 
 
-def plasma_state(T_gas, pressure=101325.0, sigma_m=SIGMA_M):
+def plasma_state(T_gas, pressure=101325.0,
+                 cross_section_m2=MOMENTUM_CROSS_SECTION_M2):
     """(n_e, nu_m, n_heavy) from ONE temperature. See the note above.
 
     n_e   — LTE Saha for atomic N, quasineutral, against the heavy density.
-    nu_m  — n_heavy * sigma_m * <v_e>, with <v_e> the electron thermal speed
+    nu_m  — n_heavy * cross_section_m2 * <v_e>, <v_e> the electron thermal speed
             at T_e = T_gas (LTE).
-    ⚠️ nu_m carries SIGMA_M's order-of-magnitude uncertainty. n_e does not.
+    ⚠️ nu_m carries MOMENTUM_CROSS_SECTION_M2's order-of-magnitude
+    uncertainty. n_e does not.
     """
     kB, me, h, eV = 1.380649e-23, 9.1093837015e-31, 6.62607015e-34, 1.602176634e-19
     n_heavy = pressure / (kB * T_gas)
@@ -476,4 +482,4 @@ def plasma_state(T_gas, pressure=101325.0, sigma_m=SIGMA_M):
          * math.exp(-E_ION_N_EV * eV / (kB * T_gas)))
     n_e = (-A + math.sqrt(A * A + 4.0 * A * n_heavy)) / 2.0
     v_e = math.sqrt(8.0 * kB * T_gas / (math.pi * me))
-    return n_e, n_heavy * sigma_m * v_e, n_heavy
+    return n_e, n_heavy * cross_section_m2 * v_e, n_heavy

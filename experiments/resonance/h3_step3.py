@@ -79,6 +79,11 @@ from azimuthal import order as az_order
 from e0k2_azim import sector_bins, read_sector_energy
 from h3_ladder import purity, PROBE_PHI_DEG, PROBE_R_FRAC
 
+# 🔑 BOUND, not a literal. Value-neutral (still 1.0 mm). Skin depth is
+# 6.89 mm, far larger than any annulus here, so the field varies slowly
+# across it — see mesh.plasma_h.default for the full provenance.
+_PH = f'{values.get("mesh.plasma_h.default", allow_tentative=True, role="default"):.3f}'
+
 TAG = "h3_step3"
 
 # 🔴 IDENTICAL FOR BOTH STEPS. The comparison is meaningless otherwise.
@@ -122,6 +127,20 @@ PURITY_SPREAD_MAX = 0.10           # F4; deliberately loose — see below
 # advance. Report the number; the verdict stays provisional either way.
 
 
+# 🔴 THE TORCH WAS HARDCODED HERE TOO. Same defect as h3_driven:316, found
+# 2026-09-04 by `preflight r_cli_literal` once it could see CLI-arg literals:
+# this rig could ONLY mesh a VACUUM torch and could not reach the design cavity.
+# THE TORCH RESTORATION LANDED 2026-08-26; four rigs never picked it up.
+# ✅ Bound from baselines, overridable per run so the pre-restoration series
+# stays reproducible: set "torch_material": [1.0, 3.5e-05] in the config.
+# ⚠️ These rigs take no run-config parameters, so there is no per-run override
+# here — unlike h3_driven, where `torch_material` is a config key. Changing the
+# torch for one of these means giving it a config, not editing this line.
+_TM = [values.get("torch.sapphire.permittivity"),
+       values.get("torch.sapphire.loss_tangent")]
+_TM_ARG = f"{float(_TM[0]):g},{float(_TM[1]):g}"
+
+
 def save(out):
     p = pathlib.Path(f"{TAG}.result.json")
     t = p.with_suffix(p.suffix + f".tmp{os.getpid()}")
@@ -145,9 +164,9 @@ def build(tag, style, a, L, rec):
         extra = []
     else:
         base = [x for x in GEO_DESIGN if x != "--no-torch"]
-        extra = ["--torch-material", "1.0,3.5e-05",
+        extra = ["--torch-material", _TM_ARG,
                  "--plasma", f"{RI},{RO},{zlo:.4f},{zhi:.4f}",
-                 "--plasma-h", "1.000"]
+                 "--plasma-h", _PH]
     args = (base + ["--radius", f"{a:.6f}", "--length", f"{L:.6f}",
                     "--sectors", str(SECTORS),
                     "--loop", f"{LOOP_LD},{LOOP_LW},{LOOP_RW},{LOOP_GAP}",

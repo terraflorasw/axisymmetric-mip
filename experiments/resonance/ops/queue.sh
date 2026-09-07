@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# sanctioned-watcher: launches a batch; defers to ops/watch.sh per slug
 # Run several rigs BACK TO BACK on the instance, unattended.
 #
 # 🔴 WHY THIS EXISTS. 2026-08-28: the instance stayed up from ~01:00 to 13:20

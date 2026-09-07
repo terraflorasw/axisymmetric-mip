@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# ⚠️ Palace's driven solver builds a PROM (reduced-order model) OFFLINE
+#    before it writes ANY frequency point. With a wave port (a 2D
+#    eigenproblem per sample) and the fine coax mesh, that offline phase
+#    ran past 40 min with port-S.csv still absent — which looks like a
+#    hang and is not one. Give it hours, and keep the band NARROW: the
+#    PROM's cost scales with the band it must represent, not with the
+#    number of output points.
 # Build the coax-fed azimuthal loop and run ONE driven sweep through its wave
 # port. The only untested link is whether Palace accepts a WavePort on the
 # annulus; everything upstream is verified (mouth found by area to 4 s.f.).
@@ -13,13 +20,13 @@ echo "MESH rc=$?"
 grep -aoE "COAX (HOLE|PORT|MOUTH|MESH):[^I]{0,95}|ERROR[^I]{0,150}" /tmp/C2.log | head -5
 python3 - <<'PY'
 import json, solveconf
-c, _m, d = solveconf.driven("/tmp/C2.msh", "coaxwp", (2.430, 2.450),
+c, _m, d = solveconf.driven("/tmp/C2.msh", "coaxwp", (2.434, 2.444),
                             step=1e-4, order=2)
 c["Problem"]["Output"] = "/tmp/coaxwp"; c["Model"]["Mesh"] = "/tmp/C2.msh"
 json.dump(c, open("/tmp/coaxwp.json", "w"))
 print("  WavePort:", json.dumps(c["Boundaries"].get("WavePort")))
 PY
-timeout 2400 palace -np 32 /tmp/coaxwp.json > /tmp/coaxwp.sol 2>&1
+timeout 10800 palace -np 32 /tmp/coaxwp.json > /tmp/coaxwp.sol 2>&1
 echo "PALACE rc=$?"
 # 🔴 WHOLE message — the diagnosis lives in the clause after the assertion
 grep -aA4 "Verification failed\|MFEM abort" /tmp/coaxwp.sol | head -8
