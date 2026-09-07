@@ -95,10 +95,148 @@ unknown ones** — which is right, and is not the same as it being correct.
 | | | blocked on |
 |---|---|---|
 | 1 | **T_gas as a function of gas flow** | 🔴 `../spectroscopy/` — turns the table above into a result or kills it |
-| 2 | **The required residence time** | 🔴 LOD is still not stated anywhere. Until it is, "equal residence to 20 slm" is the only reference available, and it is itself inherited |
+| 2 | **The required residence time** | ✅ **TARGET STATED 2026-09-07** (soil macro/micronutrients — `../spectroscopy/` § THE TARGET IS STATED), and the level is favourable: mg/L majors, ~5–50 µg/L for B/Mo, i.e. OES not MS. 🔴 **STILL BLOCKED on the transfer function** — a concentration requirement is not a residence-time requirement, and nothing maps one to the other. ~~LOD is still not stated anywhere.~~ Until it is, "equal residence to 20 slm" is the only reference available, and it is itself inherited |
 | 3 | Does a N₂ MIP sustain at 10–12 slm? | not asked |
-| 4 | Nitrogen generator duty/purity at each flow | not asked; the generator, not just the compressor, may set the floor |
+| 4 | Nitrogen generator duty/purity at each flow | ✅ **LARGELY ANSWERED 2026-09-07.** Purity is floored LOW by the sample's own water, so a standard-tier generator suffices — **4.1–5 bar output at 12 slm, STATED by the user**. The remaining number is air FAD at pressure. ⚠️ Breaks only if aerosol desolvation is adopted |
 | 5 | Is a Fassel bore right for N₂? | `../spectroscopy/` item 6 |
+
+## 🔴 SUPERSEDED SAME DAY — ~~ITEM 4 IS THE BINDING ONE~~ · the purity premise is withdrawn
+
+> 🔴 **SUPERSEDED 2026-09-07 by the user, hours after being written.**
+> **Why:** the section below is built on purity being a free variable that LOD
+> pushes UPWARD, making the air:N₂ ratio the binding cost. **The user states the
+> opposite requirement:** *"We actually don't need high purity nitrogen for this
+> application, because the samples will contain water anyway."*
+> ✅ **And the arithmetic supports it** — see § THE SAMPLE FLOORS THE PURITY SPEC.
+> **What survives:** the *shape* of the chain (purity → ratio → air demand) is
+> right, and the observation that the generator multiplies where the compressor
+> adds is right. **What is wrong is the direction**: purity is floored LOW by the
+> sample, so the ratio is small, the air demand is modest, and item 4 is **not**
+> the binding constraint. **Item 2 — residence time and LOD — is untouched and
+> remains the live one.**
+> ⚠️ **My inlet/outlet reading was also wrong**; corrected below.
+
+**The original entry follows, unedited, for provenance.**
+
+## 🔑 ITEM 4 — the generator multiplies, the compressor adds
+
+> **STATED, user 2026-09-07:** *"The compressor will make enough for sure, the
+> real question is the nitrogen generator."*
+
+✅ **This retires the pressure flag above as the live concern** and promotes item 4
+from "not asked" to the question that actually gates the flow target.
+
+🔑 **WHY IT IS A DIFFERENT WEIGHT CLASS FROM THE COMPRESSOR.** A compressor is
+sized in slm of *air*. A generator sits between them and its **air-to-nitrogen
+ratio rises steeply with purity** — so N₂ demand is not added to the air budget,
+it is **multiplied** by a factor the purity spec chooses. ⚠️ **ASSUMED, typical
+vendor behaviour, NOT a datasheet for any part we have selected:** membrane and
+PSA units run in the rough band of ~3:1 at modest purity to ~10:1 or worse as
+purity is pushed toward five nines.
+
+➡️ **Consequences, and they are the reason this is the floor:**
+- **Cutting 20 → 12 slm of N₂ saves the AIR ratio times that**, so the flow target
+  pays off superlinearly here and only linearly at the compressor. The
+  bench-vs-utility-room threshold is therefore a **generator** threshold that has
+  been attributed to the compressor.
+- **Generators do not modulate well.** They are sized for peak draw and buffered,
+  so a duty-cycle and receiver-volume question sits under the steady-state slm
+  number that the record has been quoting as if it were the whole spec.
+
+🔴 **AND ITEM 4 AND ITEM 2 ARE THE SAME MISSING STATEMENT.** Purity is not a free
+choice: residual O₂/H₂O put molecular background into the UV, and
+`LOD = 3*sigma_background / sensitivity`, so **the LOD target sets the purity spec
+which sets the generator ratio which sets the air demand.** The chain is:
+
+    target elements + detection limits  ->  background  ->  N2 purity
+      ->  generator air:N2 ratio  ->  compressor slm  ->  bench or utility room
+
+**Item 2 (required residence time) and item 4 (generator duty/purity) are both
+blocked on the SAME unstated thing** — `../spectroscopy/` item 2, *"target
+elements + detection limits — NOT STATED ANYWHERE."* 🔑 **That single statement
+now gates the bore AND the gas plant.** It is the highest-leverage unblocked
+item in this directory and it needs no solver.
+
+### ✅ THE SAMPLE FLOORS THE PURITY SPEC — so purity is CHEAP, not expensive
+
+> **STATED, user 2026-09-07:** *"We actually don't need high purity nitrogen for
+> this application, because the samples will contain water anyway."*
+
+✅ **DERIVED, and it puts a number on where the floor sits.** A nebulised aqueous
+sample delivers oxygen to the plasma no matter how pure the carrier gas is.
+1 mL/min of liquid water is **1.244 slm** of vapour; at ordinary concentric-
+nebuliser transport efficiency (1–5 %) the delivered fraction of a 12 slm total is:
+
+| uptake | transport | H₂O slm | as % of 12 slm |
+|---:|---:|---:|---:|
+| 0.4 mL/min | 1 % | 0.0050 | **0.041 %** |
+| 0.4 mL/min | 5 % | 0.0249 | 0.207 % |
+| 1.0 mL/min | 1 % | 0.0124 | 0.104 % |
+| 1.0 mL/min | 5 % | 0.0622 | **0.518 %** |
+
+Against a generator's own residual, counted as O atoms: 99.9 % N₂ → ~0.2 %,
+99.5 % → ~1 %, 99.999 % → ~0.002 %.
+
+🔑 **SO THE CROSSOVER IS AROUND 99.5–99.9 %.** Below it the generator dominates
+the oxygen budget; above it **the sample does, and further purity is spent on a
+contaminant the sample re-introduces anyway.** Five-nines nitrogen would be
+~100× below the sample's own floor. ➡️ **Standard-tier generator, low air:N₂
+ratio, small compressor** — the favourable branch of every trade above.
+
+⚠️ **THE ONE CONDITION THAT BREAKS IT: AEROSOL DESOLVATION.** Stripping the
+solvent before the plasma removes the floor and makes generator purity matter
+again. 🔴 **And that is not hypothetical — the programme's T_gas anchor is Kuonen
+2024, *"N₂ MICAP-MS with solution nebulization AND AEROSOL DESOLVATION"*.** If
+this instrument desolvates, this section does not apply. **Not decided anywhere.**
+
+⚠️ **And low purity is not free in the other direction:** O₂ oxidises a hot
+injector tip, and NO/OH bands raise the UV background that `LOD` is defined
+against. The claim here is that purity beyond the sample's own floor buys
+nothing — **not** that purity is irrelevant.
+
+### 🔑 THE SUPPLY-PRESSURE TIERS SPLIT ON A DECISION THAT WAS PARKED AS IRRELEVANT
+
+> **STATED, user 2026-09-07:** *"I'm seeing 4.1 to 5 bar for standard nitrogen
+> generators, then jumping to 7 bar for specialized mass spectrometers or
+> dual-gas systems."*
+
+🔴 **CORRECTION, same day: I read this as INLET air pressure. It is the
+GENERATOR OUTPUT.** User, 2026-09-07: *"That's 4.1 to 5 bar at the nitrogen
+generator output, 12 slm."* **That is the delivery spec to the torch, not the
+demand on the compressor** — a different quantity, and it makes the number far
+stronger than I gave it credit for.
+
+✅ **AND IT CLOSES THE BACK-PRESSURE FLAG COMPLETELY.** § IF THE ANSWER IS "NO"
+raised a thin-sheath-gap back-pressure worry. **4–5 bar of delivery against a
+torch needing order tens of millibar is ~100× margin.** The sheath gap is free to
+be as thin as the geometry wants. 🔴 **That flag is WITHDRAWN** — it was raised on
+a supply pressure nobody had stated, and the stated one dwarfs the requirement.
+
+🔴 **BUT THE TIER BOUNDARY IS MS-vs-OES, AND THAT DECISION IS PARKED.**
+`../spectroscopy/README.md` says *"MS-vs-OES does not enter — same plasma,
+different detector."* ✅ **True for the question it was written about** (required
+gas temperature). 🔴 **False for the gas plant**: the 7 bar tier is *defined* by
+MS and dual-gas. So a choice set aside as not mattering turns out to matter, for
+an unrelated reason — a formula quoted outside its domain.
+
+⚠️ **AND THE RECORD ALREADY LEANS ON THE MS SIDE WITHOUT HAVING CHOSEN IT.** The
+T_gas anchor is **MICAP-MS** (Kuonen 2024), explicitly *"the plasma AS SAMPLED
+THROUGH THE MS INTERFACE"*, and the 20 slm assumption came from MP-AES/MICAP
+practice. **Three inherited numbers, and the detector they were inherited from is
+formally undecided.**
+
+🔑 **SO IT IS THE SAME FORM-FACTOR ARGUMENT, ONE LEVEL UP THE SUPPLY CHAIN.**
+This directory already says a bore is a drawing change while a utility room
+*"is a change to what the product IS"*. **Crossing from the standard generator
+tier into the MS/dual-gas tier is a product-class boundary of the same kind** —
+and it is set by the same unstated LOD/purity spec that gates items 2 and 4.
+
+⚠️ **CROSS-LINK to `../ignition-options/STARTER-FLUID.md`, and it cuts both ways.**
+That document lists *"whether it gasifies"* as unestablished, noting *"Pure N₂ has
+no oxygen, but the DI flush does."* **Generator N₂ is not pure** — residual O₂ is
+exactly what would burn off an accumulated carbon deposit between runs. So a
+purity spec set only by spectroscopic background may be **over-specifying against
+a residual that the ignition route wants**. Neither side has been asked.
 
 ## Rules
 
@@ -142,6 +280,251 @@ re-run.
 | intermediate / auxiliary | **1.0** | pushes the plasma off the injector tip so it does not melt |
 | injector / nebuliser | **1.0** | carries the aerosol — **and the starter fluid** |
 | **total** | **~12** | |
+
+## 🔑 CAN THE STARTER FLUID BUY A NARROWER TORCH? — the constraint splits in two (2026-09-07)
+
+**Question, user 2026-09-07:** whether the starter-fluid route accommodates a
+narrower torch. ⚠️ **DERIVED arithmetic below; nothing here is measured.**
+
+✅ **The starter fluid does remove IGNITION as a bore constraint — but ignition
+was never the thing setting the bore.** On the carbon route the deposit is a
+volumetric absorber (skin depth 322 µm at σ = 1e3, still 3.2 mm at σ = 10,
+against a sub-micron film), so ignition no longer needs a breakdown field in the
+bore, at any diameter. The binding constraint was, and remains, **residence time
+→ LOD**.
+
+🔑 **AND THAT CONSTRAINT SPLITS INTO A PART THAT SURVIVES AND A PART THAT DOES
+NOT.** `KNOWN.md`'s residence table reproduces exactly as a flat **20 slm** through
+the analyte annulus over an implied **92 mm** length, **cold**:
+
+- 🔴 **~~The RATIO is robust~~ — WITHDRAWN 2026-09-07.** I argued `t = L·A/Q`
+  makes the 5.69× area ratio survive any flow or temperature correction.
+  **The arithmetic is fine and the mapping is wrong.** User: *"The resident
+  argument doesn't really hold, because the majority of Nitrogen goes toward the
+  cooling sheath regardless."* 🔑 **The 2–8.5 mm annulus is the PLASMA annulus
+  the EM model meshes. It is not the channel the ANALYTE occupies** — the sample
+  goes up the injector as a central channel at ~1 slm, while the sheath's 10 slm
+  flows outside the discharge doing a thermal job. **Narrowing the outer torch
+  need not change the analyte channel at all**, so it need not change residence
+  at all. The ratio holds only under the assumption being rejected: that the
+  analyte traverses the full annulus at the total flow.
+- 🔴 **The ABSOLUTE times (10.4 / 27.8 / 59.4 ms) do NOT.** Two large corrections
+  are missing and they push OPPOSITE ways:
+  1. **Wrong flow.** The table pushes all 20 slm through the analyte channel. In
+     the three-stream split the analyte path is the **injector's ~1 slm**; the
+     10 slm shell never enters it. Alone this makes residence ~20× LONGER.
+     (§ THE FLOW SPLIT already makes this point for the deposit.)
+  2. **Cold gas.** At discharge temperature the gas expands ~17×, so velocity
+     rises and residence falls by about that factor.
+
+➡️ **So "is 2–4 mm long enough?" is currently unanswerable, and not because it is
+hard** — because the absolute number has never been computed on the right flow at
+the right temperature, and because **the LOD target it must be judged against is
+still unstated** (`../spectroscopy/` item 2: *"target elements + detection limits
+— NOT STATED ANYWHERE"*). 🔴 **A bore cannot be chosen until that is stated.**
+
+## 🔎 PROPOSED — BRIDGE PALACE AND OpenFOAM (user, 2026-09-07). ASSESSED, NOT STARTED
+
+> **STATED, user 2026-09-07:** *"I think we can model it, by bridging Palace and
+> OpenFOAM."*
+
+✅ **PRIOR ART SEARCHED 2026-09-07: nothing in this repo.** Externally the
+approach is standard — coupled EM + CFD models of ICP/MIP torches are long
+published and validated against measured temperature profiles, **so an external
+anchor exists**, which is what `CLAUDE.md` requires before a new instrument
+licenses anything.
+
+🔑 **SPLIT IT. ONE DIRECTION IS TRACTABLE AND ANSWERS EVERY QUESTION ASKED; THE
+OTHER RUNS INTO A TRAP THIS PROGRAMME HAS ALREADY PAID FOR.**
+
+### ✅ ONE-WAY, Palace → OpenFOAM — this is the one to build
+
+Palace supplies volumetric power deposition and surface heat flux; OpenFOAM does
+the flow, conjugate heat transfer through the sapphire wall, and the three
+streams. **No feedback required, because n_e is anchored EXTERNALLY** (MICAP
+5220–5270 K) rather than being solved for.
+
+🔑 **THE HANDOFF QUANTITY IS ALREADY CALIBRATED, WHICH IS UNUSUAL.**
+`../resonance/KNOWN.md` § THE POWER BALANCE closes wall + port + loop to **97 %**
+of the port's claimed absorption, and § COUPLER DISSIPATION gives wall 547 mW and
+loop 4.97 mW per 1 W incident. **The interface between the two solvers is the one
+quantity this programme has most recently validated.**
+
+It answers, in order of what is currently blocking:
+1. **Wall temperature vs sheath flow** — the 12 slm question, and the sapphire
+   headroom claim above.
+2. **Injector tip temperature vs intermediate flow** — the standoff that has
+   never been analysed.
+3. **The analyte path and its residence** — replacing the withdrawn table with a
+   number that is about the analyte.
+4. **Sapphire vs quartz**, including the ignition transient, which is thermal
+   shock and therefore exactly a CHT problem.
+
+### 🔴 TWO-WAY, feeding T back into (eps, sigma) — do NOT start here
+
+- 🔴 **The `T -> n_e` step cannot use LTE Saha, and that is the whole difficulty.**
+  This directory ALREADY VOIDED a calculation for it (§ ALSO WITHDRAWN): *"It
+  used LTE Saha for n_e, which forces sigma to 3.5 S/m and kills the coupling by
+  construction"*, and the record holds that **n_e is kinetics-limited** — the
+  densities that matter are 4.8e16–1.2e18, one to two orders below equilibrium.
+  **A coupled loop closed through Saha reproduces a known-void result with more
+  machinery behind it.** Non-LTE needs a collisional-radiative or two-temperature
+  model, which OpenFOAM does not have off the shelf.
+- ⚠️ **AND PALACE'S MATERIAL MODEL IS PER MESH ATTRIBUTE.** Configs assign
+  `{"Attributes": [...], "Permittivity": ...}` — one scalar per region. **A
+  continuous `eps(r,z)` from CFD must be discretised into attribute zones**, i.e.
+  a `geometry.py` change and a re-meshed cavity. That is the concrete engineering
+  cost of two-way, on top of the physics problem.
+- ⚠️ The loop would also traverse the **eps-near-zero** region where
+  `CONVENTIONS.md` records the div-free PCG failing (92 non-convergences at
+  ne = 1e19). A solver that stalls mid-iteration is worse than no loop.
+
+### ➡️ IF IT IS BUILT, THE PROGRAMME'S OWN RULES APPLY TO IT
+
+- 🔑 **It is a new INSTRUMENT, not a new experiment.** The list E0–E4 does not
+  grow (§7k). But `CLAUDE.md`'s E0 exists precisely because an uncharacterised
+  solver invalidated six rigs, so **budget a CFD E0**: reproduce a published
+  torch case with measured temperature profiles before any of its numbers are
+  quoted here.
+- **One rig, one solver** (§ ONE RIG ONE SOLVER) applies across the bridge too:
+  do not parameterise "EM or CFD" inside one script.
+- **Name what the bridge CANNOT do**, the way `INSTRUMENT.md` does for Palace.
+
+## 🔑 SAPPHIRE'S OPERATING TEMPERATURE MAY BEAT TORCH DIAMETER AS THE FLOW LEVER
+
+> **STATED, user 2026-09-07:** *"Another consideration is that sapphire has a
+> higher operating temperature than quartz."*
+
+⚠️ **ASSUMED, materials-handbook values — nothing here is measured.** Fused silica
+serves continuously to ~1150 °C (it devitrifies above ~1100 °C; softening
+1665 °C). Sapphire serves to ~1850 °C (melts 2053 °C). **~700 K of headroom.**
+
+🔑 **AND THE SHEATH'S JOB IS DEFINED BY THAT LIMIT.** The 10 slm exists to hold
+the wall below what the wall can take. Raise what it can take and the duty falls:
+
+- **Radiative shedding at the limit goes as T⁴** — (2123/1423)⁴ = **~4.95×**. A
+  sapphire wall at its own limit disposes of ~5× the heat a quartz wall can.
+- **Convective removal goes as (T_wall − T_gas)**, so the allowable driving
+  difference widens too.
+- **Conductivity ~30 vs ~1.4 W/m·K (~21×)** spreads hotspots instead of
+  concentrating them — relevant because N₂'s dissociation-driven conductivity
+  peak delivers a *higher* heat flux than Ar would.
+
+➡️ **SO SAPPHIRE, NOT DIAMETER, MAY BE THE THING THAT MAKES ~12 slm REACHABLE.**
+It attacks the same constraint — wall heat load — without touching the geometry
+the EM model is built on, without inventing torch dimensions the literature does
+not have, and without the N₂-vs-Ar redesign question. **It is also already the
+design material** (`baselines.json: torch.sapphire.permittivity`, measured 9.39),
+chosen for the fluoride matrix — this is a second, independent payoff from a
+decision already made.
+
+⚠️ **THE COUNTER-CONSIDERATION, AND IT IS THE IGNITION TRANSIENT.** Expansion is
+~0.55e-6/K for fused silica against ~5–8e-6/K for sapphire, ~10×. **Quartz has the
+better thermal-shock behaviour**, so the case to check is not steady state but
+the **cold, resonant, unloaded ignition transient** — the same worst case
+`../resonance/KNOWN.md` § COUPLER DISSIPATION identifies for the loop. ⚠️ Also
+unpriced: sapphire tube cost and whether a concentric Fassel geometry with
+tangential inlets is even manufacturable in it.
+
+## 🔴 RESIDENCE AND THE INTERMEDIATE FLOW ARE BOTH HAND-WAVED — stated plainly
+
+> **STATED, user 2026-09-07:** *"Yes, we really have been only hand-waving at
+> residence (and by extension, the intermediate flow that pushes the plasma off
+> the tip of the injector, so that it doesn't melt it)."*
+
+**Recorded so no future session treats either as established.**
+
+- **Residence.** The only table in the record is `../resonance/KNOWN.md`'s, and
+  it is the EM model's *plasma annulus* at the *total* flow, cold. It is not a
+  statement about the analyte. See the withdrawal above.
+- 🔴 **The intermediate stream (~1 slm) has NEVER been analysed at all**, and it
+  is not a minor omission: its job is to **stand the plasma off the injector tip
+  so the tip does not melt**. That standoff determines *where the analyte enters
+  the hot zone*, which is the upstream boundary of any residence calculation.
+  **So the residence question is downstream of a flow nobody has looked at.**
+- 🔑 **Sapphire relaxes this one too** — a sapphire injector tip tolerates a
+  hotter environment than a quartz one, so the standoff the intermediate stream
+  must buy is smaller. Same lever, second application.
+
+⚠️ **None of the three is answerable with Palace.** They are thermal and fluid
+questions. **What this directory can honestly do is name them and refuse to let
+EM numbers stand in for them** — which is exactly what the misapplied residence
+table did three times in one session.
+
+## ✅ THE CASE FOR A NARROWER TORCH — restated on the reasons that actually hold
+
+> **STATED, user 2026-09-07:** *"I was thinking a narrower torch might be better
+> overall, but maybe it isn't. I was considering it due to Fassel being designed
+> for Argon, and because it might make 12slm easier to hit. The resident argument
+> doesn't really hold, because the majority of Nitrogen goes toward the cooling
+> sheath regardless."*
+
+🔑 **THE OBJECTION I KEPT RAISING IS THE ONE THAT FAILS, AND THE REASONS FOR
+NARROWING ARE UNTOUCHED BY IT.** Restated honestly:
+
+| argument | direction | status |
+|---|---|---|
+| **Fassel is Argon-dimensioned** | → narrower | ✅ **real, and the record already says so.** `../spectroscopy/` item 6: Fassel is *"known-but-wrong-gas dimensions in preference to unknown ones — which is right, and is not the same as it being correct."* N₂ is not Ar: its dissociation-driven conductivity peak means a different heat flux and a differently shaped discharge. **Unquantified** |
+| **makes 12 slm easier to hit** | → narrower | ✅ **real, and it is a SHEATH argument, not a residence one.** A narrower outer tube has less wall circumference to cool AND less annular area, so the same slm moves faster. Both help. **Unquantified** |
+| **EM coupling / VSWR** | → narrower | ✅ **MEASURED** — `h3-bore-01`, 2–6 mm gives Q₀ = 360, VSWR 25.4 against 2–8.5 mm's VSWR ~79. ⚠️ Confounded: halving flow at fixed power raises n_e and the gain shrinks; cancellation at ~×3.1 |
+| ~~residence time → LOD~~ | ~~→ wider~~ | 🔴 **WITHDRAWN above.** Applied to the plasma annulus and the total flow; the analyte is in the central channel at ~1 slm |
+
+➡️ **SO THE BALANCE HAS MOVED TOWARD NARROWER**, and the two live reasons are
+**thermal and fluid** — wall heat load, sheath velocity, and N₂-vs-Ar discharge
+dimensions. 🔴 **None of them is answerable with this instrument.** Palace has no
+thermal or fluid solver (§ THE MODEL CANNOT ANSWER FLOW QUESTIONS), and the EM
+half is already measured across the range of interest.
+
+⚠️ **THE STANDING DECISION IS UNCHANGED AND STILL RIGHT.** *"No custom torch
+modelling; Fassel dimensions"* was justified on the ground that Fassel is
+dimensioned in the literature while a custom torch replaces known numbers with
+invented ones. **That reasoning is about MODELLING and is untouched by any of the
+above** — the case for a narrower BUILD getting stronger is not a case for
+modelling one. 🔑 **What would actually settle it is a thermal/fluid calculation
+or a bench measurement, not a solve.**
+
+🔴 **IF THE ANSWER IS "NO", THE COST LANDS ON THE SHEATH GAP — AND THEN ON
+PRESSURE, NOT FLOW** (user, 2026-09-07: *"the 20 slm is mostly the outer cooling
+sheath"*, and *"my guess is no ... which could pose a problem for the 12 slm
+target"*). ⚠️ **DERIVED.**
+
+The section above computes *"10 slm through a 17 mm Fassel bore = 0.73 m/s — low"*
+and concludes ICP-like velocity means shrinking the bore. 🔴 **That divides the
+sheath flow by the WHOLE BORE.** It is the bulk velocity in the discharge, not
+the velocity in the sheath channel — and it is the channel that cools the quartz.
+Inside the torch the sheath occupies an **annulus**, whose area is
+`2*pi*R*gap` and is therefore a free variable at any bore:
+
+| outer ID | gap | area | v at 10 slm, cold |
+|---:|---:|---:|---:|
+| 17 mm | 1.0 mm | 50.3 mm² | **3.32 m/s** |
+| 19 mm | 1.0 mm | 56.5 mm² | 2.95 m/s |
+| 22 mm | 1.0 mm | 66.0 mm² | 2.53 m/s |
+| 22 mm | 0.5 mm | 33.8 mm² | **4.94 m/s** |
+
+✅ **So a wide bore at 10 slm CAN hold ICP-like sheath velocity (~3–4 m/s cold)** —
+but only on a **0.5–1.0 mm gap**, and since area goes as `R*gap`, **the gap must
+shrink in proportion as the tube widens.**
+
+🔑 **WHICH MOVES THE CONSTRAINT FROM FLOW TO PRESSURE, AND THE RECORD HAS NEVER
+STATED A PRESSURE.** The compressor is specified by slm and by fitting a
+120 V/15 A circuit; its **delivery pressure appears nowhere**. A narrow annulus is
+where back-pressure is generated, so "wide bore + 10 slm" is bought with exactly
+the quantity nobody has budgeted. ➡️ **The missing spec is the compressor's
+delivery pressure against the torch's pressure drop** — and it is a plumbing
+number, obtainable without any solve.
+
+⚠️ **NOT A PROPOSAL.** `CLAUDE.md`'s standing decision for this directory is
+*"No modelling: standing decision is Fassel"*, and § THE MODEL CANNOT ANSWER FLOW
+QUESTIONS applies — Palace has neither a thermal nor a fluid solver. This is a
+flag on a coupled constraint, not a torch design.
+
+⚠️ **AND THERE IS A PULL TOWARD NARROW THAT IS INDEPENDENT OF IGNITION.**
+`KNOWN.md` records a narrower bore raising Q₀ → raising `coupling.beta` →
+collapsing VSWR (79 → ~4, load current 40 → 9 A), which *is* `../control-loop/`
+requirement 1 solved by geometry. ⚠️ That scaling rests on two things the same
+section says are not true (empty-cavity overlap; n_e held fixed while the bore
+shrank). **A lever nobody has costed — not a recommendation.**
 
 ✅ **This supersedes the flat "20 slm" the programme has been assuming.** That
 number is now stale in at least three places: this repo's `CLAUDE.md`

@@ -1564,16 +1564,35 @@ It prices the bore; it does not choose it.
     LOD  →  required residence time  →  slm and bore area  →  EM must COPE
     NOT:  EM coupling  →  pick a bore
 
+🔴 **SCOPE STAMP, 2026-09-07 — THIS TABLE IS NOT A STATEMENT ABOUT THE ANALYTE,
+AND IT WAS READ AS ONE THREE TIMES IN ONE SESSION.** User: *"we really have been
+only hand-waving at residence"*, and *"the majority of Nitrogen goes toward the
+cooling sheath regardless."* Two unmarked assumptions:
+1. **The "annulus" is the EM model's PLASMA annulus.** The analyte travels the
+   central channel from the injector; narrowing the outer torch need not change
+   it, so this table does not price a narrower torch for LOD.
+2. **The flow is the TOTAL 20 slm.** ~10 of that is the cooling sheath, outside
+   the discharge; the analyte path sees the injector's ~1 slm. The 20 slm figure
+   is itself superseded (~12 in three streams).
+Also cold-gas, and it back-solves a 92 mm hot zone that is an assumption too.
+➡️ **Quote it as what it is: velocity in the meshed annulus at a stated flow.**
+Anything about residence, LOD or bore choice needs
+`../torch-geometry/README.md` § RESIDENCE AND THE INTERMEDIATE FLOW ARE BOTH
+HAND-WAVED. **The upstream boundary of any real residence number is set by the
+intermediate stream, which has never been analysed.**
+
 | annulus | area | velocity @20 slm | **residence time** |
 |---|---:|---:|---:|
 | 2–4 | 37.7 mm² | 8.84 m/s | **10.4 ms** |
 | 2–6 | 100.5 mm² | 3.32 m/s | 27.8 ms |
 | **2–8.5** | 214.4 mm² | 1.55 m/s | **59.4 ms** |
 
-🔴 **The narrow bore I called a coupling win cuts residence time 5.7×** — and
-residence time is what atomises and excites the analyte, so it goes **straight to
-LOD, which is what the instrument exists to deliver.** A coupling improvement
-bought with LOD is not an improvement.
+🔴 **~~The narrow bore I called a coupling win cuts residence time 5.7×~~** —
+**WITHDRAWN 2026-09-07, see the scope stamp above.** The 5.7× is the annulus-area
+ratio and it is arithmetically right; it is not the analyte's residence, because
+the analyte is not in that annulus at that flow. **The claim that narrowing costs
+LOD is UNSUPPORTED**, and the reasons to narrow (Ar-dimensioned Fassel, sheath
+duty at 12 slm) are untouched by it.
 
 🔴 **AND THE TOP OF THE CHAIN IS UNSPECIFIED.** `../spectroscopy/` item 2:
 *"target elements + detection limits — NOT STATED ANYWHERE."* **So the bore

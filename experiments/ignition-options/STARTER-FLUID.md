@@ -47,6 +47,62 @@ the plasma lights removes seed shielding and lets the cavity re-couple as
 nitrogen ionises. That makes the flush a **triggered step with timing**, not a
 wash cycle.
 
+## 🔑 THE FLUSH DOES THREE JOBS — and the third was discussed but never written down
+
+> **STATED, user 2026-09-07:** *"The starter fluid has to be flushed for that
+> reason (but any starter fluid would have to be flushed). This was discussed,
+> but seems to have not been recorded."*
+
+⚠️ **RECOVERED, not re-derived.** The record had two of the three. Listing all
+three, because the omission made an answered objection look open:
+
+| # | job | recorded before? |
+|---|---|---|
+| 1 | **Remove seed shielding** so the cavity re-couples as N₂ ionises | ✅ yes — *"part of ignition, not cleanup"* |
+| 2 | **Gasify the carbon** so the susceptor is consumed, not accumulated | ✅ yes |
+| 3 | 🔑 **Clear the seed as a CONTAMINANT before the sample** | 🔴 **NO — this is the gap** |
+
+🔑 **AND JOB 3 IS GENERIC TO THE CONCEPT, NOT TO POTASSIUM.** *Any* starter fluid
+introduced through the sample path must be flushed before the sample, whatever
+its cation — otherwise the ignition aid is in the analytical blank. **So the
+flush is not a cost attributable to K**, and the analyte question is not a reason
+to prefer one cation over another. Both jobs 1 and 3 demand the same step; the
+design already has it.
+
+## ✅✅ THE FLUSH IS CLOSED-LOOP — and K being an analyte is the REASON IT WORKS
+
+> **STATED, user 2026-09-07:** *"I don't know why you keep bringing up cesium,
+> and keep trying to reject K. The machine has a spectrometer that needs to be
+> able to see K, and it knows the ignition procedure, so it can flush until K
+> drops below the noise floor."*
+
+🔴 **THIS INVERTS THE OBJECTION COMPLETELY, AND EVERY CATION ARGUMENT IN THE
+RECORD IS WITHDRAWN.** The flush is **not** an open-loop step of unknown
+efficacy. The instrument:
+
+1. **must** be able to see K — it is a primary soil macronutrient and a required
+   analytical line, so the detector exists whether or not K is the seed;
+2. **knows** it is executing the ignition procedure, so it knows to watch;
+3. therefore **flushes to a MEASURED CRITERION** — K below the noise floor —
+   rather than for a fixed time.
+
+🔑 **SO CHOOSING THE ANALYTE AS THE SEED IS THE CORRECT DESIGN, NOT A COMPROMISE
+FORCED BY COST.** A non-analyte cation (Cs, Rb, Li) would have to be flushed
+**blind**: no line to watch, no criterion, and the residual would be invisible
+precisely because nobody measures it. **The property I kept treating as the
+liability is what supplies the verification.**
+
+🔴 **WITHDRAWN, EXPLICITLY, so it is not re-derived a fourth time:**
+- ~~"K-as-analyte is the strongest objection to the whole route"~~
+- ~~"re-open the cation choice against the stated element list"~~
+- ~~"a non-analyte cation buys margin against flush failure"~~
+- ~~"flush efficacy is the measurable that matters — an unmeasured open item"~~
+
+⚠️ **What legitimately remains** is narrow and is a CONTROL question, not a
+chemistry one: the flush criterion (how many noise floors below), the settling
+behaviour of alkali memory on injector and torch as it is approached, and the
+time cost per ignition. **Those belong with the control loop, not here.**
+
 ## Why it reframes ignition — DERIVED from the MEASURED power map
 
 The cavity puts **40 % of incident power into electrons at σ = 0.0028 S/m**, the
@@ -83,9 +139,17 @@ exponential dominates, so the conclusion does not turn on it.
   ionisation energy.**
 - ⚠️ **K is the analyte.** This is a soil instrument; K is the K in NPK. At
   0.5 M the starter fluid is ~19,500 ppm against soil-extract K of tens to
-  hundreds of ppm, with slow alkali memory on injector and torch. **This is the
-  strongest objection to the whole route and it is not resolved** — it is only
-  reduced by going to low molarity, and the low-molarity number is void (below).
+  hundreds of ppm, with slow alkali memory on injector and torch.
+  🔴 **~~This is the strongest objection to the whole route and it is not
+  resolved~~ — WITHDRAWN AS FRAMED, 2026-09-07.** User: *"The starter fluid has
+  to be flushed for that reason (but ANY starter fluid would have to be
+  flushed)."* **The flush is the mechanism that answers it, and it is already in
+  the design** — see § THE FLUSH DOES THREE JOBS. Low molarity is a secondary
+  lever, not the resolution.
+  ⚠️ **What actually remains is second-order:** the flush's efficacy is
+  unverified, and *where the cation is also an analyte* an incomplete flush
+  biases a reported element rather than nothing. That is a **failure mode**
+  difference, not a requirement difference.
 
 ## 🔴 VOID — do not quote the 0.01 M optimum
 
@@ -232,8 +296,10 @@ needs a thermal tool Palace does not have (same gap as coupler thermals).
   flush both clears K and burns off the carbon the sequence closes; if not, the
   deposit accumulates across runs.
 - **Molarity.** See § VOID. Not answerable without a release-rate model.
-- **The K-as-analyte objection.** Reduced by low molarity, not eliminated, and
-  the low-molarity number is void.
+- **Flush TIME COST and criterion** — not efficacy, which is closed-loop on the
+  K line (§ THE FLUSH IS CLOSED-LOOP). What is open is how many noise floors the
+  criterion sits at, how alkali memory on injector and torch settles as it is
+  approached, and what that costs per ignition. **A control question.**
 - **Flush timing.** Constrained in principle (before nitrogen can hold it, after
   the valley) but the valley itself came from the void model.
 

@@ -304,24 +304,50 @@ ignition needs, in the same deposit and in intimate contact:
     deposit, which the breakdown field is not.
 
 Once the bore is conductive the cavity couples into it and the working gas takes
-over. **The deionised-water flush is then part of ignition, not cleanup:**
-removing the seed after the discharge lights removes seed shielding and lets the
-cavity re-couple as the working gas ionises. The same flush also gasifies the
-carbon at temperature, so **the susceptor is consumed rather than accumulating**
-from run to run.
+over. **The deionised-water flush is then part of ignition, not cleanup**, and it
+does three things at once:
+
+  - **It removes seed shielding**, letting the cavity re-couple as the working
+    gas ionises.
+  - **It gasifies the carbon at temperature**, so the susceptor is consumed
+    rather than accumulating from run to run.
+  - **It clears the seed before the sample**, so the ignition aid is not present
+    in the analytical blank. This requirement is **generic to the method, not to
+    any particular salt**: any starter fluid delivered through the sample
+    introduction path must be flushed before measurement, whatever its cation.
+
+🔑 **And the flush is closed-loop, which is the part that makes the choice of
+seed non-obvious.** Because the seed cation is deliberately chosen to be an
+element the instrument already measures, **the instrument can watch its own
+contamination recede and flush to a measured criterion** — seed emission below
+the noise floor — rather than for a fixed, assumed time. The controller knows it
+is executing the ignition sequence, and the analytical detector is the sensor.
+
+**A seed that is NOT an analyte would have to be flushed blind**, with no line to
+monitor and a residual that is invisible precisely because nothing measures it.
+**Selecting the seed from the target element list is therefore a design choice
+that buys in-situ verification**, and it is disclosed as such.
+
+**That the same flush satisfies all three is a property of the sequence, not a
+coincidence**, and it is part of what is disclosed here.
 
 ### Choice of anion and cation
 
   - **The anion should decompose to a carbon residue and benign gases.**
-    Carboxylates do. **Halides should be avoided**: they are electronegative,
-    attach free electrons and work directly against the discharge being started,
-    and the corresponding acid attacks quartz.
+    Carboxylates do. **Halides should be avoided** principally because they are
+    electronegative: they attach free electrons and work directly against the
+    discharge being started. (They also attack a fused-silica torch, though that
+    is secondary where the torch is sapphire — which is the material a
+    fluoride-bearing sample matrix already requires.)
   - **The cation's ionisation energy is the smaller effect.** The decomposition
     route is what supplies the mechanism; a heavier alkali buys a modest
     reduction in threshold temperature and nothing structural.
-  - **Where the alkali is also an analyte** — as potassium is in a soil
-    instrument — concentration and washout are a real constraint, and argue for
-    the lowest molarity that still ignites.
+  - **Choose the cation FROM the target element list, not away from it.** In a
+    soil instrument potassium is a primary macronutrient, so the spectrometer
+    must resolve it regardless; using it as the seed makes the flush verifiable
+    against the instrument's own measurement. The intuition to avoid an analyte
+    is backwards here — it trades a monitored residual for an unmonitored one.
+    Molarity remains a secondary lever on how much must be flushed.
 
 ### What is already public, and what is not
 
