@@ -80,3 +80,22 @@ experiments/resonance/QUEUE.list
 
 # runtime watch registry (ops/watch.sh) — machine-local, never committed
 .watchpids/
+
+# ── refs/: PDFs are DEFAULT-DENY ────────────────────────────────────────────
+# 🔴 This repo is intended for publication (LICENSE-*, DISCLOSURE.md), so a
+# publisher PDF committed here is redistribution. Most journal PDFs are
+# rights-reserved even when we can legally READ them.
+# ➡️ Deny every PDF by default; allow ONLY files whose open licence has been
+# checked IN THE FILE ITSELF. `refs/README.md` records the citation for every
+# reference, so the RECORD never depends on the PDF being present.
+# ➡️ CLOSED (rights-reserved) refs live in refs/closed/ and are ignored
+# WHOLESALE. `rsync.sh` filters on .gitignore, so they are also excluded from
+# the default instance sync -- `ops/refs.sh` moves them deliberately instead.
+refs/closed/
+
+# Belt and braces: any PDF dropped loose in refs/ is denied by default, so a
+# misfiled closed paper cannot be committed just because it missed refs/closed/.
+# Allow ONLY files whose open licence was checked IN THE FILE ITSELF.
+refs/*.pdf
+!refs/Metal Acetate-Enhanced Microwave Pyrolysis of Waste Textiles for Efficient Syngas Production.pdf
+!refs/processes-07-00133-v3.pdf

@@ -1,0 +1,20 @@
+FoamFile
+{
+    version 2.0;
+    format ascii;
+    class dictionary;
+    object fvSolution;
+}
+
+solvers
+{
+    p    { solver GAMG; tolerance 1e-08; relTol 0.01; smoother GaussSeidel; maxIter 100; }
+    "(U|e|h|k|epsilon)" { solver PBiCGStab; preconditioner DILU; tolerance 1e-09; relTol 0.01; }
+}
+SIMPLE { nNonOrthogonalCorrectors 0; rhoMin 0.1; rhoMax 10;
+         // 🔴 U is NOT in residualControl on purpose. In a wedge the azimuthal
+         // component Uz never settles (initial residual sticks ~3e-2) while Ux
+         // reaches 1e-10, so gating on U means the run can never converge and
+         // never writes. Gate on p and h -- the two the E0 actually checks.
+         residualControl { p 1e-7; h 1e-7; } }
+relaxationFactors { fields { p 0.3; rho 1; } equations { U 0.7; e 0.7; h 0.7; } }

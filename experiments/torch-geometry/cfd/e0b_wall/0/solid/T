@@ -1,0 +1,23 @@
+FoamFile
+{
+    version 2.0;
+    format ascii;
+    class volScalarField;
+    object T;
+}
+
+dimensions [0 0 0 1 0 0 0];
+internalField uniform 300;
+boundaryField
+{
+    outerWall { type fixedValue; value uniform 300; }   // the heat sink
+    solidEnds { type zeroGradient; }                     // adiabatic ends: heat must go RADIALLY
+    "(front|back)" { type wedge; }
+    solid_to_fluid
+    {
+        type            compressible::turbulentTemperatureRadCoupledMixed;
+        Tnbr            T;
+        kappaMethod     solidThermo;
+        value           uniform 300;
+    }
+}

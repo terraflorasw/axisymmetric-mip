@@ -325,6 +325,9 @@ still unstated** (`../spectroscopy/` item 2: *"target elements + detection limit
 
 ## 🔎 PROPOSED — BRIDGE PALACE AND OpenFOAM (user, 2026-09-07). ASSESSED, NOT STARTED
 
+➡️ **BUILD SCOPE IS IN `BRIDGE.md`.** OpenFOAM v2412 is installed and verified in
+parallel on the volume (`../resonance/DEPLOY.md`); no bridge code exists yet.
+
 > **STATED, user 2026-09-07:** *"I think we can model it, by bridging Palace and
 > OpenFOAM."*
 
@@ -389,6 +392,64 @@ It answers, in order of what is currently blocking:
 - **One rig, one solver** (§ ONE RIG ONE SOLVER) applies across the bridge too:
   do not parameterise "EM or CFD" inside one script.
 - **Name what the bridge CANNOT do**, the way `INSTRUMENT.md` does for Palace.
+
+## ✅✅ MEASURED: WALL TEMPERATURE OF A GAS-COOLED FASSEL TORCH — and its flow is ours
+
+**Engelhard, Scheffer, Maue, Hieftje & Buscher**, *Spectrochim. Acta B* **62**
+(2007) 1161–1168 — `refs/1-s2.0-S0584854707002224-main.pdf`.
+✅ **READ (primary), supplied by the user 2026-09-08.** IR thermography of
+operating ICP torches, with emissivity (0.50→0.35 over 873–1323 K) and quartz
+transmission (20 % at 3.75–4.02 µm) calibrated and corrected.
+
+### 🔑 ITS CONVENTIONAL TORCH IS ALMOST OUR FLOW SPLIT, AT ALMOST OUR POWER
+
+| stream | **this paper** | **our target** |
+|---|---:|---:|
+| outer / coolant | **12 L/min** | 10 slm |
+| auxiliary / intermediate | **1 L/min** | 1 slm |
+| central / injector | **1 L/min** | 1 slm |
+| **total** | **14** | ~12 |
+| **RF power** | **1400 W** | ~1000 W |
+
+**Three streams, same roles, same order of magnitude, and the wall is cooled by
+the OUTER PLASMA GAS — not by water.** This is the closest published match to
+the machine this programme is designing that the record has found.
+
+### ✅ THE MEASURED WALL TEMPERATURES
+
+| torch | condition | wall `T` |
+|---|---|---:|
+| **conventional Fassel** | 14 L/min total, 1400 W | **max 725 ± 44 K** (after 3rd coil turn) |
+| | between first two turns | 525 ± 32 K, 560 ± 34 K |
+| | min→max spread | only **250 K** |
+| **SHIP low-flow** | 0.6 L/min + 24 m/s cooling air | **1580 ± 95 K** |
+| | + 48 m/s cooling air | 1275 ± 75 K |
+| | inlet zone 0–15 mm | < 650 K |
+
+⚠️ **Uncertainty ±6 %** — far tighter than the ±20–25 % of the Punjabi CFD paper.
+
+### 🔴 AND IT SETTLES THE SAPPHIRE ARGUMENT WITH MEASURED NUMBERS ON BOTH SIDES
+
+Its **Table 1** gives the fused quartz properties directly: **maximum working
+temperature (continuous) 1433 K**, strain temperature 1398 K, softening 1983 K,
+thermal conductivity **1.46 W/m·K at 373 K**.
+✅ **My earlier handbook estimate (~1150 °C ≈ 1423 K continuous) is confirmed to
+0.7 % by the paper's own table** — the sapphire-headroom arithmetic stands, now
+anchored rather than recalled.
+
+🔑 **THE LOW-FLOW TORCH AT 1580 ± 95 K IS ABOVE QUARTZ'S 1433 K CONTINUOUS
+RATING.** That is not an extrapolation — it is a measured operating point on a
+real low-flow torch, exceeding the material's own published limit. **Low flow
+drives quartz past its rating; sapphire's ~2123 K does not.**
+⚠️ The paper also notes *"temperatures above 1073 K can heavily influence the
+long-term stability of ICP torches"*, while *"low temperatures (< 373 K)
+contribute to sample deposition"* — **a design WINDOW, roughly 373–1073 K for
+quartz**, which sapphire widens at the top.
+
+⚠️ **WHAT STILL DOES NOT TRANSFER:** argon not nitrogen, 27.12 MHz coil not a
+2.45 GHz cavity, and the SHIP torch is a different geometry cooled by external
+air. **725 K is not our wall temperature.** What transfers is the flow split, the
+power scale, the gas-cooled architecture, and the material limit.
 
 ## 🔑 SAPPHIRE'S OPERATING TEMPERATURE MAY BEAT TORCH DIAMETER AS THE FLOW LEVER
 

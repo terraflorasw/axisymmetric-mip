@@ -1,0 +1,42 @@
+FoamFile
+{
+    version 2.0;
+    format ascii;
+    class dictionary;
+    object controlDict;
+}
+
+application     rhoSimpleFoam;
+startFrom       startTime;  startTime 0;
+stopAt          endTime;    endTime   1000;
+deltaT          1;
+writeControl    runTime;    writeInterval 1000;
+purgeWrite      0;
+writeFormat     ascii;  writePrecision 10;  writeCompression off;
+timeFormat      general; timePrecision 6; runTimeModifiable true;
+
+// Mass-flux-weighted bulk T at each end, and the mass flow itself.
+// These are the ONLY quantities the E0 check needs; everything else is noise.
+functions
+{
+    inletBulkT
+    {
+        type surfaceFieldValue; libs (fieldFunctionObjects);
+        regionType patch; name inlet; operation weightedAverage;
+        weightField phi; fields (T);
+        writeFields false; writeToFile true; log true; executeControl writeTime; writeControl writeTime;
+    }
+    outletBulkT
+    {
+        type surfaceFieldValue; libs (fieldFunctionObjects);
+        regionType patch; name outlet; operation weightedAverage;
+        weightField phi; fields (T);
+        writeFields false; writeToFile true; log true; executeControl writeTime; writeControl writeTime;
+    }
+    massFlow
+    {
+        type surfaceFieldValue; libs (fieldFunctionObjects);
+        regionType patch; name outlet; operation sum; fields (phi);
+        writeFields false; writeToFile true; log true; executeControl writeTime; writeControl writeTime;
+    }
+}

@@ -220,12 +220,19 @@ rc=137 at 637 s with the cap at 12,000 s. dmesg shows 21 OOM kills: 32 ranks x
 not a longer run. Until then beta is *measured at three resolutions and still
 moving 4 % at the finest one*.
 
-✅ **UNBLOCKED 2026-09-07 — the instance now has the memory.** Replacement is
-**64 vCPU / 123 GB** (measured, `free -g`), against the 61 GB that OOM'd. The
-requirement was 32 ranks x ~2.3 GB = **~74 GB**, so sf 0.8 now fits with headroom.
-🔑 **The 4th point is a RUNNABLE measurement again, and it is the one thing that
-would let `coupling.beta` be quoted without a resolution caveat.** Nothing else
-about the case changes — same rig, same config, same 12,000 s cap.
+✅ **UNBLOCKED 2026-09-07 — AWS RAISED THE SPOT vCPU QUOTA.** STATED by the
+user: *"in reference to AWS updating my Spot vCPU quotas, not a specific claim
+about the instance. I will size instances as required for the task at hand."*
+
+🔑 **THE CONSTRAINT WAS AN ACCOUNT QUOTA, AND IT IS GONE — that is durable and
+does not depend on what happens to be booted.** sf 0.8 needs 32 ranks x ~2.3 GB
+= **~74 GB**, which the 8xlarge's 61 GB cannot serve and a 16xlarge-class box
+can. **Boot one for that run.**
+
+⚠️ **DO NOT READ AN INSTANCE'S `free -g` AS THE PROGRAMME'S CEILING, IN EITHER
+DIRECTION.** Instances are sized per task — small ones for installs and short
+work — so a 61 GB reading means "this box was not sized for sf 0.8", not "sf 0.8
+is blocked". ➡️ **State the memory a run REQUIRES; size the instance to it.**
 
 ⚠️ **ALSO UNEXPLAINED: cold f0 drifts −350 kHz monotonically** across the four
 meshes (2.442800 -> 2.442450), **4.2x the E0 instrument floor**. f0 comes from

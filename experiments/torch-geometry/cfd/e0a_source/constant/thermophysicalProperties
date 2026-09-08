@@ -1,0 +1,22 @@
+FoamFile
+{
+    version 2.0;
+    format ascii;
+    class dictionary;
+    object thermophysicalProperties;
+}
+
+// CONSTANT properties on purpose: the energy balance must be exact, so no
+// temperature-dependent cp is allowed to blur it. Real N2 properties are a
+// PHASE-2 concern (BRIDGE.md names the dissociation peak as the risk).
+thermoType
+{
+    type hePsiThermo; mixture pureMixture; transport const;
+    thermo hConst; equationOfState perfectGas; specie specie; energy sensibleEnthalpy;
+}
+mixture
+{
+    specie          { molWeight 28.014; }
+    thermodynamics  { Cp 1040; Hf 0; }
+    transport       { mu 1.76e-05; Pr 0.72; }
+}

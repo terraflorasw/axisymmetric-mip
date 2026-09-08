@@ -1,0 +1,38 @@
+FoamFile
+{
+    version 2.0;
+    format ascii;
+    class dictionary;
+    object controlDict;
+}
+
+application     chtMultiRegionSimpleFoam;
+startFrom       startTime; startTime 0;
+stopAt          endTime;   endTime 3000;
+deltaT          1;
+writeControl    runTime; writeInterval 3000;
+purgeWrite      0; writeFormat ascii; writePrecision 10; writeCompression off;
+timeFormat      general; timePrecision 6; runTimeModifiable true;
+maxDi 10; maxCo 10;
+
+functions
+{
+    // Q through the sink wall, and the bulk temperatures the balance needs.
+    wallHeatFlux
+    {
+        type wallHeatFlux; libs (fieldFunctionObjects); region solid;
+        patches (outerWall); writeControl writeTime; executeControl writeTime; log true;
+    }
+    inletBulkT  { type surfaceFieldValue; libs (fieldFunctionObjects); region fluid;
+                  regionType patch; name inlet;  operation weightedAverage; weightField phi;
+                  fields (T); writeFields false; writeToFile true; log true;
+                  writeControl writeTime; executeControl writeTime; }
+    outletBulkT { type surfaceFieldValue; libs (fieldFunctionObjects); region fluid;
+                  regionType patch; name outlet; operation weightedAverage; weightField phi;
+                  fields (T); writeFields false; writeToFile true; log true;
+                  writeControl writeTime; executeControl writeTime; }
+    massFlow    { type surfaceFieldValue; libs (fieldFunctionObjects); region fluid;
+                  regionType patch; name outlet; operation sum; fields (phi);
+                  writeFields false; writeToFile true; log true;
+                  writeControl writeTime; executeControl writeTime; }
+}

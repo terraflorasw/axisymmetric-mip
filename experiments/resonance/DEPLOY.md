@@ -259,3 +259,59 @@ physical cores ÷ 4.
 means cores bind and core count buys throughput. Flattening by 2–3 means memory
 bandwidth binds and a many-core single socket will not deliver its core count.
 **I have asserted this workload is bandwidth-bound and never measured it.**
+
+---
+
+## 🔑 OpenFOAM ON THE VOLUME — installed 2026-09-07, and it needed a PATCH
+
+**For the proposed Palace→OpenFOAM bridge** (`../torch-geometry/README.md`
+§ PROPOSED — BRIDGE PALACE AND OpenFOAM). Nothing in `resonance/` depends on it.
+
+    /opt/amip/envs/cfd          OpenFOAM v2412 (ESI), conda-forge, ~126 MB pkg
+    micromamba run -p /opt/amip/envs/cfd bash -lc '<command>'
+
+🔴 **A SEPARATE ENV, DELIBERATELY. Do not merge it into `emsim`.** OpenFOAM's
+conda build links **mpich**; Palace's env is **OpenMPI 5.0.10**. Two MPI runtimes
+in one env is how you get a solver that runs but silently mis-communicates.
+🔑 **They can never share an MPI job — which is a reason the bridge is
+FILE-BASED and one-way, not a co-simulation.**
+
+### 🔴 THE PACKAGE IS PATCHED ON THE VOLUME. READ THIS BEFORE DEBUGGING IT.
+
+**As shipped, every parallel run fails** with *"The dummy Pstream library cannot
+be used in parallel mode"*, and **no environment variable fixes it**:
+
+- OpenFOAM ships two Pstream builds: `lib/dummy/` (serial stub) and
+  `lib/mpich-3.3/` (the real one).
+- The conda activation sets **`FOAM_MPI=sys-mpich`**, but the directory on disk
+  is **`mpich-3.3`**. The path does not exist, so it falls back to `dummy`.
+- The binaries carry an **`$ORIGIN/../lib/dummy` RPATH, which beats
+  `LD_LIBRARY_PATH`** — so setting `FOAM_MPI` or the library path does nothing.
+  (Verified: prepending the mpich dir still resolved to `lib/dummy/libPstream.so`.)
+
+✅ **FIX APPLIED — the real libraries were copied over the dummy ones, originals
+kept beside them:**
+
+    /opt/amip/envs/cfd/lib/dummy/libPstream.so          <- now the mpich-3.3 build
+    /opt/amip/envs/cfd/lib/dummy/libPstream.so.conda-orig   <- the shipped stub
+    /opt/amip/envs/cfd/lib/dummy/libptscotchDecomp.so   (same treatment)
+
+⚠️ **A `micromamba update`/reinstall of `openfoam` WILL REVERT THIS SILENTLY**,
+and the symptom is a parallel run that dies at startup. Re-apply the copy.
+⚠️ **Chosen over a per-invocation `LD_PRELOAD`** (which does work, scoped as
+`mpirun -np N env LD_PRELOAD=... solver -parallel`) because §7cb: a step that
+must be remembered will eventually not be. **Delete the step, do not document it.**
+
+### ✅ VERIFIED, not assumed
+
+| check | result |
+|---|---|
+| `blockMesh` + `icoFoam` cavity, serial | rc=0, time dirs written, log ends `End` |
+| same case, `mpirun -np 4 ... -parallel` | rc=0, `nProcs : 4`, `Finalising parallel run` |
+| `chtMultiRegionFoam` present | ✅ — the solver the bridge needs |
+| serial still works after the patch | ✅ re-checked |
+
+⚠️ **Harmless noise:** sourcing `etc/bashrc` by hand prints *"could not determine
+prefix for system-openmpi"* and *"Could not determine OPENFOAM 'api' value"*.
+➡️ **Activate the env instead of sourcing `etc/bashrc`** — the activation hooks
+set `WM_PROJECT_DIR` correctly and the warnings go away.

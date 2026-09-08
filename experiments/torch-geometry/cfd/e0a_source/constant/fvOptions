@@ -1,0 +1,19 @@
+FoamFile
+{
+    version 2.0;
+    format ascii;
+    class dictionary;
+    object fvOptions;
+}
+
+// 🔑 volumeMode SPECIFIC on purpose: W/m3, so OpenFOAM must integrate q'''*V
+// over the WEDGE cells. `absolute` would normalise by total volume and be
+// right by construction even if the volume weighting were wrong -- which is
+// exactly the failure this E0 exists to catch, and exactly how the bridge feeds it.
+heatSource
+{
+    type            scalarSemiImplicitSource;
+    selectionMode   all;
+    volumeMode      specific;
+    sources { h { explicit 5.84e5; implicit 0; } }
+}

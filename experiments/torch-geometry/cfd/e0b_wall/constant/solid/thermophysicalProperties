@@ -1,0 +1,15 @@
+FoamFile
+{
+    version 2.0;
+    format ascii;
+    class dictionary;
+    object thermophysicalProperties;
+}
+
+// Sapphire, CONSTANT properties on purpose: the analytic log conduction
+// profile is only exact for constant kappa. Real sapphire kappa falls steeply
+// with temperature -- a phase-2 concern, named in BRIDGE.md.
+thermoType { type heSolidThermo; mixture pureMixture; transport constIso;
+             thermo hConst; equationOfState rhoConst; specie specie; energy sensibleEnthalpy; }
+mixture { specie { molWeight 101.96; } transport { kappa 25; }
+          thermodynamics { Hf 0; Cp 761; } equationOfState { rho 3980; } }

@@ -1,0 +1,24 @@
+FoamFile
+{
+    version 2.0;
+    format ascii;
+    class dictionary;
+    object fvSchemes;
+}
+
+ddtSchemes      { default steadyState; }
+gradSchemes     { default Gauss linear; }
+divSchemes
+{
+    default         none;
+    div(phi,U)      bounded Gauss linearUpwind grad(U);
+    div(phi,e)      bounded Gauss linearUpwind grad(e);
+    div(phi,h)      bounded Gauss linearUpwind grad(h);
+    div(phi,K)      bounded Gauss linearUpwind grad(K);
+    div(phi,Ekp)    bounded Gauss linearUpwind grad(Ekp);
+    div(phid,p)     Gauss upwind;
+    div(((rho*nuEff)*dev2(T(grad(U))))) Gauss linear;
+}
+laplacianSchemes { default Gauss linear corrected; }
+interpolationSchemes { default linear; }
+snGradSchemes   { default corrected; }
