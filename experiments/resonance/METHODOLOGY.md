@@ -3,8 +3,8 @@
 **Working artifact, rev 4 (2026-08-20). REGENERATED, not appended** — like
 `waveguide/EXPERIMENTS.md` and `waveguide/AUDIT.md` **(both REMOVED)**.
 ⚠️ **2026-08-24: they lived in `experiments/waveguide/`, which was REMOVED**
-(commit `2db1d59`) as superseded by resonance. Retrieve only to follow a
-citation: `git show 2db1d59^:experiments/waveguide/EXPERIMENTS.md`. **Their
+(commit `856f214`) as superseded by resonance. Retrieve only to follow a
+citation: `git show 856f214^:experiments/waveguide/EXPERIMENTS.md`. **Their
 numbers are from earlier cavity designs and do not transfer.**
 
 ⚠️ **UPDATED 2026-08-23.** `FINDINGS.md` was removed from the working tree (it

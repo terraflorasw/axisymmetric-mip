@@ -103,7 +103,54 @@ does not reflect current policy.
 *(Same shape as the record's recurring lesson: verify with the CONSUMER that
 actually runs, not the one you had in mind.)*
 
-## ⚠️ TO DECIDE — PDFs already committed before this policy existed
+## ✅ DONE 2026-09-08 — history rewritten, closed refs relocated
+
+**Seven rights-reserved or unlicensed PDFs were removed from ALL git history**
+with `git-filter-repo 2.47.0` (`pip install --user git-filter-repo`;
+`git filter-branch` is the deprecated one). Files moved to `refs/closed/`, which
+is gitignored and lives on the volume.
+
+| purged from history | why |
+|---|---|
+| `Complex_Permittivity_…` (Krupka) | © 2005 IOP Publishing, no open licence |
+| `MA4PK200x_3000x_Series` | "All rights reserved" |
+| `Silicon PIN NIP Chips` | "All rights reserved" |
+| `GC4400Series-3444151` | vendor datasheet, no licence marker |
+| `UMX5601Series` | © 2005, no licence marker |
+| `Linking plasma formation in grapes…` | PNAS, no open-licence marker in file |
+| `ef0c01938_si_001` | ACS supporting information, no marker |
+
+**Kept, licence verified in the file:** `Metal Acetate…` (MDPI CC BY),
+`processes-07-00133-v3` (MDPI CC BY), `Quantification capabilities…`
+(RSC, **CC BY-NC 3.0** — see caveat).
+
+✅ **Verified after the rewrite:** 0 blobs for each purged file · all 8 closed
+PDFs still on disk in `refs/closed/` · open-access PDFs still tracked ·
+**author/committer dates preserved** (2026-09-06/07/08) · `.git` 248 M → 189 M.
+
+### 🔴 THE REWRITE IS LOCAL. GITHUB STILL HAS THEM.
+
+`github.com/terraflorasw/axisymmetric-mip` is **PUBLIC**, and `origin/main` was
+at the same commit — so these PDFs are published right now. **Nothing about the
+local rewrite changes that until a force-push**, which needs credentials this
+session does not have and should not have.
+
+    git remote add origin git@github.com:terraflorasw/axisymmetric-mip.git
+    git push --force origin main
+
+⚠️ `git-filter-repo` **removed the `origin` remote on purpose** — re-adding it is
+the deliberate step before force-pushing. Left removed.
+⚠️ **Force-pushing is not full erasure.** GitHub keeps unreachable objects for a
+period (reachable by direct SHA URL), and **any fork keeps them indefinitely**.
+For actual removal, force-push *and* ask GitHub Support to purge the cached
+objects.
+🔴 **Every commit hash changed.** Anything citing an old hash — including
+`CLAUDE.md`'s and `KNOWN.md`'s `git show <sha>` retrieval instructions — now
+points at nothing. **Check those before relying on them again** (§7.5: an
+identifier others may hold is append-only, and this rewrite broke that on
+purpose, with dates preserved so `DISCLOSURE.md`'s prior-art dating survives).
+
+## ⚠️ SUPERSEDED — the earlier "TO DECIDE" list
 
 `Krupka`, `Kuonen`, the PNAS grape paper, the ACS SI and the vendor datasheets
 are **already tracked**, from before this file existed. `.gitignore` does not

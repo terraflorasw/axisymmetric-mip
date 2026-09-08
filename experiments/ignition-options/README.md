@@ -1,7 +1,7 @@
 # ignition-options — how does the plasma actually start?
 
 **Opened 2026-08-25.** ⚠️ **NOT the old `experiments/ignition/`**, which was
-removed in `2db1d59` and was specifically about **TM-mode ignition**. This
+removed in `856f214` and was specifically about **TM-mode ignition**. This
 programme is broader and starts empty: *what are the options, and which does
 this instrument use?*
 

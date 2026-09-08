@@ -31,7 +31,7 @@ the cavity does reaches it through exactly two doors — **delivered power** and
 Its register grew by generating its own questions: R99→R101→R103→R105→R106→
 R107→R109→R110→R111→R112→R113, each opened by the previous result's
 uncertainty. An inward-facing loop with no external anchor can only expand.
-⚠️ **`../waveguide/` was REMOVED 2026-08-24** (commit `2db1d59`) as superseded.
+⚠️ **`../waveguide/` was REMOVED 2026-08-24** (commit `856f214`) as superseded.
 Its `waveguide/CONSOLIDATION.md` recorded what survived that audit and
 what did not.
 

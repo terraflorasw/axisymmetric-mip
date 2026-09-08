@@ -46,11 +46,11 @@ and **must never enter version control**. So:
       soil-testing/  amip/         <- sibling programmes, not this repo
 
 ⚠️ **`experiments/waveguide/` and `experiments/ignition/` were REMOVED**
-(commit `2db1d59`, 2026-08-24) — superseded by resonance. Their numbers come
+(commit `856f214`, 2026-08-24) — superseded by resonance. Their numbers come
 from earlier cavity designs and **do not transfer**; retrieve only to follow a
 citation, the way `FINDINGS.md` is handled:
 
-    git show 2db1d59^:experiments/waveguide/FINDINGS.md
+    git show 856f214^:experiments/waveguide/FINDINGS.md
 
 ⚠️ Untracked solver artefacts (csv/msh/log/vtu) may still sit in those paths on
 a given machine. **They are data with no surviving documents — do not read them

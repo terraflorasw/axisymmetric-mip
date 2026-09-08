@@ -2001,7 +2001,7 @@ unmeasured on this cavity.**
 🔴🔴 **AND THE TORCH ε ITSELF WAS IN QUESTION — the shift may largely cancel.**
 `geometry.py` uses **ε = 11.6**, commented *"sapphire eps_PERP_c — what E_φ sees
 (R32/R98)"*. Recovering R32 from git (`git show
-2db1d59^:experiments/waveguide/FINDINGS.md`) shows it is **real external work
+856f214^:experiments/waveguide/FINDINGS.md`) shows it is **real external work
 that carries forward — but it answers ORIENTATION, not the SCALAR:**
 - ✅ c-longitudinal vs c-transverse is **worth 1.1 MHz**, 0.11 % of a full m=2 —
   so *"c-axis longitudinal"* is **preferred, not required.** That stands.
